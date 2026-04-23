@@ -147,6 +147,18 @@ const TRANSLATIONS = {
     title: "New Workspace",
     placeholder: "My Workspace",
   },
+  "workspace-folders": {
+    new: "New folder",
+    placeholder: "Folder name",
+    rename: "Rename",
+    delete: "Delete",
+    "delete-confirm":
+      "Delete this folder? Workspaces and subfolders will move to the parent level.",
+    "add-subfolder": "Add subfolder",
+    root: "No folder (root)",
+    "max-depth": "Maximum folder depth reached (5 levels).",
+    cycle: "Cannot move a folder into its own descendant.",
+  },
   "workspaces—settings": {
     general: "General Settings",
     chat: "Chat Settings",

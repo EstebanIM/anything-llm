@@ -116,6 +116,22 @@ model document_vectors {
   lastUpdatedAt DateTime @default(now())
 }
 
+model workspace_folders {
+  id            Int                 @id @default(autoincrement())
+  name          String
+  slug          String              @unique
+  parent_id     Int?
+  order         Int                 @default(0)
+  createdAt     DateTime            @default(now())
+  lastUpdatedAt DateTime            @default(now())
+
+  parent     workspace_folders?  @relation("FolderHierarchy", fields: [parent_id], references: [id], onDelete: SetNull)
+  children   workspace_folders[] @relation("FolderHierarchy")
+  workspaces workspaces[]
+
+  @@index([parent_id])
+}
+
 model workspaces {
   id                           Int                            @id @default(autoincrement())
   name                         String
@@ -137,6 +153,8 @@ model workspaces {
   agentModel                   String?
   queryRefusalResponse         String?
   vectorSearchMode             String?                        @default("default")
+  folderId                     Int?
+  folder                       workspace_folders?             @relation(fields: [folderId], references: [id], onDelete: SetNull)
   workspace_users              workspace_users[]
   documents                    workspace_documents[]
   workspace_suggested_messages workspace_suggested_messages[]
@@ -145,6 +163,8 @@ model workspaces {
   workspace_agent_invocations  workspace_agent_invocations[]
   prompt_history               prompt_history[]
   workspace_parsed_files       workspace_parsed_files[]
+
+  @@index([folderId])
 }
 
 model workspace_threads {

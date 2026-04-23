@@ -141,6 +141,18 @@ const TRANSLATIONS = {
     title: "Nuevo espacio de trabajo",
     placeholder: "Mi espacio de trabajo",
   },
+  "workspace-folders": {
+    new: "Nueva carpeta",
+    placeholder: "Nombre de la carpeta",
+    rename: "Renombrar",
+    delete: "Eliminar",
+    "delete-confirm":
+      "¿Eliminar esta carpeta? Los workspaces y subcarpetas pasarán al nivel superior.",
+    "add-subfolder": "Agregar subcarpeta",
+    root: "Sin carpeta (raíz)",
+    "max-depth": "Profundidad máxima alcanzada (5 niveles).",
+    cycle: "No se puede mover una carpeta dentro de sí misma.",
+  },
   "workspaces—settings": {
     general: "Ajustes generales",
     chat: "Ajustes de chat",

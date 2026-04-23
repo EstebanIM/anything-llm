@@ -56,6 +56,7 @@ const Workspace = {
     "agentModel",
     "queryRefusalResponse",
     "vectorSearchMode",
+    "folderId",
   ],
 
   validations: {
@@ -129,6 +130,11 @@ const Workspace = {
       )
         return "default";
       return value;
+    },
+    folderId: (value) => {
+      if (value === null || value === undefined || value === "") return null;
+      const parsed = parseInt(value);
+      return isNaN(parsed) ? null : parsed;
     },
   },
 

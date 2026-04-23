@@ -75,3 +75,5 @@ export function fullApiUrl() {
 }
 
 export const POPUP_BROWSER_EXTENSION_EVENT = "NEW_BROWSER_EXTENSION_CONNECTION";
+
+export const WORKSPACE_FOLDERS_EXPANDED = "anythingllm_workspace_folders_expanded";

@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
-import { List, Plus } from "@phosphor-icons/react";
+import { List, Plus, FolderSimplePlus } from "@phosphor-icons/react";
 import NewWorkspaceModal, {
   useNewWorkspaceModal,
 } from "../Modals/NewWorkspace";
+import NewFolderModal, { useNewFolderModal } from "../Modals/NewFolderModal";
 import ActiveWorkspaces from "./ActiveWorkspaces";
 import useLogo from "@/hooks/useLogo";
 import useUser from "@/hooks/useUser";
@@ -26,6 +27,12 @@ export default function Sidebar() {
     showModal: showNewWsModal,
     hideModal: hideNewWsModal,
   } = useNewWorkspaceModal();
+  const {
+    showing: showingNewFolderModal,
+    showModal: showNewFolderModal,
+    hideModal: hideNewFolderModal,
+  } = useNewFolderModal();
+  const [folderRefreshKey, setFolderRefreshKey] = useState(0);
 
   return (
     <>
@@ -63,7 +70,17 @@ export default function Sidebar() {
                 <div className="relative h-[calc(100%-60px)] flex flex-col w-full justify-between pt-[10px] overflow-y-scroll no-scroll">
                   <div className="flex flex-col gap-y-[14px]">
                     <SearchBox user={user} showNewWsModal={showNewWsModal} />
-                    <ActiveWorkspaces />
+                    {(!user || user?.role !== "default") && (
+                      <button
+                        onClick={showNewFolderModal}
+                        title="Nueva carpeta"
+                        className="flex items-center gap-x-2 w-full px-3 py-[5px] rounded-[4px] text-white/60 hover:text-white hover:bg-theme-sidebar-subitem-hover transition-colors duration-150 text-sm"
+                      >
+                        <FolderSimplePlus size={16} />
+                        <span>Nueva carpeta</span>
+                      </button>
+                    )}
+                    <ActiveWorkspaces key={folderRefreshKey} />
                   </div>
                 </div>
                 <div className="absolute bottom-0 left-0 right-0 pb-3 rounded-b-[16px] bg-theme-bg-sidebar light:bg-slate-200 bg-opacity-80 backdrop-filter backdrop-blur-md z-10">
@@ -74,6 +91,12 @@ export default function Sidebar() {
           </div>
         </div>
         {showingNewWsModal && <NewWorkspaceModal hideModal={hideNewWsModal} />}
+        {showingNewFolderModal && (
+          <NewFolderModal
+            hideModal={hideNewFolderModal}
+            onFolderCreated={() => setFolderRefreshKey((k) => k + 1)}
+          />
+        )}
       </div>
       <WorkspaceAndThreadTooltips />
     </>

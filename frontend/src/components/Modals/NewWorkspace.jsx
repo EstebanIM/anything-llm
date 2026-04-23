@@ -1,6 +1,7 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { X } from "@phosphor-icons/react";
 import Workspace from "@/models/workspace";
+import WorkspaceFolder from "@/models/workspaceFolder";
 import paths from "@/utils/paths";
 import { useTranslation } from "react-i18next";
 import ModalWrapper from "@/components/ModalWrapper";
@@ -9,7 +10,12 @@ const noop = () => false;
 export default function NewWorkspaceModal({ hideModal = noop }) {
   const formEl = useRef(null);
   const [error, setError] = useState(null);
+  const [folders, setFolders] = useState([]);
   const { t } = useTranslation();
+
+  useEffect(() => {
+    WorkspaceFolder.tree().then((data) => setFolders(data.folders || []));
+  }, []);
   const handleCreate = async (e) => {
     setError(null);
     e.preventDefault();
@@ -65,6 +71,29 @@ export default function NewWorkspaceModal({ hideModal = noop }) {
                     autoFocus={true}
                   />
                 </div>
+                {folders.length > 0 && (
+                  <div>
+                    <label
+                      htmlFor="folderId"
+                      className="block mb-2 text-sm font-medium text-white"
+                    >
+                      {t("workspace-folders.root")}
+                    </label>
+                    <select
+                      name="folderId"
+                      id="folderId"
+                      defaultValue=""
+                      className="border-none bg-theme-settings-input-bg w-full text-white text-sm rounded-lg focus:outline-primary-button outline-none block p-2.5"
+                    >
+                      <option value="">{t("workspace-folders.root")}</option>
+                      {flattenFolders(folders).map(({ folder, depth }) => (
+                        <option key={folder.id} value={folder.id}>
+                          {"— ".repeat(depth) + folder.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 {error && (
                   <p className="text-red-400 text-sm">Error: {error}</p>
                 )}
@@ -83,6 +112,17 @@ export default function NewWorkspaceModal({ hideModal = noop }) {
       </div>
     </ModalWrapper>
   );
+}
+
+function flattenFolders(folders, depth = 0) {
+  const result = [];
+  for (const folder of folders) {
+    result.push({ folder, depth });
+    if (folder.children?.length > 0) {
+      result.push(...flattenFolders(folder.children, depth + 1));
+    }
+  }
+  return result;
 }
 
 export function useNewWorkspaceModal() {

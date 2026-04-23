@@ -1,4 +1,5 @@
 import Workspace from "@/models/workspace";
+import WorkspaceFolder from "@/models/workspaceFolder";
 import { castToType } from "@/utils/types";
 import showToast from "@/utils/toast";
 import { useEffect, useRef, useState } from "react";
@@ -7,20 +8,35 @@ import SuggestedChatMessages from "./SuggestedChatMessages";
 import DeleteWorkspace from "./DeleteWorkspace";
 import CTAButton from "@/components/lib/CTAButton";
 
+function flattenFolders(folders, depth = 0) {
+  const result = [];
+  for (const folder of folders) {
+    result.push({ folder, depth });
+    if (folder.children?.length > 0)
+      result.push(...flattenFolders(folder.children, depth + 1));
+  }
+  return result;
+}
+
 export default function GeneralInfo({ slug }) {
   const [workspace, setWorkspace] = useState(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [folders, setFolders] = useState([]);
   const formEl = useRef(null);
 
   useEffect(() => {
-    async function fetchWorkspace() {
-      const workspace = await Workspace.bySlug(slug);
-      setWorkspace(workspace);
+    async function fetchData() {
+      const [ws, tree] = await Promise.all([
+        Workspace.bySlug(slug),
+        WorkspaceFolder.tree(),
+      ]);
+      setWorkspace(ws);
+      setFolders(tree.folders || []);
       setLoading(false);
     }
-    fetchWorkspace();
+    fetchData();
   }, [slug]);
 
   const handleUpdate = async (e) => {
@@ -62,6 +78,30 @@ export default function GeneralInfo({ slug }) {
           workspace={workspace}
           setHasChanges={setHasChanges}
         />
+        {folders.length > 0 && (
+          <div>
+            <label
+              htmlFor="folderId"
+              className="block mb-2 text-sm font-medium text-white"
+            >
+              Carpeta
+            </label>
+            <select
+              name="folderId"
+              id="folderId"
+              defaultValue={workspace.folderId ?? ""}
+              onChange={() => setHasChanges(true)}
+              className="border-none bg-theme-settings-input-bg w-full text-white text-sm rounded-lg focus:outline-primary-button outline-none block p-2.5"
+            >
+              <option value="">Sin carpeta (raíz)</option>
+              {flattenFolders(folders).map(({ folder, depth }) => (
+                <option key={folder.id} value={folder.id}>
+                  {"— ".repeat(depth) + folder.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </form>
       <SuggestedChatMessages slug={workspace.slug} />
       <DeleteWorkspace workspace={workspace} />
