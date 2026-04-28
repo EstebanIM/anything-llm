@@ -2,13 +2,15 @@ import { useRef } from "react";
 import Admin from "@/models/admin";
 import paths from "@/utils/paths";
 import { LinkSimple, Trash } from "@phosphor-icons/react";
+import useCustomAppName from "@/hooks/useCustomAppName";
 
 export default function WorkspaceRow({ workspace, users: _users }) {
+  const { brandName } = useCustomAppName();
   const rowRef = useRef(null);
   const handleDelete = async () => {
     if (
       !window.confirm(
-        `Are you sure you want to delete ${workspace.name}?\nAfter you do this it will be unavailable in this instance of AnythingLLM.\n\nThis action is irreversible.`
+        `Are you sure you want to delete ${workspace.name}?\nAfter you do this it will be unavailable in this instance of ${brandName}.\n\nThis action is irreversible.`
       )
     )
       return false;

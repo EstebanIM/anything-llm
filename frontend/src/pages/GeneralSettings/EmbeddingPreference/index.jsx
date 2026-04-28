@@ -41,16 +41,9 @@ import { useModal } from "@/hooks/useModal";
 import ModalWrapper from "@/components/ModalWrapper";
 import CTAButton from "@/components/lib/CTAButton";
 import { useTranslation } from "react-i18next";
+import useCustomAppName from "@/hooks/useCustomAppName";
 
-const EMBEDDERS = [
-  {
-    name: "AnythingLLM Embedder",
-    value: "native",
-    logo: AnythingLLMIcon,
-    options: (settings) => <NativeEmbeddingOptions settings={settings} />,
-    description:
-      "Use the built-in embedding provider for AnythingLLM. Zero setup!",
-  },
+const EMBEDDERS_EXTRA = [
   {
     name: "OpenAI",
     value: "openai",
@@ -149,6 +142,17 @@ const EMBEDDERS = [
 ];
 
 export default function GeneralEmbeddingPreference() {
+  const { brandName } = useCustomAppName();
+  const EMBEDDERS = [
+    {
+      name: `${brandName} Embedder`,
+      value: "native",
+      logo: AnythingLLMIcon,
+      options: (settings) => <NativeEmbeddingOptions settings={settings} />,
+      description: `Use the built-in embedding provider for ${brandName}. Zero setup!`,
+    },
+    ...EMBEDDERS_EXTRA,
+  ];
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [hasEmbeddings, setHasEmbeddings] = useState(false);

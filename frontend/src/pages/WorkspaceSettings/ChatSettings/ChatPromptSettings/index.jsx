@@ -9,12 +9,15 @@ import ChatPromptHistory from "./ChatPromptHistory";
 import PublishEntityModal from "@/components/CommunityHub/PublishEntityModal";
 import { useModal } from "@/hooks/useModal";
 import System from "@/models/system";
+import { userFromStorage } from "@/utils/request";
 
 export default function ChatPromptSettings({
   workspace,
   setHasChanges,
   hasChanges,
 }) {
+  const currentUser = userFromStorage();
+  if (currentUser?.role && currentUser.role !== "superadmin") return null;
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
 

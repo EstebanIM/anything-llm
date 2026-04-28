@@ -1,8 +1,10 @@
 import Sidebar from "@/components/SettingsSidebar";
 import { isMobile } from "react-device-detect";
 import HubItems from "./HubItems";
+import useCustomAppName from "@/hooks/useCustomAppName";
 
 export default function CommunityHub() {
+  const { brandName } = useCustomAppName();
   return (
     <div className="w-screen h-screen overflow-hidden bg-theme-bg-container flex">
       <Sidebar />
@@ -18,7 +20,7 @@ export default function CommunityHub() {
               </p>
             </div>
             <p className="text-xs leading-[18px] font-base text-theme-text-secondary">
-              Share and collaborate with the AnythingLLM community.
+              Share and collaborate with the {brandName} community.
             </p>
           </div>
           <HubItems />

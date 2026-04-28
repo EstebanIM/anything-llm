@@ -86,7 +86,8 @@ export function AdminRoute({ Component, hideUserMenu = false }) {
   }
 
   const user = userFromStorage();
-  return isAuthd && (user?.role === "admin" || !multiUserMode) ? (
+  return isAuthd &&
+    (["admin", "superadmin"].includes(user?.role) || !multiUserMode) ? (
     hideUserMenu ? (
       <KeyboardShortcutWrapper>
         <Component />

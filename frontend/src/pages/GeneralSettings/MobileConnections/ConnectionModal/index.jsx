@@ -9,8 +9,10 @@ import PreLoader from "@/components/Preloader";
 import Logo from "@/media/logo/anything-llm-infinity.png";
 import paths from "@/utils/paths";
 import GetOnGooglePlay from "./gplay-badge.svg";
+import useCustomAppName from "@/hooks/useCustomAppName";
 
 export default function MobileConnectModal({ isOpen, onClose }) {
+  const { brandName } = useCustomAppName();
   return (
     <ModalWrapper isOpen={isOpen}>
       <div
@@ -35,10 +37,10 @@ export default function MobileConnectModal({ isOpen, onClose }) {
           {/* left column */}
           <div className="flex flex-col w-1/2 gap-y-[16px]">
             <p className="text-[#FFF] text-xl font-bold">
-              Go mobile. Stay local. AnythingLLM Mobile.
+              Go mobile. Stay local. {brandName} Mobile.
             </p>
             <p className="text-[#FFF] text-lg">
-              AnythingLLM for mobile allows you to connect to your workspace's
+              {brandName} for mobile allows you to connect to your workspace's
               chats, threads, tools, and documents for you to use on the go.
               <br />
               <br />
@@ -63,7 +65,7 @@ export default function MobileConnectModal({ isOpen, onClose }) {
               <ConnectionQrCode isOpen={isOpen} />
             </div>
             <p className="text-[#FFF] text-sm w-[300px] text-center">
-              Scan the QR code with the AnythingLLM Mobile app to enable live
+              Scan the QR code with the {brandName} Mobile app to enable live
               sync of your workspaces, chats, threads and documents.
               <br />
               <Link

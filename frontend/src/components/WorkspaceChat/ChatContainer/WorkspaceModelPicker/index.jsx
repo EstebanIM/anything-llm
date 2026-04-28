@@ -74,7 +74,7 @@ export default function WorkspaceModelPicker({ workspaceSlug = null }) {
   }, []);
 
   // This feature is disabled for multi-user instances where the user is not an admin
-  if (!!user && user.role !== "admin") return null;
+  if (!!user && !["admin", "superadmin"].includes(user.role)) return null;
   if (!slug) return null;
 
   return (

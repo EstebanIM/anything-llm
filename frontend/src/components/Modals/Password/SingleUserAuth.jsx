@@ -6,15 +6,16 @@ import ModalWrapper from "@/components/ModalWrapper";
 import { useModal } from "@/hooks/useModal";
 import RecoveryCodeModal from "@/components/Modals/DisplayRecoveryCodeModal";
 import { useTranslation } from "react-i18next";
+import useCustomAppName from "@/hooks/useCustomAppName";
 
 export default function SingleUserAuth() {
   const { t } = useTranslation();
+  const { brandName } = useCustomAppName();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [recoveryCodes, setRecoveryCodes] = useState([]);
   const [downloadComplete, setDownloadComplete] = useState(false);
   const [token, setToken] = useState(null);
-  const [customAppName, setCustomAppName] = useState(null);
 
   const {
     isOpen: isRecoveryCodeModalOpen,
@@ -58,15 +59,6 @@ export default function SingleUserAuth() {
     }
   }, [downloadComplete, token]);
 
-  useEffect(() => {
-    const fetchCustomAppName = async () => {
-      const { appName } = await System.fetchCustomAppName();
-      setCustomAppName(appName || "");
-      setLoading(false);
-    };
-    fetchCustomAppName();
-  }, []);
-
   return (
     <>
       <form
@@ -81,7 +73,7 @@ export default function SingleUserAuth() {
               </h3>
             </div>
             <p className="text-zinc-400 light:text-zinc-600 text-sm text-center">
-              {t("login.sign-in", { appName: customAppName || "AnythingLLM" })}
+              {t("login.sign-in", { appName: brandName })}
             </p>
           </div>
         </div>

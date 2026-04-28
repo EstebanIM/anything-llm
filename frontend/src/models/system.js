@@ -10,6 +10,7 @@ const System = {
     footerIcons: "anythingllm_footer_links",
     supportEmail: "anythingllm_support_email",
     customAppName: "anythingllm_custom_app_name",
+    browserAppearance: "anythingllm_browser_appearance",
     canViewChatHistory: "anythingllm_can_view_chat_history",
     deploymentVersion: "anythingllm_deployment_version",
   },
@@ -388,6 +389,39 @@ const System = {
     );
     return { appName: customAppName, error: null };
   },
+
+  fetchBrowserAppearance: async function () {
+    const cache = window.localStorage.getItem(this.cacheKeys.browserAppearance);
+    const { title, favicon, lastFetched } = cache
+      ? safeJsonParse(cache, { title: null, favicon: null, lastFetched: 0 })
+      : { title: null, favicon: null, lastFetched: 0 };
+
+    if (lastFetched && Date.now() - lastFetched < 3_600_000)
+      return { title, favicon, error: null };
+
+    const result = await fetch(`${API_BASE}/system/browser-appearance`, {
+      method: "GET",
+      cache: "no-cache",
+    })
+      .then((res) => res.json())
+      .catch((e) => {
+        console.log(e);
+        return { title: null, favicon: null, error: e.message };
+      });
+
+    if (result.error) return { title: null, favicon: null, error: result.error };
+
+    window.localStorage.setItem(
+      this.cacheKeys.browserAppearance,
+      JSON.stringify({
+        title: result.title,
+        favicon: result.favicon,
+        lastFetched: Date.now(),
+      })
+    );
+    return { title: result.title, favicon: result.favicon, error: null };
+  },
+
   /**
    * Fetches the default system prompt from the server.
    * @returns {Promise<{defaultSystemPrompt: string, saneDefaultSystemPrompt: string}>}

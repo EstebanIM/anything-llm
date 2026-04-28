@@ -7,8 +7,10 @@ import PreLoader from "@/components/Preloader";
 import { useTranslation } from "react-i18next";
 import ProviderPrivacy from "@/components/ProviderPrivacy";
 import Toggle from "@/components/lib/Toggle";
+import useCustomAppName from "@/hooks/useCustomAppName";
 
 export default function PrivacyAndDataHandling() {
+  const { brandName } = useCustomAppName();
   const [settings, setSettings] = useState({});
   const [loading, setLoading] = useState(true);
   const { t } = useTranslation();
@@ -112,16 +114,7 @@ function TelemetryLogs({ settings }) {
             dedicated to building the best solution for integrating AI and
             documents privately and securely. If you do decide to turn off
             telemetry all we ask is to consider sending us feedback and thoughts
-            so that we can continue to improve AnythingLLM for you.{" "}
-            <a
-              href="mailto:team@mintplexlabs.com"
-              className="underline text-blue-400"
-              target="_blank"
-              rel="noreferrer"
-            >
-              team@mintplexlabs.com
-            </a>
-            .
+            so that we can continue to improve {brandName} for you.
           </p>
         </div>
       </div>

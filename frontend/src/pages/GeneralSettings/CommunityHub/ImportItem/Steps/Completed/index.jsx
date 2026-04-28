@@ -2,8 +2,10 @@ import CommunityHubImportItemSteps from "..";
 import CTAButton from "@/components/lib/CTAButton";
 import { Link } from "react-router-dom";
 import paths from "@/utils/paths";
+import useCustomAppName from "@/hooks/useCustomAppName";
 
 export default function Completed({ settings, setSettings, setStep }) {
+  const { brandName } = useCustomAppName();
   return (
     <div className="flex-[2] flex flex-col gap-y-[18px] mt-10">
       <div className="bg-theme-bg-secondary rounded-xl flex-1 p-6">
@@ -14,7 +16,7 @@ export default function Completed({ settings, setSettings, setStep }) {
           <div className="flex flex-col gap-y-[25px] text-theme-text-secondary text-sm">
             <p>
               The "{settings.item.name}" {settings.item.itemType} has been
-              imported successfully! It is now available in your AnythingLLM
+              imported successfully! It is now available in your {brandName}
               instance.
             </p>
             {settings.item.itemType === "agent-flow" && (

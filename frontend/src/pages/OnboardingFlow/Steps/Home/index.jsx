@@ -3,11 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import useRedirectToHomeOnOnboardingComplete from "@/hooks/useOnboardingComplete";
 import { OnboardingLogoSVG } from "./components/OnboardingLogoSVG";
+import useCustomAppName from "@/hooks/useCustomAppName";
 
 export default function OnboardingHome() {
   const navigate = useNavigate();
   useRedirectToHomeOnOnboardingComplete();
   const { t } = useTranslation();
+  const { brandName } = useCustomAppName();
 
   return (
     <div className="relative w-screen h-screen flex flex-col overflow-hidden bg-zinc-950 light:bg-slate-50">
@@ -30,7 +32,7 @@ export default function OnboardingHome() {
 
       <div className="relative z-10 flex justify-center pt-[58px]">
         <p className="text-white/80 light:text-slate-600 text-3xl font-semibold">
-          AnythingLLM
+          {brandName}
         </p>
       </div>
 

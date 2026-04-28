@@ -89,7 +89,7 @@ export default function LLMSelectorAction({ workspaceSlug = null }) {
 
   // This feature is disabled for multi-user instances where the user is not an admin
   // This is because of the limitations of model selection currently and other nuances in controls.
-  if (!!user && user.role !== "admin") return null;
+  if (!!user && !["admin", "superadmin"].includes(user.role)) return null;
   if (!slug) return null;
 
   return (

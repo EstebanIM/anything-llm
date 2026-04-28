@@ -5,8 +5,10 @@ import paths from "@/utils/paths";
 import { userFromStorage } from "@/utils/request";
 import System from "@/models/system";
 import showToast from "@/utils/toast";
+import useCustomAppName from "@/hooks/useCustomAppName";
 
 export default function NewApiKeyModal({ closeModal, onSuccess }) {
+  const { brandName } = useCustomAppName();
   const [apiKey, setApiKey] = useState(null);
   const [error, setError] = useState(null);
   const [copied, setCopied] = useState(false);
@@ -93,7 +95,7 @@ export default function NewApiKeyModal({ closeModal, onSuccess }) {
               )}
               <p className="text-white text-opacity-60 text-xs md:text-sm">
                 Once created the API key can be used to programmatically access
-                and configure this AnythingLLM instance.
+                and configure this {brandName} instance.
               </p>
               <a
                 href={paths.apiDocs()}

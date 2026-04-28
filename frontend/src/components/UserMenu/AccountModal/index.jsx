@@ -21,6 +21,7 @@ import {
 export default function AccountModal({ user, hideModal }) {
   const { pfp, setPfp } = usePfp();
   const { t } = useTranslation();
+  const isDefaultUser = user?.role === "default";
 
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
@@ -99,85 +100,112 @@ export default function AccountModal({ user, hideModal }) {
           <form onSubmit={handleUpdate} className="space-y-6">
             <div className="flex flex-col md:flex-row items-center justify-center gap-8">
               <div className="flex flex-col items-center">
-                <label className="group w-48 h-48 flex flex-col items-center justify-center bg-theme-bg-primary hover:bg-theme-bg-secondary transition-colors duration-300 rounded-full mt-8 border-2 border-dashed border-white light:border-[#686C6F] light:bg-[#E0F2FE] light:hover:bg-transparent cursor-pointer hover:opacity-60">
-                  <input
-                    id="logo-upload"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleFileUpload}
-                  />
-                  {pfp ? (
-                    <img
-                      src={pfp}
-                      alt="User profile picture"
-                      className="w-48 h-48 rounded-full object-cover bg-white"
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center p-3">
-                      <Plus className="w-8 h-8 text-theme-text-secondary m-2" />
-                      <span className="text-theme-text-secondary text-opacity-80 text-sm font-semibold">
+                {isDefaultUser ? (
+                  <div className="w-48 h-48 rounded-full mt-8 bg-theme-bg-primary border-2 border-dashed border-white/20 flex items-center justify-center">
+                    {pfp ? (
+                      <img
+                        src={pfp}
+                        alt="User profile picture"
+                        className="w-48 h-48 rounded-full object-cover bg-white"
+                      />
+                    ) : (
+                      <span className="text-theme-text-secondary text-xs text-center px-4">
                         {t("profile_settings.profile_picture")}
                       </span>
-                      <span className="text-theme-text-secondary text-opacity-60 text-xs">
-                        800 x 800
-                      </span>
-                    </div>
-                  )}
-                </label>
-                {pfp && (
-                  <button
-                    type="button"
-                    onClick={handleRemovePfp}
-                    className="mt-3 text-theme-text-secondary text-opacity-60 text-sm font-medium hover:underline"
-                  >
-                    {t("profile_settings.remove_profile_picture")}
-                  </button>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    <label className="group w-48 h-48 flex flex-col items-center justify-center bg-theme-bg-primary hover:bg-theme-bg-secondary transition-colors duration-300 rounded-full mt-8 border-2 border-dashed border-white light:border-[#686C6F] light:bg-[#E0F2FE] light:hover:bg-transparent cursor-pointer hover:opacity-60">
+                      <input
+                        id="logo-upload"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleFileUpload}
+                      />
+                      {pfp ? (
+                        <img
+                          src={pfp}
+                          alt="User profile picture"
+                          className="w-48 h-48 rounded-full object-cover bg-white"
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center justify-center p-3">
+                          <Plus className="w-8 h-8 text-theme-text-secondary m-2" />
+                          <span className="text-theme-text-secondary text-opacity-80 text-sm font-semibold">
+                            {t("profile_settings.profile_picture")}
+                          </span>
+                          <span className="text-theme-text-secondary text-opacity-60 text-xs">
+                            800 x 800
+                          </span>
+                        </div>
+                      )}
+                    </label>
+                    {pfp && (
+                      <button
+                        type="button"
+                        onClick={handleRemovePfp}
+                        className="mt-3 text-theme-text-secondary text-opacity-60 text-sm font-medium hover:underline"
+                      >
+                        {t("profile_settings.remove_profile_picture")}
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             </div>
             <div className="flex flex-col gap-y-4 px-6">
-              <div>
-                <label
-                  htmlFor="username"
-                  className="block mb-2 text-sm font-medium text-theme-text-primary"
-                >
-                  {t("profile_settings.username")}
-                </label>
-                <input
-                  name="username"
-                  type="text"
-                  className="border-none bg-theme-settings-input-bg placeholder:text-theme-settings-input-placeholder border-gray-500 text-white text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-                  placeholder="User's username"
-                  minLength={USERNAME_MIN_LENGTH}
-                  maxLength={USERNAME_MAX_LENGTH}
-                  pattern={USERNAME_PATTERN}
-                  defaultValue={user.username}
-                  required
-                  autoComplete="off"
-                />
-                <p className="mt-2 text-xs text-white/60">
-                  {t("common.username_requirements")}
+              {isDefaultUser && (
+                <p className="text-xs text-white/50 text-center">
+                  Tu administrador gestiona tu nombre de usuario y contraseña.
                 </p>
-              </div>
-              <div>
-                <label
-                  htmlFor="password"
-                  className="block mb-2 text-sm font-medium text-white"
-                >
-                  {t("profile_settings.new_password")}
-                </label>
-                <input
-                  name="password"
-                  type="text"
-                  className="border-none bg-theme-settings-input-bg placeholder:text-theme-settings-input-placeholder border-gray-500 text-white text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-                  placeholder={`${user.username}'s new password`}
-                  minLength={8}
-                />
-                <p className="mt-2 text-xs text-white/60">
-                  {t("profile_settings.password_description")}
-                </p>
-              </div>
+              )}
+              {!isDefaultUser && (
+                <>
+                  <div>
+                    <label
+                      htmlFor="username"
+                      className="block mb-2 text-sm font-medium text-theme-text-primary"
+                    >
+                      {t("profile_settings.username")}
+                    </label>
+                    <input
+                      name="username"
+                      type="text"
+                      className="border-none bg-theme-settings-input-bg placeholder:text-theme-settings-input-placeholder border-gray-500 text-white text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
+                      placeholder="User's username"
+                      minLength={USERNAME_MIN_LENGTH}
+                      maxLength={USERNAME_MAX_LENGTH}
+                      pattern={USERNAME_PATTERN}
+                      defaultValue={user.username}
+                      required
+                      autoComplete="off"
+                    />
+                    <p className="mt-2 text-xs text-white/60">
+                      {t("common.username_requirements")}
+                    </p>
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="password"
+                      className="block mb-2 text-sm font-medium text-white"
+                    >
+                      {t("profile_settings.new_password")}
+                    </label>
+                    <input
+                      name="password"
+                      type="text"
+                      className="border-none bg-theme-settings-input-bg placeholder:text-theme-settings-input-placeholder border-gray-500 text-white text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
+                      placeholder={`${user.username}'s new password`}
+                      minLength={8}
+                    />
+                    <p className="mt-2 text-xs text-white/60">
+                      {t("profile_settings.password_description")}
+                    </p>
+                  </div>
+                </>
+              )}
               <div>
                 <label
                   htmlFor="bio"

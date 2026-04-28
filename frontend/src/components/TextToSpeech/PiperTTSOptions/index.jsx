@@ -4,6 +4,7 @@ import { titleCase } from "text-case";
 import { humanFileSize } from "@/utils/numbers";
 import showToast from "@/utils/toast";
 import { CircleNotch, PauseCircle, PlayCircle } from "@phosphor-icons/react";
+import { DEFAULT_APP_NAME } from "@/utils/constants/brand";
 
 export default function PiperTTSOptions({ settings }) {
   return (
@@ -149,7 +150,7 @@ function DemoVoiceSample({ voiceId }) {
         setLoading(true);
         const client = new PiperTTSClient({ voiceId });
         const blobUrl = await client.getAudioBlobForText(
-          "Hello, welcome to AnythingLLM!"
+          `Hello, welcome to ${DEFAULT_APP_NAME}!`
         );
         setAudioSrc(blobUrl);
         setLoading(false);

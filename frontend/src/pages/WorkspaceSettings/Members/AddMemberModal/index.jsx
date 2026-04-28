@@ -56,7 +56,7 @@ export default function AddMemberModal({ closeModal, workspace, users }) {
     .filter((user) =>
       user.username.toLowerCase().includes(searchTerm.toLowerCase())
     )
-    .filter((user) => user.role !== "admin")
+    .filter((user) => !["admin", "superadmin"].includes(user.role))
     .filter((user) => user.role !== "manager");
 
   return (

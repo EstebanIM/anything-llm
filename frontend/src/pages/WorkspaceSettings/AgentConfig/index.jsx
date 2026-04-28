@@ -85,7 +85,7 @@ export default function WorkspaceAgentConfiguration({ workspace }) {
           workspace={workspace}
           setHasChanges={setHasChanges}
         />
-        {(!user || user?.role === "admin") && (
+        {(!user || ["admin", "superadmin"].includes(user?.role)) && (
           <>
             {!hasChanges && (
               <div className="flex flex-col gap-y-4">

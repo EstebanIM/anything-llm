@@ -205,7 +205,7 @@ export default function ActiveWorkspaces() {
                 aria-current={isActive ? "page" : ""}
                 className={`
                   transition-all duration-[200ms]
-                  flex flex-grow w-[75%] gap-x-2 py-[6px] pl-[4px] pr-[6px] rounded-[4px] text-white justify-start items-center
+                  flex flex-grow w-[75%] gap-x-2 py-[6px] pl-[4px] pr-[6px] rounded-full text-white justify-start items-center
                   bg-theme-sidebar-item-default
                   ${isActive ? "light:bg-blue-200 font-bold" : "hover:bg-theme-sidebar-subitem-hover light:hover:bg-slate-300"}
                 `}
@@ -245,7 +245,7 @@ export default function ActiveWorkspaces() {
                           setSelectedWs(workspace);
                           showModal();
                         }}
-                        className={`group/upload border-none rounded-md flex items-center justify-center ml-auto p-[2px] ${isActive ? "hover:bg-zinc-500 light:hover:bg-sky-800/30" : "hover:bg-zinc-500 light:hover:bg-slate-400"}`}
+                        className={`group/upload border-none rounded-full flex items-center justify-center ml-auto p-[3px] ${isActive ? "hover:bg-zinc-500 light:hover:bg-sky-800/30" : "hover:bg-zinc-500 light:hover:bg-slate-400"}`}
                       >
                         <UploadSimple
                           className={`h-[20px] w-[20px] ${isActive ? "text-zinc-400 hover:text-white light:text-blue-700 light:group-hover/upload:text-blue-900" : "text-zinc-400 hover:text-white light:text-slate-600 light:group-hover/upload:text-slate-950"}`}
@@ -263,7 +263,7 @@ export default function ActiveWorkspaces() {
                                 )
                           );
                         }}
-                        className={`group/gear rounded-md flex items-center justify-center ml-auto p-[2px] ${isActive ? "hover:bg-zinc-500 light:hover:bg-sky-800/30" : "hover:bg-zinc-500 light:hover:bg-slate-400"}`}
+                        className={`group/gear rounded-full flex items-center justify-center ml-auto p-[3px] ${isActive ? "hover:bg-zinc-500 light:hover:bg-sky-800/30" : "hover:bg-zinc-500 light:hover:bg-slate-400"}`}
                         aria-label="General appearance settings"
                       >
                         <GearSix
@@ -317,8 +317,8 @@ export default function ActiveWorkspaces() {
             <div
               ref={provided.innerRef}
               {...provided.droppableProps}
-              className={`flex flex-col gap-y-2 min-h-[4px] rounded-[4px] transition-colors duration-150 ${
-                snapshot.isDraggingOver ? "bg-white/5" : ""
+              className={`flex flex-col gap-y-2 min-h-[4px] rounded-2xl transition-colors duration-150 ${
+                snapshot.isDraggingOver ? "bg-white/5 light:bg-slate-300/40" : ""
               }`}
             >
               {tree.workspaces.map((workspace, index) =>

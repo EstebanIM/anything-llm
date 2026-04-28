@@ -121,14 +121,14 @@ export default function FolderItem({
     <div className="flex flex-col w-full">
       {/* Folder header row */}
       <div
-        className="flex items-center gap-x-1 group/folder rounded-[4px] hover:bg-theme-sidebar-subitem-hover transition-colors duration-150"
+        className="flex items-center gap-x-1 group/folder rounded-full hover:bg-theme-sidebar-subitem-hover transition-colors duration-150"
         style={{ paddingLeft: `${indent + 4}px`, paddingRight: "4px" }}
       >
         {/* Expand/collapse caret */}
         <button
           type="button"
           onClick={() => toggleExpanded(folder.id)}
-          className="flex-shrink-0 flex items-center justify-center w-5 h-5 text-white/60 hover:text-white"
+          className="flex-shrink-0 flex items-center justify-center w-5 h-5 text-white/60 hover:text-white light:text-slate-600 light:hover:text-slate-900"
           aria-label={isExpanded ? "Collapse folder" : "Expand folder"}
         >
           {isExpanded ? (
@@ -165,11 +165,11 @@ export default function FolderItem({
               onChange={(e) => setRenameValue(e.target.value)}
               onKeyDown={handleRenameKeyDown}
               onBlur={handleRenameSubmit}
-              className="flex-grow bg-transparent border-b border-white/40 text-white text-[13px] outline-none min-w-0"
+              className="flex-grow bg-transparent border border-white/40 light:border-slate-400 text-white light:text-slate-800 text-[13px] outline-none min-w-0 rounded-full px-3"
               onClick={(e) => e.stopPropagation()}
             />
           ) : (
-            <span className="text-white text-[13px] font-medium truncate">
+            <span className="text-white light:text-slate-700 text-[13px] font-medium truncate">
               {folder.name}
             </span>
           )}
@@ -185,26 +185,35 @@ export default function FolderItem({
                 setIsRenaming(true);
               }}
               title={t("workspace-folders.rename")}
-              className="rounded p-[2px] hover:bg-white/10"
+              className="rounded-full p-[3px] hover:bg-white/10 light:hover:bg-slate-300/70"
             >
-              <PencilSimple size={14} className="text-white/70 hover:text-white" />
+              <PencilSimple
+                size={14}
+                className="text-white/70 hover:text-white light:text-slate-600 light:hover:text-slate-900"
+              />
             </button>
             <button
               type="button"
               onClick={handleAddSubfolder}
               title={t("workspace-folders.add-subfolder")}
-              className="rounded p-[2px] hover:bg-white/10"
+              className="rounded-full p-[3px] hover:bg-white/10 light:hover:bg-slate-300/70"
             >
-              <Plus size={14} className="text-white/70 hover:text-white" />
+              <Plus
+                size={14}
+                className="text-white/70 hover:text-white light:text-slate-600 light:hover:text-slate-900"
+              />
             </button>
             {!showConfirmDelete ? (
               <button
                 type="button"
                 onClick={() => setShowConfirmDelete(true)}
                 title={t("workspace-folders.delete")}
-                className="rounded p-[2px] hover:bg-red-500/20"
+                className="rounded-full p-[3px] hover:bg-red-500/20 light:hover:bg-red-500/15"
               >
-                <Trash size={14} className="text-white/70 hover:text-red-400" />
+                <Trash
+                  size={14}
+                  className="text-white/70 hover:text-red-400 light:text-slate-600 light:hover:text-red-600"
+                />
               </button>
             ) : (
               <>
@@ -213,17 +222,23 @@ export default function FolderItem({
                   onClick={handleDelete}
                   disabled={isDeleting}
                   title="Confirm delete"
-                  className="rounded p-[2px] hover:bg-red-500/40"
+                  className="rounded-full p-[3px] hover:bg-red-500/40 light:hover:bg-red-500/20"
                 >
-                  <Check size={14} className="text-red-400" />
+                  <Check
+                    size={14}
+                    className="text-red-400 light:text-red-600"
+                  />
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowConfirmDelete(false)}
                   title="Cancel"
-                  className="rounded p-[2px] hover:bg-white/10"
+                  className="rounded-full p-[3px] hover:bg-white/10 light:hover:bg-slate-300/70"
                 >
-                  <X size={14} className="text-white/70" />
+                  <X
+                    size={14}
+                    className="text-white/70 light:text-slate-600"
+                  />
                 </button>
               </>
             )}
@@ -238,8 +253,8 @@ export default function FolderItem({
             <div
               ref={provided.innerRef}
               {...provided.droppableProps}
-              className={`flex flex-col gap-y-[2px] min-h-[8px] rounded-[4px] transition-colors duration-150 ${
-                snapshot.isDraggingOver ? "bg-white/5" : ""
+              className={`flex flex-col gap-y-[2px] min-h-[8px] rounded-2xl transition-colors duration-150 ${
+                snapshot.isDraggingOver ? "bg-white/5 light:bg-slate-300/40" : ""
               }`}
               style={{ paddingLeft: `${indent + 16}px` }}
             >

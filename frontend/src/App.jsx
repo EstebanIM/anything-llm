@@ -14,8 +14,10 @@ import { PWAModeProvider } from "./PWAContext";
 import KeyboardShortcutsHelp from "@/components/KeyboardShortcutsHelp";
 import { ErrorBoundary } from "react-error-boundary";
 import ErrorBoundaryFallback from "./components/ErrorBoundaryFallback";
+import useCustomBrowserAppearance from "@/hooks/useCustomBrowserAppearance";
 
 export default function App() {
+  useCustomBrowserAppearance();
   const location = useLocation();
   return (
     <ErrorBoundary

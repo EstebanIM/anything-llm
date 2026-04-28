@@ -732,6 +732,24 @@ function systemEndpoints(app) {
     }
   });
 
+  // No middleware - needed on login page before user authenticates
+  app.get("/system/browser-appearance", async (_, response) => {
+    try {
+      const title = await SystemSettings.getValueOrFallback(
+        { label: "meta_page_title" },
+        null
+      );
+      const favicon = await SystemSettings.getValueOrFallback(
+        { label: "meta_page_favicon" },
+        null
+      );
+      response.status(200).json({ title, favicon });
+    } catch (error) {
+      console.error("Error fetching browser appearance:", error);
+      response.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   app.get(
     "/system/pfp/:id",
     [validatedRequest, flexUserRoleValid([ROLES.all])],
@@ -767,6 +785,12 @@ function systemEndpoints(app) {
     async function (request, response) {
       try {
         const user = await userFromSession(request, response);
+        if (user?.role === ROLES.default) {
+          return response.status(403).json({
+            success: false,
+            error: "Default users cannot change their profile picture.",
+          });
+        }
         const uploadedFileName = request.randomFileName;
         if (!uploadedFileName) {
           return response.status(400).json({ message: "File upload failed." });
@@ -858,6 +882,12 @@ function systemEndpoints(app) {
     async function (request, response) {
       try {
         const user = await userFromSession(request, response);
+        if (user?.role === ROLES.default) {
+          return response.status(403).json({
+            success: false,
+            error: "Default users cannot change their profile picture.",
+          });
+        }
         const userRecord = await User.get({ id: user.id });
         const oldPfpFilename = userRecord.pfpFilename;
 
@@ -1180,6 +1210,15 @@ function systemEndpoints(app) {
 
       if (!id) {
         response.status(400).json({ success: false, error: "Invalid user ID" });
+        return;
+      }
+
+      // Default-role users cannot change their own username or password.
+      if (sessionUser.role === ROLES.default && (username || password)) {
+        response.status(403).json({
+          success: false,
+          error: "Default users cannot change their username or password.",
+        });
         return;
       }
 

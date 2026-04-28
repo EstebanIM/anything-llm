@@ -12,25 +12,27 @@ import LLMItem from "@/components/LLMSelection/LLMItem";
 import { CaretUpDown, MagnifyingGlass, X } from "@phosphor-icons/react";
 import CTAButton from "@/components/lib/CTAButton";
 import { useTranslation } from "react-i18next";
-
-const PROVIDERS = [
-  {
-    name: "OpenAI",
-    value: "openai",
-    logo: OpenAiLogo,
-    options: (settings) => <OpenAiWhisperOptions settings={settings} />,
-    description: "Leverage the OpenAI Whisper-large model using your API key.",
-  },
-  {
-    name: "AnythingLLM Built-In",
-    value: "local",
-    logo: AnythingLLMIcon,
-    options: (settings) => <NativeTranscriptionOptions settings={settings} />,
-    description: "Run a built-in whisper model on this instance privately.",
-  },
-];
+import useCustomAppName from "@/hooks/useCustomAppName";
 
 export default function TranscriptionModelPreference() {
+  const { brandName } = useCustomAppName();
+  const PROVIDERS = [
+    {
+      name: "OpenAI",
+      value: "openai",
+      logo: OpenAiLogo,
+      options: (settings) => <OpenAiWhisperOptions settings={settings} />,
+      description:
+        "Leverage the OpenAI Whisper-large model using your API key.",
+    },
+    {
+      name: `${brandName} Built-In`,
+      value: "local",
+      logo: AnythingLLMIcon,
+      options: (settings) => <NativeTranscriptionOptions settings={settings} />,
+      description: "Run a built-in whisper model on this instance privately.",
+    },
+  ];
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [settings, setSettings] = useState(null);

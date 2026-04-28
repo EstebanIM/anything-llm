@@ -127,8 +127,11 @@ export default function NewUserModal({ closeModal }) {
                 >
                   <option value="default">Default</option>
                   <option value="manager">Manager</option>
-                  {user?.role === "admin" && (
+                  {["admin", "superadmin"].includes(user?.role) && (
                     <option value="admin">Administrator</option>
+                  )}
+                  {user?.role === "superadmin" && (
+                    <option value="superadmin">Super Administrator</option>
                   )}
                 </select>
                 <RoleHintDisplay role={role} />

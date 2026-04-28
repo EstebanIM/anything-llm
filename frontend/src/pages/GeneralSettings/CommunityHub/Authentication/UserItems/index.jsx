@@ -3,8 +3,10 @@ import HubItemCard from "../../Trending/HubItems/HubItemCard";
 import { useUserItems } from "../useUserItems";
 import { HubItemCardSkeleton } from "../../Trending/HubItems";
 import { readableType } from "../../utils";
+import useCustomAppName from "@/hooks/useCustomAppName";
 
 export default function UserItems({ connectionKey }) {
+  const { brandName } = useCustomAppName();
   const { loading, userItems } = useUserItems({ connectionKey });
   const { createdByMe = {}, teamItems = [] } = userItems || {};
 
@@ -31,7 +33,7 @@ export default function UserItems({ connectionKey }) {
           </a>
         </div>
         <p className="text-xs leading-[18px] font-base text-white text-opacity-60">
-          Items you have created and shared publicly on the AnythingLLM
+          Items you have created and shared publicly on the {brandName}
           Community Hub.
         </p>
         <div className="flex flex-col gap-4 mt-4">

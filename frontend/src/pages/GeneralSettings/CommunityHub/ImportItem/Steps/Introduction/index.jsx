@@ -3,8 +3,10 @@ import CTAButton from "@/components/lib/CTAButton";
 import paths from "@/utils/paths";
 import showToast from "@/utils/toast";
 import { useState } from "react";
+import useCustomAppName from "@/hooks/useCustomAppName";
 
 export default function Introduction({ settings, setSettings, setStep }) {
+  const { brandName } = useCustomAppName();
   const [itemId, setItemId] = useState(settings.itemId);
   const handleContinue = () => {
     if (!itemId) return showToast("Please enter an item ID", "error");
@@ -25,9 +27,9 @@ export default function Introduction({ settings, setSettings, setStep }) {
               agent-skills, system prompts, slash commands, and more!
             </p>
             <p>
-              These items are created by the AnythingLLM team and community, and
-              are a great way to get started with AnythingLLM as well as extend
-              AnythingLLM in a way that is customized to your needs.
+              These items are created by the {brandName} team and community, and
+              are a great way to get started with {brandName} as well as extend{" "}
+              {brandName} in a way that is customized to your needs.
             </p>
             <p>
               There are both <b>private</b> and <b>public</b> items in the

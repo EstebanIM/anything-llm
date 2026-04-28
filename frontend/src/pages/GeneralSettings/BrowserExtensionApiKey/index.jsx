@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import Sidebar from "@/components/SettingsSidebar";
+import useCustomAppName from "@/hooks/useCustomAppName";
 import { isMobile } from "react-device-detect";
 import * as Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
@@ -14,6 +15,7 @@ import { fullApiUrl } from "@/utils/constants";
 import { Tooltip } from "react-tooltip";
 
 export default function BrowserExtensionApiKeys() {
+  const { brandName } = useCustomAppName();
   const [loading, setLoading] = useState(true);
   const [apiKeys, setApiKeys] = useState([]);
   const [error, setError] = useState(null);
@@ -54,8 +56,8 @@ export default function BrowserExtensionApiKeys() {
               </p>
             </div>
             <p className="text-xs leading-[18px] font-base text-theme-text-secondary mt-2">
-              Manage API keys for browser extensions connecting to your
-              AnythingLLM instance.
+              Manage API keys for browser extensions connecting to your{" "}
+              {brandName} instance.
             </p>
           </div>
           <div className="w-full justify-end flex">

@@ -3,8 +3,10 @@ import CommunityHubImportItemSteps from "../..";
 import showToast from "@/utils/toast";
 import paths from "@/utils/paths";
 import CommunityHub from "@/models/communityHub";
+import useCustomAppName from "@/hooks/useCustomAppName";
 
 export default function SlashCommand({ item, setStep }) {
+  const { brandName } = useCustomAppName();
   async function handleSubmit() {
     try {
       const { error } = await CommunityHub.applyItem(item.importId);
@@ -43,7 +45,7 @@ export default function SlashCommand({ item, setStep }) {
       <div className="flex flex-col gap-y-[25px] text-white/80 light:text-theme-text-secondary text-sm">
         <p>
           Slash commands are used to prefill information into a prompt while
-          chatting with a AnythingLLM workspace.
+          chatting with a {brandName} workspace.
           <br />
           <br />
           The slash command will be available during chatting by simply invoking

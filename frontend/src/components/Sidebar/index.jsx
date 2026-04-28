@@ -74,7 +74,7 @@ export default function Sidebar() {
                       <button
                         onClick={showNewFolderModal}
                         title="Nueva carpeta"
-                        className="flex items-center gap-x-2 w-full px-3 py-[5px] rounded-[4px] text-white/60 hover:text-white hover:bg-theme-sidebar-subitem-hover transition-colors duration-150 text-sm"
+                        className="flex items-center gap-x-2 w-full px-3 py-[5px] rounded-full text-white/60 hover:text-white light:text-slate-600 light:hover:text-slate-900 hover:bg-theme-sidebar-subitem-hover transition-colors duration-150 text-sm"
                       >
                         <FolderSimplePlus size={16} />
                         <span>Nueva carpeta</span>
@@ -219,7 +219,7 @@ function NewWorkspaceButton({ user, showNewWsModal }) {
     <div className="flex gap-x-2 items-center justify-between">
       <button
         onClick={showNewWsModal}
-        className="flex flex-grow w-[75%] h-[44px] gap-x-2 py-[5px] px-4 bg-white rounded-lg text-sidebar justify-center items-center hover:bg-opacity-80 transition-all duration-300"
+        className="flex flex-grow w-[75%] h-[44px] gap-x-2 py-[5px] px-4 bg-white rounded-full text-sidebar justify-center items-center hover:bg-opacity-80 transition-all duration-300"
       >
         <Plus className="h-5 w-5" />
         <p className="text-sidebar text-sm font-semibold">

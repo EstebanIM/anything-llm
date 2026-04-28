@@ -143,8 +143,11 @@ export default function EditUserModal({ currentUser, user, closeModal }) {
                 >
                   <option value="default">Default</option>
                   <option value="manager">Manager</option>
-                  {currentUser?.role === "admin" && (
+                  {["admin", "superadmin"].includes(currentUser?.role) && (
                     <option value="admin">Administrator</option>
+                  )}
+                  {currentUser?.role === "superadmin" && (
+                    <option value="superadmin">Super Administrator</option>
                   )}
                 </select>
                 <RoleHintDisplay role={role} />

@@ -8,6 +8,7 @@ import { useModal } from "@/hooks/useModal";
 import RecoveryCodeModal from "@/components/Modals/DisplayRecoveryCodeModal";
 import { useTranslation } from "react-i18next";
 import { t } from "i18next";
+import useCustomAppName from "@/hooks/useCustomAppName";
 
 const RecoveryForm = ({ onSubmit, setShowRecoveryForm }) => {
   const [username, setUsername] = useState("");
@@ -172,6 +173,7 @@ const ResetPasswordForm = ({ onSubmit }) => {
 
 export default function MultiUserAuth() {
   const { t } = useTranslation();
+  const { brandName } = useCustomAppName();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [recoveryCodes, setRecoveryCodes] = useState([]);
@@ -180,7 +182,6 @@ export default function MultiUserAuth() {
   const [token, setToken] = useState(null);
   const [showRecoveryForm, setShowRecoveryForm] = useState(false);
   const [showResetPasswordForm, setShowResetPasswordForm] = useState(false);
-  const [customAppName, setCustomAppName] = useState(null);
 
   const {
     isOpen: isRecoveryCodeModalOpen,
@@ -263,15 +264,6 @@ export default function MultiUserAuth() {
     }
   }, [downloadComplete, user, token]);
 
-  useEffect(() => {
-    const fetchCustomAppName = async () => {
-      const { appName } = await System.fetchCustomAppName();
-      setCustomAppName(appName || "");
-      setLoading(false);
-    };
-    fetchCustomAppName();
-  }, []);
-
   if (showRecoveryForm) {
     return (
       <RecoveryForm
@@ -297,7 +289,7 @@ export default function MultiUserAuth() {
               </h3>
             </div>
             <p className="text-zinc-400 light:text-zinc-600 text-sm text-center">
-              {t("login.sign-in", { appName: customAppName || "AnythingLLM" })}
+              {t("login.sign-in", { appName: brandName })}
             </p>
           </div>
         </div>

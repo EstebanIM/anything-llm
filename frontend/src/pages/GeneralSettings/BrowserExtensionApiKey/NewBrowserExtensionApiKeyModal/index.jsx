@@ -2,12 +2,14 @@ import React, { useEffect, useState } from "react";
 import { X } from "@phosphor-icons/react";
 import BrowserExtensionApiKey from "@/models/browserExtensionApiKey";
 import { fullApiUrl, POPUP_BROWSER_EXTENSION_EVENT } from "@/utils/constants";
+import useCustomAppName from "@/hooks/useCustomAppName";
 
 export default function NewBrowserExtensionApiKeyModal({
   closeModal,
   onSuccess,
   isMultiUser,
 }) {
+  const { brandName } = useCustomAppName();
   const [apiKey, setApiKey] = useState(null);
   const [error, setError] = useState(null);
   const [copied, setCopied] = useState(false);
@@ -84,11 +86,11 @@ export default function NewBrowserExtensionApiKeyModal({
                 </p>
               )}
               <p className="text-white text-opacity-60 text-xs md:text-sm">
-                After clicking "Create API Key", AnythingLLM will attempt to
+                After clicking "Create API Key", {brandName} will attempt to
                 connect to your browser extension automatically.
               </p>
               <p className="text-white text-opacity-60 text-xs md:text-sm">
-                If you see "Connected to AnythingLLM" in the extension, the
+                If you see "Connected to {brandName}" in the extension, the
                 connection was successful. If not, please copy the connection
                 string and paste it into the extension manually.
               </p>

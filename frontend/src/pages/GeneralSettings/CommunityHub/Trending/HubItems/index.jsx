@@ -5,6 +5,7 @@ import HubItemCard from "./HubItemCard";
 import * as Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import { readableType, typeToPath } from "../../utils";
+import useCustomAppName from "@/hooks/useCustomAppName";
 
 const DEFAULT_EXPLORE_ITEMS = {
   agentSkills: { items: [], hasMore: false, totalCount: 0 },
@@ -35,15 +36,16 @@ function useCommunityHubExploreItems() {
 }
 
 export default function HubItems() {
+  const { brandName } = useCustomAppName();
   const { loading, exploreItems } = useCommunityHubExploreItems();
   return (
     <div className="w-full flex flex-col gap-y-1 pb-6 pt-6">
       <div className="flex flex-col gap-y-2 mb-4">
         <p className="text-base font-semibold text-theme-text-primary">
-          Recently Added on AnythingLLM Community Hub
+          Recently Added on {brandName} Community Hub
         </p>
         <p className="text-xs text-theme-text-secondary">
-          Explore the latest additions to the AnythingLLM Community Hub
+          Explore the latest additions to the {brandName} Community Hub
         </p>
       </div>
       <HubCategory loading={loading} exploreItems={exploreItems} />

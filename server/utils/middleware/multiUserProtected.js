@@ -2,11 +2,12 @@ const { SystemSettings } = require("../../models/systemSettings");
 const { userFromSession } = require("../http");
 const ROLES = {
   all: "<all>",
+  superadmin: "superadmin",
   admin: "admin",
   manager: "manager",
   default: "default",
 };
-const DEFAULT_ROLES = [ROLES.admin, ROLES.admin];
+const DEFAULT_ROLES = [ROLES.superadmin, ROLES.admin];
 
 /**
  * Explicitly check that single user mode is enabled as well as that the
@@ -41,7 +42,8 @@ function strictMultiUserRoleValid(allowedRoles = DEFAULT_ROLES) {
 
     const user =
       response.locals?.user ?? (await userFromSession(request, response));
-    if (allowedRoles.includes(user?.role)) {
+    // superadmin always passes any role gate
+    if (user?.role === ROLES.superadmin || allowedRoles.includes(user?.role)) {
       next();
       return;
     }

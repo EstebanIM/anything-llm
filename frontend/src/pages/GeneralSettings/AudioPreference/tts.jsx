@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import System from "@/models/system";
+import useCustomAppName from "@/hooks/useCustomAppName";
 import showToast from "@/utils/toast";
 import LLMItem from "@/components/LLMSelection/LLMItem";
 import { CaretUpDown, MagnifyingGlass, X } from "@phosphor-icons/react";
@@ -56,6 +57,7 @@ const PROVIDERS = [
 ];
 
 export default function TextToSpeechProvider({ settings }) {
+  const { brandName } = useCustomAppName();
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -123,7 +125,7 @@ export default function TextToSpeechProvider({ settings }) {
           </div>
           <p className="text-xs leading-[18px] font-base text-white text-opacity-60">
             Here you can specify what kind of text-to-speech providers you would
-            want to use in your AnythingLLM experience. By default, we use the
+            want to use in your {brandName} experience. By default, we use the
             browser's built in support for these services, but you may want to
             use others.
           </p>

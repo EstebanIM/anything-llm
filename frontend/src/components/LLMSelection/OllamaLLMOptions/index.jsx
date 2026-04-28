@@ -5,8 +5,10 @@ import { CaretDown, CaretUp, Info, CircleNotch } from "@phosphor-icons/react";
 import useProviderEndpointAutoDiscovery from "@/hooks/useProviderEndpointAutoDiscovery";
 import { Tooltip } from "react-tooltip";
 import { Link } from "react-router-dom";
+import useCustomAppName from "@/hooks/useCustomAppName";
 
 export default function OllamaLLMOptions({ settings }) {
+  const { brandName } = useCustomAppName();
   const {
     autoDetecting: loading,
     basePath,
@@ -200,7 +202,7 @@ export default function OllamaLLMOptions({ settings }) {
                     tokens if the model supports more than that and no value is
                     specified.
                     <br /> <br />
-                    If an invalid value is entered, AnythingLLM will handle this
+                    If an invalid value is entered, {brandName} will handle this
                     for you so that chats do not fail.
                   </p>
                 </Tooltip>

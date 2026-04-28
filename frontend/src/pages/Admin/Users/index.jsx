@@ -145,7 +145,7 @@ export function RoleHintDisplay({ role }) {
 }
 
 export function MessageLimitInput({ enabled, limit, updateState, role }) {
-  if (role === "admin") return null;
+  if (["admin", "superadmin"].includes(role)) return null;
   return (
     <div className="mt-4 mb-8">
       <Toggle

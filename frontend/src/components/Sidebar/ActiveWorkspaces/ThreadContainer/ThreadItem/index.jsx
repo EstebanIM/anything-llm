@@ -71,7 +71,7 @@ export default function ThreadItem({
         className="h-full"
       />
       <div
-        className={`flex w-full items-center justify-between pr-2 group relative ${isActive ? "bg-[var(--theme-sidebar-thread-selected)] light:bg-blue-200" : "hover:bg-theme-sidebar-subitem-hover light:hover:bg-slate-300"} rounded-[4px]`}
+        className={`flex w-full items-center justify-between pr-2 group relative ${isActive ? "bg-[var(--theme-sidebar-thread-selected)] light:bg-blue-200" : "hover:bg-theme-sidebar-subitem-hover light:hover:bg-slate-300"} rounded-full`}
       >
         {thread.deleted ? (
           <div className="w-full flex justify-between">
@@ -259,12 +259,12 @@ function OptionsMenu({
   return (
     <div
       ref={menuRef}
-      className="absolute w-fit z-[20] top-[25px] right-[10px] bg-zinc-900 light:bg-theme-bg-sidebar light:border-[1px] light:border-theme-sidebar-border rounded-lg p-1"
+      className="absolute w-fit z-[20] top-[25px] right-[10px] bg-zinc-900 light:bg-theme-bg-sidebar light:border-[1px] light:border-theme-sidebar-border rounded-2xl p-1"
     >
       <button
         onClick={renameThread}
         type="button"
-        className="w-full rounded-md flex items-center p-2 gap-x-2 hover:bg-slate-500/20 text-slate-300 light:text-theme-text-primary"
+        className="w-full rounded-full flex items-center p-2 gap-x-2 hover:bg-slate-500/20 text-slate-300 light:text-theme-text-primary"
       >
         <PencilSimple size={18} />
         <p className="text-sm">Rename</p>
@@ -272,7 +272,7 @@ function OptionsMenu({
       <button
         onClick={handleDelete}
         type="button"
-        className="w-full rounded-md flex items-center p-2 gap-x-2 hover:bg-red-500/20 text-slate-300 light:text-theme-text-primary hover:text-red-100"
+        className="w-full rounded-full flex items-center p-2 gap-x-2 hover:bg-red-500/20 text-slate-300 light:text-theme-text-primary hover:text-red-100"
       >
         <Trash size={18} />
         <p className="text-sm">Delete Thread</p>

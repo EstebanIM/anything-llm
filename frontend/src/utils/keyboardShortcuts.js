@@ -121,7 +121,7 @@ function useKeyboardShortcuts() {
     // If there is a user and the user is not an admin do not register the event listener
     // since some of the shortcuts are only available in multi-user mode as admin
     const user = userFromStorage();
-    if (!!user && user?.role !== "admin") return;
+    if (!!user && !["admin", "superadmin"].includes(user?.role)) return;
     const cleanup = initKeyboardShortcuts();
 
     return () => cleanup();

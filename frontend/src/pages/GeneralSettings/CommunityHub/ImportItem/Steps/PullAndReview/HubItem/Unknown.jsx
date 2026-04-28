@@ -1,8 +1,10 @@
 import CTAButton from "@/components/lib/CTAButton";
 import CommunityHubImportItemSteps from "../..";
 import { Warning } from "@phosphor-icons/react";
+import useCustomAppName from "@/hooks/useCustomAppName";
 
 export default function UnknownItem({ item, setSettings, setStep }) {
+  const { brandName } = useCustomAppName();
   return (
     <div className="flex flex-col mt-4 gap-y-4">
       <div className="w-full flex items-center gap-x-2">
@@ -14,7 +16,7 @@ export default function UnknownItem({ item, setSettings, setStep }) {
       <div className="flex flex-col gap-y-[25px] text-white/80 text-sm">
         <p>
           We found an item in the community hub, but we don't know what it is or
-          it is not yet supported for import into AnythingLLM.
+          it is not yet supported for import into {brandName}.
         </p>
         <p>
           The item ID is: <b>{item.id}</b>

@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import Admin from "@/models/admin";
+import System from "@/models/system";
 import showToast from "@/utils/toast";
 import { useTranslation } from "react-i18next";
+import { DEFAULT_APP_NAME } from "@/utils/constants/brand";
 
 export default function CustomSiteSettings() {
   const { t } = useTranslation();
@@ -29,6 +31,7 @@ export default function CustomSiteSettings() {
       meta_page_title: settings.title ?? null,
       meta_page_favicon: settings.faviconUrl ?? null,
     });
+    window.localStorage.removeItem(System.cacheKeys.browserAppearance);
     showToast(
       "Site preferences updated! They will reflect on page reload.",
       "success",
@@ -63,7 +66,7 @@ export default function CustomSiteSettings() {
             name="meta_page_title"
             type="text"
             className="border-none bg-theme-settings-input-bg mt-2 text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-fit py-2 px-4"
-            placeholder="AnythingLLM | Your personal LLM trained on anything"
+            placeholder={`${DEFAULT_APP_NAME} | Your personal LLM trained on anything`}
             autoComplete="off"
             onChange={(e) => {
               setSettings((prev) => {
@@ -72,7 +75,7 @@ export default function CustomSiteSettings() {
             }}
             value={
               settings.title ??
-              "AnythingLLM | Your personal LLM trained on anything"
+              `${DEFAULT_APP_NAME} | Your personal LLM trained on anything`
             }
           />
         </div>

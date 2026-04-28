@@ -3,6 +3,8 @@ import System from "@/models/system";
 import showToast from "@/utils/toast";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { DEFAULT_APP_NAME } from "@/utils/constants/brand";
+import { setBrandName } from "@/i18n";
 
 export default function CustomAppName() {
   const { t } = useTranslation();
@@ -48,6 +50,7 @@ export default function CustomAppName() {
       setCustomAppName(custom_app_name);
       setOriginalAppName(custom_app_name);
       setHasChanges(false);
+      setBrandName(custom_app_name || DEFAULT_APP_NAME);
     }
   };
 
@@ -74,7 +77,7 @@ export default function CustomAppName() {
           name="customAppName"
           type="text"
           className="border-none bg-theme-settings-input-bg mt-2 text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-fit py-2 px-4"
-          placeholder="AnythingLLM"
+          placeholder={DEFAULT_APP_NAME}
           required={true}
           autoComplete="off"
           onChange={handleChange}
