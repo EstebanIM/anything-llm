@@ -15,6 +15,8 @@ import { Tooltip } from "react-tooltip";
 export default function LMStudioOptions({ settings, showAlert = false }) {
   const {
     autoDetecting: loading,
+    autoDetectAttempted,
+    autoDetectFailed,
     basePath,
     basePathValue,
     authToken,
@@ -26,6 +28,8 @@ export default function LMStudioOptions({ settings, showAlert = false }) {
     provider: "lmstudio",
     initialBasePath: settings?.LMStudioBasePath,
     ENDPOINTS: LMSTUDIO_COMMON_URLS,
+    discoveryTimeout: 5_000,
+    fallbackBasePath: LMSTUDIO_COMMON_URLS[0],
   });
 
   const [maxTokens, setMaxTokens] = useState(
@@ -111,16 +115,12 @@ export default function LMStudioOptions({ settings, showAlert = false }) {
                   className="text-theme-text-secondary animate-spin"
                 />
               ) : (
-                <>
-                  {!basePathValue.value && (
-                    <button
-                      onClick={handleAutoDetectClick}
-                      className="border-none bg-primary-button text-xs font-medium px-2 py-1 rounded-lg hover:bg-secondary hover:text-white shadow-[0_4px_14px_rgba(0,0,0,0.25)]"
-                    >
-                      Auto-Detect
-                    </button>
-                  )}
-                </>
+                <button
+                  onClick={handleAutoDetectClick}
+                  className="border-none bg-primary-button text-xs font-medium px-2 py-1 rounded-lg hover:bg-secondary hover:text-white shadow-[0_4px_14px_rgba(0,0,0,0.25)]"
+                >
+                  Auto-Detect
+                </button>
               )}
             </div>
             <input
@@ -135,6 +135,13 @@ export default function LMStudioOptions({ settings, showAlert = false }) {
               onChange={basePath.onChange}
               onBlur={basePath.onBlur}
             />
+            {autoDetectAttempted && autoDetectFailed && (
+              <p className="text-xs text-yellow-400 mt-1">
+                Could not auto-detect LM Studio. Make sure the server is
+                started in LM Studio&apos;s Developer tab and that it is
+                running on port 1234.
+              </p>
+            )}
           </div>
           <div className="flex flex-col w-60">
             <div className="flex items-center mb-2 gap-x-1">
@@ -227,24 +234,28 @@ export default function LMStudioOptions({ settings, showAlert = false }) {
 function LMStudioModelSelection({ settings, basePath = null, apiKey = null }) {
   const [customModels, setCustomModels] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
 
   useEffect(() => {
     async function findCustomModels() {
       if (!basePath) {
         setCustomModels([]);
+        setFetchError(null);
         setLoading(false);
         return;
       }
       setLoading(true);
       try {
-        const { models } = await System.customModels(
+        const { models, error } = await System.customModels(
           "lmstudio",
           apiKey,
           basePath
         );
+        setFetchError(error || null);
         setCustomModels(models || []);
       } catch (error) {
         console.error("Failed to fetch custom models:", error);
+        setFetchError("LMSTUDIO_UNREACHABLE");
         setCustomModels([]);
       }
       setLoading(false);
@@ -253,6 +264,7 @@ function LMStudioModelSelection({ settings, basePath = null, apiKey = null }) {
   }, [basePath, apiKey]);
 
   if (loading || customModels.length === 0) {
+    const noModelsLoaded = fetchError === "LMSTUDIO_NO_MODELS_LOADED";
     return (
       <div className="flex flex-col w-60">
         <div className="flex items-center mb-2 gap-x-1">
@@ -280,8 +292,9 @@ function LMStudioModelSelection({ settings, basePath = null, apiKey = null }) {
                 }}
               >
                 <p className="text-xs leading-[18px] font-base">
-                  Could not reach LM Studio. Verify the URL is correct and the
-                  LMStudio server is running and accessible.
+                  {noModelsLoaded
+                    ? "LM Studio server is reachable but no models are loaded. Load a model in the LM Studio app first."
+                    : "Could not reach LM Studio. Verify the URL is correct and the LMStudio server is running and accessible."}
                 </p>
               </Tooltip>
             </>
@@ -296,7 +309,9 @@ function LMStudioModelSelection({ settings, basePath = null, apiKey = null }) {
             {loading
               ? "--loading available models--"
               : !!basePath
-                ? "No models found"
+                ? noModelsLoaded
+                  ? "No models loaded in LM Studio"
+                  : "No models found"
                 : "Enter LM Studio URL first"}
           </option>
         </select>
