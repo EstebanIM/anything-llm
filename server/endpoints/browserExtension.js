@@ -200,7 +200,11 @@ function browserExtensionEndpoints(app) {
         const { id } = request.params;
         const user = await userFromSession(request, response);
 
-        if (multiUserMode(response) && user.role !== ROLES.admin) {
+        if (
+          multiUserMode(response) &&
+          user.role !== ROLES.admin &&
+          user.role !== ROLES.superadmin
+        ) {
           const apiKey = await BrowserExtensionApiKey.get({
             id: parseInt(id),
             user_id: user?.id,

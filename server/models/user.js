@@ -363,7 +363,12 @@ const User = {
    */
   canSendChat: async function (user) {
     const { ROLES } = require("../utils/middleware/multiUserProtected");
-    if (!user || user.dailyMessageLimit === null || user.role === ROLES.admin)
+    if (
+      !user ||
+      user.dailyMessageLimit === null ||
+      user.role === ROLES.admin ||
+      user.role === ROLES.superadmin
+    )
       return true;
 
     const { WorkspaceChats } = require("./workspaceChats");

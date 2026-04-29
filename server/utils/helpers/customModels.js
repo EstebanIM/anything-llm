@@ -352,18 +352,26 @@ async function getLMStudioModels(basePath = null, _apiKey = null) {
       ),
       apiKey: apiKey || null,
     });
-    const models = await openai.models
-      .list()
-      .then((results) => results.data)
-      .catch((e) => {
-        console.error(`LMStudio:listModels`, e.message);
-        return [];
+
+    let models = [];
+    try {
+      const results = await openai.models.list({
+        timeout: 6_000,
+        maxRetries: 0,
       });
+      models = results.data ?? [];
+    } catch (e) {
+      console.error(`LMStudio:listModels`, e.message);
+      return { models: [], error: "LMSTUDIO_UNREACHABLE" };
+    }
+
+    if (models.length === 0)
+      return { models: [], error: "LMSTUDIO_NO_MODELS_LOADED" };
 
     return { models, error: null };
   } catch (e) {
     console.error(`LMStudio:getLMStudioModels`, e.message);
-    return { models: [], error: "Could not fetch LMStudio Models" };
+    return { models: [], error: "LMSTUDIO_UNREACHABLE" };
   }
 }
 
