@@ -7,6 +7,8 @@ import { useModal } from "@/hooks/useModal";
 import RecoveryCodeModal from "@/components/Modals/DisplayRecoveryCodeModal";
 import { useTranslation } from "react-i18next";
 import useCustomAppName from "@/hooks/useCustomAppName";
+import { Key } from "@phosphor-icons/react";
+import { AuthError, AuthHeader, AuthInput, AuthSubmitButton } from "./AuthUI";
 
 export default function SingleUserAuth() {
   const { t } = useTranslation();
@@ -63,47 +65,31 @@ export default function SingleUserAuth() {
     <>
       <form
         onSubmit={handleLogin}
-        className="flex flex-col justify-center items-center"
+        className="flex w-full flex-col items-center"
       >
-        <div className="flex items-start justify-between pt-7 pb-9">
-          <div className="flex items-center flex-col gap-y-[18px] max-w-[300px]">
-            <div className="flex gap-x-1">
-              <h3 className="text-white light:text-slate-950 text-3xl leading-[28px] font-medium text-center white-space-nowrap block">
-                {t("login.multi-user.welcome")}
-              </h3>
-            </div>
-            <p className="text-zinc-400 light:text-zinc-600 text-sm text-center">
-              {t("login.sign-in", { appName: brandName })}
-            </p>
-          </div>
+        <AuthHeader
+          title={t("login.multi-user.welcome")}
+          description={t("login.sign-in", { appName: brandName })}
+        />
+        <div className="flex w-full flex-col gap-4">
+          <AuthInput
+            icon={Key}
+            label="Password"
+            name="password"
+            type="password"
+            required={true}
+            autoComplete="off"
+          />
+          <AuthError message={error} />
         </div>
-        <div className="w-full px-12">
-          <div className="w-full flex flex-col gap-y-3">
-            <div className="w-full flex flex-col gap-y-2">
-              <label className="text-zinc-300 light:text-slate-800 text-sm">
-                Password
-              </label>
-              <input
-                name="password"
-                type="password"
-                className="border-none bg-zinc-800 light:bg-slate-200 text-zinc-200 light:text-zinc-600 text-sm rounded-lg p-2.5 w-[300px] h-[34px] focus:outline-none focus:ring-1 focus:ring-sky-300"
-                required={true}
-                autoComplete="off"
-              />
-            </div>
-            {error && <p className="text-red-400 text-sm">Error: {error}</p>}
-          </div>
-        </div>
-        <div className="flex items-center px-12 mt-9 space-x-2 w-full flex-col gap-y-6">
-          <button
-            disabled={loading}
+        <div className="mt-4 w-full">
+          <AuthSubmitButton
+            loading={loading}
+            loadingText={t("login.multi-user.validating")}
             type="submit"
-            className="text-zinc-950 bg-white hover:bg-zinc-300 light:bg-sky-200 light:text-slate-950 light:hover:bg-sky-300 text-sm font-semibold rounded-lg border-primary-button h-[34px] w-full"
           >
-            {loading
-              ? t("login.multi-user.validating")
-              : t("login.multi-user.login")}
-          </button>
+            {t("login.multi-user.login")}
+          </AuthSubmitButton>
         </div>
       </form>
 
