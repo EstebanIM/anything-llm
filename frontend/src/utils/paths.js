@@ -52,8 +52,8 @@ export default {
   discord: () => {
     return "https://discord.com/invite/6UyHPeGZAC";
   },
-  docs: () => {
-    return "https://docs.anythingllm.com";
+  docs: (path = "") => {
+    return `https://docs.anythingllm.com${path}`;
   },
   chatModes: () => {
     return "https://docs.anythingllm.com/features/chat-modes";
@@ -172,6 +172,15 @@ export default {
     },
     telegram: () => {
       return `/settings/external-connections/telegram`;
+    },
+    scheduledJobs: () => {
+      return `/settings/scheduled-jobs`;
+    },
+    scheduledJobRuns: (jobId) => {
+      return `/settings/scheduled-jobs/${jobId}/runs`;
+    },
+    scheduledJobRunDetail: (jobId, runId) => {
+      return `/settings/scheduled-jobs/${jobId}/runs/${runId}`;
     },
   },
   agents: {

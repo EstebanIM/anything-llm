@@ -94,6 +94,7 @@ const TRANSLATIONS = {
     embeds: "Chat Embed",
     security: "Security",
     "event-logs": "Event Logs",
+    "scheduled-jobs": "Scheduled Jobs",
     privacy: "Privacy & Data",
     "ai-providers": "AI Providers",
     "agent-skills": "Agent Skills",
@@ -218,7 +219,7 @@ const TRANSLATIONS = {
     mode: {
       title: "Chat mode",
       automatic: {
-        title: "Auto",
+        title: "Agent",
         description:
           "will automatically use tools if the model and provider support native tool calling.<br />If native tooling is not supported, you will need to use the @agent command to use tools.",
       },
@@ -362,7 +363,7 @@ const TRANSLATIONS = {
         readActions: "Read Actions",
         writeActions: "Write Actions",
         warning:
-          "Filesystem access can be dangerous as it can modify or delete files. Please consult the <link>documentation</link> before enabling.",
+          "Filesystem access can be dangerous as it can modify or delete files. Please consult the <a>documentation</a> before enabling.",
         skills: {
           "read-text-file": {
             title: "Read File",
@@ -438,6 +439,299 @@ const TRANSLATIONS = {
             title: "Word Documents",
             description:
               "Create Word documents with basic styling and formatting",
+          },
+        },
+      },
+      gmail: {
+        title: "GMail",
+        description:
+          "Enable your agent to interact with Gmail - search emails, read threads, compose drafts, send emails, and manage your inbox. <a>Read the documentation</a>.",
+        multiUserWarning:
+          "Gmail integration is not available in multi-user mode for security reasons. Please disable multi-user mode to use this feature.",
+        configuration: "Gmail Configuration",
+        deploymentId: "Deployment ID",
+        deploymentIdHelp:
+          "The deployment ID from your Google Apps Script web app",
+        apiKey: "API Key",
+        apiKeyHelp:
+          "The API key you configured in your Google Apps Script deployment",
+        configurationRequired:
+          "Please configure the Deployment ID and API Key to enable Gmail skills.",
+        configured: "Configured",
+        searchSkills: "Search skills...",
+        noSkillsFound: "No skills match your search.",
+        categories: {
+          search: {
+            title: "Search & Read Emails",
+            description: "Search and read emails from your Gmail inbox",
+          },
+          drafts: {
+            title: "Draft Emails",
+            description: "Create, edit, and manage email drafts",
+          },
+          send: {
+            title: "Send & Reply to Emails",
+            description: "Send emails and reply to threads immediately",
+          },
+          threads: {
+            title: "Manage Email Threads",
+            description:
+              "Manage email threads - mark read/unread, archive, trash",
+          },
+          account: {
+            title: "Integration Statistics",
+            description: "View mailbox statistics and account information",
+          },
+        },
+        skills: {
+          getInbox: {
+            title: "Get Inbox",
+            description: "Streamlined way to get the inbox emails from Gmail",
+          },
+          search: {
+            title: "Search Emails",
+            description: "Search emails using Gmail query syntax",
+          },
+          readThread: {
+            title: "Read Thread",
+            description: "Read a full email thread by ID",
+          },
+          createDraft: {
+            title: "Create Draft",
+            description: "Create a new draft email",
+          },
+          createDraftReply: {
+            title: "Create Draft Reply",
+            description: "Create a draft reply to an existing thread",
+          },
+          updateDraft: {
+            title: "Update Draft",
+            description: "Update an existing draft email",
+          },
+          getDraft: {
+            title: "Get Draft",
+            description: "Retrieve a specific draft by ID",
+          },
+          listDrafts: {
+            title: "List Drafts",
+            description: "List all draft emails",
+          },
+          deleteDraft: {
+            title: "Delete Draft",
+            description: "Delete a draft email",
+          },
+          sendDraft: {
+            title: "Send Draft",
+            description: "Send an existing draft email",
+          },
+          sendEmail: {
+            title: "Send Email",
+            description: "Send an email immediately",
+          },
+          replyToThread: {
+            title: "Reply to Thread",
+            description: "Reply to an email thread immediately",
+          },
+          markRead: {
+            title: "Mark Read",
+            description: "Mark a thread as read",
+          },
+          markUnread: {
+            title: "Mark Unread",
+            description: "Mark a thread as unread",
+          },
+          moveToTrash: {
+            title: "Move to Trash",
+            description: "Move a thread to trash",
+          },
+          moveToArchive: {
+            title: "Archive",
+            description: "Archive a thread",
+          },
+          moveToInbox: {
+            title: "Move to Inbox",
+            description: "Move a thread to inbox",
+          },
+          getMailboxStats: {
+            title: "Mailbox Stats",
+            description: "Get unread counts and mailbox statistics",
+          },
+        },
+      },
+      googleCalendar: {
+        title: "Google Calendar",
+        description:
+          "Enable your agent to interact with Google Calendar - view calendars, get events, create and update events, and manage RSVPs. <a>Read the documentation</a>.",
+        multiUserWarning:
+          "Google Calendar integration is not available in multi-user mode for security reasons. Please disable multi-user mode to use this feature.",
+        configuration: "Google Calendar Configuration",
+        deploymentId: "Deployment ID",
+        deploymentIdHelp:
+          "The deployment ID from your Google Apps Script web app",
+        apiKey: "API Key",
+        apiKeyHelp:
+          "The API key you configured in your Google Apps Script deployment",
+        configurationRequired:
+          "Please configure the Deployment ID and API Key to enable Google Calendar skills.",
+        configured: "Configured",
+        searchSkills: "Search skills...",
+        noSkillsFound: "No skills match your search.",
+        categories: {
+          calendars: {
+            title: "Calendars",
+            description: "View and manage your Google Calendars",
+          },
+          readEvents: {
+            title: "Read Events",
+            description: "View and search calendar events",
+          },
+          writeEvents: {
+            title: "Create & Update Events",
+            description: "Create new events and modify existing ones",
+          },
+          rsvp: {
+            title: "RSVP Management",
+            description: "Manage your response status for events",
+          },
+        },
+        skills: {
+          listCalendars: {
+            title: "List Calendars",
+            description: "List all calendars you own or are subscribed to",
+          },
+          getCalendar: {
+            title: "Get Calendar Details",
+            description: "Get detailed information about a specific calendar",
+          },
+          getEvent: {
+            title: "Get Event",
+            description: "Get detailed information about a specific event",
+          },
+          getEventsForDay: {
+            title: "Get Events for Day",
+            description: "Get all events scheduled for a specific day",
+          },
+          getEvents: {
+            title: "Get Events (Date Range)",
+            description: "Get events within a custom date range",
+          },
+          getUpcomingEvents: {
+            title: "Get Upcoming Events",
+            description:
+              "Get events for today, this week, or this month using simple keywords",
+          },
+          quickAdd: {
+            title: "Quick Add Event",
+            description:
+              "Create an event from natural language (e.g., 'Meeting tomorrow at 3pm')",
+          },
+          createEvent: {
+            title: "Create Event",
+            description:
+              "Create a new event with full control over all properties",
+          },
+          updateEvent: {
+            title: "Update Event",
+            description: "Update an existing calendar event",
+          },
+          setMyStatus: {
+            title: "Set RSVP Status",
+            description: "Accept, decline, or tentatively accept an event",
+          },
+        },
+      },
+      outlook: {
+        title: "Outlook",
+        description:
+          "Enable your agent to interact with Microsoft Outlook - search emails, read threads, compose drafts, send emails, and manage your inbox via Microsoft Graph API. <a>Read the documentation</a>.",
+        multiUserWarning:
+          "Outlook integration is not available in multi-user mode for security reasons. Please disable multi-user mode to use this feature.",
+        configuration: "Outlook Configuration",
+        authType: "Account Type",
+        authTypeHelp:
+          "Choose which types of Microsoft accounts can authenticate. 'All accounts' supports both personal and work/school accounts. 'Personal only' restricts to personal Microsoft accounts. 'Organization only' restricts to work/school accounts from a specific Azure AD tenant.",
+        authTypeCommon: "All accounts (personal & work/school)",
+        authTypeConsumers: "Personal Microsoft accounts only",
+        authTypeOrganization: "Organization accounts only (requires Tenant ID)",
+        clientId: "Application (Client) ID",
+        clientIdHelp:
+          "The Application (Client) ID from your Azure AD app registration",
+        tenantId: "Directory (Tenant) ID",
+        tenantIdHelp:
+          "The Directory (Tenant) ID from your Azure AD app registration. Required only for organization-only authentication.",
+        clientSecret: "Client Secret",
+        clientSecretHelp:
+          "The client secret value from your Azure AD app registration",
+        configurationRequired:
+          "Please configure the Client ID and Client Secret to enable Outlook skills.",
+        authRequired:
+          "Save your credentials first, then authenticate with Microsoft to complete the setup.",
+        authenticateWithMicrosoft: "Authenticate with Microsoft",
+        authenticated: "Successfully authenticated with Microsoft Outlook.",
+        revokeAccess: "Revoke Access",
+        configured: "Configured",
+        searchSkills: "Search skills...",
+        noSkillsFound: "No skills match your search.",
+        categories: {
+          search: {
+            title: "Search & Read Emails",
+            description: "Search and read emails from your Outlook inbox",
+          },
+          drafts: {
+            title: "Draft Emails",
+            description: "Create, edit, and manage email drafts",
+          },
+          send: {
+            title: "Send Emails",
+            description: "Send new emails or reply to messages immediately",
+          },
+          account: {
+            title: "Integration Statistics",
+            description: "View mailbox statistics and account information",
+          },
+        },
+        skills: {
+          getInbox: {
+            title: "Get Inbox",
+            description: "Get recent emails from your Outlook inbox",
+          },
+          search: {
+            title: "Search Emails",
+            description: "Search emails using Microsoft Search syntax",
+          },
+          readThread: {
+            title: "Read Conversation",
+            description: "Read a full email conversation thread",
+          },
+          createDraft: {
+            title: "Create Draft",
+            description:
+              "Create a new draft email or draft reply to an existing message",
+          },
+          updateDraft: {
+            title: "Update Draft",
+            description: "Update an existing draft email",
+          },
+          listDrafts: {
+            title: "List Drafts",
+            description: "List all draft emails",
+          },
+          deleteDraft: {
+            title: "Delete Draft",
+            description: "Delete a draft email",
+          },
+          sendDraft: {
+            title: "Send Draft",
+            description: "Send an existing draft email",
+          },
+          sendEmail: {
+            title: "Send Email",
+            description:
+              "Send a new email or reply to an existing message immediately",
+          },
+          getMailboxStats: {
+            title: "Mailbox Stats",
+            description: "Get folder counts and mailbox statistics",
           },
         },
       },
@@ -591,7 +885,34 @@ const TRANSLATIONS = {
       "API keys allow the holder to programmatically access and manage this {{brandName}} instance.",
     link: "Read the API documentation",
     generate: "Generate New API Key",
+    empty: "No API keys found",
+    actions: "Actions",
+    messages: {
+      error: "Error: {{error}}",
+    },
+    modal: {
+      title: "Create new API key",
+      cancel: "Cancel",
+      close: "Close",
+      create: "Create API Key",
+      helper:
+        "Once created the API key can be used to programmatically access and configure this AnythingLLM instance.",
+      name: {
+        label: "Name",
+        placeholder: "Production integration",
+        helper:
+          "Optional. Use a friendly name so you can identify this key later.",
+      },
+    },
+    row: {
+      copy: "Copy API Key",
+      copied: "Copied",
+      unnamed: "--",
+      deleteConfirm:
+        "Are you sure you want to deactivate this api key?\nAfter you do this it will not longer be useable.\n\nThis action is irreversible.",
+    },
     table: {
+      name: "Name",
       key: "API Key",
       by: "Created By",
       created: "Created",
@@ -709,10 +1030,8 @@ const TRANSLATIONS = {
       step2: {
         title: "Step 2: Connect your bot",
         description:
-          "Paste the API token you received from @BotFather and select a default workspace for your bot to chat with.",
+          "Paste the API token you received from @BotFather to connect your bot.",
         "bot-token": "Bot Token",
-        "default-workspace": "Default Workspace",
-        "no-workspace": "No available workspaces. A new one will be created.",
         connecting: "Connecting...",
         "connect-bot": "Connect Bot",
       },
@@ -749,20 +1068,9 @@ const TRANSLATIONS = {
       "toast-revoke-failed": "Failed to revoke user.",
     },
     users: {
-      "pending-title": "Pending Approval",
       "pending-description":
         "Users waiting to be verified. Match the pairing code shown here with the one displayed in their Telegram chat.",
-      "approved-title": "Approved Users",
-      "approved-description":
-        "Users who have been approved to chat with your bot.",
-      user: "User",
-      "pairing-code": "Pairing Code",
-      "no-pending": "No pending requests",
-      "no-approved": "No approved users",
       unknown: "Unknown",
-      approve: "Approve",
-      deny: "Deny",
-      revoke: "Revoke",
     },
   },
   security: {
@@ -1050,6 +1358,12 @@ const TRANSLATIONS = {
     slash_commands: "Slash Commands",
     agent_skills: "Agent Skills",
     manage_agent_skills: "Manage Agent Skills",
+    app_integrations: "App Integrations",
+    custom_skills: "Custom Skills",
+    agent_flows: "Agent Flows",
+    sub_skills: "Sub-skills",
+    no_tools_found: "No matching tools found",
+    loading_mcp_servers: "Loading MCP servers...",
     start_agent_session: "Start Agent Session",
     agent_skills_disabled_in_session:
       "Can't modify skills during an active agent session. Use /exit to end the session first.",
@@ -1194,6 +1508,164 @@ const TRANSLATIONS = {
             "You need to authenticate with the {{brandName}} Community Hub before publishing items.",
           button: "Connect to Community Hub",
         },
+      },
+    },
+  },
+  scheduledJobs: {
+    title: "Scheduled Jobs",
+    enableNotifications: "Enable browser notifications for job results",
+    description:
+      "Create recurring AI tasks that run on a schedule. Each job runs a prompt with optional tools and saves the result for review.",
+    newJob: "New Job",
+    loading: "Loading...",
+    emptyTitle: "No Scheduled Jobs yet",
+    emptySubtitle: "Create one to get started.",
+    table: {
+      name: "Name",
+      schedule: "Schedule",
+      status: "Status",
+      lastRun: "Last Run",
+      nextRun: "Next Run",
+      actions: "Actions",
+    },
+    confirmDelete: "Are you sure you want to delete this scheduled job?",
+    status: {
+      completed: "Completed",
+      failed: "Failed",
+      timed_out: "Timed out",
+      running: "Running",
+      queued: "Queued",
+    },
+    toast: {
+      deleted: "Job deleted",
+      triggered: "Job triggered successfully",
+      triggerFailed: "Failed to trigger job",
+      triggerSkipped: "A run is already in progress for this job",
+      killed: "Job stopped successfully",
+      killFailed: "Failed to stop job",
+    },
+    row: {
+      neverRun: "Never run",
+      viewRuns: "View runs",
+      runNow: "Run now",
+      enable: "Enable",
+      disable: "Disable",
+      edit: "Edit",
+      delete: "Delete",
+    },
+    modal: {
+      titleEdit: "Edit Scheduled Job",
+      titleNew: "New Scheduled Job",
+      nameLabel: "Name",
+      namePlaceholder: "e.g. Daily News Digest",
+      promptLabel: "Prompt",
+      promptPlaceholder: "The instruction to run on each execution...",
+      scheduleLabel: "Schedule",
+      modeBuilder: "Builder",
+      modeCustom: "Custom",
+      cronPlaceholder: "Cron expression (e.g. 0 9 * * *)",
+      currentSchedule: "Current schedule:",
+      toolsLabel: "Tools (Optional)",
+      toolsDescription:
+        "Select which agent tools this job can use. If none are selected, the job runs without any tools.",
+      toolsSearch: "Search",
+      toolsNoResults: "No tools match",
+      required: "Required",
+      requiredFieldsBanner:
+        "Please fill out all required fields in order to create job.",
+      cancel: "Cancel",
+      saving: "Saving...",
+      updateJob: "Update Job",
+      createJob: "Create Job",
+      jobUpdated: "Job updated",
+      jobCreated: "Job created",
+    },
+    builder: {
+      fallbackWarning:
+        "This expression can't be edited visually. Switch to Custom to keep it, or change anything below to overwrite it.",
+      run: "Run",
+      frequency: {
+        minute: "every minute",
+        hour: "hourly",
+        day: "daily",
+        week: "weekly",
+        month: "monthly",
+      },
+      every: "Every",
+      minuteOne: "1 minute",
+      minuteOther: "{{count}} minutes",
+      atMinute: "At minute",
+      pastEveryHour: "past every hour",
+      at: "At",
+      on: "On",
+      onDay: "On day",
+      ofEveryMonth: "of every month",
+      weekdays: {
+        sun: "Sun",
+        mon: "Mon",
+        tue: "Tue",
+        wed: "Wed",
+        thu: "Thu",
+        fri: "Fri",
+        sat: "Sat",
+      },
+    },
+    runHistory: {
+      back: "Back to jobs",
+      title: "Run History: {{name}}",
+      schedule: "Schedule:",
+      emptyTitle: "No runs yet for this job",
+      emptySubtitle: "Run the job now and view its results.",
+      runNow: "Run Now",
+      stopJob: "Stop job",
+      table: {
+        status: "Status",
+        started: "Started",
+        duration: "Duration",
+        error: "Error",
+      },
+    },
+    runDetail: {
+      loading: "Loading run details...",
+      notFound: "Run not found.",
+      back: "Back",
+      unknownJob: "Unknown Job",
+      runHeading: "{{name}} — Run #{{id}}",
+      duration: "Duration: {{value}}",
+      continueInThread: "Continue in Chat",
+      creating: "Creating...",
+      threadFailed: "Failed to create thread",
+      stopJob: "Stop Job",
+      killing: "Stopping...",
+      sections: {
+        prompt: "Prompt",
+        error: "Error",
+        thinking: "Thoughts ({{count}})",
+        toolCalls: "Tool Calls ({{count}})",
+        files: "Files ({{count}})",
+        response: "Response",
+        metrics: "Metrics",
+      },
+      metrics: {
+        promptTokens: "Prompt tokens:",
+        completionTokens: "Completion tokens:",
+      },
+    },
+    toolCall: {
+      arguments: "Arguments:",
+      showResult: "Show result",
+      hideResult: "Hide result",
+    },
+    file: {
+      unknown: "Unknown file",
+      download: "Download",
+      downloadFailed: "Failed to download file",
+      types: {
+        powerpoint: "PowerPoint",
+        pdf: "PDF Document",
+        word: "Word Document",
+        spreadsheet: "Spreadsheet",
+        generic: "File",
       },
     },
   },

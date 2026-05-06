@@ -108,6 +108,7 @@ const TRANSLATIONS = {
     "available-channels": {
       telegram: "Telegram",
     },
+    "scheduled-jobs": "Planeeritud tööd",
   },
   login: {
     "multi-user": {
@@ -198,9 +199,9 @@ const TRANSLATIONS = {
           'teenib vastuseid <b> ainult__, kui dokumendi kontekst on leitav.</b> Vajate kasutama käitu "@agent", et kasutada tööriime.',
       },
       automatic: {
-        title: "Automaailm",
         description:
           'kasutab automaatselt tööriistu, kui mudel ja pakkuja toetavad native töörieste kasutamist. <br />Kui native töörieste kasutamine ei toeta, peate kasutama käsku "@agent", et tööriiste kasutada.',
+        title: "Esindaja",
       },
     },
     history: {
@@ -327,7 +328,7 @@ const TRANSLATIONS = {
         readActions: "Leia toimingud",
         writeActions: "Toimingud",
         warning:
-          "Failisüsteemi juurimine võib olla ohtlik, kuna see võib muuta või kustutada faile. Enne selle aktiveerimist, palun vaadake <link>dokumentatsiooni</link>.",
+          "Failisüsteemi juurimine võib olla ohtlik, kuna see võib muuta või kustutada faile. Enne selle aktiveerimist, palun vaadake <a>dokumentatsiooni</a>.",
         skills: {
           "read-text-file": {
             title: "Ava fail",
@@ -403,6 +404,306 @@ const TRANSLATIONS = {
             title: "Microsoft Word-failid",
             description:
               "Loo Microsoft Wordi dokumende, kasutades põhise stiili ja vormistuse",
+          },
+        },
+      },
+      gmail: {
+        title: "GMail-iga ühendamine",
+        description:
+          "Lase oma esindajal interakteeruda Gmailiga – otsida e-kirju, lugeda teemasid, luua esialgseid versioone, saatada e-kirju ja hallata oma postkasti. <a>Vaata dokumentatsiooni</a>.",
+        multiUserWarning:
+          "Gmaili integreerimine ei ole saadaval mitme kasutaja režiimis turvalisuse huvides. Palun deaktiveerige mitme kasutaja režiim, et kasutada seda funktsiooni.",
+        configuration: "Gmaili seadmine",
+        deploymentId: "Paigaldamis ID",
+        deploymentIdHelp: "Veebirakenduse Google Apps Scripti ID",
+        apiKey: "API võti",
+        apiKeyHelp:
+          "API võti, mida olete konfigureerinud oma Google Apps Scripti rakenduses.",
+        configurationRequired:
+          'Palun konfigureerige "Deployment ID" ja API võti, et Gmaili funktsionaalsus oleks aktiivne.',
+        configured: "Konfigureeritud",
+        searchSkills: "otsinguteadused...",
+        noSkillsFound: "Leidke ei leitud sobivaid oskusi teie otsingu põhjal.",
+        categories: {
+          search: {
+            title: "Leia ja luge e-kirju",
+            description: "Kutsutage ja looge Gmaili postkasti olevad e-kirjad",
+          },
+          drafts: {
+            title: "Esimesed kirjad",
+            description: "Loo, muuda ja hallata e-kirjade projekte",
+          },
+          send: {
+            title: "Saada ja vastata e-kirjadele",
+            description: "Saada e-kirju ja vastata teemades kohe",
+          },
+          threads: {
+            title: "Hallata e-kirjade seeriaid",
+            description:
+              "Hallata e-posti vestlusi – märgistada kui lugemata/lugemata, salvestada, kustutada",
+          },
+          account: {
+            title: "Integreerimise statistika",
+            description: "Vaata postkasti statistikat ja konto teavet.",
+          },
+        },
+        skills: {
+          search: {
+            title: "E-kirjade otsing",
+            description: "Kutse e-kirju Gmaili küsimismängu sintaksiga",
+          },
+          readThread: {
+            title: "Loe teemat",
+            description: "Vaata kogu e-kirjade sarja ID järgi",
+          },
+          createDraft: {
+            title: "Loo esialgne versioon",
+            description: "Loo uus e-posti eelnäide",
+          },
+          createDraftReply: {
+            title: "Loo esialgne vastus",
+            description: "Loo esialgne vastus olemasolevale teemale.",
+          },
+          updateDraft: {
+            title: "Väljaanne",
+            description: "Värskendada olemasolevat e-kirja projekti",
+          },
+          getDraft: {
+            title: "Vaata esialgne versioon",
+            description: "Taasta konkreetne versioon ID-täringuga",
+          },
+          listDrafts: {
+            title: "Esialgne versioon",
+            description: "Loeda kõik e-kirjade plaani",
+          },
+          deleteDraft: {
+            title: "Hüvata projekti",
+            description: "Hüvata e-kirja, mis on loodud",
+          },
+          sendDraft: {
+            title: "Saada projekti",
+            description: "Saada olemasolev e-kirja esialgne versioon",
+          },
+          sendEmail: {
+            title: "Saatke e-kiri",
+            description: "Saatke e-kiri kohe",
+          },
+          replyToThread: {
+            title: "Vastata teemale",
+            description: "Vasta e-posti teemale kohe",
+          },
+          markRead: {
+            title: "Mark Read",
+            description: "Märki, et teema on lugemata.",
+          },
+          markUnread: {
+            title: "Märgi kui vaatamata",
+            description: "Märki, et teema on lugemata",
+          },
+          moveToTrash: {
+            title: "Saada jäätmeteks",
+            description: "Liigu teema prügikasti",
+          },
+          moveToArchive: {
+            title: "Arhiiv",
+            description: "Salvatage teema",
+          },
+          moveToInbox: {
+            title: "Liiguta postkasti",
+            description: 'Liiga "Saadud" pildile',
+          },
+          getMailboxStats: {
+            title: "Postkasti statistika",
+            description:
+              "Vaata, mitu ebakirjutatud kirja on, ning postkasti statistikat.",
+          },
+          getInbox: {
+            title: "Ava postkasti",
+            description:
+              "Lihtne viis, kuidas saada Gmailist oma postkasti e-kirjad.",
+          },
+        },
+      },
+      outlook: {
+        title: "Outlooki ühineja",
+        description:
+          "Laske oma agentil interakteeruda Microsoft Outlookiga – otsida e-kirju, lugeda teemasid, luua esialgseid versioone, saata e-kirju ja hallata oma postkasti Microsoft Graph API kaudu. <a>Vaata dokumentatsiooni</a>.",
+        multiUserWarning:
+          "Outlooki integratsioon ei ole saadaval mitme kasutaja režiimis turvalisuse huvides. Palun deaktiveeri mitme kasutaja režiim, et kasutada seda funktsiooni.",
+        configuration: "Outlooki seadistamine",
+        authType: "Kontoti tüüp",
+        authTypeHelp:
+          'Valige, milliseid Microsofti kontode tüüpe saab autentida. "Kõik kontod" toetab nii isiklikke kui ka töö- või kooli kontode. " ainult isiklikud kontod" piirab kasutamise ainult isikliktega Microsofti kontodega. " ainult organisatsioonile kuuluvad kontod" piirab kasutamise ainult töö- või kooli kontodega, mis kuuluvad konkreetsele Azure AD kliendile.',
+        authTypeCommon: "Kõik kontod (personaalsed ja töö/kooli kontod)",
+        authTypeConsumers: "V ainult isiklikud Microsofti kontod",
+        authTypeOrganization:
+          "Vain organisatsioonide kontod (vajalik Rentniku ID)",
+        clientId: "Rakenduse (kliendi) ID",
+        clientIdHelp:
+          "Rakenduse (kliendi) ID, mis on teie Azure AD rakenduse registreerimisel saadud",
+        tenantId: "Kinnitusnumber (kasutaja)",
+        tenantIdHelp:
+          '"Kinnitusnumber (kasutaja) teie Azure AD rakenduse registreerimise kohta. Nii on vaja ainult organisatsioonide enda autentimiseks."',
+        clientSecret: "Klientide andmetest saadava teabe turvaandlik kood",
+        clientSecretHelp:
+          "Klientide andmevara, mis on saadaval teie Azure AD rakenduse registreerimisel",
+        configurationRequired:
+          "Palun konfigureerige kliendi ID ja kliendi salavai, et Outlooki funktsioonid oleksid saadaval.",
+        authRequired:
+          "Esiteks salvestage oma andmed, seejärel käivitage Microsoftiga autentimine, et lõpule viia seadistamine.",
+        authenticateWithMicrosoft:
+          "Veenduge, et olete Microsoftiga sisselogitud",
+        authenticated: "Eduka autentimine Microsoft Outlook-iga.",
+        revokeAccess: "Tõsta juurdepääsu kaotamine",
+        configured: "Konfigureeritud",
+        searchSkills: "otsinguteadused...",
+        noSkillsFound: "Sellele andmetele ei leitud sobivaid tulemusi.",
+        categories: {
+          search: {
+            title: "Abi otsimiseks ja e-kirjade lugemiseks",
+            description: "Kavatu ja loe oma Outlooki postkasti e-kirju",
+          },
+          drafts: {
+            title: "Esimesed kirjad",
+            description: "Loo, muuda ja hallata e-kirjade plaane",
+          },
+          send: {
+            title: "Saada e-kirju",
+            description: "Saada uusi e-kirju või vastata teatele kohe",
+          },
+          account: {
+            title: "Integreerimise statistika",
+            description: "Vaata postkasti statistikat ja kontoinformatsiooni",
+          },
+        },
+        skills: {
+          getInbox: {
+            title: "Ava postkasti",
+            description: "Vaata viimaseid e-kirju oma Outlook postkasti",
+          },
+          search: {
+            title: "E-kirjade otsing",
+            description: "Kõnede otsimiseks kasutage Microsofti otsingusünkt.",
+          },
+          readThread: {
+            title: "Loe vestluse",
+            description: "Vaata kogu e-kirjade vestluse täisteksti",
+          },
+          createDraft: {
+            title: "Loo esialgne versioon",
+            description:
+              "Loo uus e-kirja versioon või uus vastamine olemasolevale kirja kohta.",
+          },
+          updateDraft: {
+            title: "Versiooni uuendamine",
+            description: "Värskendada olemasolevat e-kirja versiooni",
+          },
+          listDrafts: {
+            title: "Esialgne versioon",
+            description: "Loeda kõik eelnevate kirjade nimekiri",
+          },
+          deleteDraft: {
+            title: "Hüvata projekti",
+            description: "Hüvida kirjalik e-kiri",
+          },
+          sendDraft: {
+            title: "Saada esialgne versioon",
+            description: "Saada olemasolev e-kirja esialgne versioon",
+          },
+          sendEmail: {
+            title: "Saada e-kiri",
+            description:
+              "Saada uus e-kiri või vastata olemasolevale sõnule kohe",
+          },
+          getMailboxStats: {
+            title: "Postkasti statistika",
+            description: "Vaata kaustade arvu ja postkasti statistikat",
+          },
+        },
+      },
+      googleCalendar: {
+        title: "Google Kalendri ühendaja",
+        description:
+          "Lisage oma esindajale võimalus interakteeruda Google Kalendriga – vaadake kalendreid, hankige sündmusi, looge ja uuendage sündmusi ning hallake vastuvõtuid. <a>Vaadake dokumentatsiooni</a>.",
+        multiUserWarning:
+          "Google Kalendri integreerimine ei ole saadaval mitme kasutaja režiimis turvalisuse huvides. Palun deaktiveeri mitme kasutaja režiim, et kasutada seda funktsiooni.",
+        configuration: "Google Kalendri seadistamine",
+        deploymentId: "Paigutuse ID",
+        deploymentIdHelp: "Veebirakenduse Google Apps Scripti ID",
+        apiKey: "API võtme",
+        apiKeyHelp:
+          "API võti, mida olete konfigureerinud oma Google Apps Scripti rakenduses.",
+        configurationRequired:
+          'Palun konfigureerige "Deployment ID" ja API võti, et Google Calendar funktsionaalsus oleks aktiivne.',
+        configured: "Konfigureeritud",
+        searchSkills: "otsinguteadused...",
+        noSkillsFound: "Sellele andmetele ei leitud sobivaid tulemusi.",
+        categories: {
+          calendars: {
+            title: "Kalendrid",
+            description: "Vaata ja hallata oma Google kalendeid",
+          },
+          readEvents: {
+            title: "Vaata üritusi",
+            description: "Vaata ja otsi kalendri sündmusi",
+          },
+          writeEvents: {
+            title: "Loo ja uuenda üritusi",
+            description: "Loo uusi üritusi ja muuda olemasolevaid",
+          },
+          rsvp: {
+            title: "Vabatahtlikkuse registreerimise juhtimine",
+            description: "Halda oma vastuse staatuse sündmustele",
+          },
+        },
+        skills: {
+          listCalendars: {
+            title: "Kalendrid",
+            description:
+              "Loole kõik kalendrid, mille te omate või millele olete registreeritud.",
+          },
+          getCalendar: {
+            title: "Hankige kalendri üksikasjad",
+            description:
+              "Hankige üksikasjalikke andmeid konkreetse kalendri kohta",
+          },
+          getEvent: {
+            title: "Saada ürituse info",
+            description:
+              "Hankige üksikasjalikku teavet konkreetse ürituse kohta",
+          },
+          getEventsForDay: {
+            title: "Leidke üritused selle päeva jaoks",
+            description:
+              "Vaata kõiki üritusi, mis on planeeritud konkreetsele päeval",
+          },
+          getEvents: {
+            title: "Leia üritused (aegraadi)",
+            description: "Võtke kokku sündmused spetsifitse ajaskaala pikkusel",
+          },
+          getUpcomingEvents: {
+            title: "Vaata tulevasi üritusi",
+            description:
+              "Leidke sündmused täna, selle nädala või selle kuuga, kasutades lihtsaid sõnu",
+          },
+          quickAdd: {
+            title: "Kiirelt sisse lisada",
+            description:
+              'Loo üritus loomuliku keele alusel (nt "Koosolek homme kell 15:00")',
+          },
+          createEvent: {
+            title: "Loo üritus",
+            description:
+              "Loo uus üritus, mis võimaldab kontrollida kõiki selle atribuute.",
+          },
+          updateEvent: {
+            title: "Täiendav info",
+            description: "Muuda olemasoleva kalendri sündmuse",
+          },
+          setMyStatus: {
+            title: "Määrake vastuvõtu staatus",
+            description:
+              "Mõne sündmuse kinnitamise, kehtestamise või esialgse kinnitamise.",
           },
         },
       },
@@ -550,7 +851,34 @@ const TRANSLATIONS = {
       "API võtmed võimaldavad programmipõhiselt hallata seda AnythingLLM instantsi.",
     link: "Loe API dokumentatsiooni",
     generate: "Genereeri uus API võti",
+    empty: "API võtmeid ei leitud",
+    actions: "Toimingud",
+    messages: {
+      error: "Viga: {{error}}",
+    },
+    modal: {
+      title: "Loo uus API võti",
+      cancel: "Tühista",
+      close: "Sulge",
+      create: "Loo API võti",
+      helper:
+        "Pärast loomist saab API võtit kasutada sellele AnythingLLM-i instantsile programmiga ligi pääsemiseks ja selle seadistamiseks.",
+      name: {
+        label: "Nimi",
+        placeholder: "Tootmiskeskkonna integratsioon",
+        helper:
+          "Valikuline. Kasuta sõbralikku nime, et saaksid võtme hiljem hõlpsasti ära tunda.",
+      },
+    },
+    row: {
+      copy: "Kopeeri API võti",
+      copied: "Kopeeritud",
+      unnamed: "--",
+      deleteConfirm:
+        "Kas soovite selle API võtme kindlasti deaktiveerida?\nPärast seda ei saa seda enam kasutada.\n\nSeda toimingut ei saa tagasi võtta.",
+    },
     table: {
+      name: "Nimi",
       key: "API võti",
       by: "Loonud",
       created: "Loodud",
@@ -920,6 +1248,12 @@ const TRANSLATIONS = {
       tool_call_was_approved: "Vahendite tellimuse kinnitati.",
       tool_call_was_rejected: "Vahendite taotlus jäeti rahuldamata.",
     },
+    custom_skills: "Kohandatud oskused",
+    agent_flows: "Agentide liiklus",
+    no_tools_found: "Välja ei leitud sobivaid tööriistu",
+    loading_mcp_servers: "MCP-serverite laadimine...",
+    app_integrations: "Rakenduste integreerimine",
+    sub_skills: "Alamspetsid",
   },
   profile_settings: {
     edit_account: "Muuda kontot",
@@ -1088,9 +1422,6 @@ const TRANSLATIONS = {
         description:
           "Kleepige API-token, mis teil on saanud kasutaja @BotFatherilt, ning valige oma botile vaikimõistmine.",
         "bot-token": "Bot token",
-        "default-workspace": "Vaikimisi kasutatav tööruum",
-        "no-workspace":
-          "Praegu pole saadaval vaba töökohti. Ühe uue töökohtade loomine on plaanis.",
         connecting: "Ühendamine...",
         "connect-bot": "Ühendusrobott",
       },
@@ -1129,20 +1460,169 @@ const TRANSLATIONS = {
       "toast-revoke-failed": "Ebaõnnestuti kasutaja konto kustutamises.",
     },
     users: {
-      "pending-title": "Ootea faasis, ootamas heakskiitu",
       "pending-description":
         "Kasutajad, kes ootavad kinnitamist. Võrdige siin näidatud vastuvõtusümboli koos nende Telegrami vestluses näidatud sümboliga.",
-      "approved-title": "Heakskiidud kasutajad",
-      "approved-description":
-        "Kasutajad, kellele on antud lubadus teie botiga vestelda.",
-      user: "Kasutaja",
-      "pairing-code": "Koosamis kood",
-      "no-pending": "Hetkel pole ootamisel ühtegi taotlust",
-      "no-approved": "Pole heakskiidud kasutajaid",
       unknown: "Tuntud pole",
-      approve: "Heakskiid",
-      deny: "Nõgata",
-      revoke: "Tingimata",
+    },
+  },
+  scheduledJobs: {
+    title: "Planeeritud tööd",
+    enableNotifications: "Aktiveeri braiseri teavitused tööväljundite kohta",
+    description:
+      "Loo korduvad AI-ülesanded, mis töötavad eeldatud ajakavaga. Iga ülesanne käitab promp, kasutades valikuvõimalusega tööriistu, ja salvestab tulemuse kontrollimiseks.",
+    newJob: "Uus töö",
+    loading: "Laadimine...",
+    emptyTitle: "Hetkel pole planeeritud tööde nimekirja.",
+    emptySubtitle: "Loo üks, et alustada.",
+    table: {
+      name: "Nimi",
+      schedule: "Ajavälja",
+      status: "Статус",
+      lastRun: "Viimne sõit",
+      nextRun: "Järgmine üritus",
+      actions: "Meetmed",
+    },
+    confirmDelete:
+      "Kas olete kindel, et soovite seda planeeritud tööd kustutada?",
+    toast: {
+      deleted: "Töö kustutatud",
+      triggered: "Töö on edukalt käivitunud.",
+      triggerFailed: "Ei õnnestunud töö käivitada",
+      triggerSkipped: "Töö on juba alguses.",
+      killed: "Töö lõpetati edukalt",
+      killFailed: "Edasi töötamist ei suutnud peatada",
+    },
+    row: {
+      neverRun: "Ära kunagi kiirusta",
+      viewRuns: "Vaatamise marsrid",
+      runNow: "Alustage kohe",
+      enable: "Aktiveerida",
+      disable: "Välja lülitada",
+      edit: "Redigeerimine",
+      delete: "Hüvida",
+    },
+    modal: {
+      titleEdit: "Muuda planeeritud tööd",
+      titleNew: "Uus planeeritud töö",
+      nameLabel: "Nimi",
+      namePlaceholder: "nt. Päevase uudiste kokkuvõte",
+      promptLabel: "Järgmis",
+      promptPlaceholder:
+        "Juhend, mis käsitleb programmi käivitamist iga kord, kui seda kasutatakse...",
+      scheduleLabel: "Ajavälja",
+      modeBuilder: "Ehitaj, ehitaja",
+      modeCustom: "Kohandatud",
+      cronPlaceholder: "Cron väljendus (näiteks 0 9 * * *)",
+      currentSchedule: "Praegune ajakava:",
+      toolsLabel: "Vahendid (valikuline)",
+      toolsDescription:
+        "Valige välja need agenti vahendid, mida see töö saab kasutada. Kui ühtki vahendit ei ole valitud, siis töö toimub ilma vahenditeta.",
+      toolsSearch: "otsing",
+      toolsNoResults: "Midagi sellist ei ole",
+      required: "Nõutav",
+      requiredFieldsBanner:
+        "Palun täitke kõik vajalikud väljad, et töö avaldamine oleks võimalik.",
+      cancel: "Katkuda",
+      saving: "Säästmine...",
+      updateJob: "Töö avaldamise uuendamine",
+      createJob: "Loo töökoht",
+      jobUpdated: "Töö on uuendatud",
+      jobCreated: "Töö loodud",
+    },
+    builder: {
+      fallbackWarning:
+        'See väljend ei ole võimalik muuta visuaalselt. Valige "Custom" režiim, et seda säilitada, või muutke allolevaid elemente, et seda asendada.',
+      run: "Jooksa",
+      frequency: {
+        minute: "iga minut",
+        hour: "iga tunn",
+        day: "iga päev",
+        week: "iga nädal",
+        month: "kuukohane",
+      },
+      every: "Igal",
+      minuteOne: "1 minut",
+      minuteOther: "{{count}} minut",
+      atMinute: "Minutil",
+      pastEveryHour: "iga tunni järel",
+      at: "Samal ajal",
+      on: "On",
+      onDay: "Ühel päeval",
+      ofEveryMonth: "iga kuu",
+      weekdays: {
+        sun: "Päev",
+        mon: "Päev",
+        tue: "teisipäev",
+        wed: "Keskpäev",
+        thu: "Reede",
+        fri: "Reede",
+        sat: "Laud",
+      },
+    },
+    runHistory: {
+      back: "Tagasi töökohtadele",
+      title: "Täitmise ajalugu: {{name}}",
+      schedule: "Ajavõrdlus:",
+      emptyTitle: "Hetkel pole selle töös midagi saavutatud.",
+      emptySubtitle: "Alustage tööd kohe ja vaadake selle tulemisi.",
+      runNow: "Alustage kohe",
+      table: {
+        status: "Статус",
+        started: "Algas",
+        duration: "Kestvus",
+        error: "Viga",
+      },
+      stopJob: "Töö peatamine",
+    },
+    runDetail: {
+      loading: "Laadimise ajal saadaval on sõidu üksikasjad...",
+      notFound: "Programm ei leitud.",
+      back: "Tagasi",
+      unknownJob: "Tuntmatu amet",
+      runHeading: "{{name}} — Üritus #{{id}}",
+      duration: "Kestvus: {{value}}",
+      creating: "Loomine...",
+      threadFailed: "Epäõnnes teema loomist",
+      sections: {
+        prompt: "Järgmis",
+        error: "Viga",
+        thinking: "Mõtisklused ({{count}})",
+        toolCalls: "Vahendite kutsumised ({{count}})",
+        files: "Failid ({{count}})",
+        response: "Vastus",
+        metrics: "Mõõdised",
+      },
+      metrics: {
+        promptTokens: "Algatusmärgid:",
+        completionTokens: "Lõpetamisandmed:",
+      },
+      stopJob: "Töö peatamine",
+      killing: "Peatumine...",
+      continueInThread: "Jätka vestluses",
+    },
+    toolCall: {
+      arguments: "Argumentid:",
+      showResult: "Näita tulemust",
+      hideResult: "Peida tulemus",
+    },
+    file: {
+      unknown: "Tuntmatu fail",
+      download: "Laadige alla",
+      downloadFailed: "Faili ei õnnestunud alla laadida",
+      types: {
+        powerpoint: "PowerPoint",
+        pdf: "PDF-dokumend",
+        word: "Dokumend",
+        spreadsheet: "Lehtaraken",
+        generic: "Fail",
+      },
+    },
+    status: {
+      completed: "Lõpitatud",
+      failed: "Epäõnnestunud",
+      timed_out: "Aja täitunud",
+      running: "Jooksmine",
+      queued: "Ootel",
     },
   },
 };

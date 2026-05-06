@@ -13,7 +13,10 @@ import useUser from "@/hooks/useUser";
 import ThreadContainer from "./ThreadContainer";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import showToast from "@/utils/toast";
-import { LAST_VISITED_WORKSPACE, WORKSPACE_FOLDERS_EXPANDED } from "@/utils/constants";
+import {
+  LAST_VISITED_WORKSPACE,
+  WORKSPACE_FOLDERS_EXPANDED,
+} from "@/utils/constants";
 import { safeJsonParse } from "@/utils/request";
 import FolderItem from "./FolderItem";
 
@@ -41,7 +44,7 @@ export default function ActiveWorkspaces() {
     setExpandedMap(map);
     try {
       localStorage.setItem(WORKSPACE_FOLDERS_EXPANDED, JSON.stringify(map));
-    } catch (_) {}
+    } catch {}
   };
 
   const toggleExpanded = useCallback(
@@ -175,9 +178,9 @@ export default function ActiveWorkspaces() {
     }
   };
 
-  // ─── Workspace card renderer ──────────────────────────────────────────────
+  // Workspace card renderer
 
-  const renderWorkspace = (workspace, index, droppableId) => {
+  const renderWorkspace = (workspace, index) => {
     const isVirtuallyActive = workspace.slug === virtualActiveSlug;
     const isActive = workspace.slug === slug || isVirtuallyActive;
     return (
@@ -197,9 +200,7 @@ export default function ActiveWorkspaces() {
           >
             <div className="flex gap-x-2 items-center justify-between">
               <a
-                href={
-                  isActive ? null : paths.workspace.chat(workspace.slug)
-                }
+                href={isActive ? null : paths.workspace.chat(workspace.slug)}
                 data-tooltip-id="workspace-name"
                 data-tooltip-content={workspace.name}
                 aria-current={isActive ? "page" : ""}
@@ -245,6 +246,8 @@ export default function ActiveWorkspaces() {
                           setSelectedWs(workspace);
                           showModal();
                         }}
+                        data-tooltip-id="upload-workspace"
+                        data-tooltip-content="Upload documents to this workspace for RAG indexing"
                         className={`group/upload border-none rounded-full flex items-center justify-center ml-auto p-[3px] ${isActive ? "hover:bg-zinc-500 light:hover:bg-sky-800/30" : "hover:bg-zinc-500 light:hover:bg-slate-400"}`}
                       >
                         <UploadSimple
@@ -265,6 +268,8 @@ export default function ActiveWorkspaces() {
                         }}
                         className={`group/gear rounded-full flex items-center justify-center ml-auto p-[3px] ${isActive ? "hover:bg-zinc-500 light:hover:bg-sky-800/30" : "hover:bg-zinc-500 light:hover:bg-slate-400"}`}
                         aria-label="General appearance settings"
+                        data-tooltip-id="gear-workspace"
+                        data-tooltip-content="General appearance settings"
                       >
                         <GearSix
                           color={
@@ -295,7 +300,11 @@ export default function ActiveWorkspaces() {
 
   return (
     <DragDropContext onDragEnd={onDragEnd} onDragUpdate={onDragUpdate}>
-      <div role="list" aria-label="Workspaces" className="flex flex-col gap-y-2">
+      <div
+        role="list"
+        aria-label="Workspaces"
+        className="flex flex-col gap-y-2"
+      >
         {/* Folders */}
         {tree.folders.map((folder) => (
           <FolderItem
@@ -318,11 +327,13 @@ export default function ActiveWorkspaces() {
               ref={provided.innerRef}
               {...provided.droppableProps}
               className={`flex flex-col gap-y-2 min-h-[4px] rounded-2xl transition-colors duration-150 ${
-                snapshot.isDraggingOver ? "bg-white/5 light:bg-slate-300/40" : ""
+                snapshot.isDraggingOver
+                  ? "bg-white/5 light:bg-slate-300/40"
+                  : ""
               }`}
             >
               {tree.workspaces.map((workspace, index) =>
-                renderWorkspace(workspace, index, "root")
+                renderWorkspace(workspace, index)
               )}
               {provided.placeholder}
             </div>
@@ -391,7 +402,15 @@ function reorderInFolders(folders, folderId, startIndex, endIndex) {
       updated.splice(endIndex, 0, removed);
       return { ...f, workspaces: updated };
     }
-    return { ...f, children: reorderInFolders(f.children || [], folderId, startIndex, endIndex) };
+    return {
+      ...f,
+      children: reorderInFolders(
+        f.children || [],
+        folderId,
+        startIndex,
+        endIndex
+      ),
+    };
   });
 }
 
@@ -399,7 +418,10 @@ function moveWorkspaceInTree(tree, wsId, targetFolderId, destIndex) {
   // Remove workspace from wherever it is
   let movedWs = null;
   const newRootWorkspaces = tree.workspaces.filter((w) => {
-    if (w.id === wsId) { movedWs = w; return false; }
+    if (w.id === wsId) {
+      movedWs = w;
+      return false;
+    }
     return true;
   });
   const newFolders = removeFromFolders(tree.folders, wsId, (ws) => {
@@ -423,7 +445,10 @@ function moveWorkspaceInTree(tree, wsId, targetFolderId, destIndex) {
 function removeFromFolders(folders, wsId, onFound) {
   return folders.map((f) => {
     const newWorkspaces = f.workspaces.filter((w) => {
-      if (w.id === wsId) { onFound(w); return false; }
+      if (w.id === wsId) {
+        onFound(w);
+        return false;
+      }
       return true;
     });
     return {
@@ -441,6 +466,9 @@ function insertIntoFolder(folders, folderId, workspace, index) {
       updated.splice(index, 0, workspace);
       return { ...f, workspaces: updated };
     }
-    return { ...f, children: insertIntoFolder(f.children || [], folderId, workspace, index) };
+    return {
+      ...f,
+      children: insertIntoFolder(f.children || [], folderId, workspace, index),
+    };
   });
 }

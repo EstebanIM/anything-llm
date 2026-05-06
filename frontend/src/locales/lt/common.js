@@ -115,6 +115,7 @@ const TRANSLATIONS = {
     "available-channels": {
       telegram: "„Telegram“",
     },
+    "scheduled-jobs": "Planuojami darbai",
   },
   login: {
     "multi-user": {
@@ -197,9 +198,9 @@ const TRANSLATIONS = {
     mode: {
       title: "Pokalbio režimas",
       automatic: {
-        title: "Auto",
         description:
           'automatiškai naudosis įrankiais, jei modelis ir paslaugos teikėjas palaiko įrankių vadovavimą. <br />Jei įrankių vadovavimas nepaliekamas, jums reikės naudoti "@agent" komandą, kad galėtumėte naudoti įrankius.',
+        title: "Agentas",
       },
       chat: {
         title: "Pokalbis",
@@ -343,7 +344,7 @@ const TRANSLATIONS = {
         readActions: "Veikimas",
         writeActions: "Veikimas",
         warning:
-          "Failų sistemos prieigos vartymas gali būti pavojus, nes gali modifikuoti arba ištrinti failus. Prašome, prieš įgalindami, pasikonsultuoti su <link>dokumentacija</link>.",
+          "Failų sistemos prieigos vartymas gali būti pavojus, nes gali modifikuoti arba ištrinti failus. Prašome, prieš įgalindami, pasikonsultuoti su <a>dokumentacija</a>.",
         skills: {
           "read-text-file": {
             title: "Atidaryti failą",
@@ -419,6 +420,312 @@ const TRANSLATIONS = {
             title: "Skelbimo dokumentai",
             description:
               "Sukurkite Word dokumentus su pagrindine stiliavimo ir formavimo funkcija.",
+          },
+        },
+      },
+      gmail: {
+        title: "GMail sąsaja",
+        description:
+          "Įgalinkite savo agentą, kad galėtų interaktuoti su Gmail – ieškoti pašto žinučių, skaityti pokalbius, kurti projekte, siųsti pašto žinučių ir valdyti savo pašto dėžę. <a>Peržiūrėkite dokumentaciją</a>.",
+        multiUserWarning:
+          "„Gmail“ integracija negali būti naudojama kelių vartotojų režimu dėl saugumo priežasčių. Norėdami naudoti šią funkciją, prašome išjungti kelių vartotojų režimą.",
+        configuration: "Gmail konfigūracija",
+        deploymentId: "Įrenginio ID",
+        deploymentIdHelp: "Jūsų „Google Apps Script“ svetainės programos ID",
+        apiKey: "API raktas",
+        apiKeyHelp:
+          "„API“ raktas, kurį konfigūruojate savo „Google Apps Script“ programoje.",
+        configurationRequired:
+          "Prašome nustatyti „Deployment ID“ ir API raktą, kad būtų įgalintos Gmail funkcijos.",
+        configured: "Nustatytas",
+        searchSkills: "Paieškos įgūdžiai...",
+        noSkillsFound: "Nėra atitikčių jūsų paieškos kriterijams.",
+        categories: {
+          search: {
+            title: "Paieškos ir skaitymas el. paštą",
+            description:
+              "Paieškokite ir skaitykite el. laiimus iš savo „Gmail“ sąrašo",
+          },
+          drafts: {
+            title: "Pagalbos el. pašto rašto projektai",
+            description: "Sukurkite, redaguo, ir valdykite el. pašto rašinius.",
+          },
+          send: {
+            title: "Siųstis ir atsakyti el. pašto žinutėms",
+            description:
+              "Siųkite el. pašto žinutes ir atsakykite į diskusijų siužus nedelsiant.",
+          },
+          threads: {
+            title: "Valdykite el. pašto žinias",
+            description:
+              "Valdykite el. pašto žinias – pažymėkite kaip „perskaityta“ arba „neperskaityta“, archyvuokite, ištrinkite.",
+          },
+          account: {
+            title: "Integracijos statistika",
+            description:
+              "Peržiūrėkite pašto dėžės statistikos ir sąskaitos informaciją.",
+          },
+        },
+        skills: {
+          search: {
+            title: "Paieškos el. paštu",
+            description:
+              "Paieškokite el. laiimus naudodami Gmail paieškos sintaksę",
+          },
+          readThread: {
+            title: "Peržiūrėti temą",
+            description: "Peržiūrėkite visą el. pašto seką pagal ID.",
+          },
+          createDraft: {
+            title: "Sukurti projekto variantą",
+            description: "Sukurkite naują el. pašto projekto variantą",
+          },
+          createDraftReply: {
+            title: "Sukurti projekto atsakymą",
+            description: "Sukurkite atsakinimo projektą esamai temai.",
+          },
+          updateDraft: {
+            title: "Paskaitos projekto atnaujinimas",
+            description: "Atnaujinti esamą el. pašto projekto",
+          },
+          getDraft: {
+            title: "Gaukite projekto variantą",
+            description: "Gauti konkretų variantą pagal ID",
+          },
+          listDrafts: {
+            title: "Paskaitų planas",
+            description: "Įrašykite visus suvestus el. pašto projektus",
+          },
+          deleteDraft: {
+            title: "Ištrinkti projekto",
+            description: "Ištrinkite projekto el. laišką",
+          },
+          sendDraft: {
+            title: "Siųstis projekto",
+            description: "Siųstis esamą el. pašto projekto",
+          },
+          sendEmail: {
+            title: "Siųstis el. pašto laišką",
+            description: "Nurodyti el. pašto žinutę nedelsiant",
+          },
+          replyToThread: {
+            title: "Atsakymas į temą",
+            description: "Atsakyti į el. pašto žinią nedelsiant",
+          },
+          markRead: {
+            title: "Markas Redas",
+            description: "Žymkite temą kaip perskaitytą",
+          },
+          markUnread: {
+            title: "Žymėti kaip neperskaityta",
+            description: "Žymkite temą kaip neperskaitytą",
+          },
+          moveToTrash: {
+            title: "Perkelti į šiukšlių sąvartą",
+            description: "Perkelkite temą į šiukšlių sąsandynę",
+          },
+          moveToArchive: {
+            title: "Archivų",
+            description: "Įrašyti temą į archyvą",
+          },
+          moveToInbox: {
+            title: "Perkelkite į „Įvesalą“",
+            description: "Perkelti temą į pašto dėžę",
+          },
+          getMailboxStats: {
+            title: "Pašto dėžės statistika",
+            description:
+              "Gaukite neatsakytų žinučių skaičių ir pašto dėžės statistikos duomenis.",
+          },
+          getInbox: {
+            title: "Peržiūrėti laiškų dėžę",
+            description: "Efektyvus būdas gauti el. laiškus iš „Gmail“ sąrašo",
+          },
+        },
+      },
+      outlook: {
+        title: "„Outlook“ integracija",
+        description:
+          "Įgalinkite savo agentą, kad galėtų bendrauti su „Microsoft Outlook“ – ieškoti pašto, skaityti pokalbį, kurti projektus, siųsti paštą ir valdyti savo pašto dėžę per „Microsoft Graph“ API. <a>Peržiūrėkite dokumentaciją</a>.",
+        multiUserWarning:
+          "„Outlook“ integracija negalima naudoti kelių vartotojų režimu dėl saugumo priežasčių. Norėdami naudoti šią funkciją, prašome išjungti kelių vartotojų režimą.",
+        configuration: "Outlook konfigūracija",
+        authType: "Sąskaitos tipas",
+        authTypeHelp:
+          "Pasirinkite, kokie Microsoft sąskaitos gali būti patvirtintos. „Visi“ palaiko tiek asmenines, tiek darbo/mokyklos sąskaitas. „Tik asmeninės“ riboja pasirinkimą iki asmeninių Microsoft sąskaitų. „Tik organizacijos“ riboja pasirinkimą iki darbo/mokyklos sąskaitų iš konkretaus „Azure AD“ kliento.",
+        authTypeCommon: "Visos sąskaitos (asmeninės ir darbo/mokyklos)",
+        authTypeConsumers: "Tiesiog asmeninės Microsoft paskyros",
+        authTypeOrganization:
+          "Tiesiog organizacijos sąskaitos (reikia užpildyti „Užimtojo ID“ laukelį)",
+        clientId: "Programos (kliento) ID",
+        clientIdHelp:
+          "Programos (kliento) ID, gautas iš jūsų „Azure AD“ programos registracijos",
+        tenantId: "Identifikavimo numeris (nuomininkas)",
+        tenantIdHelp:
+          "„Tenant“ ID iš jūsų „Azure AD“ programos registracijos. Reikalingas tik, jei autentifikacija vykdoma tik organizacijos naudotojams.",
+        clientSecret: "Kliento slaptas kodas",
+        clientSecretHelp:
+          "Kliento paslaptas reikalas, gautas iš jūsų „Azure AD“ programos registracijos",
+        configurationRequired:
+          "Prašome nustatyti kliento ID ir kliento slaptažodį, kad būtų įgalintos Outlook funkcijos.",
+        authRequired:
+          "Pirmiausia, išsaugokite savo duomenis, o tada, kad užbaigtumėte konfigūraciją, prisijunkite prie „Microsoft“.",
+        authenticateWithMicrosoft: "Patvirtinkite naudodami Microsoft",
+        authenticated: "Sėkmingai prisijungta prie „Microsoft Outlook“.",
+        revokeAccess: "Atšalinti prieigą",
+        configured: "Nustatytas",
+        searchSkills: "Paieškos įgūdžiai...",
+        noSkillsFound: "Nėra atitikčių jūsų paieškai.",
+        categories: {
+          search: {
+            title: "Paieškos ir skaitymas el. paštą",
+            description:
+              "Paieškokite ir skaitykite el. pašto laiškus iš savo Outlook sąrašo",
+          },
+          drafts: {
+            title: "Pasiūlytų el. pašto laiškų",
+            description: "Sukurkite, redaguo, ir valdykite el. pašto rašinius.",
+          },
+          send: {
+            title: "Siųstis el. pašto žinutes",
+            description:
+              "Siųkite naujus el. laiškus arba atsakykite į pranešimus nedelskant",
+          },
+          account: {
+            title: "Integracijos statistika",
+            description:
+              "Peržiūrėkite pašto dėžės statistikos ir sąskaitos informaciją.",
+          },
+        },
+        skills: {
+          getInbox: {
+            title: "Peržiūrėti pašto dėžę",
+            description:
+              "Gaukite naujausius el. pašto laiškus iš savo Outlook sąvejos.",
+          },
+          search: {
+            title: "Paieškos el. paštu",
+            description:
+              "Paieškokite el. laiškus naudodami „Microsoft Search“ sintaksę.",
+          },
+          readThread: {
+            title: "Perskaitykite pokalbį",
+            description: "Perskaitykite visą el. pašto pokalbio seką.",
+          },
+          createDraft: {
+            title: "Sukurti projekto variantą",
+            description:
+              "Sukurkite naują el. pašto projekto arba atsakymo projekto į esamą pranešimą.",
+          },
+          updateDraft: {
+            title: "Paskaitos projekto atnaujinimas",
+            description: "Atnaujinkite esamą el. pašto projekto",
+          },
+          listDrafts: {
+            title: "Paskaitų planas",
+            description: "Parodykite visus projekto el. laiškus",
+          },
+          deleteDraft: {
+            title: "Ištrinkti projekto",
+            description: "Ištrinkite projekto el. laišką",
+          },
+          sendDraft: {
+            title: "Siųstis projekto",
+            description: "Siųstis jau esančią el. pašto projekto versiją",
+          },
+          sendEmail: {
+            title: "Siųstis el. paštą",
+            description:
+              "Siųstinkite naują el. laišką arba atsakykite į esamą pranešimą nedelsdami.",
+          },
+          getMailboxStats: {
+            title: "Pašto dėžės statistika",
+            description:
+              "Gaukite folderių skaičius ir pašto dėžutės statistikos duomenis.",
+          },
+        },
+      },
+      googleCalendar: {
+        title: "„Google Kalendoriaus“ integracija",
+        description:
+          "Įgalinkite savo agentą, kad galėtų bendradarbiauti su „Google Calendar“ – peržiūrėti kalendorius, gauti renginių informaciją, kurti ir atnaujinti renginius bei tvarkyti patvirtimus. <a>Peržiūrėkite dokumentaciją</a>.",
+        multiUserWarning:
+          "„Google Kalendro“ integracija negali būti naudojama kelių vartotojų režimu dėl saugumo priežasčių. Norėdami naudoti šią funkciją, prašome išjungti kelių vartotojų režimą.",
+        configuration: "„Google Kalendoriaus“ konfigūracija",
+        deploymentId: "Įrenginio ID",
+        deploymentIdHelp: "Jūsų „Google Apps Script“ svetainės programos ID",
+        apiKey: "API raktas",
+        apiKeyHelp:
+          "„API raktas“, kurį konfigūravoje savo „Google Apps Script“ programoje.",
+        configurationRequired:
+          "Prašome nustatyti „Deployment ID“ ir API raktą, kad būtų įgalintos „Google Calendar“ funkcijos.",
+        configured: "Nustatytas",
+        searchSkills: "Paieškos įgūdžiai...",
+        noSkillsFound: "Nėra atitikčių jūsų paieškos kriterijams.",
+        categories: {
+          calendars: {
+            title: "Kalendoriai",
+            description: "Peržiūrėkite ir valdykite savo „Google Kalendorius“.",
+          },
+          readEvents: {
+            title: "Peržiūrėti renginius",
+            description: "Peržiūrėkite ir paieškokite kalendoriaus renginių",
+          },
+          writeEvents: {
+            title: "Sukurkite ir atnaujinkite renginius",
+            description: "Sukurkite naujas renginius ir keičkite esamus",
+          },
+          rsvp: {
+            title: "Patvirtinimų valdymas",
+            description: "Valdykite savo atsakymo statusą renginiams",
+          },
+        },
+        skills: {
+          listCalendars: {
+            title: "Kalendoriai",
+            description:
+              "Peržiūrėkite visus kalendorius, kuriuos turite arba kuriems yra prenumerata.",
+          },
+          getCalendar: {
+            title: "Gaukite kalendoriaus detales",
+            description:
+              "Gaukite išsamią informaciją apie konkrečią kalendorių",
+          },
+          getEvent: {
+            title: "Gaukite renginį",
+            description: "Gaukite išsamią informaciją apie konkrečią renginį",
+          },
+          getEventsForDay: {
+            title: "Rasti renginius šiam dienai",
+            description: "Gaukite visus įvykius, numatytus konkrečią dieną.",
+          },
+          getEvents: {
+            title: "Rodyti renginius (laiko intervalas)",
+            description: "Gauti renginius už nurodytą datų intervalą",
+          },
+          getUpcomingEvents: {
+            title: "Peržiūrėti ateinančias renginius",
+            description:
+              "Raskite renginius šiandien, šią savaitę arba šį mėnesį naudodami paprastus žodžius.",
+          },
+          quickAdd: {
+            title: "Greitas renginio pridėjimas",
+            description:
+              "Sukurkite renginį iš natūralios kalbos (pvz., „Susitikimas rytoj 15:00 val.“)",
+          },
+          createEvent: {
+            title: "Sukurti renginį",
+            description:
+              "Sukurkite naują renginį, turėdami visišką kontrolę per visas jo savybes.",
+          },
+          updateEvent: {
+            title: "Paskelbimo atnaujinimas",
+            description: "Redaguoti esamą kalendoriaus renginį",
+          },
+          setMyStatus: {
+            title: "Nurodykite atsakymo statusą",
+            description:
+              "Prisitaikyti, atsisakyti arba iš esmės pritarti renginiui.",
           },
         },
       },
@@ -571,7 +878,34 @@ const TRANSLATIONS = {
       "API raktai leidžia programiškai pasiekti ir valdyti šią AnythingLLM instanciją.",
     link: "Skaityti API dokumentaciją",
     generate: "Generuoti naują API raktą",
+    empty: "API raktų nerasta",
+    actions: "Veiksmai",
+    messages: {
+      error: "Klaida: {{error}}",
+    },
+    modal: {
+      title: "Sukurti naują API raktą",
+      cancel: "Atšaukti",
+      close: "Uždaryti",
+      create: "Sukurti API raktą",
+      helper:
+        "Sukūrus API raktą, jį galima naudoti programiškai pasiekti ir konfigūruoti šį AnythingLLM egzempliorių.",
+      name: {
+        label: "Pavadinimas",
+        placeholder: "Produkcinė integracija",
+        helper:
+          "Neprivaloma. Naudokite aiškų pavadinimą, kad vėliau lengvai atpažintumėte šį raktą.",
+      },
+    },
+    row: {
+      copy: "Kopijuoti API raktą",
+      copied: "Nukopijuota",
+      unnamed: "--",
+      deleteConfirm:
+        "Ar tikrai norite išjungti šį API raktą?\nPo to jo nebebus galima naudoti.\n\nŠio veiksmo atšaukti negalima.",
+    },
     table: {
+      name: "Pavadinimas",
       key: "API raktas",
       by: "Sukūrė",
       created: "Sukurta",
@@ -979,6 +1313,12 @@ const TRANSLATIONS = {
       tool_call_was_approved: "Įrankių užsakymas buvo patvirtintas.",
       tool_call_was_rejected: "Klausimas dėl įrankio buvo atmetamas.",
     },
+    custom_skills: "Individualūs įgūdžiai",
+    agent_flows: "Agentų srautai",
+    no_tools_found: "Nėra rasti atitikusių įrankių.",
+    loading_mcp_servers: "Įkrauname MCP serverius...",
+    app_integrations: "Programų integracijos",
+    sub_skills: "Pagrindinės įgūdžios",
   },
   profile_settings: {
     edit_account: "Redaguoti paskyrą",
@@ -1129,8 +1469,6 @@ const TRANSLATIONS = {
         description:
           "Įveskite API žymiklį, kurį gavote iš @BotFather, ir pasirinkite numatytą darbo vietą, kur jūsų bot galės kalbėti.",
         "bot-token": "„Bot Token“",
-        "default-workspace": "Numatytasis darbo erdvė",
-        "no-workspace": "Nėra laisvų darbo vietų. Bus sukurta nauja.",
         connecting: "Prisijungiam...",
         "connect-bot": "„Connect Bot“",
       },
@@ -1171,20 +1509,169 @@ const TRANSLATIONS = {
       "toast-revoke-failed": "Nepavyko atšalinti vartotojo.",
     },
     users: {
-      "pending-title": "Laikant patvirtinimo",
       "pending-description":
         "Naudotojai, laukiantys patvirtinimo. Palyginkite čia pateiktą kodą su tuo, kuris rodomas jų „Telegram“ pokalbyje.",
-      "approved-title": "Įsijungę vartotojai",
-      "approved-description":
-        "Naudotojai, kuriems suteikiama galimybė kalbėti su jūsų botu.",
-      user: "Naudotojas",
-      "pairing-code": "Kombinacijos kodas",
-      "no-pending": "Nėra atidėtų užklausų",
-      "no-approved": "Nėra patvirtintų vartotojų",
       unknown: "Nenurodytas",
-      approve: "Aptinka",
-      deny: "Atsisakyti",
-      revoke: "Anuliuoti",
+    },
+  },
+  scheduledJobs: {
+    title: "Planuotos užduotys",
+    enableNotifications:
+      "Įgalinkite naršyklės pranešimus dėl darbo paieškos rezultatų",
+    description:
+      "Sukurkite nuolatines AI užduotis, kurios vyks pagal nustatytą grafiką. Kiekviena užduotis atliks užduotį su galimais įrankiais ir išsaugos rezultatą, kad galėtų būti peržiūrėta.",
+    newJob: "Nauja darbo pozicija",
+    loading: "Įkėlimas...",
+    emptyTitle: "Nėra nurodytų uždučių.",
+    emptySubtitle: "Sukurkite vieną, kad pradėtumėte.",
+    table: {
+      name: "Pavadinimas",
+      schedule: "Programinė tvarka",
+      status: "Statusas",
+      lastRun: "Paskutinė kelionė",
+      nextRun: "Kitas maršrutas",
+      actions: "Veikmai",
+    },
+    confirmDelete:
+      "Ar esate tikri, kad norite ištrinti šią užduotį, kurią įtraukėte į planą?",
+    toast: {
+      deleted: "Darbas ištrintas",
+      triggered: "Darbas buvo sėkmingai inicijuotas.",
+      triggerFailed: "Nepavyko inicijuoti užduoties",
+      triggerSkipped: "Šis projektas jau pradėtas vykdyti.",
+      killed: "Darbas sėkmingai baigtas",
+      killFailed: "Nepavyko sustabdyti darbą",
+    },
+    row: {
+      neverRun: "Niekada nesnydžkite",
+      viewRuns: "Vaizdo įrašai",
+      runNow: "Pradėkite dabar",
+      enable: "Aaktyvinti",
+      disable: "Išjungti",
+      edit: "Redaguo",
+      delete: "Ištrinkti",
+    },
+    modal: {
+      titleEdit: "Redaguoti užplanuotą užduotį",
+      titleNew: "Naujas planuojamas darbas",
+      nameLabel: "Pavadinimas",
+      namePlaceholder: "Pavyzdžiui, kasdieninė naujienų apžvalga",
+      promptLabel: "Instrukcija",
+      promptPlaceholder: "Instrukcija, kad reikia vykdyti kiekvieną kartą...",
+      scheduleLabel: "Programėlė",
+      modeBuilder: "Statybininkas",
+      modeCustom: "Individualus",
+      cronPlaceholder: "Laiko išraiška (pvz., 0 9 * * *)",
+      currentSchedule: "Dabartinė tvarka:",
+      toolsLabel: "Įrankės (neprivalomi)",
+      toolsDescription:
+        "Pasirinkite, kokius agento įrankius šiandiena gali naudoti. Jei nė vienas įrankis nėra pasirinktas, šiandiena veiks be jokių įrankių.",
+      toolsSearch: "Paieška",
+      toolsNoResults: "Nėra įrankių, kurie atitinka",
+      required: "Reikalingas",
+      requiredFieldsBanner:
+        "Prašome užpildyti visus reikalingus laukelius, kad būtų galima sukurti darbo skelbimą.",
+      cancel: "Anuliu",
+      saving: "Taupymas...",
+      updateJob: "Atnaujinti darbą",
+      createJob: "Sukurti darbo poziciją",
+      jobUpdated: "Darbas atnaujintas",
+      jobCreated: "Sukurtas darbas",
+    },
+    builder: {
+      fallbackWarning:
+        'Šią frazę negalima redaguoti vizualiai. Norėdami ją išsaugoti, pasirinkite "Individualus" režimą, arba pakeiskite žemiau esančias ​​vertimes, kad ją pakeistumėte.',
+      run: "Bėgti",
+      frequency: {
+        minute: "būdami kiekvieną minutę",
+        hour: "valandinės",
+        day: "kasdieninis",
+        week: "kas savaitę",
+        month: "kas mėnesį",
+      },
+      every: "Kiekvienas",
+      minuteOne: "1 minutė",
+      minuteOther: "{{count}} minučių",
+      atMinute: "Minutė po minutės",
+      pastEveryHour: "būdami kiekvieną valandą",
+      at: "At",
+      on: "Apie",
+      onDay: "Jau",
+      ofEveryMonth: "iš kiekvieno mėnesio",
+      weekdays: {
+        sun: "Saulė",
+        mon: "Moneta",
+        tue: "Trečiadienis",
+        wed: "Trečiadienis",
+        thu: "Ketvirtadienis",
+        fri: "Penktadienis",
+        sat: "Sekmadienis",
+      },
+    },
+    runHistory: {
+      back: "Grįžti į paieškas",
+      title: "Paleidimo istorija: {{name}}",
+      schedule: "Programinė tvarka:",
+      emptyTitle: "Kol šis darbas nėra baigtas",
+      emptySubtitle: "Atlikite šią užduotį dabar ir peržiūrėkite rezultatus.",
+      runNow: "Pradėkite dabar",
+      table: {
+        status: "Statusas",
+        started: "Pradėtas",
+        duration: "Tr উপক",
+        error: "Klaida",
+      },
+      stopJob: "Pamesti darbas",
+    },
+    runDetail: {
+      loading: "Įkraudami važiavimo duomenis...",
+      notFound: "Nepavyko rasti.",
+      back: "Atgal",
+      unknownJob: "Nenurodytas darbas",
+      runHeading: "{{name}} – Treniruotė #{{id}}",
+      duration: "Trūkumas: {{value}}",
+      creating: "Kurimas...",
+      threadFailed: "Nepavyko sukurti temą",
+      sections: {
+        prompt: "Įspūdis",
+        error: "Klaida",
+        thinking: "Mintys ({{count}})",
+        toolCalls: "Naudojamų įrankių kvietimai ({{count}})",
+        files: "Failai ({{count}})",
+        response: "Atgarsas",
+        metrics: "Matmenys",
+      },
+      metrics: {
+        promptTokens: "Įspūdingos žymės:",
+        completionTokens: "Baigimo žymekliai:",
+      },
+      stopJob: "Nutraukite darbą",
+      killing: "Sustabdyti...",
+      continueInThread: "Tęsti pokalbį",
+    },
+    toolCall: {
+      arguments: "Argumentai:",
+      showResult: "Parodyti rezultatą",
+      hideResult: "Slėpti rezultatą",
+    },
+    file: {
+      unknown: "Nežinomas failas",
+      download: "Atsisiųsti",
+      downloadFailed: "Nepavyko atsisiųsti failą",
+      types: {
+        powerpoint: "PowerPoint",
+        pdf: "PDF dokumentas",
+        word: "Dokumentas, kurį galima redaguoti Microsoft Word programoje",
+        spreadsheet: "Spalvotas lapas (tabelis)",
+        generic: "Failas",
+      },
+    },
+    status: {
+      completed: "Baigtas",
+      failed: "Nepavyko",
+      timed_out: "Laikas baigėsi",
+      running: "Bėgimas",
+      queued: "Apsisukęs",
     },
   },
 };

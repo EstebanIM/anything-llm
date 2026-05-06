@@ -116,6 +116,7 @@ const TRANSLATIONS = {
     "available-channels": {
       telegram: "Telegram",
     },
+    "scheduled-jobs": "Naplánované úlohy",
   },
   login: {
     "multi-user": {
@@ -208,9 +209,9 @@ const TRANSLATIONS = {
           "budou poskytovat odpovědi <b>pouze__, pokud je nalezen kontext dokumentu.</b>Budete muset použít příkaz @agent pro použití nástrojů.",
       },
       automatic: {
-        title: "Auto",
         description:
           "automaticky použije nástroje, pokud to podporují model a poskytovatel. <br />Pokud není podporováno nativní volání nástrojů, budete muset použít příkaz `@agent` pro použití nástrojů.",
+        title: "Zástupce",
       },
     },
     history: {
@@ -344,7 +345,7 @@ const TRANSLATIONS = {
         readActions: "Činnosti",
         writeActions: "Akce",
         warning:
-          "Přístup k souborovému systému může být nebezpečný, protože může upravovat nebo mazat soubory. Před zapnutím funkce prosím nahlédněte do dokumentace <link>dokumentace</link>.",
+          "Přístup k souborovému systému může být nebezpečný, protože může upravovat nebo mazat soubory. Před zapnutím funkce prosím nahlédněte do dokumentace <a>dokumentace</a>.",
         skills: {
           "read-text-file": {
             title: "Otevřít soubor",
@@ -421,6 +422,310 @@ const TRANSLATIONS = {
             title: "Dokumenty ve formátu Word",
             description:
               "Vytvořte dokumenty ve formátu Word s základním formátováním a stylováním.",
+          },
+        },
+      },
+      gmail: {
+        title: "Připojení k GMail",
+        description:
+          "Umožněte svému agentovi, aby interagoval s Gmail – vyhledával e-maily, četl konverzace, vytvářel návrhy, posílal e-maily a spravoval vaši schránku. <a>Prostudujte dokumentaci</a>.",
+        multiUserWarning:
+          "Integrace s Gmailem není dostupná v režimu pro více uživatelů z bezpečnostních důvodů. Pro použití této funkce, prosím, deaktivujte režim pro více uživatelů.",
+        configuration: "Konfigurace Gmailu",
+        deploymentId: "ID nasazení",
+        deploymentIdHelp:
+          "Identifikátor nasazení z vaší webové aplikace Google Apps Script",
+        apiKey: "Klíč API",
+        apiKeyHelp:
+          "Klíč API, který jste nakonfigurovali ve vaší instalaci Google Apps Script",
+        configurationRequired:
+          "Prosím, nakonfigurujte ID nasazení a klíč API, abyste aktivovali funkce pro Gmail.",
+        configured: "Nastaveno",
+        searchSkills: "Dovednosti pro vyhledávání...",
+        noSkillsFound: "Žádný z nabízených profilů neodpovídá vašim kritériím.",
+        categories: {
+          search: {
+            title: "Vyhledávání a čtení e-mailů",
+            description: "Vyhledejte a čtěte e-maily z vaší schránky Gmail.",
+          },
+          drafts: {
+            title: "Návrhy e-mailů",
+            description: "Vytvářejte, upravujte a spravujte návrhy e-mailů.",
+          },
+          send: {
+            title: "Odesílejte a odpovídejte na e-maily",
+            description:
+              "Odesílejte e-maily a okamžitě odpovídejte na diskuse.",
+          },
+          threads: {
+            title: "Spravujte emailové vlákna",
+            description:
+              "Spravujte e-mailové vlákna – označte jako přečtené/ne přečtené, archivujte, vyhoďte",
+          },
+          account: {
+            title: "Statistiky integrace",
+            description:
+              "Zobrazte statistiky poštovní schránky a informace o účtu.",
+          },
+        },
+        skills: {
+          search: {
+            title: "Hledat e-maily",
+            description: "Hledejte e-maily pomocí syntaxe dotazů v Gmailu",
+          },
+          readThread: {
+            title: "Přečtěte si vlákno",
+            description: "Přečtěte si kompletní řetězec e-mailů podle ID.",
+          },
+          createDraft: {
+            title: "Vytvořit návrh",
+            description: "Vytvořte nový návrh e-mailu",
+          },
+          createDraftReply: {
+            title: "Vytvořit návrh odpovědi",
+            description: "Vytvořte návrh odpovědi na existující téma.",
+          },
+          updateDraft: {
+            title: "Aktualizovaná verze návrhu",
+            description: "Aktualizujte existující návrh e-mailu",
+          },
+          getDraft: {
+            title: "Získej návrh",
+            description: "Získejte konkrétní verzi dokumentu podle jejího ID.",
+          },
+          listDrafts: {
+            title: "Návrhy (seznam)",
+            description: "Vypište všechny návrhy e-mailů.",
+          },
+          deleteDraft: {
+            title: "Smazat návrh",
+            description: "Smazat návrh e-mailu",
+          },
+          sendDraft: {
+            title: "Odešlete návrh",
+            description: "Odešlete existující návrh e-mailu",
+          },
+          sendEmail: {
+            title: "Odeslat e-mail",
+            description: "Odešlete e-mail co nejrychleji.",
+          },
+          replyToThread: {
+            title: "Odpovědět na vlákno",
+            description: "Odpovězte na e-mailovou diskuzi co nejdříve.",
+          },
+          markRead: {
+            title: "Mark Read",
+            description: "Označit vlákno jako přečtené",
+          },
+          markUnread: {
+            title: "Označit jako nepročtené",
+            description: "Označte vlákno jako nepročtené.",
+          },
+          moveToTrash: {
+            title: "Přesun do koše",
+            description: "Přesuňte vlákno do koše",
+          },
+          moveToArchive: {
+            title: "Archiv",
+            description: "Uložte vlákno do archivu",
+          },
+          moveToInbox: {
+            title: "Přesun do schránky",
+            description: "Přesuňte vlákno do schránky (účetní knihy)",
+          },
+          getMailboxStats: {
+            title: "Statistiky poštovní schránky",
+            description:
+              "Získejte informace o počtu nečtených e-mailů a statistiky poštovní schránky.",
+          },
+          getInbox: {
+            title: "Otevřít schránku",
+            description:
+              "Jednoduchý způsob, jak získat e-maily z vaší schránky Gmail.",
+          },
+        },
+      },
+      outlook: {
+        title: "Připojení k Outlooku",
+        description:
+          "Umožněte svému agentovi interakci s Microsoft Outlook – vyhledávání e-mailů, čtení vláken, vytváření návrhů, odesílání e-mailů a správu vaší poštovní schránky prostřednictvím Microsoft Graph API. <a>Prostudujte dokumentaci</a>.",
+        multiUserWarning:
+          "Integrace s Outlookem není dostupná v režimu pro více uživatelů z důvodu bezpečnosti. Pro použití této funkce, prosím, deaktivujte režim pro více uživatelů.",
+        configuration: "Konfigurace Outlooku",
+        authType: "Typ účtu",
+        authTypeHelp:
+          "Vyberte, jaké typy účtů Microsoft mohou být ověřovány. Možnost „Všechny účty“ podporuje jak osobní, tak pracovní/školní účty. Možnost „Pouze osobní účty“ omezuje na osobní účty Microsoft. Možnost „Pouze organizace“ omezuje na pracovní/školní účty z konkrétního tenantu Azure AD.",
+        authTypeCommon: "Všechny účty (osobní a pracovní/školní)",
+        authTypeConsumers: "Pouze osobní účty Microsoft",
+        authTypeOrganization: "Účty organizací (vyžaduje ID pronajímatele)",
+        clientId: "Identifikátor klienta (ID aplikace)",
+        clientIdHelp:
+          "Identifikátor aplikace (klienta) z registrace vaší aplikace v Azure AD",
+        tenantId: "Identifikátor (pro nájemce)",
+        tenantIdHelp:
+          "ID adresáře (uživatele) z registrace vaší aplikace v Azure AD. Je nutné pouze pro ověřování v rámci organizace.",
+        clientSecret: "Tajný klíč klienta",
+        clientSecretHelp:
+          "Tajná hodnota klienta z registrace vaší aplikace v Azure AD",
+        configurationRequired:
+          "Prosím, nakonfigurujte ID klienta a tajný klíč, aby bylo možné využít funkce Outlook.",
+        authRequired:
+          "Nejprve si uložte své přihlašovací údaje, a poté se ověřte u společnosti Microsoft, abyste dokončili nastavení.",
+        authenticateWithMicrosoft: "Ověřte se pomocí Microsoftu",
+        authenticated: "Úspěšně jsem se ověřil pomocí Microsoft Outlook.",
+        revokeAccess: "Odvolat přístup",
+        configured: "Konfigurováno",
+        searchSkills: "Dovednosti pro vyhledávání...",
+        noSkillsFound: "Žádné výsledky neodpovídají vašemu vyhledávání.",
+        categories: {
+          search: {
+            title: "Vyhledávání a čtení e-mailů",
+            description:
+              "Vyhledejte a čtěte e-maily ve vaší poštovní schránce Outlook.",
+          },
+          drafts: {
+            title: "Návrhy e-mailů",
+            description: "Vytvářejte, upravujte a spravujte návrhy e-mailů.",
+          },
+          send: {
+            title: "Odesílejte e-maily",
+            description:
+              "Odešlete nové e-maily nebo okamžitě odpovězte na zprávy.",
+          },
+          account: {
+            title: "Statistiky integrace",
+            description:
+              "Zobrazte statistiky poštovní schránky a informace o účtu.",
+          },
+        },
+        skills: {
+          getInbox: {
+            title: "Otevřít schránku",
+            description: "Získejte nejnovější e-maily z vaší schránky Outlook.",
+          },
+          search: {
+            title: "Vyhledávání v e-mailech",
+            description:
+              "Hledejte e-maily pomocí syntaxe pro vyhledávání od Microsoftu",
+          },
+          readThread: {
+            title: "Přečtěte si konverzaci",
+            description: "Přečtěte si kompletní vedení e-mailové konverzace.",
+          },
+          createDraft: {
+            title: "Vytvořit návrh",
+            description:
+              "Vytvořte nový návrh e-mailu nebo návrh odpovědi na stávající zprávu.",
+          },
+          updateDraft: {
+            title: "Aktualizovaná verze návrhu",
+            description: "Aktualizujte stávající návrh e-mailu",
+          },
+          listDrafts: {
+            title: "Návrhy (seznam)",
+            description: "Vypište všechny návrhy e-mailů.",
+          },
+          deleteDraft: {
+            title: "Smazat návrh",
+            description: "Smazat návrh e-mailu",
+          },
+          sendDraft: {
+            title: "Ode mne návrh",
+            description: "Odešlete existující návrh e-mailu",
+          },
+          sendEmail: {
+            title: "Odešlete e-mail",
+            description:
+              "Odešlete nový e-mail nebo odpověď na stávající zprávu okamžitě.",
+          },
+          getMailboxStats: {
+            title: "Statistiky poštovní schránky",
+            description:
+              "Získejte informace o počtu složek a statistiky poštovní schránky.",
+          },
+        },
+      },
+      googleCalendar: {
+        title: "Připojení k kalendáři Google",
+        description:
+          "Umožněte svému agentovi interakci s Google Kalendářem – prohlížení kalendářů, získávání událostí, vytváření a aktualizaci událostí a správu potvrzení účasti. <a>Přečtěte si dokumentaci</a>.",
+        multiUserWarning:
+          "Integrace s Google Kalendářem není dostupná v režimu pro více uživatelů z důvodu bezpečnosti. Pro použití této funkce, prosím, deaktivujte režim pro více uživatelů.",
+        configuration: "Konfigurace kalendáře Google",
+        deploymentId: "ID nasazení",
+        deploymentIdHelp:
+          "ID nasazení z vaší webové aplikace Google Apps Script",
+        apiKey: "Klíč API",
+        apiKeyHelp:
+          "Klíč API, který jste nakonfigurovali ve vaší instalaci Google Apps Script",
+        configurationRequired:
+          "Prosím, nakonfigurujte ID nasazení a API klíč, abyste mohli využívat funkce Google Kalendáře.",
+        configured: "Konfigurováno",
+        searchSkills: "Dovednosti pro vyhledávání...",
+        noSkillsFound: "Žádné výsledky neodpovídají vašemu vyhledávání.",
+        categories: {
+          calendars: {
+            title: "Kalendáře",
+            description: "Zobrazte a spravujte své kalendáře Google.",
+          },
+          readEvents: {
+            title: "Seznam událostí",
+            description: "Zobrazte a vyhledejte události v kalendáři",
+          },
+          writeEvents: {
+            title: "Vytvořit a aktualizovat události",
+            description: "Vytvořte nové akce a upravte stávající.",
+          },
+          rsvp: {
+            title: "Správa odpovědí na pozvánky",
+            description: "Spravujte stav své odpovědi pro události",
+          },
+        },
+        skills: {
+          listCalendars: {
+            title: "Kalendáře v seznamu",
+            description:
+              "Vypište všechny kalendáře, které vlastníte nebo máte aktivní předplatné.",
+          },
+          getCalendar: {
+            title: "Získejte podrobné informace o kalendáři",
+            description: "Získejte podrobné informace o konkrétním kalendáři.",
+          },
+          getEvent: {
+            title: "Získejte informace o události",
+            description: "Získejte podrobné informace o konkrétním události",
+          },
+          getEventsForDay: {
+            title: "Získejte události pro daný den",
+            description:
+              "Získejte všechny události naplánované pro konkrétní den.",
+          },
+          getEvents: {
+            title: "Zobrazit události (rozsah dat)",
+            description: "Získejte události v definovaném časovém rozsahu",
+          },
+          getUpcomingEvents: {
+            title: "Zobrazit nadcházející akce",
+            description:
+              "Najděte události pro dnešek, tento týden nebo tento měsíc pomocí jednoduchých klíčových slov.",
+          },
+          quickAdd: {
+            title: "Rychlé přidání události",
+            description:
+              "Vytvořte událost z přirozeného jazyka (např. „Schůzka zítra ve 15:00“)",
+          },
+          createEvent: {
+            title: "Vytvořit událost",
+            description:
+              "Vytvořte nový event s plnou kontrolou nad všemi jeho vlastnostmi.",
+          },
+          updateEvent: {
+            title: "Aktualizace události",
+            description: "Aktualizovat existující událost v kalendáři",
+          },
+          setMyStatus: {
+            title: "Nastavit stav potvrzení účasti",
+            description: "Přijmout, zamítnout nebo přijmout událost s rezervou",
           },
         },
       },
@@ -573,7 +878,34 @@ const TRANSLATIONS = {
       "API klíče umožňují držiteli programově přistupovat a spravovat tuto instanci AnythingLLM.",
     link: "Přečíst dokumentaci API",
     generate: "Generovat nový API klíč",
+    empty: "Nebyly nalezeny žádné API klíče",
+    actions: "Akce",
+    messages: {
+      error: "Chyba: {{error}}",
+    },
+    modal: {
+      title: "Vytvořit nový API klíč",
+      cancel: "Zrušit",
+      close: "Zavřít",
+      create: "Vytvořit API klíč",
+      helper:
+        "Po vytvoření lze API klíč použít pro programový přístup k této instanci AnythingLLM a její správu.",
+      name: {
+        label: "Název",
+        placeholder: "Produkční integrace",
+        helper:
+          "Volitelné. Použijte přívětivý název, abyste klíč později snadno rozpoznali.",
+      },
+    },
+    row: {
+      copy: "Kopírovat API klíč",
+      copied: "Zkopírováno",
+      unnamed: "--",
+      deleteConfirm:
+        "Opravdu chcete deaktivovat tento API klíč?\nPoté už nebude možné jej používat.\n\nTuto akci nelze vrátit zpět.",
+    },
     table: {
+      name: "Název",
       key: "API klíč",
       by: "Vytvořil",
       created: "Vytvořeno",
@@ -977,6 +1309,12 @@ const TRANSLATIONS = {
       tool_call_was_approved: "Žádost o použití nástroje byla schválena.",
       tool_call_was_rejected: "Žádost o použití nástroje byla zamítnuta.",
     },
+    custom_skills: "Vlastní dovednosti",
+    agent_flows: "Toky agentů",
+    no_tools_found: "Nebyla nalezena žádná odpovídající nářadí.",
+    loading_mcp_servers: "Načítají se servery pro MCP...",
+    app_integrations: "Integrace aplikací",
+    sub_skills: "Specifické dovednosti",
   },
   profile_settings: {
     edit_account: "Upravit účet",
@@ -1126,9 +1464,6 @@ const TRANSLATIONS = {
         description:
           "Vložte API token, který jste obdrželi od účtu @BotFather, a vyberte výchozí pracovní prostor, se kterým bude váš bot komunikovat.",
         "bot-token": "Token Bot",
-        "default-workspace": "Výchozí pracovní prostor",
-        "no-workspace":
-          "Nejsou k dispozici žádné pracovní prostory. Bude vytvořeno nové.",
         connecting: "Připojování...",
         "connect-bot": "Bot pro připojení",
       },
@@ -1168,20 +1503,169 @@ const TRANSLATIONS = {
       "toast-revoke-failed": "Nezdařilo se zrušit uživatelskou účet.",
     },
     users: {
-      "pending-title": "Čeká na schválení",
       "pending-description":
         "Uživatelé, kteří čekají na ověření. Porovnejte kód pro spárování, který je zde uveden, s tím, který je zobrazen v jejich chatu na Telegramu.",
-      "approved-title": "Schválení uživatelů",
-      "approved-description":
-        "Uživatelé, kteří byli schváleni pro komunikaci s vaším botem.",
-      user: "Uživatel",
-      "pairing-code": "Kód pro párování",
-      "no-pending": "Žádné čekající požadavky",
-      "no-approved": "Žádní registrovaní uživatelé",
       unknown: "Neznámé",
-      approve: "Schválit",
-      deny: "Odmítnout",
-      revoke: "Zrušit",
+    },
+  },
+  scheduledJobs: {
+    title: "Naplánované úkoly",
+    enableNotifications:
+      "Povolte oznámení v prohlížeči pro výsledky hledání práce",
+    description:
+      "Vytvořte opakující se úkoly s umělou inteligencí, které se spouští podle stanoveného harmonogramu. Každý úkol provede zadaný požadavek s volitelnými nástroji a uloží výsledek pro pozdější kontrolu.",
+    newJob: "Nová pracovní pozice",
+    loading: "Načítání...",
+    emptyTitle: "V současné době nejsou naplánovány žádné úkoly.",
+    emptySubtitle: "Vytvořte si jeden, abyste začali.",
+    table: {
+      name: "Jméno",
+      schedule: "Harmonogram",
+      status: "Stav",
+      lastRun: "Poslední běh",
+      nextRun: "Další běh",
+      actions: "Akce",
+    },
+    confirmDelete: "Jste si jisti, že chcete tento naplánovaný úkol smazat?",
+    toast: {
+      deleted: "Práce smazána",
+      triggered: "Úkol byl úspěšně spuštěn.",
+      triggerFailed: "Nepodařilo se spustit danou úlohu.",
+      triggerSkipped: "Práce na tomto projektu již probíhá.",
+      killed: "Práce byla úspěšně ukončena",
+      killFailed: "Nebylo možné zastavit pracovní činnost.",
+    },
+    row: {
+      neverRun: "Nikdy nespěchejte",
+      viewRuns: "Prohlídky",
+      runNow: "Začněte hned",
+      enable: "Povolit",
+      disable: "Vypnout",
+      edit: "Upravit",
+      delete: "Smazat",
+    },
+    modal: {
+      titleEdit: "Upravit naplánovanou úlohu",
+      titleNew: "Nový naplánovaný úkol",
+      nameLabel: "Jméno",
+      namePlaceholder: "např. Denní přehled novinek",
+      promptLabel: "Výzva",
+      promptPlaceholder: "Instrukce k provedení při každém spuštění...",
+      scheduleLabel: "Harmonogram",
+      modeBuilder: "Stavební firma",
+      modeCustom: "Na míru vyrobené",
+      cronPlaceholder:
+        "Výraz pro vyjadřování časového intervalu (např. 0 9 * * *)",
+      currentSchedule: "Současný harmonogram:",
+      toolsLabel: "Nářadí (volitelné)",
+      toolsDescription:
+        "Vyberte, které nástroje lze pro tuto úlohu použít. Pokud žádný není vybrán, úloha bude spuštěna bez použití jakýchkoli nástrojů.",
+      toolsSearch: "Vyhledávání",
+      toolsNoResults: "Žádný nástroj neodpovídá",
+      required: "Nutné",
+      requiredFieldsBanner:
+        "Prosím, vyplňte všechny povinné pole, abyste mohli vytvořit inzerát.",
+      cancel: "Zrušit",
+      saving: "Úspora...",
+      updateJob: "Aktualizovat pracovní pozici",
+      createJob: "Vytvořte pracovní pozici",
+      jobUpdated: "Pozice byla aktualizována",
+      jobCreated: "Vytvořena pozice",
+    },
+    builder: {
+      fallbackWarning:
+        'Tento výraz nelze upravit vizuálně. Pokud jej chcete zachovat, přejděte do režimu "Custom". Jinak můžete změnit cokoliv níže, abyste jej nahradili.',
+      run: "Běhat",
+      frequency: {
+        minute: "každou minutu",
+        hour: "za hodinu",
+        day: "denně",
+        week: "každý týden",
+        month: "měsíční",
+      },
+      every: "Každý",
+      minuteOne: "1 minuta",
+      minuteOther: "{{count}} minut",
+      atMinute: "V minutě",
+      pastEveryHour: "v každou hodinu",
+      at: "V",
+      on: "Na",
+      onDay: "Jednoho dne",
+      ofEveryMonth: "každého měsíce",
+      weekdays: {
+        sun: "Slunce",
+        mon: "Pondělí",
+        tue: "Úterý",
+        wed: "Středa",
+        thu: "Čtvrtek",
+        fri: "Pátek",
+        sat: "Sobota",
+      },
+    },
+    runHistory: {
+      back: "Zpět na nabídku práce",
+      title: "Historie běhu: {{name}}",
+      schedule: "Harmonogram:",
+      emptyTitle: "Dosud nebyla žádná úspěšná realizace tohoto projektu.",
+      emptySubtitle: "Spusťte úlohu nyní a zkontrolujte její výsledky.",
+      runNow: "Začněte hned",
+      table: {
+        status: "Stav",
+        started: "Začal",
+        duration: "Délka",
+        error: "Chyba",
+      },
+      stopJob: "Zastavit práci",
+    },
+    runDetail: {
+      loading: "Načítám podrobnosti o běhu...",
+      notFound: "Nemožná nalezení běhu.",
+      back: "Zpět",
+      unknownJob: "Neznámá pracovní pozice",
+      runHeading: "{{name}} — Spustit #{{id}}",
+      duration: "Doba trvání: {{value}}",
+      creating: "Vytváření...",
+      threadFailed: "Nedaří se vytvořit vlákno.",
+      sections: {
+        prompt: "Návod",
+        error: "Chyba",
+        thinking: "Myšlenky ({{count}})",
+        toolCalls: "Volání nástrojů ({{count}})",
+        files: "Soubory ({{count}})",
+        response: "Reakce",
+        metrics: "Metriky",
+      },
+      metrics: {
+        promptTokens: "Klíčová slova:",
+        completionTokens: "Tokeny pro dokončení:",
+      },
+      stopJob: "Zastavení práce",
+      killing: "Zastavte...",
+      continueInThread: "Pokračovat v chatu",
+    },
+    toolCall: {
+      arguments: "Argumenty:",
+      showResult: "Zobrazit výsledek",
+      hideResult: "Skryt výsledek",
+    },
+    file: {
+      unknown: "Neznámý soubor",
+      download: "Stáhnout",
+      downloadFailed: "Nepodařilo se stáhnout soubor",
+      types: {
+        powerpoint: "Prezentace v programu PowerPoint",
+        pdf: "Dokument ve formátu PDF",
+        word: "Dokument ve formátu Word",
+        spreadsheet: "Tabulka (v programu)",
+        generic: "Soubor",
+      },
+    },
+    status: {
+      completed: "Dokončeno",
+      failed: "Neúspěšné",
+      timed_out: "Časový limit dosáhl",
+      running: "Běh",
+      queued: "Na čekací listině",
     },
   },
 };

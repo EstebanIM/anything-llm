@@ -33,7 +33,7 @@ class AIbitat {
   defaultInterrupt;
   maxRounds;
   _chats;
-
+  _trackedChatId = null;
   agents = new Map();
   channels = new Map();
   functions = new Map();
@@ -112,6 +112,44 @@ class AIbitat {
   use(plugin) {
     plugin.setup(this);
     return this;
+  }
+
+  /**
+   * Register a new chat ID for tracking for a given conversation exchange
+   * @param {number} chatId - The ID of the chat to register.
+   */
+  registerChatId(chatId = null) {
+    if (!chatId) return;
+    this._trackedChatId = Number(chatId);
+  }
+
+  /**
+   * Get the tracked chat ID for a given conversation exchange
+   * @returns {number|null} The ID of the chat to register.
+   */
+  get trackedChatId() {
+    return this._trackedChatId ?? null;
+  }
+
+  /**
+   * Clear the tracked chat ID for a given conversation exchange
+   */
+  clearTrackedChatId() {
+    this._trackedChatId = null;
+  }
+
+  /**
+   * Emit the tracked chat ID to the frontend via the websocket
+   * plugin (assumed to be attached).
+   * @param {string} [uuid] - The message UUID to associate with this chatId
+   */
+  emitChatId(uuid = null) {
+    if (!this.trackedChatId || !uuid) return null;
+    this.socket?.send?.("reportStreamEvent", {
+      type: "chatId",
+      uuid,
+      chatId: this.trackedChatId,
+    });
   }
 
   /**
@@ -376,6 +414,18 @@ class AIbitat {
     ) => null
   ) {
     this.emitter.on("replyError", listener);
+    return this;
+  }
+
+  /**
+   * Triggered when a tool call completes and returns a result.
+   * Used by scheduled jobs to capture tool results for the execution trace.
+   *
+   * @param listener
+   * @returns
+   */
+  onToolCallResult(listener = () => null) {
+    this.emitter.on("toolCallResult", listener);
     return this;
   }
 
@@ -843,25 +893,18 @@ https://docs.anythingllm.com/agent/intelligent-tool-selection
     );
 
     if (completionStream.functionCall) {
-      if (depth >= this.maxToolCalls) {
-        this.handlerProps?.log?.(
-          `[warning]: Maximum tool call limit (${this.maxToolCalls}) reached. Making final response without tools.`
-        );
-        this?.introspect?.(
-          `Maximum tool call limit (${this.maxToolCalls}) reached. Generating a final response from what I have so far.`
-        );
-
-        const finalStream = await this.#safeProviderCall(() =>
-          provider.stream(messages, [], eventHandler)
-        );
-        const finalResponse =
-          finalStream?.textResponse ||
-          "I reached the maximum number of tool calls allowed for a single response. Here is what I have so far based on the tools I was able to run.";
-        return finalResponse;
-      }
-
       const { name, arguments: args } = completionStream.functionCall;
       const fn = this.functions.get(name);
+      const reachedToolLimit = depth >= this.maxToolCalls;
+
+      if (reachedToolLimit) {
+        this.handlerProps?.log?.(
+          `[warning]: Maximum tool call limit (${this.maxToolCalls}) reached. Executing final tool call then generating response.`
+        );
+        this?.introspect?.(
+          `Maximum tool call limit (${this.maxToolCalls}) reached. After this tool I will generate a final response.`
+        );
+      }
 
       if (!fn) {
         return await this.handleAsyncExecution(
@@ -875,7 +918,7 @@ https://docs.anythingllm.com/agent/intelligent-tool-selection
               originalFunctionCall: completionStream.functionCall,
             },
           ],
-          functions,
+          reachedToolLimit ? [] : functions,
           byAgent,
           depth + 1
         );
@@ -895,6 +938,11 @@ https://docs.anythingllm.com/agent/intelligent-tool-selection
 
       const result = await fn.handler(args);
       Telemetry.sendTelemetry("agent_tool_call", { tool: name }, null, true);
+      this.emitter.emit("toolCallResult", {
+        toolName: name,
+        arguments: args,
+        result,
+      });
 
       /**
        * If the tool call has direct output enabled, return the result directly to the chat
@@ -923,6 +971,7 @@ https://docs.anythingllm.com/agent/intelligent-tool-selection
           metrics: provider.getUsage(),
         });
         this?.flushCitations?.(directOutputUUID);
+        this?.emitChatId?.(directOutputUUID);
         return result;
       }
 
@@ -951,7 +1000,7 @@ https://docs.anythingllm.com/agent/intelligent-tool-selection
       return await this.handleAsyncExecution(
         provider,
         newMessages,
-        functions,
+        reachedToolLimit ? [] : functions,
         byAgent,
         depth + 1
       );
@@ -964,6 +1013,7 @@ https://docs.anythingllm.com/agent/intelligent-tool-selection
       metrics: provider.getUsage(),
     });
     this?.flushCitations?.(responseUuid);
+    this?.emitChatId?.(responseUuid);
     return completionStream?.textResponse;
   }
 
@@ -1000,31 +1050,18 @@ https://docs.anythingllm.com/agent/intelligent-tool-selection
     );
 
     if (completion.functionCall) {
-      if (depth >= this.maxToolCalls) {
-        this.handlerProps?.log?.(
-          `[warning]: Maximum tool call limit (${this.maxToolCalls}) reached. Making final response without tools.`
-        );
-        this?.introspect?.(
-          `Maximum tool call limit (${this.maxToolCalls}) reached. Generating a final response from what I have so far.`
-        );
-
-        const finalCompletion = await this.#safeProviderCall(() =>
-          provider.complete(messages, [])
-        );
-        eventHandler?.("reportStreamEvent", {
-          type: "usageMetrics",
-          uuid: msgUUID,
-          metrics: provider.getUsage(),
-        });
-        this?.flushCitations?.(msgUUID);
-        return (
-          finalCompletion?.textResponse ||
-          "I reached the maximum number of tool calls allowed for a single response. Here is what I have so far based on the tools I was able to run."
-        );
-      }
-
       const { name, arguments: args } = completion.functionCall;
       const fn = this.functions.get(name);
+      const reachedToolLimit = depth >= this.maxToolCalls;
+
+      if (reachedToolLimit) {
+        this.handlerProps?.log?.(
+          `[warning]: Maximum tool call limit (${this.maxToolCalls}) reached. Executing final tool call then generating response.`
+        );
+        this?.introspect?.(
+          `Maximum tool call limit (${this.maxToolCalls}) reached. After this tool I will generate a final response.`
+        );
+      }
 
       if (!fn) {
         return await this.handleExecution(
@@ -1038,7 +1075,7 @@ https://docs.anythingllm.com/agent/intelligent-tool-selection
               originalFunctionCall: completion.functionCall,
             },
           ],
-          functions,
+          reachedToolLimit ? [] : functions,
           byAgent,
           depth + 1,
           msgUUID
@@ -1059,6 +1096,11 @@ https://docs.anythingllm.com/agent/intelligent-tool-selection
 
       const result = await fn.handler(args);
       Telemetry.sendTelemetry("agent_tool_call", { tool: name }, null, true);
+      this.emitter.emit("toolCallResult", {
+        toolName: name,
+        arguments: args,
+        result,
+      });
 
       if (this.skipHandleExecution) {
         this.skipHandleExecution = false;
@@ -1103,7 +1145,7 @@ https://docs.anythingllm.com/agent/intelligent-tool-selection
       return await this.handleExecution(
         provider,
         newMessages,
-        functions,
+        reachedToolLimit ? [] : functions,
         byAgent,
         depth + 1,
         msgUUID
@@ -1116,6 +1158,7 @@ https://docs.anythingllm.com/agent/intelligent-tool-selection
       metrics: provider.getUsage(),
     });
     this?.flushCitations?.(msgUUID);
+    this?.emitChatId?.(msgUUID);
     return completion?.textResponse;
   }
 

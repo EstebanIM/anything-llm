@@ -108,6 +108,7 @@ const TRANSLATIONS = {
     "available-channels": {
       telegram: "テレグラム",
     },
+    "scheduled-jobs": "計画された作業",
   },
   login: {
     "multi-user": {
@@ -192,9 +193,9 @@ const TRANSLATIONS = {
           "必要な情報が見つかった場合にのみ、回答を提供します。ツールを使用するには、`@agent`コマンドを使用する必要があります。",
       },
       automatic: {
-        title: "自動車",
         description:
           "ネイティブなツール呼び出しをサポートしている場合、モデルとプロバイダーが自動的にツールを使用します。ネイティブなツール呼び出しがサポートされていない場合は、@agentコマンドを使用してツールを使用する必要があります。",
+        title: "代理人",
       },
     },
     history: {
@@ -326,7 +327,7 @@ const TRANSLATIONS = {
         readActions: "行動",
         writeActions: "行動",
         warning:
-          "ファイルシステムへのアクセスは危険であり、ファイルの内容を変更または削除する可能性があります。設定する前に、必ず<link>のドキュメント</link>を参照してください。",
+          "ファイルシステムへのアクセスは危険であり、ファイルの内容を変更または削除する可能性があります。設定する前に、必ず<a>のドキュメント</a>を参照してください。",
         skills: {
           "read-text-file": {
             title: "ファイルを開く",
@@ -404,6 +405,300 @@ const TRANSLATIONS = {
           },
         },
       },
+      gmail: {
+        title: "Gmail 接続",
+        description:
+          "エージェントがGmailと連携できるようにする：メールの検索、スレッドの閲覧、ドラフトの作成、メールの送信、およびインボックスの管理を可能にします。詳細については、<a>ドキュメントを参照</a>。",
+        multiUserWarning:
+          "セキュリティ上の理由から、Gmailとの連携はマルチユーザーモードでは利用できません。この機能を使用するには、まずマルチユーザーモードを無効にしてください。",
+        configuration: "Gmail の設定",
+        deploymentId: "デプロイメントID",
+        deploymentIdHelp:
+          "あなたのGoogle Apps ScriptウェブアプリケーションのデプロイメントID",
+        apiKey: "APIキー",
+        apiKeyHelp: "Google Apps Script のデプロイ時に設定した API キー",
+        configurationRequired:
+          "Gmail の機能を有効にするには、デプロイメント ID と API キーを設定してください。",
+        configured: "設定済み",
+        searchSkills: "検索スキル...",
+        noSkillsFound: "検索条件に合致するスキルは見つかりませんでした。",
+        categories: {
+          search: {
+            title: "メールの検索と閲覧",
+            description: "Gmail の受信トレイから、メールを検索および閲覧する",
+          },
+          drafts: {
+            title: "サンプルメール",
+            description: "メールの作成、編集、および管理",
+          },
+          send: {
+            title: "メールの送信と返信",
+            description: "メールを送信し、スレッドへの返信をすぐに行う。",
+          },
+          threads: {
+            title: "メールのトピックを管理する",
+            description:
+              "メールのトピックを管理する - 既読/未読のマーク、アーカイブ、削除",
+          },
+          account: {
+            title: "統合に関する統計",
+            description: "メールボックスの統計情報とアカウント情報を表示する",
+          },
+        },
+        skills: {
+          search: {
+            title: "メールを検索する",
+            description: "Gmail のクエリ構文を使用して、メールを検索する",
+          },
+          readThread: {
+            title: "スレッドを読む",
+            description: "IDでメールの全文を閲覧する",
+          },
+          createDraft: {
+            title: "ドラフト作成",
+            description: "新しいメールの草案を作成する",
+          },
+          createDraftReply: {
+            title: "草案の返信を作成する",
+            description: "既存のスレッドに対する返信の草案を作成する",
+          },
+          updateDraft: {
+            title: "ドラフトの更新",
+            description: "既存のメールドラフトを更新する",
+          },
+          getDraft: {
+            title: "草案を入手",
+            description: "IDで特定のドラフトを取得する",
+          },
+          listDrafts: {
+            title: "ドラフト案リスト",
+            description: "すべての草案メールの一覧を表示する",
+          },
+          deleteDraft: {
+            title: "草案を削除",
+            description: "草案のメールを削除する",
+          },
+          sendDraft: {
+            title: "草案を送信",
+            description: "既存のメールドラフトを送信する",
+          },
+          sendEmail: {
+            title: "メールを送信する",
+            description: "すぐにメールを送信してください",
+          },
+          replyToThread: {
+            title: "スレッドへの返信",
+            description: "メールのやり取りにすぐに返信する",
+          },
+          markRead: {
+            title: "マーク・リード",
+            description: "スレッドを「読了」としてマークする",
+          },
+          markUnread: {
+            title: "未読としてマーク",
+            description: "スレッドを「未読」としてマークする",
+          },
+          moveToTrash: {
+            title: "ゴミ箱へ移動",
+            description: "スレッドをゴミ箱に移動する",
+          },
+          moveToArchive: {
+            title: "アーカイブ",
+            description: "スレッドをアーカイブする",
+          },
+          moveToInbox: {
+            title: "受信トレイへ移動",
+            description: "スレッドをインボックスに移動する",
+          },
+          getMailboxStats: {
+            title: "メールボックスの統計情報",
+            description: "未読件数とメールボックスの統計情報を取得する",
+          },
+          getInbox: {
+            title: "インボックスを開く",
+            description: "Gmail から受信したメールを効率的に取得する方法",
+          },
+        },
+      },
+      outlook: {
+        title: "Outlook 連携機能",
+        description:
+          "エージェントがMicrosoft Outlookと連携できるようにする - Microsoft Graph APIを使用して、メールの検索、スレッドの閲覧、ドラフトの作成、メールの送信、およびインボックスの管理を行う。詳細については、ドキュメントを参照してください。",
+        multiUserWarning:
+          "Outlookとの連携は、セキュリティ上の理由から、複数ユーザーモードでは利用できません。この機能を使い始めるには、複数ユーザーモードを無効にする必要があります。",
+        configuration: "Outlook の設定",
+        authType: "アカウントの種類",
+        authTypeHelp:
+          "認証に使用できるMicrosoftアカウントの種類を選択します。「すべて」は、個人用アカウントと職場/学校用アカウントの両方をサポートします。「個人用のみ」は、個人用Microsoftアカウントに限定されます。「職場/学校用のみ」は、特定のAzure ADテナントからの職場/学校用アカウントに限定されます。",
+        authTypeCommon: "すべての口座（個人用および仕事/学校用）",
+        authTypeConsumers: "個人のMicrosoftアカウントのみ",
+        authTypeOrganization: "組織アカウントのみ（テナントIDが必要です）",
+        clientId: "アプリケーション（クライアント）ID",
+        clientIdHelp:
+          "あなたのAzure ADアプリケーションの「アプリケーション（クライアント）ID」",
+        tenantId: "テナントID",
+        tenantIdHelp:
+          "あなたの Azure AD アプリの登録から取得した「ディレクトリ（テナント）ID」。組織での認証のみに必要です。",
+        clientSecret: "クライアントの秘密",
+        clientSecretHelp:
+          "Azure AD アプリの登録から取得したクライアントのシークレット値",
+        configurationRequired:
+          "Outlook の機能を有効にするには、クライアント ID とクライアントシークレットを設定してください。",
+        authRequired:
+          "まず、認証情報を保存し、その後、Microsoftとの認証を行い、設定を完了してください。",
+        authenticateWithMicrosoft: "マイクロソフトとの認証",
+        authenticated: "Microsoft Outlookとの認証に成功しました。",
+        revokeAccess: "アクセス権を停止する",
+        configured: "設定済み",
+        searchSkills: "検索スキル...",
+        noSkillsFound: "検索条件に一致するスキルは見つかりませんでした。",
+        categories: {
+          search: {
+            title: "メールの検索と閲覧",
+            description: "Outlook の受信トレイから、メールを検索して読み取る。",
+          },
+          drafts: {
+            title: "サンプルメール",
+            description: "メールの作成、編集、および管理",
+          },
+          send: {
+            title: "メールの送信",
+            description:
+              "新しいメールを送信するか、すぐにメッセージに返信してください。",
+          },
+          account: {
+            title: "統合に関する統計",
+            description: "メールボックスの統計情報とアカウント情報を確認する",
+          },
+        },
+        skills: {
+          getInbox: {
+            title: "受信トレイを開く",
+            description: "Outlook の受信トレイから、最近のメールを取得する",
+          },
+          search: {
+            title: "メールを検索する",
+            description: "Microsoft の検索構文を使用してメールを検索する",
+          },
+          readThread: {
+            title: "会話の内容を読み取る",
+            description: "メールのやり取り全体を読み込む",
+          },
+          createDraft: {
+            title: "ドラフト作成",
+            description:
+              "新しいメールの草案を作成するか、既存のメッセージへの返信の草案を作成する。",
+          },
+          updateDraft: {
+            title: "ドラフトの更新",
+            description: "既存のメールドラフトを更新する",
+          },
+          listDrafts: {
+            title: "ドラフト案リスト",
+            description: "すべての草案メールの一覧",
+          },
+          deleteDraft: {
+            title: "草案を削除",
+            description: "草案のメールを削除する",
+          },
+          sendDraft: {
+            title: "草案を送信",
+            description: "既存のメールの草稿を送信する",
+          },
+          sendEmail: {
+            title: "メールを送信する",
+            description:
+              "新しいメールを作成するか、既存のメッセージにすぐに返信してください。",
+          },
+          getMailboxStats: {
+            title: "メールボックスの統計",
+            description: "フォルダの数とメールボックスの統計情報を取得する",
+          },
+        },
+      },
+      googleCalendar: {
+        title: "Google カレンダー 連携機能",
+        description:
+          "エージェントがGoogleカレンダーと連携できるようにする - カレンダーの表示、イベントの取得、イベントの作成と更新、およびRSVPの管理を可能にする。詳細については、ドキュメントを参照してください。",
+        multiUserWarning:
+          "Google カレンダーとの連携は、セキュリティ上の理由から、複数ユーザーモードでは利用できません。この機能をご利用いただくには、複数ユーザーモードを無効にする必要があります。",
+        configuration: "Google カレンダーの設定",
+        deploymentId: "デプロイメントID",
+        deploymentIdHelp:
+          "あなたのGoogle Apps ScriptのウェブアプリケーションのデプロイID",
+        apiKey: "APIキー",
+        apiKeyHelp: "Google Apps Script のデプロイ時に設定した API キー",
+        configurationRequired:
+          "Google カレンダーの機能を使用するために、デプロイメントIDとAPIキーを設定してください。",
+        configured: "設定済み",
+        searchSkills: "検索スキル...",
+        noSkillsFound:
+          "あなたの検索条件に合致するスキルは見つかりませんでした。",
+        categories: {
+          calendars: {
+            title: "カレンダー",
+            description: "Googleカレンダーの表示と管理",
+          },
+          readEvents: {
+            title: "イベント情報",
+            description: "カレンダー上のイベントの表示と検索",
+          },
+          writeEvents: {
+            title: "イベントの作成と更新",
+            description: "新しいイベントを作成し、既存のイベントを修正する",
+          },
+          rsvp: {
+            title: "RSVP（出欠確認）管理",
+            description: "イベントへの参加状況を管理する",
+          },
+        },
+        skills: {
+          listCalendars: {
+            title: "カレンダーリスト",
+            description:
+              "所有している、または購読しているすべてのカレンダーの一覧",
+          },
+          getCalendar: {
+            title: "カレンダーの詳細を確認する",
+            description: "特定のカレンダーに関する詳細な情報த்தைப்入手する",
+          },
+          getEvent: {
+            title: "イベント情報を入手",
+            description: "特定のイベントに関する詳細な情報த்தைப்入手する",
+          },
+          getEventsForDay: {
+            title: "その日のイベントを検索する",
+            description: "特定の日に予定されているすべてのイベントを取得する",
+          },
+          getEvents: {
+            title: "イベント（期間指定）",
+            description: "指定した期間内のイベントを取得する",
+          },
+          getUpcomingEvents: {
+            title: "今後のイベントをチェックする",
+            description:
+              "今日、今週、または今月のイベントを、簡単なキーワードを使って検索する",
+          },
+          quickAdd: {
+            title: "イベントをすぐに登録",
+            description:
+              "自然言語（例：「明日午後3時に会議」）からイベントを作成する",
+          },
+          createEvent: {
+            title: "イベントを作成する",
+            description:
+              "すべてのプロパティを完全に制御できる、新しいイベントを作成する。",
+          },
+          updateEvent: {
+            title: "イベント情報更新",
+            description: "既存の予定を更新する",
+          },
+          setMyStatus: {
+            title: "返信状況を設定する",
+            description: "イベントへの参加、拒否、または仮の参加",
+          },
+        },
+      },
     },
     mcp: {
       title: "MCP サーバー",
@@ -465,7 +760,33 @@ const TRANSLATIONS = {
       "APIキーにより、プログラム経由でこのAnythingLLMインスタンスにアクセスおよび管理できます。",
     link: "APIドキュメントを読む",
     generate: "新しいAPIキーを生成",
+    empty: "APIキーが見つかりません",
+    actions: "操作",
+    messages: {
+      error: "エラー: {{error}}",
+    },
+    modal: {
+      title: "新しいAPIキーを作成",
+      cancel: "キャンセル",
+      close: "閉じる",
+      create: "APIキーを作成",
+      helper:
+        "作成したAPIキーは、このAnythingLLMインスタンスにプログラムからアクセスして設定するために使用できます。",
+      name: {
+        label: "名前",
+        placeholder: "本番環境の統合",
+        helper: "任意です。後でこのキーを識別しやすい名前を付けてください。",
+      },
+    },
+    row: {
+      copy: "APIキーをコピー",
+      copied: "コピー済み",
+      unnamed: "--",
+      deleteConfirm:
+        "このAPIキーを無効化してもよろしいですか？\n無効化すると、以後このキーは使用できなくなります。\n\nこの操作は元に戻せません。",
+    },
     table: {
+      name: "名前",
       key: "APIキー",
       by: "作成者",
       created: "作成日",
@@ -848,6 +1169,12 @@ const TRANSLATIONS = {
       tool_call_was_approved: "ツールの使用許可が承認されました",
       tool_call_was_rejected: "ツール呼び出しは拒否されました",
     },
+    custom_skills: "カスタマイズ可能なスキル",
+    agent_flows: "エージェント間の流れ",
+    no_tools_found: "一致するツールは見つかりませんでした",
+    loading_mcp_servers: "MCP サーバーの読み込み中...",
+    app_integrations: "アプリケーション連携",
+    sub_skills: "専門スキル",
   },
   profile_settings: {
     edit_account: "アカウントを編集",
@@ -1128,9 +1455,6 @@ const TRANSLATIONS = {
         description:
           "@BotFatherから受け取ったAPIトークンを貼り付け、ボットとのチャットに使用するデフォルトのワークスペースを選択してください。",
         "bot-token": "ボット トークン",
-        "default-workspace": "デフォルトのワークスペース",
-        "no-workspace":
-          "利用可能な作業スペースがありません。新しい作業スペースが作成されます。",
         connecting: "接続中...",
         "connect-bot": "コネクトボット",
       },
@@ -1168,20 +1492,167 @@ const TRANSLATIONS = {
       "toast-revoke-failed": "ユーザーの権限停止に失敗。",
     },
     users: {
-      "pending-title": "承認待ち",
       "pending-description":
         "本人情報の確認待ちのユーザー。ここに表示されているペアリングコードを、彼らがTelegramで表示しているコードと照合してください。",
-      "approved-title": "承認されたユーザー",
-      "approved-description":
-        "あなたのボットとのチャットを許可されたユーザー。",
-      user: "利用者",
-      "pairing-code": "組み合わせコード",
-      "no-pending": "処理中のリクエストはありません",
-      "no-approved": "承認されたユーザーはいません",
       unknown: "不明",
-      approve: "承認",
-      deny: "否定",
-      revoke: "無効化する",
+    },
+  },
+  scheduledJobs: {
+    title: "予定されている作業",
+    enableNotifications: "求人情報の通知をブラウザで許可する",
+    description:
+      "定期的に実行されるAIタスクを作成します。これらのタスクは、指定されたスケジュールに従って実行され、オプションのツールを使用してプロンプトを実行し、結果を保存してレビューします。",
+    newJob: "新しい仕事",
+    loading: "読み込み中...",
+    emptyTitle: "現時点で予定されている作業はありません。",
+    emptySubtitle: "まずは、簡単なものから始めてみましょう。",
+    table: {
+      name: "名前",
+      schedule: "スケジュール",
+      status: "ステータス",
+      lastRun: "最後の走行",
+      nextRun: "次回の開催",
+      actions: "行動",
+    },
+    confirmDelete: "本当にこの予定された作業を削除してもよろしいですか？",
+    toast: {
+      deleted: "求人情報が削除されました",
+      triggered: "ジョブが正常に実行されました",
+      triggerFailed: "ジョブの実行が失敗しました",
+      triggerSkipped: "この仕事については、すでに作業が進んでいます。",
+      killed: "作業は正常に終了しました",
+      killFailed: "仕事をやめることができなかった",
+    },
+    row: {
+      neverRun: "絶対に走らない",
+      viewRuns: "実行例",
+      runNow: "今すぐ行動を",
+      enable: "有効にする",
+      disable: "無効化",
+      edit: "編集",
+      delete: "削除",
+    },
+    modal: {
+      titleEdit: "予定されたタスクの編集",
+      titleNew: "新規スケジュールされた作業",
+      nameLabel: "名前",
+      namePlaceholder: "例：デイリーニュースダイジェスト",
+      promptLabel: "指示",
+      promptPlaceholder: "「各実行時に実行する」という指示...",
+      scheduleLabel: "スケジュール",
+      modeBuilder: "建設業者",
+      modeCustom: "オーダーメイド",
+      cronPlaceholder: "Cron 形式の指定 (例: 0 9 * * *)",
+      currentSchedule: "現在のスケジュール：",
+      toolsLabel: "道具（任意）",
+      toolsDescription:
+        "このタスクで使用できるエージェントツールを選択してください。 ツールが選択されていない場合、タスクはツールなしで実行されます。",
+      toolsSearch: "検索",
+      toolsNoResults: "該当するツールは見つかりませんでした。",
+      required: "必要",
+      requiredFieldsBanner:
+        "求人を作成するには、必要なすべての項目を記入してください。",
+      cancel: "キャンセル",
+      saving: "保存中...",
+      updateJob: "求人情報の更新",
+      createJob: "求人を作成する",
+      jobUpdated: "求人情報が更新されました",
+      jobCreated: "雇用が創出された",
+    },
+    builder: {
+      fallbackWarning:
+        "このテキストは、視覚的に編集することはできません。元のテキストを維持するには、「カスタム」モードに切り替えてください。または、以下の項目を変更することで、このテキストを上書きできます。",
+      run: "走る",
+      frequency: {
+        minute: "1分ごとに",
+        hour: "時間ごと",
+        day: "毎日",
+        week: "毎週",
+        month: "毎月",
+      },
+      every: "すべて",
+      minuteOne: "1分",
+      minuteOther: "{{count}} 分",
+      atMinute: "分単位で",
+      pastEveryHour: "過去の、1時間ごとに",
+      at: "～に",
+      on: "～について",
+      onDay: "ある日",
+      ofEveryMonth: "毎月",
+      weekdays: {
+        sun: "太陽",
+        mon: "月",
+        tue: "火曜日",
+        wed: "水曜日",
+        thu: "木曜日",
+        fri: "金曜日",
+        sat: "土曜日",
+      },
+    },
+    runHistory: {
+      back: "求人情報に戻る",
+      title: "実行履歴: {{name}}",
+      schedule: "スケジュール：",
+      emptyTitle: "現時点では、この仕事に対してまだ成果は出ていません。",
+      emptySubtitle: "現在ジョブを実行し、その結果を確認してください。",
+      runNow: "今すぐ実行",
+      table: {
+        status: "ステータス",
+        started: "開始",
+        duration: "期間",
+        error: "エラー",
+      },
+      stopJob: "仕事の停止",
+    },
+    runDetail: {
+      loading: "ロード実行の詳細を読み込んでいます...",
+      notFound: "指定されたプログラムが見つかりませんでした。",
+      back: "背面",
+      unknownJob: "不明な職種",
+      runHeading: "{{name}} — 実行: #{{id}}",
+      duration: "期間: {{value}}",
+      creating: "作成中...",
+      threadFailed: "スレッドの作成に失敗しました",
+      sections: {
+        prompt: "指示",
+        error: "エラー",
+        thinking: "考え ({{count}})",
+        toolCalls: "ツール呼び出し ({{count}})",
+        files: "ファイル ({{count}})",
+        response: "返答",
+        metrics: "指標",
+      },
+      metrics: {
+        promptTokens: "プロンプトトークン:",
+        completionTokens: "完了トークン：",
+      },
+      stopJob: "求人停止",
+      killing: "停止…",
+      continueInThread: "チャットを続ける",
+    },
+    toolCall: {
+      arguments: "主張：",
+      showResult: "結果を表示",
+      hideResult: "結果を非表示にする",
+    },
+    file: {
+      unknown: "不明なファイル",
+      download: "ダウンロード",
+      downloadFailed: "ファイルのダウンロードに失敗しました",
+      types: {
+        powerpoint: "パワーポイント",
+        pdf: "PDFドキュメント",
+        word: "Wordドキュメント",
+        spreadsheet: "スプレッドシート",
+        generic: "ファイル",
+      },
+    },
+    status: {
+      completed: "完了",
+      failed: "失敗",
+      timed_out: "時間切れ",
+      running: "ランニング",
+      queued: "待ち列",
     },
   },
 };
