@@ -409,7 +409,8 @@ const System = {
         return { title: null, favicon: null, error: e.message };
       });
 
-    if (result.error) return { title: null, favicon: null, error: result.error };
+    if (result.error)
+      return { title: null, favicon: null, error: result.error };
 
     window.localStorage.setItem(
       this.cacheKeys.browserAppearance,

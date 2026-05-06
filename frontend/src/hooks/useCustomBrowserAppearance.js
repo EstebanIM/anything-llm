@@ -29,9 +29,7 @@ function applyFavicon(favicon) {
 
 function readCache() {
   try {
-    const raw = window.localStorage.getItem(
-      System.cacheKeys.browserAppearance
-    );
+    const raw = window.localStorage.getItem(System.cacheKeys.browserAppearance);
     if (!raw) return { title: null, favicon: null };
     const { title, favicon } = JSON.parse(raw);
     return { title: title ?? null, favicon: favicon ?? null };

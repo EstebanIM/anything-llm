@@ -113,7 +113,8 @@ export default function SettingsSidebar() {
                     <SupportEmail />
                     <Link
                       hidden={
-                        user?.hasOwnProperty("role") && !["admin", "superadmin"].includes(user.role)
+                        user?.hasOwnProperty("role") &&
+                        !["admin", "superadmin"].includes(user.role)
                       }
                       to={paths.settings.privacy()}
                       className="text-theme-text-secondary hover:text-white text-xs leading-[18px] mx-3"
@@ -164,7 +165,8 @@ export default function SettingsSidebar() {
                   <SupportEmail />
                   <Link
                     hidden={
-                      user?.hasOwnProperty("role") && !["admin", "superadmin"].includes(user.role)
+                      user?.hasOwnProperty("role") &&
+                      !["admin", "superadmin"].includes(user.role)
                     }
                     to={paths.settings.privacy()}
                     className="text-theme-text-secondary hover:text-white hover:light:text-theme-text-primary text-xs leading-[18px] mx-3"

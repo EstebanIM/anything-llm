@@ -7,7 +7,8 @@ const { ROLES } = require("../../middleware/multiUserProtected");
 function validRoleSelection(currentUser = {}, newUserParams = {}) {
   if (!newUserParams.hasOwnProperty("role"))
     return { valid: true, error: null }; // not updating role, so skip.
-  if (currentUser.role === ROLES.superadmin) return { valid: true, error: null };
+  if (currentUser.role === ROLES.superadmin)
+    return { valid: true, error: null };
   if (currentUser.role === ROLES.admin) {
     // admin cannot assign superadmin
     const validRoles = [ROLES.admin, ROLES.manager, ROLES.default];
@@ -56,7 +57,8 @@ async function canModifyAdmin(userToModify, updates) {
 }
 
 function validCanModify(currentUser, existingUser) {
-  if (currentUser.role === ROLES.superadmin) return { valid: true, error: null };
+  if (currentUser.role === ROLES.superadmin)
+    return { valid: true, error: null };
   if (currentUser.role === ROLES.admin) {
     // admin cannot modify superadmins
     if (existingUser.role === ROLES.superadmin)

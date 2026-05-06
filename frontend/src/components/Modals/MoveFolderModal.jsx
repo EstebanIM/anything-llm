@@ -77,12 +77,7 @@ export default function MoveFolderModal({
     WorkspaceFolder.tree().then((data) => {
       const excludeIds = collectDescendantIds(folder);
       const movingDepth = subtreeMaxDepth(folder);
-      const opts = buildOptions(
-        data.folders || [],
-        excludeIds,
-        movingDepth,
-        t
-      );
+      const opts = buildOptions(data.folders || [], excludeIds, movingDepth, t);
       setOptions(opts);
     });
   }, []);
@@ -204,11 +199,7 @@ export default function MoveFolderModal({
             )}
           </div>
 
-          {error && (
-            <p className="text-red-400 text-sm mt-3">
-              {error}
-            </p>
-          )}
+          {error && <p className="text-red-400 text-sm mt-3">{error}</p>}
         </div>
 
         {/* Footer */}

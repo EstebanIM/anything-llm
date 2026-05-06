@@ -18,6 +18,17 @@ export default function ChatPromptSettings({
 }) {
   const currentUser = userFromStorage();
   if (currentUser?.role && currentUser.role !== "superadmin") return null;
+
+  return (
+    <ChatPromptSettingsForm
+      workspace={workspace}
+      setHasChanges={setHasChanges}
+      hasChanges={hasChanges}
+    />
+  );
+}
+
+function ChatPromptSettingsForm({ workspace, setHasChanges, hasChanges }) {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
 

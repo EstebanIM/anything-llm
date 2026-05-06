@@ -15,7 +15,9 @@ import { Droppable } from "react-beautiful-dnd";
 import WorkspaceFolder from "@/models/workspaceFolder";
 import showToast from "@/utils/toast";
 import { useTranslation } from "react-i18next";
-import MoveFolderModal, { useMoveFolderModal } from "@/components/Modals/MoveFolderModal";
+import MoveFolderModal, {
+  useMoveFolderModal,
+} from "@/components/Modals/MoveFolderModal";
 
 /**
  * Renders a single folder node with its children (sub-folders) and workspaces.
@@ -249,10 +251,7 @@ export default function FolderItem({
                   title="Cancel"
                   className="rounded-full p-[3px] hover:bg-white/10 light:hover:bg-slate-300/70"
                 >
-                  <X
-                    size={14}
-                    className="text-white/70 light:text-slate-600"
-                  />
+                  <X size={14} className="text-white/70 light:text-slate-600" />
                 </button>
               </>
             )}
@@ -276,7 +275,9 @@ export default function FolderItem({
               ref={provided.innerRef}
               {...provided.droppableProps}
               className={`flex flex-col gap-y-[2px] min-h-[8px] rounded-2xl transition-colors duration-150 ${
-                snapshot.isDraggingOver ? "bg-white/5 light:bg-slate-300/40" : ""
+                snapshot.isDraggingOver
+                  ? "bg-white/5 light:bg-slate-300/40"
+                  : ""
               }`}
               style={{ paddingLeft: `${indent + 16}px` }}
             >

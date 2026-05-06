@@ -45,8 +45,9 @@ const WorkspaceFolder = {
     const validated = {};
     for (const [key, value] of Object.entries(updates)) {
       if (!this.writable.includes(key)) continue;
-      validated[key] =
-        this.validations[key] ? this.validations[key](value) : value;
+      validated[key] = this.validations[key]
+        ? this.validations[key](value)
+        : value;
     }
     return validated;
   },
@@ -291,11 +292,7 @@ const WorkspaceFolder = {
 
     // Determine workspace query based on role
     let allWorkspaces;
-    if (
-      !user ||
-      user.role === "admin" ||
-      user.role === "manager"
-    ) {
+    if (!user || user.role === "admin" || user.role === "manager") {
       allWorkspaces = await prisma.workspaces.findMany({
         orderBy: { name: "asc" },
       });

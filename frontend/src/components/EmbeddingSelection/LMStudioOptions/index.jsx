@@ -149,9 +149,9 @@ export default function LMStudioEmbeddingOptions({ settings }) {
             />
             {autoDetectAttempted && autoDetectFailed && (
               <p className="text-xs text-yellow-400 mt-1">
-                Could not auto-detect LM Studio. Make sure the server is
-                started in LM Studio&apos;s Developer tab and that it is
-                running on port 1234.
+                Could not auto-detect LM Studio. Make sure the server is started
+                in LM Studio&apos;s Developer tab and that it is running on port
+                1234.
               </p>
             )}
           </div>

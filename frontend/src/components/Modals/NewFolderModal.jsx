@@ -7,7 +7,10 @@ import ModalWrapper from "@/components/ModalWrapper";
 
 const noop = () => false;
 
-export default function NewFolderModal({ hideModal = noop, onFolderCreated = noop }) {
+export default function NewFolderModal({
+  hideModal = noop,
+  onFolderCreated = noop,
+}) {
   const { t } = useTranslation();
   const formEl = useRef(null);
   const [error, setError] = useState(null);
@@ -53,7 +56,10 @@ export default function NewFolderModal({ hideModal = noop, onFolderCreated = noo
         <form ref={formEl} onSubmit={handleCreate}>
           <div className="py-6 px-9 space-y-4">
             <div>
-              <label htmlFor="folder-name" className="block mb-2 text-sm font-medium text-white">
+              <label
+                htmlFor="folder-name"
+                className="block mb-2 text-sm font-medium text-white"
+              >
                 {t("workspace-folders.placeholder")}
               </label>
               <input

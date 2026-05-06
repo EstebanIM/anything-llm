@@ -10,7 +10,6 @@ import Toggle from "@/components/lib/Toggle";
 import useCustomAppName from "@/hooks/useCustomAppName";
 
 export default function PrivacyAndDataHandling() {
-  const { brandName } = useCustomAppName();
   const [settings, setSettings] = useState({});
   const [loading, setLoading] = useState(true);
   const { t } = useTranslation();
@@ -64,6 +63,7 @@ function TelemetryLogs({ settings }) {
   const [telemetry, setTelemetry] = useState(
     settings?.DisableTelemetry !== "true"
   );
+  const { brandName } = useCustomAppName();
   const { t } = useTranslation();
   async function toggleTelemetry() {
     await System.updateSystem({

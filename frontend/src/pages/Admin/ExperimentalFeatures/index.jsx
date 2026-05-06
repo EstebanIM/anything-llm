@@ -11,7 +11,6 @@ import showToast from "@/utils/toast";
 import useCustomAppName from "@/hooks/useCustomAppName";
 
 export default function ExperimentalFeatures() {
-  const { brandName } = useCustomAppName();
   const [featureFlags, setFeatureFlags] = useState({});
   const [loading, setLoading] = useState(true);
   const [selectedFeature, setSelectedFeature] = useState(
@@ -179,6 +178,8 @@ function SelectedFeatureComponent({ feature, settings, refresh }) {
 }
 
 function FeatureVerification({ children }) {
+  const { brandName } = useCustomAppName();
+
   if (
     !window.localStorage.getItem("anythingllm_tos_experimental_feature_set")
   ) {
@@ -259,9 +260,7 @@ function FeatureVerification({ children }) {
                     </ul>
                   </div>
 
-                  <p>
-                    Access to any features requires approval of this modal.
-                  </p>
+                  <p>Access to any features requires approval of this modal.</p>
                 </div>
               </div>
               <div className="flex w-full justify-between items-center p-6 space-x-2 border-t border-theme-modal-border rounded-b">

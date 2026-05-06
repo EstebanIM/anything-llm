@@ -27,7 +27,12 @@ export default function useProviderEndpointAutoDiscovery({
     ENDPOINTS.forEach((endpoint) => {
       possibleEndpoints.push(
         new Promise((resolve, reject) => {
-          System.customModels(provider, authTokenValue, endpoint, discoveryTimeout)
+          System.customModels(
+            provider,
+            authTokenValue,
+            endpoint,
+            discoveryTimeout
+          )
             .then((results) => {
               // Treat "server reachable but no models loaded" as a detectable endpoint.
               if (results?.error === "LMSTUDIO_NO_MODELS_LOADED") {
