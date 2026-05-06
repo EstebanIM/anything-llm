@@ -95,7 +95,7 @@ const HistoricalMessage = ({
         className={`${isDeleted ? "animate-remove" : ""} flex justify-end w-full group`}
       >
         <div className="py-4 px-4 flex flex-col items-end">
-          <div className="bg-zinc-800 light:bg-slate-100 rounded-[20px] rounded-br-none px-4 py-3.5 max-w-[600px] [&_p]:m-0">
+          <div className="bg-zinc-800 light:bg-slate-100 rounded-[24px] rounded-br-lg px-4 py-3.5 max-w-[600px] [&_p]:m-0">
             <TruncatableContent>
               <RenderChatContent
                 role={role}
@@ -139,7 +139,7 @@ const HistoricalMessage = ({
             saveChanges={saveEditedMessage}
           />
         ) : (
-          <div className="break-words">
+          <div className="break-words bg-zinc-800 light:bg-slate-100 rounded-[24px] rounded-bl-lg px-4 py-3.5 w-fit max-w-[85%] [&_p]:m-0">
             <RenderChatContent role={role} message={message} messageId={uuid} />
             {isRefusalMessage && (
               <Link
@@ -214,7 +214,7 @@ function ChatAttachments({ attachments = [] }) {
           alt={`Attachment: ${item.name}`}
           key={item.name}
           src={item.contentString}
-          className="w-[120px] h-[120px] object-cover rounded-lg"
+          className="w-[120px] h-[120px] object-cover rounded-2xl"
         />
       ))}
     </div>

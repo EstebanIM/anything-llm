@@ -43,9 +43,9 @@ function AttachmentItem({ attachment }) {
 
   if (status === "in_progress") {
     return (
-      <div className="relative flex items-center gap-x-1 rounded-lg bg-theme-attachment-bg border-none w-[180px] group">
+      <div className="relative flex items-center gap-x-1 rounded-2xl bg-theme-attachment-bg border-none w-[180px] group">
         <div
-          className={`bg-theme-attachment-icon-spinner-bg rounded-md flex items-center justify-center flex-shrink-0 h-[32px] w-[32px] m-1`}
+          className={`bg-theme-attachment-icon-spinner-bg rounded-xl flex items-center justify-center flex-shrink-0 h-[32px] w-[32px] m-1`}
         >
           <CircleNotch
             size={18}
@@ -70,7 +70,7 @@ function AttachmentItem({ attachment }) {
       <div
         data-tooltip-id="attachment-status-tooltip"
         data-tooltip-content={error}
-        className={`relative flex items-center gap-x-1 rounded-lg bg-theme-attachment-error-bg border-none w-[180px] group`}
+        className={`relative flex items-center gap-x-1 rounded-2xl bg-theme-attachment-error-bg border-none w-[180px] group`}
       >
         <div className="invisible group-hover:visible absolute -top-[5px] -right-[5px] w-fit h-fit z-[10]">
           <button
@@ -82,7 +82,7 @@ function AttachmentItem({ attachment }) {
           </button>
         </div>
         <div
-          className={`bg-error rounded-md flex items-center justify-center flex-shrink-0 h-[32px] w-[32px] m-1`}
+          className={`bg-error rounded-xl flex items-center justify-center flex-shrink-0 h-[32px] w-[32px] m-1`}
         >
           <WarningOctagon size={24} className="text-theme-attachment-icon" />
         </div>
@@ -104,7 +104,7 @@ function AttachmentItem({ attachment }) {
         <div
           data-tooltip-id="attachment-status-tooltip"
           data-tooltip-content={`${file.name} will be attached to this prompt. It will not be embedded into the workspace permanently.`}
-          className={`relative flex items-center gap-x-1 rounded-lg border-none group`}
+          className={`relative flex items-center gap-x-1 rounded-2xl border-none group`}
         >
           <div className="invisible group-hover:visible absolute -top-[5px] -right-[5px] w-fit h-fit z-[10]">
             <button
@@ -119,7 +119,7 @@ function AttachmentItem({ attachment }) {
             alt={`Preview of ${file.name}`}
             src={contentString}
             style={{ objectFit: "cover", objectPosition: "center" }}
-            className={`${iconBgColor} w-[40px] h-[40px] rounded-lg flex items-center justify-center`}
+            className={`${iconBgColor} w-[40px] h-[40px] rounded-xl flex items-center justify-center`}
           />
         </div>
       );
@@ -129,7 +129,7 @@ function AttachmentItem({ attachment }) {
       <div
         data-tooltip-id="attachment-status-tooltip"
         data-tooltip-content={`${file.name} will be attached to this prompt. It will not be embedded into the workspace permanently.`}
-        className={`relative flex items-center gap-x-1 rounded-lg bg-theme-attachment-success-bg border-none w-[180px] group`}
+        className={`relative flex items-center gap-x-1 rounded-2xl bg-theme-attachment-success-bg border-none w-[180px] group`}
       >
         <div className="invisible group-hover:visible absolute -top-[5px] -right-[5px] w-fit h-fit z-[10]">
           <button
@@ -141,7 +141,7 @@ function AttachmentItem({ attachment }) {
           </button>
         </div>
         <div
-          className={`${iconBgColor} rounded-md flex items-center justify-center flex-shrink-0 h-[32px] w-[32px] m-1`}
+          className={`${iconBgColor} rounded-xl flex items-center justify-center flex-shrink-0 h-[32px] w-[32px] m-1`}
         >
           <Icon size={24} className="text-theme-attachment-icon" />
         </div>
@@ -165,7 +165,7 @@ function AttachmentItem({ attachment }) {
           ? `${file.name} was uploaded and embedded into this workspace. It will be available for RAG chat now.`
           : `${file.name} will be used as context for this chat only.`
       }
-      className={`relative flex items-center gap-x-1 rounded-lg bg-theme-attachment-bg border-none w-[180px] group`}
+      className={`relative flex items-center gap-x-1 rounded-2xl bg-theme-attachment-bg border-none w-[180px] group`}
     >
       <div className="invisible group-hover:visible absolute -top-[5px] -right-[5px] w-fit h-fit z-[10]">
         <button
@@ -177,7 +177,7 @@ function AttachmentItem({ attachment }) {
         </button>
       </div>
       <div
-        className={`${iconBgColor} rounded-md flex items-center justify-center flex-shrink-0 h-[32px] w-[32px] m-1`}
+        className={`${iconBgColor} rounded-xl flex items-center justify-center flex-shrink-0 h-[32px] w-[32px] m-1`}
       >
         <Icon size={24} weight="light" className="text-theme-attachment-icon" />
       </div>

@@ -170,7 +170,7 @@ export function CitationDetailModal({ source, onClose }) {
 
   return (
     <ModalWrapper isOpen={!!source}>
-      <div className="w-full max-w-2xl bg-zinc-900 light:bg-white rounded-lg shadow border-2 border-zinc-700 light:border-slate-300 overflow-hidden">
+      <div className="w-full max-w-2xl bg-zinc-900 light:bg-white rounded-2xl shadow border-2 border-zinc-700 light:border-slate-300 overflow-hidden">
         <div className="relative p-6 border-b rounded-t border-zinc-700 light:border-slate-300">
           <div className="w-full flex gap-x-2 items-center">
             {isUrl ? (

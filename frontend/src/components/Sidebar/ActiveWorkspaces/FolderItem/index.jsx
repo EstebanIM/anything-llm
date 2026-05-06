@@ -9,11 +9,13 @@ import {
   Trash,
   Check,
   X,
+  ArrowsOutCardinal,
 } from "@phosphor-icons/react";
 import { Droppable } from "react-beautiful-dnd";
 import WorkspaceFolder from "@/models/workspaceFolder";
 import showToast from "@/utils/toast";
 import { useTranslation } from "react-i18next";
+import MoveFolderModal, { useMoveFolderModal } from "@/components/Modals/MoveFolderModal";
 
 /**
  * Renders a single folder node with its children (sub-folders) and workspaces.
@@ -45,6 +47,7 @@ export default function FolderItem({
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const renameRef = useRef(null);
+  const moveModal = useMoveFolderModal();
 
   const isExpanded = expandedMap[folder.id] !== false; // default: expanded
   const isAdmin = !user || user?.role !== "default";
@@ -203,6 +206,17 @@ export default function FolderItem({
                 className="text-white/70 hover:text-white light:text-slate-600 light:hover:text-slate-900"
               />
             </button>
+            <button
+              type="button"
+              onClick={moveModal.showModal}
+              title={t("workspace-folders.move")}
+              className="rounded-full p-[3px] hover:bg-white/10 light:hover:bg-slate-300/70"
+            >
+              <ArrowsOutCardinal
+                size={14}
+                className="text-white/70 hover:text-white light:text-slate-600 light:hover:text-slate-900"
+              />
+            </button>
             {!showConfirmDelete ? (
               <button
                 type="button"
@@ -245,6 +259,14 @@ export default function FolderItem({
           </div>
         )}
       </div>
+
+      {moveModal.showing && (
+        <MoveFolderModal
+          folder={folder}
+          hideModal={moveModal.hideModal}
+          onMoved={onFolderChange}
+        />
+      )}
 
       {/* Folder body: workspaces + sub-folders droppable zone */}
       {isExpanded && (

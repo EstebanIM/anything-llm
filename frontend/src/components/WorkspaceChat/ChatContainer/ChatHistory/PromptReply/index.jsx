@@ -40,12 +40,14 @@ const PromptReply = ({ uuid, reply, pending, error, sources = [] }) => {
 
   return (
     <div key={uuid} className="flex justify-start w-full">
-      <div className="py-4 pl-0 pr-4 flex flex-col w-full">
-        <RenderAssistantChatContent
-          key={`${uuid}-prompt-reply-content`}
-          message={reply}
-          messageId={uuid}
-        />
+      <div className="py-4 pl-0 pr-4 flex flex-col items-start w-full">
+        <div className="bg-zinc-800 light:bg-slate-100 rounded-[24px] rounded-bl-lg px-4 py-3.5 w-fit max-w-[85%] [&_p]:m-0">
+          <RenderAssistantChatContent
+            key={`${uuid}-prompt-reply-content`}
+            message={reply}
+            messageId={uuid}
+          />
+        </div>
         <Citations sources={sources} />
       </div>
     </div>
