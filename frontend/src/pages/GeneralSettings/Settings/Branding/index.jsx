@@ -1,10 +1,9 @@
 import Sidebar from "@/components/SettingsSidebar";
 import { isMobile } from "react-device-detect";
-import FooterCustomization from "../components/FooterCustomization";
-import SupportEmail from "../components/SupportEmail";
 import CustomLogo from "../components/CustomLogo";
 import { useTranslation } from "react-i18next";
 import CustomAppName from "../components/CustomAppName";
+import CustomLoginPoweredBy from "../components/CustomLoginPoweredBy";
 import CustomSiteSettings from "../components/CustomSiteSettings";
 
 export default function BrandingSettings() {
@@ -29,9 +28,8 @@ export default function BrandingSettings() {
             </p>
           </div>
           <CustomAppName />
+          <CustomLoginPoweredBy />
           <CustomLogo />
-          <FooterCustomization />
-          <SupportEmail />
           <CustomSiteSettings />
         </div>
       </div>

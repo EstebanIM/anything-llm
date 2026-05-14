@@ -7,9 +7,8 @@ import SystemPromptVariable from "./systemPromptVariable";
 
 const System = {
   cacheKeys: {
-    footerIcons: "anythingllm_footer_links",
-    supportEmail: "anythingllm_support_email",
     customAppName: "anythingllm_custom_app_name",
+    loginPoweredBy: "anythingllm_login_powered_by",
     browserAppearance: "anythingllm_browser_appearance",
     canViewChatHistory: "anythingllm_can_view_chat_history",
     deploymentVersion: "anythingllm_deployment_version",
@@ -277,7 +276,8 @@ const System = {
         return { success: false, error: e.message };
       });
   },
-  uploadLogo: async function (formData) {
+  uploadLogo: async function (formData, theme = null) {
+    if (theme) formData.set("theme", theme);
     return await fetch(`${API_BASE}/system/upload-logo`, {
       method: "POST",
       body: formData,
@@ -292,69 +292,6 @@ const System = {
         return { success: false, error: e.message };
       });
   },
-  fetchCustomFooterIcons: async function () {
-    const cache = window.localStorage.getItem(this.cacheKeys.footerIcons);
-    const { data, lastFetched } = cache
-      ? safeJsonParse(cache, { data: [], lastFetched: 0 })
-      : { data: [], lastFetched: 0 };
-
-    if (!!data && Date.now() - lastFetched < 3_600_000)
-      return { footerData: data, error: null };
-
-    const { footerData, error } = await fetch(
-      `${API_BASE}/system/footer-data`,
-      {
-        method: "GET",
-        cache: "no-cache",
-        headers: baseHeaders(),
-      }
-    )
-      .then((res) => res.json())
-      .catch((e) => {
-        console.log(e);
-        return { footerData: [], error: e.message };
-      });
-
-    if (!footerData || !!error) return { footerData: [], error: null };
-
-    const newData = safeJsonParse(footerData, []);
-    window.localStorage.setItem(
-      this.cacheKeys.footerIcons,
-      JSON.stringify({ data: newData, lastFetched: Date.now() })
-    );
-    return { footerData: newData, error: null };
-  },
-  fetchSupportEmail: async function () {
-    const cache = window.localStorage.getItem(this.cacheKeys.supportEmail);
-    const { email, lastFetched } = cache
-      ? safeJsonParse(cache, { email: "", lastFetched: 0 })
-      : { email: "", lastFetched: 0 };
-
-    if (!!email && Date.now() - lastFetched < 3_600_000)
-      return { email: email, error: null };
-
-    const { supportEmail, error } = await fetch(
-      `${API_BASE}/system/support-email`,
-      {
-        method: "GET",
-        cache: "no-cache",
-        headers: baseHeaders(),
-      }
-    )
-      .then((res) => res.json())
-      .catch((e) => {
-        console.log(e);
-        return { email: "", error: e.message };
-      });
-
-    if (!supportEmail || !!error) return { email: "", error: null };
-    window.localStorage.setItem(
-      this.cacheKeys.supportEmail,
-      JSON.stringify({ email: supportEmail, lastFetched: Date.now() })
-    );
-    return { email: supportEmail, error: null };
-  },
-
   fetchCustomAppName: async function () {
     const cache = window.localStorage.getItem(this.cacheKeys.customAppName);
     const { appName, lastFetched } = cache
@@ -388,6 +325,40 @@ const System = {
       JSON.stringify({ appName: customAppName, lastFetched: Date.now() })
     );
     return { appName: customAppName, error: null };
+  },
+
+  fetchLoginPoweredBy: async function () {
+    const cache = window.localStorage.getItem(this.cacheKeys.loginPoweredBy);
+    const { loginPoweredBy, lastFetched } = cache
+      ? safeJsonParse(cache, { loginPoweredBy: "", lastFetched: 0 })
+      : { loginPoweredBy: "", lastFetched: 0 };
+
+    if (!!loginPoweredBy && Date.now() - lastFetched < 3_600_000)
+      return { loginPoweredBy, error: null };
+
+    const { loginPoweredBy: poweredByText, error } = await fetch(
+      `${API_BASE}/system/login-powered-by`,
+      {
+        method: "GET",
+        cache: "no-cache",
+      }
+    )
+      .then((res) => res.json())
+      .catch((e) => {
+        console.log(e);
+        return { loginPoweredBy: "", error: e.message };
+      });
+
+    if (!poweredByText || !!error) {
+      window.localStorage.removeItem(this.cacheKeys.loginPoweredBy);
+      return { loginPoweredBy: "", error: null };
+    }
+
+    window.localStorage.setItem(
+      this.cacheKeys.loginPoweredBy,
+      JSON.stringify({ loginPoweredBy: poweredByText, lastFetched: Date.now() })
+    );
+    return { loginPoweredBy: poweredByText, error: null };
   },
 
   fetchBrowserAppearance: async function () {
@@ -456,12 +427,14 @@ const System = {
       return { success: false, message: e.message };
     }
   },
-  fetchLogo: async function () {
+  fetchLogo: async function (theme = null) {
     const url = new URL(`${fullApiUrl()}/system/logo`);
-    url.searchParams.append(
-      "theme",
-      localStorage.getItem("theme") || "default"
-    );
+    const resolvedTheme =
+      theme ||
+      (document.documentElement.getAttribute("data-theme") === "light"
+        ? "light"
+        : "dark");
+    url.searchParams.append("theme", resolvedTheme);
 
     return await fetch(url, {
       method: "GET",
@@ -470,6 +443,8 @@ const System = {
       .then(async (res) => {
         if (res.ok && res.status !== 204) {
           const isCustomLogo = res.headers.get("X-Is-Custom-Logo") === "true";
+          if (!isCustomLogo) return { isCustomLogo: false, logoURL: null };
+
           const blob = await res.blob();
           const logoURL = URL.createObjectURL(blob);
           return { isCustomLogo, logoURL };
@@ -511,8 +486,10 @@ const System = {
       });
   },
 
-  isDefaultLogo: async function () {
-    return await fetch(`${API_BASE}/system/is-default-logo`, {
+  isDefaultLogo: async function (theme = null) {
+    const url = new URL(`${fullApiUrl()}/system/is-default-logo`);
+    if (theme) url.searchParams.append("theme", theme);
+    return await fetch(url, {
       method: "GET",
       cache: "no-cache",
     })
@@ -526,8 +503,10 @@ const System = {
         return null;
       });
   },
-  removeCustomLogo: async function () {
-    return await fetch(`${API_BASE}/system/remove-logo`, {
+  removeCustomLogo: async function (theme = null) {
+    const url = new URL(`${fullApiUrl()}/system/remove-logo`);
+    if (theme) url.searchParams.append("theme", theme);
+    return await fetch(url, {
       headers: baseHeaders(),
     })
       .then((res) => {

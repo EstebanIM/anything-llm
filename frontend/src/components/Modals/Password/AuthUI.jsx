@@ -1,6 +1,7 @@
 import React from "react";
-import { Lightning, Sparkle } from "@phosphor-icons/react";
+import { Lightning } from "@phosphor-icons/react";
 import useCustomAppName from "@/hooks/useCustomAppName";
+import useLoginPoweredBy from "@/hooks/useLoginPoweredBy";
 import useLogo from "@/hooks/useLogo";
 import loginBackground from "../../../../../images/LoginBackground.jpg";
 
@@ -9,6 +10,8 @@ const panelWidth = "w-[min(398px,calc(100vw-32px))]";
 export function LoginScreen({ children }) {
   const { loginLogo, isCustomLogo } = useLogo();
   const { brandName } = useCustomAppName();
+  const { loginPoweredBy } = useLoginPoweredBy();
+  const showLoginFooter = loginPoweredBy.trim();
 
   return (
     <main className="fixed inset-0 overflow-hidden bg-[#0b2a35] font-sans text-white">
@@ -34,13 +37,15 @@ export function LoginScreen({ children }) {
           {children}
         </section>
 
-        <footer className={`${panelWidth} mt-4 flex flex-col items-center`}>
-          <div className="h-px w-full bg-gradient-to-r from-transparent via-white/[0.35] to-transparent" />
-          <p className="mt-4 flex items-center gap-2 text-[13px] font-medium text-white drop-shadow-[0_1px_10px_rgba(0,20,28,0.55)]">
-            <Lightning size={15} weight="regular" />
-            Desarrollado por C-766
-          </p>
-        </footer>
+        {showLoginFooter && (
+          <footer className={`${panelWidth} mt-4 flex flex-col items-center`}>
+            <div className="h-px w-full bg-gradient-to-r from-transparent via-white/[0.35] to-transparent" />
+            <p className="mt-4 flex items-center gap-2 text-[13px] font-medium text-white drop-shadow-[0_1px_10px_rgba(0,20,28,0.55)]">
+              <Lightning size={15} weight="regular" />
+              {showLoginFooter}
+            </p>
+          </footer>
+        )}
       </div>
     </main>
   );
@@ -59,14 +64,7 @@ function AuthBrand({ brandName, isCustomLogo, loginLogo }) {
     );
   }
 
-  return (
-    <div className="mb-7 flex items-center justify-center gap-2 text-white">
-      <Sparkle size={34} weight="fill" />
-      <span className="text-[28px] font-semibold leading-none tracking-[-0.01em]">
-        {brandName}
-      </span>
-    </div>
-  );
+  return null;
 }
 
 export function AuthHeader({ title, description }) {

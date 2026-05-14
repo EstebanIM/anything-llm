@@ -144,8 +144,8 @@ const BrowserExtensionApiKey = {
     limit = null,
     orderBy = null
   ) {
-    // Admin can view and use any keys
-    if ([ROLES.admin].includes(user.role))
+    // Superadmins and admins can view and use any keys.
+    if ([ROLES.superadmin, ROLES.admin].includes(user.role))
       return await this.where(clause, limit, orderBy);
 
     try {

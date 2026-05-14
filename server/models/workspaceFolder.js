@@ -1,6 +1,7 @@
 const prisma = require("../utils/prisma");
 const slugifyModule = require("slugify");
 const { v4: uuidv4 } = require("uuid");
+const { ROLES } = require("../utils/middleware/multiUserProtected");
 
 const WorkspaceFolder = {
   MAX_DEPTH: 5,
@@ -50,6 +51,37 @@ const WorkspaceFolder = {
         : value;
     }
     return validated;
+  },
+
+  canSeeAllFolders: function (user = null) {
+    return (
+      !user ||
+      [ROLES.superadmin, ROLES.admin, ROLES.manager].includes(user.role)
+    );
+  },
+
+  pruneVisibleFolders: function (folders = []) {
+    return folders.reduce((visibleFolders, folder) => {
+      const children = this.pruneVisibleFolders(folder.children || []);
+      const workspaces = folder.workspaces || [];
+
+      if (workspaces.length > 0 || children.length > 0) {
+        visibleFolders.push({ ...folder, children, workspaces });
+      }
+
+      return visibleFolders;
+    }, []);
+  },
+
+  flattenFolders: function (folders = []) {
+    return folders.reduce((flattened, folder) => {
+      const folderRecord = { ...folder };
+      delete folderRecord.children;
+      delete folderRecord.workspaces;
+      flattened.push(folderRecord);
+      flattened.push(...this.flattenFolders(folder.children || []));
+      return flattened;
+    }, []);
   },
 
   get: async function (clause = {}) {
@@ -292,7 +324,7 @@ const WorkspaceFolder = {
 
     // Determine workspace query based on role
     let allWorkspaces;
-    if (!user || user.role === "admin" || user.role === "manager") {
+    if (this.canSeeAllFolders(user)) {
       allWorkspaces = await prisma.workspaces.findMany({
         orderBy: { name: "asc" },
       });
@@ -332,16 +364,26 @@ const WorkspaceFolder = {
       }
     }
 
-    return { folders: rootFolders, workspaces: rootWorkspaces };
+    return {
+      folders: this.canSeeAllFolders(user)
+        ? rootFolders
+        : this.pruneVisibleFolders(rootFolders),
+      workspaces: rootWorkspaces,
+    };
   },
 
   /**
    * Flat list of all folders for dropdowns.
    */
-  all: async function () {
-    return prisma.workspace_folders.findMany({
-      orderBy: [{ parent_id: "asc" }, { order: "asc" }, { name: "asc" }],
-    });
+  all: async function (user = null) {
+    if (this.canSeeAllFolders(user)) {
+      return prisma.workspace_folders.findMany({
+        orderBy: [{ parent_id: "asc" }, { order: "asc" }, { name: "asc" }],
+      });
+    }
+
+    const tree = await this.tree(user);
+    return this.flattenFolders(tree.folders);
   },
 };
 

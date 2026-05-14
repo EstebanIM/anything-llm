@@ -1,10 +1,9 @@
 import useLoginMode from "@/hooks/useLoginMode";
 import usePfp from "@/hooks/usePfp";
 import useUser from "@/hooks/useUser";
-import System from "@/models/system";
 import paths from "@/utils/paths";
 import { userFromStorage } from "@/utils/request";
-import { Person } from "@phosphor-icons/react";
+import { Gear, House, Person } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
 import AccountModal from "../AccountModal";
 import {
@@ -15,22 +14,30 @@ import {
   USER_PROMPT_INPUT_MAP,
 } from "@/utils/constants";
 import { useTranslation } from "react-i18next";
+import { Link, useMatch } from "react-router-dom";
 
-export default function UserButton() {
+export default function UserButton({ className = "" }) {
   const { t } = useTranslation();
   const mode = useLoginMode();
   const { user } = useUser();
+  const inSettingsIndex = useMatch("/settings");
+  const inSettingsChild = useMatch("/settings/*");
+  const isInSettings = !!inSettingsIndex || !!inSettingsChild;
+  const canAccessSettings = !user || user?.role !== "default";
+  const settingsPath = isInSettings ? paths.home() : paths.settings.interface();
+  const settingsLabel = isInSettings
+    ? t("profile_settings.back_to_workspaces")
+    : t("profile_settings.settings");
   const menuRef = useRef();
   const buttonRef = useRef();
   const [showMenu, setShowMenu] = useState(false);
   const [showAccountSettings, setShowAccountSettings] = useState(false);
-  const [supportEmail, setSupportEmail] = useState("");
 
   const handleClose = (event) => {
     if (
       menuRef.current &&
       !menuRef.current.contains(event.target) &&
-      !buttonRef.current.contains(event.target)
+      !buttonRef.current?.contains(event.target)
     ) {
       setShowMenu(false);
     }
@@ -48,21 +55,9 @@ export default function UserButton() {
     return () => document.removeEventListener("mousedown", handleClose);
   }, [showMenu]);
 
-  useEffect(() => {
-    const fetchSupportEmail = async () => {
-      const supportEmail = await System.fetchSupportEmail();
-      setSupportEmail(
-        supportEmail?.email
-          ? `mailto:${supportEmail.email}`
-          : paths.mailToMintplex()
-      );
-    };
-    fetchSupportEmail();
-  }, []);
-
   if (mode === null) return null;
   return (
-    <div className="absolute top-3 right-4 md:top-9 md:right-10 w-fit h-fit z-40">
+    <div className={`relative w-fit h-fit z-40 ${className}`}>
       <button
         ref={buttonRef}
         onClick={() => setShowMenu(!showMenu)}
@@ -75,9 +70,19 @@ export default function UserButton() {
       {showMenu && (
         <div
           ref={menuRef}
-          className="w-fit rounded-lg absolute top-12 right-0 bg-theme-action-menu-bg p-2 flex items-center-justify-center"
+          className="min-w-[190px] rounded-lg absolute bottom-12 left-1/2 -translate-x-1/2 bg-theme-action-menu-bg p-2 flex items-center-justify-center shadow-2xl"
         >
           <div className="flex flex-col gap-y-2">
+            {canAccessSettings && (
+              <Link
+                to={settingsPath}
+                onClick={() => setShowMenu(false)}
+                className="text-white hover:bg-theme-action-menu-item-hover w-full text-left px-4 py-1.5 rounded-md flex items-center gap-x-2"
+              >
+                {isInSettings ? <House size={16} /> : <Gear size={16} />}
+                <span>{settingsLabel}</span>
+              </Link>
+            )}
             {mode === "multi" && !!user && (
               <button
                 onClick={handleOpenAccountModal}
@@ -87,7 +92,7 @@ export default function UserButton() {
               </button>
             )}
             <a
-              href={supportEmail}
+              href={paths.mailToMintplex()}
               className="text-white hover:bg-theme-action-menu-item-hover w-full text-left px-4 py-1.5 rounded-md"
             >
               {t("profile_settings.support")}

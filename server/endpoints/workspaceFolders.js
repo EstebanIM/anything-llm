@@ -34,9 +34,10 @@ function workspaceFolderEndpoints(app) {
   app.get(
     "/workspace-folders",
     [validatedRequest],
-    async (_request, response) => {
+    async (request, response) => {
       try {
-        const folders = await WorkspaceFolder.all();
+        const user = await userFromSession(request, response);
+        const folders = await WorkspaceFolder.all(user);
         response.status(200).json({ folders });
       } catch (e) {
         console.error(e.message, e);

@@ -382,8 +382,7 @@ function adminEndpoints(app) {
         // These match the ManagerRoute pages in the frontend.
         const managerAllowedFields = [
           "custom_app_name",
-          "footer_data",
-          "support_email",
+          "login_powered_by",
           "meta_page_title",
           "meta_page_favicon",
         ];
@@ -409,12 +408,6 @@ function adminEndpoints(app) {
             : await SystemSettings.get({ label });
 
           switch (label) {
-            case "footer_data":
-              requestedSettings[label] = setting?.value ?? JSON.stringify([]);
-              break;
-            case "support_email":
-              requestedSettings[label] = setting?.value || null;
-              break;
             case "text_splitter_chunk_size":
               requestedSettings[label] =
                 setting?.value || embedder?.embeddingMaxChunkLength || null;
@@ -455,6 +448,9 @@ function adminEndpoints(app) {
               requestedSettings[label] = ImportedPlugin.listImportedPlugins();
               break;
             case "custom_app_name":
+              requestedSettings[label] = setting?.value || null;
+              break;
+            case "login_powered_by":
               requestedSettings[label] = setting?.value || null;
               break;
             case "feature_flags":
@@ -499,8 +495,7 @@ function adminEndpoints(app) {
         if (user?.role === ROLES.manager) {
           const managerAllowedFields = [
             "custom_app_name",
-            "footer_data",
-            "support_email",
+            "login_powered_by",
             "meta_page_title",
             "meta_page_favicon",
           ];

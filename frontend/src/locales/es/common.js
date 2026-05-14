@@ -872,6 +872,12 @@ const TRANSLATIONS = {
         description:
           "Establece un nombre que se mostrará en la página de inicio de sesión para todos los usuarios.",
       },
+      "login-powered-by": {
+        title: "Texto del pie de login",
+        description:
+          "Define el texto que aparece bajo el formulario de inicio de sesión.",
+        placeholder: "Desarrollado por tu organizacion",
+      },
       "display-language": {
         title: "Idioma de visualización",
         description:
@@ -880,11 +886,23 @@ const TRANSLATIONS = {
       logo: {
         title: "Logotipo de la marca",
         description:
-          "Sube tu logotipo personalizado para mostrarlo en todas las páginas.",
+          "Sube logotipos personalizados para los temas claro y oscuro.",
         add: "Agregar un logotipo personalizado",
         recommended: "Tamaño recomendado: 800 x 200",
         remove: "Eliminar",
         replace: "Reemplazar",
+        dark: {
+          title: "Modo oscuro",
+          description:
+            "Logotipo mostrado cuando la interfaz usa el tema oscuro.",
+          alt: "Logotipo subido para modo oscuro",
+        },
+        light: {
+          title: "Modo claro",
+          description:
+            "Logotipo mostrado cuando la interfaz usa el tema claro.",
+          alt: "Logotipo subido para modo claro",
+        },
       },
       "browser-appearance": {
         title: "Apariencia del navegador",
@@ -1366,6 +1384,8 @@ const TRANSLATIONS = {
     profile_updated: "Perfil actualizado.",
     failed_update_user: "Error al actualizar el usuario: {{error}}",
     account: "Cuenta",
+    settings: "Configuracion",
+    back_to_workspaces: "Volver a espacios de trabajo",
     support: "Soporte",
     signout: "Cerrar sesión",
   },

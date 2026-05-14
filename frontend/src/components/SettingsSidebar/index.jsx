@@ -19,7 +19,6 @@ import Footer from "../Footer";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import showToast from "@/utils/toast";
-import System from "@/models/system";
 import Option from "./MenuOption";
 import { CanViewChatHistoryProvider } from "../CanViewChatHistory";
 import useAppVersion from "@/hooks/useAppVersion";
@@ -56,12 +55,14 @@ export default function SettingsSidebar() {
             <List className="h-6 w-6" />
           </button>
           <div className="flex items-center justify-center flex-grow">
-            <img
-              src={logo}
-              alt="Logo"
-              className="block mx-auto h-6 w-auto"
-              style={{ maxHeight: "40px", objectFit: "contain" }}
-            />
+            {logo && (
+              <img
+                src={logo}
+                alt="Logo"
+                className="block mx-auto h-6 w-auto"
+                style={{ maxHeight: "40px", objectFit: "contain" }}
+              />
+            )}
           </div>
           <div className="w-12"></div>
         </div>
@@ -85,15 +86,19 @@ export default function SettingsSidebar() {
           >
             <div className="w-full h-full flex flex-col overflow-x-hidden items-between">
               {/* Header Information */}
-              <div className="flex w-full items-center justify-between gap-x-4">
-                <div className="flex shrink-1 w-fit items-center justify-start">
-                  <img
-                    src={logo}
-                    alt="Logo"
-                    className="rounded w-full max-h-[40px]"
-                    style={{ objectFit: "contain" }}
-                  />
-                </div>
+              <div
+                className={`flex w-full items-center gap-x-4 ${logo ? "justify-between" : "justify-end"}`}
+              >
+                {logo && (
+                  <div className="flex shrink-1 w-fit items-center justify-start">
+                    <img
+                      src={logo}
+                      alt="Logo"
+                      className="rounded w-full max-h-[40px]"
+                      style={{ objectFit: "contain" }}
+                    />
+                  </div>
+                )}
                 <div className="flex gap-x-2 items-center text-slate-500 shrink-0">
                   <a
                     href={paths.home()}
@@ -110,7 +115,6 @@ export default function SettingsSidebar() {
                   <div className="flex flex-col gap-y-4 pb-[60px] overflow-y-scroll no-scroll">
                     <SidebarOptions user={user} t={t} />
                     <div className="h-[1.5px] bg-[#3D4147] mx-3 mt-[14px]" />
-                    <SupportEmail />
                     <Link
                       hidden={
                         user?.hasOwnProperty("role") &&
@@ -126,7 +130,7 @@ export default function SettingsSidebar() {
                 </div>
               </div>
               <div className="absolute bottom-2 left-0 right-0 pt-2 bg-theme-bg-sidebar bg-opacity-80 backdrop-filter backdrop-blur-md">
-                <Footer />
+                <Footer allowMobile />
               </div>
             </div>
           </div>
@@ -138,20 +142,22 @@ export default function SettingsSidebar() {
   return (
     <>
       <div>
-        <Link
-          to={paths.home()}
-          className="flex shrink-0 max-w-[55%] items-center justify-start mx-[20.5px] my-[18px]"
-        >
-          <img
-            src={logo}
-            alt="Logo"
-            className="rounded max-h-[24px]"
-            style={{ objectFit: "contain" }}
-          />
-        </Link>
+        {logo && (
+          <Link
+            to={paths.home()}
+            className="flex shrink-0 max-w-[55%] items-center justify-start mx-[20.5px] my-[18px]"
+          >
+            <img
+              src={logo}
+              alt="Logo"
+              className="rounded max-h-[24px]"
+              style={{ objectFit: "contain" }}
+            />
+          </Link>
+        )}
         <div
           ref={sidebarRef}
-          className="transition-all duration-500 relative m-[16px] rounded-[16px] bg-theme-bg-sidebar border-[2px] border-theme-sidebar-border light:border-none min-w-[250px] p-[10px] h-[calc(100%-76px)]"
+          className={`transition-all duration-500 relative m-[16px] rounded-[16px] bg-theme-bg-sidebar border-[2px] border-theme-sidebar-border light:border-none min-w-[250px] p-[10px] ${logo ? "h-[calc(100%-76px)]" : "h-[calc(100%-32px)]"}`}
         >
           <div className="w-full h-full flex flex-col overflow-x-hidden items-between min-w-[235px]">
             <div className="text-theme-text-secondary text-sm font-medium uppercase mt-[4px] mb-0 ml-2">
@@ -162,7 +168,6 @@ export default function SettingsSidebar() {
                 <div className="flex flex-col gap-y-2 pb-[60px] overflow-y-scroll no-scroll">
                   <SidebarOptions user={user} t={t} />
                   <div className="h-[1.5px] bg-[#3D4147] mx-3 mt-[14px]" />
-                  <SupportEmail />
                   <Link
                     hidden={
                       user?.hasOwnProperty("role") &&
@@ -184,32 +189,6 @@ export default function SettingsSidebar() {
         </div>
       </div>
     </>
-  );
-}
-
-function SupportEmail() {
-  const [supportEmail, setSupportEmail] = useState(paths.mailToMintplex());
-  const { t } = useTranslation();
-
-  useEffect(() => {
-    const fetchSupportEmail = async () => {
-      const supportEmail = await System.fetchSupportEmail();
-      setSupportEmail(
-        supportEmail?.email
-          ? `mailto:${supportEmail.email}`
-          : paths.mailToMintplex()
-      );
-    };
-    fetchSupportEmail();
-  }, []);
-
-  return (
-    <Link
-      to={supportEmail}
-      className="text-theme-text-secondary hover:text-white hover:light:text-theme-text-primary text-xs leading-[18px] mx-3 mt-1"
-    >
-      {t("settings.contact")}
-    </Link>
   );
 }
 

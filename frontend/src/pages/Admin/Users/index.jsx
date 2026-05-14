@@ -122,8 +122,14 @@ const ROLE_HINT = {
     "Cannot modify LLM, vectorDB, embedding, or other connections.",
   ],
   admin: [
+    "Can access standard admin settings and workspace management.",
+    "Can create and manage admin, manager, and default users.",
+    "Cannot create or modify super administrators.",
+  ],
+  superadmin: [
     "Highest user level privilege.",
-    "Can see and do everything across the system.",
+    "Can access all configuration, personalization, and workspace data.",
+    "Can create and manage users at every role level, including super administrators.",
   ],
 };
 

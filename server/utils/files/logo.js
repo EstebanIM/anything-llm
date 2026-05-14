@@ -6,6 +6,10 @@ const { SystemSettings } = require("../../models/systemSettings");
 const { normalizePath, isWithin } = require(".");
 const LOGO_FILENAME = "anything-llm.png";
 const LOGO_FILENAME_DARK = "anything-llm-dark.png";
+const LOGO_THEMES = {
+  dark: "dark",
+  light: "light",
+};
 
 /**
  * Checks if the filename is the default logo filename for dark or light mode.
@@ -30,8 +34,30 @@ function getDefaultFilename(darkMode = true) {
   return darkMode ? LOGO_FILENAME : LOGO_FILENAME_DARK;
 }
 
-async function determineLogoFilepath(defaultFilename = LOGO_FILENAME) {
-  const currentLogoFilename = await SystemSettings.currentLogoFilename();
+function normalizeLogoTheme(theme = LOGO_THEMES.dark) {
+  return theme === LOGO_THEMES.light ? LOGO_THEMES.light : LOGO_THEMES.dark;
+}
+
+async function currentLogoFilenameForTheme(theme = null) {
+  const logoTheme = theme ? normalizeLogoTheme(theme) : null;
+  const themeLogoFilename = logoTheme
+    ? await SystemSettings.currentLogoFilename(logoTheme)
+    : null;
+  if (themeLogoFilename && validFilename(themeLogoFilename))
+    return themeLogoFilename;
+
+  const legacyLogoFilename = await SystemSettings.currentLogoFilename();
+  if (legacyLogoFilename && validFilename(legacyLogoFilename))
+    return legacyLogoFilename;
+
+  return null;
+}
+
+async function determineLogoFilepath(
+  defaultFilename = LOGO_FILENAME,
+  theme = null
+) {
+  const currentLogoFilename = await currentLogoFilenameForTheme(theme);
   const basePath = process.env.STORAGE_DIR
     ? path.join(process.env.STORAGE_DIR, "assets")
     : path.join(__dirname, "../../storage/assets");
@@ -111,7 +137,11 @@ module.exports = {
   removeCustomLogo,
   validFilename,
   getDefaultFilename,
+  normalizeLogoTheme,
+  currentLogoFilenameForTheme,
   determineLogoFilepath,
   isDefaultFilename,
   LOGO_FILENAME,
+  LOGO_FILENAME_DARK,
+  LOGO_THEMES,
 };

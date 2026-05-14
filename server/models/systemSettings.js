@@ -3,7 +3,7 @@ process.env.NODE_ENV === "development"
   : require("dotenv").config();
 
 const { default: slugify } = require("slugify");
-const { isValidUrl, safeJsonParse } = require("../utils/http");
+const { safeJsonParse } = require("../utils/http");
 const prisma = require("../utils/prisma");
 const { MetaGenerator } = require("../utils/boot/MetaGenerator");
 const { PGVector } = require("../utils/vectorDbProviders/pgvector");
@@ -39,8 +39,6 @@ const SystemSettings = {
     "Given the following conversation, relevant context, and a follow up question, reply with an answer to the current question the user is asking. Return only your response to the question given the above information following the users instructions as needed.",
   protectedFields: ["multi_user_mode", "hub_api_key", "onboarding_complete"],
   publicFields: [
-    "footer_data",
-    "support_email",
     "text_splitter_chunk_size",
     "text_splitter_chunk_overlap",
     "max_embed_chunk_size",
@@ -58,15 +56,16 @@ const SystemSettings = {
     "outlook_agent_config",
     "imported_agent_skills",
     "custom_app_name",
+    "login_powered_by",
     "feature_flags",
     "meta_page_title",
     "meta_page_favicon",
   ],
   supportedFields: [
     "logo_filename",
+    "logo_filename_light",
+    "logo_filename_dark",
     "telemetry_id",
-    "footer_data",
-    "support_email",
 
     "text_splitter_chunk_size",
     "text_splitter_chunk_overlap",
@@ -83,6 +82,7 @@ const SystemSettings = {
     "outlook_agent_config",
     "agent_sql_connections",
     "custom_app_name",
+    "login_powered_by",
     "default_system_prompt",
 
     // Meta page customization
@@ -96,17 +96,6 @@ const SystemSettings = {
     "hub_api_key",
   ],
   validations: {
-    footer_data: (updates) => {
-      try {
-        const array = JSON.parse(updates)
-          .filter((setting) => isValidUrl(setting.url))
-          .slice(0, 3); // max of 3 items in footer.
-        return JSON.stringify(array);
-      } catch {
-        console.error(`Failed to run validation function on footer_data`);
-        return JSON.stringify([]);
-      }
-    },
     text_splitter_chunk_size: (update) => {
       try {
         if (isNullOrNaN(update)) throw new Error("Value is not a number.");
@@ -387,6 +376,10 @@ const SystemSettings = {
         return SystemSettings.saneDefaultSystemPrompt;
       return String(prompt.trim());
     },
+    login_powered_by: (value) => {
+      if (typeof value !== "string" || !value.trim()) return null;
+      return String(value.trim());
+    },
   },
   currentSettings: async function () {
     const { hasVectorCachedFiles } = require("../utils/files");
@@ -646,9 +639,15 @@ const SystemSettings = {
     }
   },
 
-  currentLogoFilename: async function () {
+  logoFilenameLabel: function (theme = null) {
+    if (theme === "light") return "logo_filename_light";
+    if (theme === "dark") return "logo_filename_dark";
+    return "logo_filename";
+  },
+
+  currentLogoFilename: async function (theme = null) {
     try {
-      const setting = await this.get({ label: "logo_filename" });
+      const setting = await this.get({ label: this.logoFilenameLabel(theme) });
       return setting?.value || null;
     } catch (error) {
       console.error(error.message);
