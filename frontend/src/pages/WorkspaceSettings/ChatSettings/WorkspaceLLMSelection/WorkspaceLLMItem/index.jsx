@@ -10,7 +10,7 @@ import Modal, {
   ModalSecondaryButton,
 } from "@/components/lib/Modal";
 import { useModal } from "@/hooks/useModal";
-import { Gear } from "@phosphor-icons/react";
+import { Settings } from "lucide-react";
 import System from "@/models/system";
 import showToast from "@/utils/toast";
 import { useEffect, useState } from "react";
@@ -56,9 +56,7 @@ export default function WorkspaceLLM({
     <>
       <div
         onClick={handleProviderSelection}
-        className={`w-full p-2 rounded-md hover:cursor-pointer hover:bg-theme-bg-secondary ${
-          checked ? "bg-theme-bg-secondary" : ""
-        }`}
+        className={`w-full p-2 rounded-md hover:cursor-pointer hover:bg-theme-bg-secondary ${checked ? "bg-theme-bg-secondary" : ""}`}
       >
         <input
           type="checkbox"
@@ -68,16 +66,20 @@ export default function WorkspaceLLM({
           readOnly={true}
           formNoValidate={true}
         />
-        <div className="flex gap-x-4 items-center justify-between">
-          <div className="flex gap-x-4 items-center">
+        <div className="flex min-w-0 gap-x-3 items-center justify-between">
+          <div className="flex min-w-0 flex-1 gap-x-3 items-center">
             <img
               src={logo}
               alt={`${name} logo`}
-              className="w-10 h-10 rounded-md"
+              className="w-10 h-10 rounded-md shrink-0"
             />
-            <div className="flex flex-col">
-              <div className="text-sm font-semibold text-white">{name}</div>
-              <div className="mt-1 text-xs text-white/60">{description}</div>
+            <div className="min-w-0 flex-1 flex flex-col">
+              <div className="text-sm font-semibold text-white break-words">
+                {name}
+              </div>
+              <div className="mt-1 text-xs text-white/60 break-words">
+                {description}
+              </div>
             </div>
           </div>
           {checked && !NO_SETTINGS_NEEDED.includes(value) && (
@@ -86,10 +88,10 @@ export default function WorkspaceLLM({
                 e.preventDefault();
                 openModal();
               }}
-              className="border-none p-2 text-white/60 hover:text-white hover:bg-theme-bg-hover rounded-md transition-all duration-300"
+              className="border-none p-2 shrink-0 text-white/60 hover:text-white hover:bg-theme-bg-hover rounded-md transition-all duration-300"
               title="Edit Settings"
             >
-              <Gear size={20} weight="bold" />
+              <Settings strokeWidth={1.5} size={20} />
             </button>
           )}
         </div>
@@ -153,7 +155,11 @@ function SetupProvider({
             To use {LLMOption.name} as this workspace's LLM you need to set it
             up first.
           </p>
-          <div>{LLMOption.options(settings, { credentialsOnly: true })}</div>
+          <div>
+            {LLMOption.options(settings, {
+              credentialsOnly: true,
+            })}
+          </div>
         </ModalBody>
         <ModalFooter>
           <ModalSecondaryButton type="button" onClick={closeModal}>

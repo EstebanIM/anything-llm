@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X } from "@phosphor-icons/react";
+import { X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import paths from "@/utils/paths";
@@ -9,7 +9,6 @@ import SystemPrompts from "./SystemPrompts";
 import Modal from "@/components/lib/Modal";
 import AgentFlows from "./AgentFlows";
 import SlashCommands from "./SlashCommands";
-
 export default function PublishEntityModal({
   show,
   onClose,
@@ -21,13 +20,11 @@ export default function PublishEntityModal({
   if (!show || loading) return null;
   if (!isAuthenticated)
     return <UnauthenticatedHubModal show={show} onClose={onClose} />;
-
   const isSuccess = !!successItemId;
   const handleClose = () => {
     setSuccessItemId(null);
     onClose();
   };
-
   const renderEntityForm = () => {
     switch (entityType) {
       case "system-prompt":
@@ -40,13 +37,10 @@ export default function PublishEntityModal({
         return null;
     }
   };
-
   return (
     <Modal isOpen={show} onClose={handleClose} variant="bare">
       <div
-        className={`relative w-full ${
-          isSuccess ? "max-w-[460px]" : "max-w-[900px]"
-        } mx-4 max-h-[90vh] overflow-y-auto bg-zinc-900 light:bg-white rounded-lg shadow-xs border border-zinc-800 light:border-slate-300`}
+        className={`relative w-full ${isSuccess ? "max-w-[460px]" : "max-w-[900px]"} mx-4 max-h-[90vh] overflow-y-auto bg-zinc-900 light:bg-white rounded-lg shadow-xs border border-zinc-800 light:border-slate-300`}
       >
         <div className="relative p-6">
           <button
@@ -55,7 +49,7 @@ export default function PublishEntityModal({
             aria-label="Close"
             className="absolute top-4 right-4 transition-colors duration-200 bg-transparent rounded-lg p-1 inline-flex items-center text-slate-50 light:text-slate-900 hover:bg-zinc-800 light:hover:bg-slate-100 border-none"
           >
-            <X size={16} weight="bold" />
+            <X strokeWidth={1.5} size={16} />
           </button>
         </div>
         {isSuccess ? (
@@ -67,7 +61,6 @@ export default function PublishEntityModal({
     </Modal>
   );
 }
-
 function successCopy(entityType, t) {
   switch (entityType) {
     case "system-prompt":
@@ -99,7 +92,6 @@ function successCopy(entityType, t) {
       return null;
   }
 }
-
 function PublishSuccess({ entityType, itemId }) {
   const { t } = useTranslation();
   const copy = successCopy(entityType, t);

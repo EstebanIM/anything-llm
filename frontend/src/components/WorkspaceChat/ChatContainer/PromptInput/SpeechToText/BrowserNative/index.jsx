@@ -5,6 +5,7 @@ import SpeechRecognition, {
 } from "react-speech-recognition";
 import Appearance from "@/models/appearance";
 import MicButton from "../MicButton";
+import useCustomAppName from "@/hooks/useCustomAppName";
 
 let timeout;
 const SILENCE_INTERVAL = 3_200; // wait in seconds of silence before closing.
@@ -16,6 +17,7 @@ const SILENCE_INTERVAL = 3_200; // wait in seconds of silence before closing.
  * @returns {React.ReactElement} The SpeechToText component
  */
 export default function BrowserNativeSTT({ sendCommand }) {
+  const { brandName } = useCustomAppName();
   const previousTranscriptRef = useRef("");
   const {
     transcript,
@@ -31,7 +33,7 @@ export default function BrowserNativeSTT({ sendCommand }) {
   function startSTTSession() {
     if (!isMicrophoneAvailable) {
       alert(
-        "AnythingLLM does not have access to microphone. Please enable for this site to use this feature."
+        `${brandName} does not have access to microphone. Please enable for this site to use this feature.`
       );
       return;
     }

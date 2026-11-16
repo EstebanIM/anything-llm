@@ -6,13 +6,13 @@ import PasswordModal, { usePasswordModal } from "@/components/Modals/Password";
 import { isMobile } from "react-device-detect";
 import { FullScreenLoader } from "@/components/Preloader";
 import {
-  ArrowUUpLeft,
-  ChatText,
+  Undo2,
+  MessageSquareText,
   Database,
-  Robot,
+  Bot,
   User,
   Wrench,
-} from "@phosphor-icons/react";
+} from "lucide-react";
 import paths from "@/utils/paths";
 import { Link } from "react-router-dom";
 import { NavLink } from "react-router-dom";
@@ -84,37 +84,37 @@ function ShowWorkspaceChat() {
         style={{ height: isMobile ? "100%" : "calc(100% - 32px)" }}
         className="transition-all duration-500 relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full overflow-y-scroll"
       >
-        <div className="flex gap-x-10 pt-6 pb-4 ml-16 mr-8 border-b-2 border-white light:border-theme-chat-input-border border-opacity-10">
+        <div className="flex gap-x-6 md:gap-x-10 pt-4 md:pt-6 pb-4 pl-16 pr-4 md:pl-0 md:ml-16 md:mr-8 overflow-x-auto border-b-2 border-white light:border-theme-chat-input-border border-opacity-10">
           <Link
             to={paths.workspace.chat(slug)}
-            className="absolute top-2 left-2 md:top-4 md:left-4 transition-all duration-300 p-2 rounded-full text-white bg-theme-sidebar-footer-icon hover:bg-theme-sidebar-footer-icon-hover z-10"
+            className="absolute top-2 left-2 md:top-4 md:left-4 transition-all duration-300 p-2 rounded-full text-theme-text-secondary bg-transparent border border-theme-modal-border hover:bg-theme-bg-primary hover:text-theme-text-primary z-10"
           >
-            <ArrowUUpLeft className="h-5 w-5" weight="fill" />
+            <Undo2 strokeWidth={1.5} className="h-5 w-5" />
           </Link>
           <TabItem
             title={t("workspaces—settings.general")}
-            icon={<Wrench className="h-6 w-6" />}
+            icon={<Wrench strokeWidth={1.5} className="h-6 w-6" />}
             to={paths.workspace.settings.generalAppearance(slug)}
           />
           <TabItem
             title={t("workspaces—settings.chat")}
-            icon={<ChatText className="h-6 w-6" />}
+            icon={<MessageSquareText strokeWidth={1.5} className="h-6 w-6" />}
             to={paths.workspace.settings.chatSettings(slug)}
           />
           <TabItem
             title={t("workspaces—settings.vector")}
-            icon={<Database className="h-6 w-6" />}
+            icon={<Database strokeWidth={1.5} className="h-6 w-6" />}
             to={paths.workspace.settings.vectorDatabase(slug)}
           />
           <TabItem
             title={t("workspaces—settings.members")}
-            icon={<User className="h-6 w-6" />}
+            icon={<User strokeWidth={1.5} className="h-6 w-6" />}
             to={paths.workspace.settings.members(slug)}
             visible={["superadmin", "admin", "manager"].includes(user?.role)}
           />
           <TabItem
             title={t("workspaces—settings.agent")}
-            icon={<Robot className="h-6 w-6" />}
+            icon={<Bot strokeWidth={1.5} className="h-6 w-6" />}
             to={paths.workspace.settings.agentConfig(slug)}
           />
         </div>
@@ -140,7 +140,8 @@ function TabItem({ title, icon, to, visible = true }) {
           isActive
             ? "text-sky-400 pb-4 border-b-[4px] -mb-[19px] border-sky-400"
             : "text-white/60 hover:text-sky-400"
-        } ` + " flex gap-x-2 items-center font-medium"
+        } ` +
+        " flex shrink-0 gap-x-2 items-center font-medium whitespace-nowrap"
       }
     >
       {icon}

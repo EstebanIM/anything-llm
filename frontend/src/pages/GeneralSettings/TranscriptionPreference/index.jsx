@@ -13,34 +13,37 @@ import NativeTranscriptionOptions from "@/components/TranscriptionSelection/Nati
 import LLMItem from "@/components/LLMSelection/LLMItem";
 import CTAButton from "@/components/lib/CTAButton";
 import { useTranslation } from "react-i18next";
+import useCustomAppName from "@/hooks/useCustomAppName";
 import ProviderSearchMenu from "@/components/lib/ProviderSearchMenu";
-
-const PROVIDERS = [
-  {
-    name: "OpenAI",
-    value: "openai",
-    logo: OpenAiLogo,
-    options: (settings) => <OpenAiWhisperOptions settings={settings} />,
-    description: "Leverage the OpenAI Whisper-large model using your API key.",
-  },
-  {
-    name: "OpenAI Compatible",
-    value: "generic-openai",
-    logo: GenericOpenAiLogo,
-    options: (settings) => <GenericOpenAiWhisperOptions settings={settings} />,
-    description:
-      "Transcribe audio using any OpenAI-compatible API via custom configuration.",
-  },
-  {
-    name: "AnythingLLM Built-In",
-    value: "local",
-    logo: AnythingLLMIcon,
-    options: (settings) => <NativeTranscriptionOptions settings={settings} />,
-    description: "Run a built-in whisper model on this instance privately.",
-  },
-];
-
 export default function TranscriptionModelPreference() {
+  const { brandName } = useCustomAppName();
+  const PROVIDERS = [
+    {
+      name: "OpenAI",
+      value: "openai",
+      logo: OpenAiLogo,
+      options: (settings) => <OpenAiWhisperOptions settings={settings} />,
+      description:
+        "Leverage the OpenAI Whisper-large model using your API key.",
+    },
+    {
+      name: "OpenAI Compatible",
+      value: "generic-openai",
+      logo: GenericOpenAiLogo,
+      options: (settings) => (
+        <GenericOpenAiWhisperOptions settings={settings} />
+      ),
+      description:
+        "Transcribe audio using any OpenAI-compatible API via custom configuration.",
+    },
+    {
+      name: `${brandName} Built-In`,
+      value: "local",
+      logo: AnythingLLMIcon,
+      options: (settings) => <NativeTranscriptionOptions settings={settings} />,
+      description: "Run a built-in whisper model on this instance privately.",
+    },
+  ];
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [settings, setSettings] = useState(null);
@@ -51,9 +54,10 @@ export default function TranscriptionModelPreference() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const form = e.target;
-    const data = { WhisperProvider: selectedProvider };
+    const data = {
+      WhisperProvider: selectedProvider,
+    };
     const formData = new FormData(form);
-
     for (var [key, value] of formData.entries()) data[key] = value;
     const { error } = await System.updateSystem(data);
     setSaving(true);
@@ -91,7 +95,9 @@ export default function TranscriptionModelPreference() {
       <Sidebar />
       {loading ? (
         <div
-          style={{ height: isMobile ? "100%" : "calc(100% - 32px)" }}
+          style={{
+            height: isMobile ? "100%" : "calc(100% - 32px)",
+          }}
           className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full overflow-y-scroll p-4 md:p-0"
         >
           <div className="w-full h-full flex justify-center items-center">
@@ -100,7 +106,9 @@ export default function TranscriptionModelPreference() {
         </div>
       ) : (
         <div
-          style={{ height: isMobile ? "100%" : "calc(100% - 32px)" }}
+          style={{
+            height: isMobile ? "100%" : "calc(100% - 32px)",
+          }}
           className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full overflow-y-scroll p-4 md:p-0"
         >
           <form onSubmit={handleSubmit} className="flex w-full">

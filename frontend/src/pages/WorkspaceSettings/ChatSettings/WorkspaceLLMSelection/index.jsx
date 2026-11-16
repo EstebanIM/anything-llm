@@ -49,14 +49,14 @@ export default function WorkspaceLLMSelection({ settings, workspace }) {
     // Every other provider saves once its model/router picker is ready, see ModelSelector.
     if (selection === "default") save();
   }
-
-  const llms = withEmbeddedLemonade(LLMS, settings, { after: "default" });
+  const llms = withEmbeddedLemonade(LLMS, settings, {
+    after: "default",
+  });
   const selectedLLMObject =
     llms.find((llm) => llm.value === selectedLLM) ?? LLM_DEFAULT;
-
   return (
-    <div className="flex flex-col gap-y-[8px]">
-      <div className="flex flex-col gap-y-[8px]">
+    <div className="border-b border-white/40 pb-8 min-w-0 flex flex-col gap-y-[8px]">
+      <div className="flex flex-col">
         <label htmlFor="name" className="block input-label">
           {t("chat.llm.title")}
           <SavedIndicator name="chatProvider" />

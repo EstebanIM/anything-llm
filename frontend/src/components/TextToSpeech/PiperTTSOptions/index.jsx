@@ -3,7 +3,8 @@ import PiperTTSClient from "@/utils/piperTTS";
 import { titleCase } from "text-case";
 import { humanFileSize } from "@/utils/numbers";
 import showToast from "@/utils/toast";
-import { CircleNotch, PauseCircle, PlayCircle } from "@phosphor-icons/react";
+import { LoaderCircle, CirclePause, CirclePlay } from "lucide-react";
+import { DEFAULT_APP_NAME } from "@/utils/constants/brand";
 
 export default function PiperTTSOptions({ settings }) {
   return (
@@ -149,7 +150,7 @@ function DemoVoiceSample({ voiceId }) {
         setLoading(true);
         const client = new PiperTTSClient({ voiceId });
         const blobUrl = await client.getAudioBlobForText(
-          "Hello, welcome to AnythingLLM!"
+          `Hello, welcome to ${DEFAULT_APP_NAME}!`
         );
         setAudioSrc(blobUrl);
         setLoading(false);
@@ -190,19 +191,27 @@ function DemoVoiceSample({ voiceId }) {
     >
       {speaking ? (
         <>
-          <PauseCircle size={20} className="flex-shrink-0" />
+          <CirclePause strokeWidth={1.5} size={20} className="flex-shrink-0" />
           <p className="text-sm flex-shrink-0">Stop demo</p>
         </>
       ) : (
         <>
           {loading ? (
             <>
-              <CircleNotch size={20} className="animate-spin flex-shrink-0" />
+              <LoaderCircle
+                strokeWidth={1.5}
+                size={20}
+                className="animate-spin flex-shrink-0"
+              />
               <p className="text-sm flex-shrink-0">Loading voice</p>
             </>
           ) : (
             <>
-              <PlayCircle size={20} className="flex-shrink-0 text-white" />
+              <CirclePlay
+                strokeWidth={1.5}
+                size={20}
+                className="flex-shrink-0 text-white"
+              />
               <p className="text-white text-sm flex-shrink-0">Play sample</p>
             </>
           )}

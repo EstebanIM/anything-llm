@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import CommunityHub from "@/models/communityHub";
 import showToast from "@/utils/toast";
-import { X } from "@phosphor-icons/react";
+import { X } from "lucide-react";
 import {
   ModalHeader,
   ModalPrimaryButton,
@@ -11,7 +11,6 @@ import {
   ModalInput,
   ModalTextarea,
 } from "@/components/lib/Modal";
-
 export default function SlashCommands({ entity, onSuccess }) {
   const { t } = useTranslation();
   const formRef = useRef(null);
@@ -19,7 +18,6 @@ export default function SlashCommands({ entity, onSuccess }) {
   const [tags, setTags] = useState([]);
   const [tagInput, setTagInput] = useState("");
   const [visibility, setVisibility] = useState("public");
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -34,7 +32,6 @@ export default function SlashCommands({ entity, onSuccess }) {
         tags: tags,
         visibility: visibility,
       };
-
       const { success, error, itemId } =
         await CommunityHub.createSlashCommand(data);
       if (!success) throw new Error(error);
@@ -48,7 +45,6 @@ export default function SlashCommands({ entity, onSuccess }) {
       setIsSubmitting(false);
     }
   };
-
   const handleKeyDown = (e) => {
     if (e.key === "Enter" || e.key === ",") {
       e.preventDefault();
@@ -60,11 +56,9 @@ export default function SlashCommands({ entity, onSuccess }) {
       }
     }
   };
-
   const removeTag = (tagToRemove) => {
     setTags(tags.filter((tag) => tag !== tagToRemove));
   };
-
   return (
     <>
       <div className="w-full flex gap-x-2 items-center mb-3 -mt-8 px-6 py-3">
@@ -129,7 +123,7 @@ export default function SlashCommands({ entity, onSuccess }) {
                     onClick={() => removeTag(tag)}
                     className="border-none bg-transparent text-slate-50 light:text-slate-900 hover:text-zinc-400 light:hover:text-slate-600 cursor-pointer"
                   >
-                    <X size={14} />
+                    <X strokeWidth={1.5} size={14} />
                   </button>
                 </span>
               ))}

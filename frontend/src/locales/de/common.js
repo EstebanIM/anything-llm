@@ -928,10 +928,20 @@ const TRANSLATIONS = {
         title: "Support-E-Mail",
         description: "Legen Sie die E-Mail-Adresse für den Kundensupport fest.",
       },
+      "brand-color": {
+        title: "Brand Color",
+        description:
+          "Set the brand color applied to the chat embed widget (launcher button and user message bubbles).",
+      },
       "app-name": {
         title: "Name",
         description:
           "Geben Sie einen Anwendungsnamen ein, der auf der Login-Seite erscheint.",
+      },
+      "login-powered-by": {
+        title: "Login footer text",
+        description: "Set the powered-by text displayed below the login form.",
+        placeholder: "Powered by your organization",
       },
       "display-language": {
         title: "Sprache",
@@ -946,6 +956,16 @@ const TRANSLATIONS = {
         recommended: "Empfohlene Größe: 800 x 200",
         remove: "Löschen",
         replace: "Ersetzen",
+        dark: {
+          title: "Dark mode",
+          description: "Logo shown when the interface uses the dark theme.",
+          alt: "Uploaded dark mode logo",
+        },
+        light: {
+          title: "Light mode",
+          description: "Logo shown when the interface uses the light theme.",
+          alt: "Uploaded light mode logo",
+        },
       },
       "browser-appearance": {
         title: "Browser-Ansicht",
@@ -959,6 +979,13 @@ const TRANSLATIONS = {
         favicon: {
           title: "Tab-Icon",
           description: "Nutzen Sie ein eigenes Icon für den Tab im Browser.",
+          upload: "Upload favicon",
+          replace: "Replace favicon",
+          remove: "Remove favicon",
+          recommended: "Recommended: square PNG, SVG, or ICO",
+          url: "Favicon URL",
+          placeholder: "https://example.com/favicon.png",
+          alt: "Custom favicon preview",
         },
       },
       "sidebar-footer": {
@@ -1609,8 +1636,16 @@ const TRANSLATIONS = {
     profile_updated: "Profil wurde aktualisiert.",
     failed_update_user: "Benutzer konnte nicht aktualisiert werden: {{error}}",
     account: "Account",
+    settings: "Settings",
+    back_to_workspaces: "Back to workspaces",
     support: "Support",
     signout: "Abmelden",
+    roles: {
+      superadmin: "Super-Admin",
+      admin: "Admin",
+      manager: "Manager",
+      default: "Benutzer",
+    },
   },
   "keyboard-shortcuts": {
     title: "Tastaturkürzel",

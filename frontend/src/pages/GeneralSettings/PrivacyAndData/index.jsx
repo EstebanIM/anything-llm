@@ -7,6 +7,7 @@ import PreLoader from "@/components/Preloader";
 import { useTranslation } from "react-i18next";
 import ProviderPrivacy from "@/components/ProviderPrivacy";
 import Toggle from "@/components/lib/Toggle";
+import useCustomAppName from "@/hooks/useCustomAppName";
 
 export default function PrivacyAndDataHandling() {
   const [settings, setSettings] = useState({});
@@ -62,6 +63,7 @@ function TelemetryLogs({ settings }) {
   const [telemetry, setTelemetry] = useState(
     settings?.DisableTelemetry !== "true"
   );
+  const { brandName } = useCustomAppName();
   const { t } = useTranslation();
   async function toggleTelemetry() {
     await System.updateSystem({
@@ -95,33 +97,14 @@ function TelemetryLogs({ settings }) {
           <p className="text-theme-text-secondary text-xs rounded-lg w-96">
             All events do not record IP-address and contain{" "}
             <b>no identifying</b> content, settings, chats, or other non-usage
-            based information. To see the list of event tags collected you can
-            look on{" "}
-            <a
-              href="https://github.com/search?q=repo%3AMintplex-Labs%2Fanything-llm%20.sendTelemetry(&type=code"
-              className="underline text-blue-400"
-              target="_blank"
-              rel="noreferrer"
-            >
-              GitHub here
-            </a>
-            .
+            based information.
           </p>
           <p className="text-theme-text-secondary text-xs rounded-lg w-96">
             As an open-source project we respect your right to privacy. We are
             dedicated to building the best solution for integrating AI and
             documents privately and securely. If you do decide to turn off
             telemetry all we ask is to consider sending us feedback and thoughts
-            so that we can continue to improve AnythingLLM for you.{" "}
-            <a
-              href="mailto:team@mintplexlabs.com"
-              className="underline text-blue-400"
-              target="_blank"
-              rel="noreferrer"
-            >
-              team@mintplexlabs.com
-            </a>
-            .
+            so that we can continue to improve {brandName} for you.
           </p>
         </div>
       </div>

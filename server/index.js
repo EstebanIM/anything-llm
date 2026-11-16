@@ -156,8 +156,8 @@ if (process.env.NODE_ENV !== "development") {
     response.send("User-agent: *\nDisallow: /").end();
   });
 
-  app.use("/", function (_, response) {
-    IndexPage.generate(response);
+  app.use("/", function (request, response) {
+    IndexPage.generate(response, 200, request);
     return;
   });
 } else {

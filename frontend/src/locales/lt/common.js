@@ -916,10 +916,20 @@ const TRANSLATIONS = {
         description:
           "Nustatykite pagalbos el. pašto adresą, kuriuo vartotojai galėtų kreiptis prireikus pagalbos.",
       },
+      "brand-color": {
+        title: "Brand Color",
+        description:
+          "Set the brand color applied to the chat embed widget (launcher button and user message bubbles).",
+      },
       "app-name": {
         title: "Pavadinimas",
         description:
           "Nustatykite pavadinimą, kuris rodomas prisijungimo puslapyje visiems vartotojams.",
+      },
+      "login-powered-by": {
+        title: "Login footer text",
+        description: "Set the powered-by text displayed below the login form.",
+        placeholder: "Powered by your organization",
       },
       "display-language": {
         title: "Rodymo kalba",
@@ -934,6 +944,16 @@ const TRANSLATIONS = {
         recommended: "Rekomenduojamas dydis: 800 x 200",
         remove: "Pašalinti",
         replace: "Pakeisti",
+        dark: {
+          title: "Dark mode",
+          description: "Logo shown when the interface uses the dark theme.",
+          alt: "Uploaded dark mode logo",
+        },
+        light: {
+          title: "Light mode",
+          description: "Logo shown when the interface uses the light theme.",
+          alt: "Uploaded light mode logo",
+        },
       },
       "browser-appearance": {
         title: "Naršyklės išvaizda",
@@ -947,6 +967,13 @@ const TRANSLATIONS = {
         favicon: {
           title: "Favicon",
           description: "Naudokite savo piktogramą naršyklės kortelei.",
+          upload: "Upload favicon",
+          replace: "Replace favicon",
+          remove: "Remove favicon",
+          recommended: "Recommended: square PNG, SVG, or ICO",
+          url: "Favicon URL",
+          placeholder: "https://example.com/favicon.png",
+          alt: "Custom favicon preview",
         },
       },
       "sidebar-footer": {
@@ -1611,8 +1638,16 @@ const TRANSLATIONS = {
     profile_updated: "Profilis atnaujintas.",
     failed_update_user: "Nepavyko atnaujinti vartotojo: {{error}}",
     account: "Paskyra",
+    settings: "Settings",
+    back_to_workspaces: "Back to workspaces",
     support: "Pagalba",
     signout: "Atsijungti",
+    roles: {
+      superadmin: "Superadministratorius",
+      admin: "Administratorius",
+      manager: "Vadovas",
+      default: "Vartotojas",
+    },
   },
   "keyboard-shortcuts": {
     title: "Klaviatūros trumpiniai",

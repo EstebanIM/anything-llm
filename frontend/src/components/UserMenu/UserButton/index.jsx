@@ -1,10 +1,8 @@
 import useLoginMode from "@/hooks/useLoginMode";
 import usePfp from "@/hooks/usePfp";
 import useUser from "@/hooks/useUser";
-import System from "@/models/system";
 import paths from "@/utils/paths";
-import { userFromStorage } from "@/utils/request";
-import { Person } from "@phosphor-icons/react";
+import { Settings, House, User, LogOut, CircleUserRound } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import AccountModal from "../AccountModal";
 import {
@@ -15,22 +13,30 @@ import {
   USER_PROMPT_INPUT_MAP,
 } from "@/utils/constants";
 import { useTranslation } from "react-i18next";
+import { Link, useMatch } from "react-router-dom";
 
-export default function UserButton() {
+export default function UserButton({ className = "" }) {
   const { t } = useTranslation();
   const mode = useLoginMode();
   const { user } = useUser();
+  const inSettingsIndex = useMatch("/settings");
+  const inSettingsChild = useMatch("/settings/*");
+  const isInSettings = !!inSettingsIndex || !!inSettingsChild;
+  const canAccessSettings = !user || user?.role !== "default";
+  const settingsPath = isInSettings ? paths.home() : paths.settings.interface();
+  const settingsLabel = isInSettings
+    ? t("profile_settings.back_to_workspaces")
+    : t("profile_settings.settings");
   const menuRef = useRef();
   const buttonRef = useRef();
   const [showMenu, setShowMenu] = useState(false);
   const [showAccountSettings, setShowAccountSettings] = useState(false);
-  const [supportEmail, setSupportEmail] = useState("");
 
   const handleClose = (event) => {
     if (
       menuRef.current &&
       !menuRef.current.contains(event.target) &&
-      !buttonRef.current.contains(event.target)
+      !buttonRef.current?.contains(event.target)
     ) {
       setShowMenu(false);
     }
@@ -42,71 +48,110 @@ export default function UserButton() {
   };
 
   useEffect(() => {
-    if (showMenu) {
-      document.addEventListener("mousedown", handleClose);
-    }
-    return () => document.removeEventListener("mousedown", handleClose);
+    if (!showMenu) return;
+    const handleEscape = (event) => {
+      if (event.key !== "Escape") return;
+      setShowMenu(false);
+      buttonRef.current?.focus();
+    };
+    document.addEventListener("mousedown", handleClose);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClose);
+      document.removeEventListener("keydown", handleEscape);
+    };
   }, [showMenu]);
 
-  useEffect(() => {
-    const fetchSupportEmail = async () => {
-      const supportEmail = await System.fetchSupportEmail();
-      setSupportEmail(
-        supportEmail?.email
-          ? `mailto:${supportEmail.email}`
-          : paths.mailToMintplex()
-      );
-    };
-    fetchSupportEmail();
-  }, []);
-
   if (mode === null) return null;
+
+  const isWideMode = mode === "multi" && !!user;
+  const roleLabel =
+    isWideMode && user?.role ? t(`profile_settings.roles.${user.role}`) : "";
+
   return (
-    <div className="absolute top-3 right-4 md:top-9 md:right-10 w-fit h-fit z-40">
-      <button
-        ref={buttonRef}
-        onClick={() => setShowMenu(!showMenu)}
-        type="button"
-        className="uppercase transition-all duration-300 w-[35px] h-[35px] text-base font-semibold rounded-full flex items-center bg-theme-action-menu-bg hover:bg-theme-action-menu-item-hover justify-center text-white p-2 hover:border-slate-100 hover:border-opacity-50 border-transparent border"
-      >
-        {mode === "multi" ? <UserDisplay /> : <Person size={14} />}
-      </button>
+    <div
+      className={`relative ${isWideMode ? "w-full" : "w-fit"} h-fit z-40 ${className}`}
+    >
+      {isWideMode ? (
+        <button
+          ref={buttonRef}
+          onClick={() => setShowMenu(!showMenu)}
+          type="button"
+          aria-haspopup="menu"
+          aria-expanded={showMenu}
+          className="w-full flex items-center gap-x-3 px-2.5 py-2 rounded-full bg-theme-sidebar-item-default hover:bg-theme-sidebar-item-hover transition-all duration-300 text-left"
+        >
+          <Avatar user={user} />
+          <div className="flex flex-col items-start min-w-0 flex-1 leading-tight">
+            <span className="text-theme-text-primary text-sm font-semibold truncate w-full">
+              {user.username}
+            </span>
+            <span className="text-theme-text-secondary text-xs truncate w-full">
+              {roleLabel}
+            </span>
+          </div>
+        </button>
+      ) : (
+        <button
+          ref={buttonRef}
+          onClick={() => setShowMenu(!showMenu)}
+          type="button"
+          aria-label={t("profile_settings.account")}
+          aria-haspopup="menu"
+          aria-expanded={showMenu}
+          className="uppercase transition-all duration-300 w-[35px] h-[35px] text-base font-semibold rounded-full flex items-center bg-theme-action-menu-bg hover:bg-theme-action-menu-item-hover justify-center text-white p-2 hover:border-slate-100 hover:border-opacity-50 border-transparent border"
+        >
+          <User strokeWidth={1.5} size={14} />
+        </button>
+      )}
 
       {showMenu && (
         <div
           ref={menuRef}
-          className="w-fit rounded-lg absolute top-12 right-0 bg-theme-action-menu-bg p-2 flex items-center-justify-center"
+          className={`absolute ${
+            isWideMode
+              ? "bottom-full mb-2 left-0 right-0"
+              : "bottom-12 left-1/2 -translate-x-1/2"
+          } min-w-[200px] rounded-2xl bg-theme-action-menu-bg p-2 shadow-2xl flex flex-col gap-y-1 z-50`}
         >
-          <div className="flex flex-col gap-y-2">
-            {mode === "multi" && !!user && (
-              <button
-                onClick={handleOpenAccountModal}
-                className="border-none text-white hover:bg-theme-action-menu-item-hover w-full text-left px-4 py-1.5 rounded-md"
-              >
-                {t("profile_settings.account")}
-              </button>
-            )}
-            <a
-              href={supportEmail}
-              className="text-white hover:bg-theme-action-menu-item-hover w-full text-left px-4 py-1.5 rounded-md"
+          {canAccessSettings && (
+            <Link
+              to={settingsPath}
+              onClick={() => setShowMenu(false)}
+              className="text-white hover:bg-theme-action-menu-item-hover w-full text-left px-3 py-2 rounded-full flex items-center gap-x-2"
             >
-              {t("profile_settings.support")}
-            </a>
+              {isInSettings ? (
+                <House strokeWidth={1.5} size={16} />
+              ) : (
+                <Settings strokeWidth={1.5} size={16} />
+              )}
+              <span>{settingsLabel}</span>
+            </Link>
+          )}
+          {mode === "multi" && !!user && (
             <button
-              onClick={() => {
-                window.localStorage.removeItem(AUTH_USER);
-                window.localStorage.removeItem(AUTH_TOKEN);
-                window.localStorage.removeItem(AUTH_TIMESTAMP);
-                window.localStorage.removeItem(LAST_VISITED_WORKSPACE);
-                window.localStorage.removeItem(USER_PROMPT_INPUT_MAP);
-                window.location.replace(paths.home());
-              }}
-              type="button"
-              className="text-white hover:bg-theme-action-menu-item-hover w-full text-left px-4 py-1.5 rounded-md"
+              onClick={handleOpenAccountModal}
+              className="border-none text-white hover:bg-theme-action-menu-item-hover w-full text-left px-3 py-2 rounded-full flex items-center gap-x-2"
             >
-              {t("profile_settings.signout")}
+              <CircleUserRound strokeWidth={1.5} size={16} />
+              <span>{t("profile_settings.account")}</span>
             </button>
-          </div>
+          )}
+          <button
+            onClick={() => {
+              window.localStorage.removeItem(AUTH_USER);
+              window.localStorage.removeItem(AUTH_TOKEN);
+              window.localStorage.removeItem(AUTH_TIMESTAMP);
+              window.localStorage.removeItem(LAST_VISITED_WORKSPACE);
+              window.localStorage.removeItem(USER_PROMPT_INPUT_MAP);
+              window.location.replace(paths.home());
+            }}
+            type="button"
+            className="text-white hover:bg-theme-action-menu-item-hover w-full text-left px-3 py-2 rounded-full flex items-center gap-x-2"
+          >
+            <LogOut strokeWidth={1.5} size={16} />
+            <span>{t("profile_settings.signout")}</span>
+          </button>
         </div>
       )}
       {user && showAccountSettings && (
@@ -119,13 +164,12 @@ export default function UserButton() {
   );
 }
 
-function UserDisplay() {
+function Avatar({ user }) {
   const { pfp } = usePfp();
-  const user = userFromStorage();
 
   if (pfp) {
     return (
-      <div className="w-[35px] h-[35px] rounded-full flex-shrink-0 overflow-hidden transition-all duration-300 bg-gray-100 hover:border-slate-100 hover:border-opacity-50 border-transparent border hover:opacity-60">
+      <div className="w-[35px] h-[35px] rounded-full flex-shrink-0 overflow-hidden bg-gray-100 border border-transparent">
         <img
           src={pfp}
           alt="User profile picture"
@@ -135,5 +179,10 @@ function UserDisplay() {
     );
   }
 
-  return user?.username?.slice(0, 2) || "AA";
+  const initials = user?.username?.slice(0, 2).toUpperCase() || "AA";
+  return (
+    <div className="w-[35px] h-[35px] rounded-full flex-shrink-0 flex items-center justify-center bg-theme-action-menu-bg text-theme-text-primary text-base font-semibold uppercase">
+      {initials}
+    </div>
+  );
 }

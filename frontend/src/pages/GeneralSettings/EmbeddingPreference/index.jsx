@@ -40,17 +40,9 @@ import { useModal } from "@/hooks/useModal";
 import Modal from "@/components/lib/Modal";
 import CTAButton from "@/components/lib/CTAButton";
 import { useTranslation } from "react-i18next";
+import useCustomAppName from "@/hooks/useCustomAppName";
 import ProviderSearchMenu from "@/components/lib/ProviderSearchMenu";
-
-const EMBEDDERS = [
-  {
-    name: "AnythingLLM Embedder",
-    value: "native",
-    logo: AnythingLLMIcon,
-    options: (settings) => <NativeEmbeddingOptions settings={settings} />,
-    description:
-      "Use the built-in embedding provider for AnythingLLM. Zero setup!",
-  },
+const EMBEDDERS_EXTRA = [
   {
     name: "OpenAI",
     value: "openai",
@@ -147,8 +139,18 @@ const EMBEDDERS = [
     description: "Run embedding models from any OpenAI compatible API service.",
   },
 ];
-
 export default function GeneralEmbeddingPreference() {
+  const { brandName } = useCustomAppName();
+  const EMBEDDERS = [
+    {
+      name: `${brandName} Embedder`,
+      value: "native",
+      logo: AnythingLLMIcon,
+      options: (settings) => <NativeEmbeddingOptions settings={settings} />,
+      description: `Use the built-in embedding provider for ${brandName}. Zero setup!`,
+    },
+    ...EMBEDDERS_EXTRA,
+  ];
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [hasEmbeddings, setHasEmbeddings] = useState(false);
@@ -234,7 +236,9 @@ export default function GeneralEmbeddingPreference() {
       <Sidebar />
       {loading ? (
         <div
-          style={{ height: isMobile ? "100%" : "calc(100% - 32px)" }}
+          style={{
+            height: isMobile ? "100%" : "calc(100% - 32px)",
+          }}
           className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full overflow-y-scroll p-4 md:p-0"
         >
           <div className="w-full h-full flex justify-center items-center">
@@ -243,7 +247,9 @@ export default function GeneralEmbeddingPreference() {
         </div>
       ) : (
         <div
-          style={{ height: isMobile ? "100%" : "calc(100% - 32px)" }}
+          style={{
+            height: isMobile ? "100%" : "calc(100% - 32px)",
+          }}
           className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full overflow-y-scroll p-4 md:p-0"
         >
           <form

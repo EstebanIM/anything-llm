@@ -880,9 +880,19 @@ const TRANSLATIONS = {
         description:
           "הגדר את כתובת האימייל לתמיכה שתהיה נגישה למשתמשים כאשר הם זקוקים לעזרה.",
       },
+      "brand-color": {
+        title: "Brand Color",
+        description:
+          "Set the brand color applied to the chat embed widget (launcher button and user message bubbles).",
+      },
       "app-name": {
         title: "שם",
         description: "הגדר שם שיוצג בדף ההתחברות לכל המשתמשים.",
+      },
+      "login-powered-by": {
+        title: "Login footer text",
+        description: "Set the powered-by text displayed below the login form.",
+        placeholder: "Powered by your organization",
       },
       "display-language": {
         title: "שפת תצוגה",
@@ -896,6 +906,16 @@ const TRANSLATIONS = {
         recommended: "גודל מומלץ: 800x200",
         remove: "הסר",
         replace: "החלף",
+        dark: {
+          title: "Dark mode",
+          description: "Logo shown when the interface uses the dark theme.",
+          alt: "Uploaded dark mode logo",
+        },
+        light: {
+          title: "Light mode",
+          description: "Logo shown when the interface uses the light theme.",
+          alt: "Uploaded light mode logo",
+        },
       },
       "browser-appearance": {
         title: "מראה הדפדפן",
@@ -909,6 +929,13 @@ const TRANSLATIONS = {
         favicon: {
           title: "סמל אתר (Favicon)",
           description: "השתמש בסמל אתר מותאם אישית עבור לשונית הדפדפן.",
+          upload: "Upload favicon",
+          replace: "Replace favicon",
+          remove: "Remove favicon",
+          recommended: "Recommended: square PNG, SVG, or ICO",
+          url: "Favicon URL",
+          placeholder: "https://example.com/favicon.png",
+          alt: "Custom favicon preview",
         },
       },
       "sidebar-footer": {
@@ -1532,8 +1559,16 @@ const TRANSLATIONS = {
     profile_updated: "הפרופיל עודכן.",
     failed_update_user: "עדכון המשתמש נכשל: {{error}}",
     account: "חשבון",
+    settings: "Settings",
+    back_to_workspaces: "Back to workspaces",
     support: "תמיכה",
     signout: "התנתק",
+    roles: {
+      superadmin: "מנהל ראשי",
+      admin: "מנהל",
+      manager: "מנהל מחלקה",
+      default: "משתמש",
+    },
   },
   "keyboard-shortcuts": {
     title: "קיצורי מקלדת",

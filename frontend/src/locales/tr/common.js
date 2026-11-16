@@ -1430,8 +1430,16 @@ const TRANSLATIONS = {
     profile_updated: "Profil güncellendi.",
     failed_update_user: "Kullanıcı güncellenemedi: {{error}}",
     account: "Hesap",
+    settings: "Settings",
+    back_to_workspaces: "Back to workspaces",
     support: "Destek",
     signout: "Çıkış Yap",
+    roles: {
+      superadmin: "Süper Yönetici",
+      admin: "Yönetici",
+      manager: "Müdür",
+      default: "Kullanıcı",
+    },
   },
   customization: {
     interface: {
@@ -1482,10 +1490,20 @@ const TRANSLATIONS = {
         description:
           "Kullanıcıların yardıma ihtiyaç duyduğunda erişebilecekleri destek e-posta adresini ayarlayın.",
       },
+      "brand-color": {
+        title: "Brand Color",
+        description:
+          "Set the brand color applied to the chat embed widget (launcher button and user message bubbles).",
+      },
       "app-name": {
         title: "Ad",
         description:
           "Giriş sayfasında tüm kullanıcılara gösterilen bir ad ayarlayın.",
+      },
+      "login-powered-by": {
+        title: "Login footer text",
+        description: "Set the powered-by text displayed below the login form.",
+        placeholder: "Powered by your organization",
       },
       "display-language": {
         title: "Görüntüleme Dili",
@@ -1499,6 +1517,16 @@ const TRANSLATIONS = {
         recommended: "Önerilen boyut: 800 x 200",
         remove: "Kaldır",
         replace: "Değiştir",
+        dark: {
+          title: "Dark mode",
+          description: "Logo shown when the interface uses the dark theme.",
+          alt: "Uploaded dark mode logo",
+        },
+        light: {
+          title: "Light mode",
+          description: "Logo shown when the interface uses the light theme.",
+          alt: "Uploaded light mode logo",
+        },
       },
       "browser-appearance": {
         title: "Tarayıcı Görünümü",
@@ -1512,6 +1540,13 @@ const TRANSLATIONS = {
         favicon: {
           title: "Favicon",
           description: "Tarayıcı sekmesi için özel bir favicon kullanın.",
+          upload: "Upload favicon",
+          replace: "Replace favicon",
+          remove: "Remove favicon",
+          recommended: "Recommended: square PNG, SVG, or ICO",
+          url: "Favicon URL",
+          placeholder: "https://example.com/favicon.png",
+          alt: "Custom favicon preview",
         },
       },
       "sidebar-footer": {

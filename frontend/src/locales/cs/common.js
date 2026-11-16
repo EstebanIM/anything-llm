@@ -916,10 +916,20 @@ const TRANSLATIONS = {
         description:
           "Nastavte e-mailovou adresu podpory, která má být přístupná uživatelům, když potřebují pomoc.",
       },
+      "brand-color": {
+        title: "Brand Color",
+        description:
+          "Set the brand color applied to the chat embed widget (launcher button and user message bubbles).",
+      },
       "app-name": {
         title: "Název",
         description:
           "Nastavte název, který je zobrazen na přihlašovací stránce všem uživatelům.",
+      },
+      "login-powered-by": {
+        title: "Login footer text",
+        description: "Set the powered-by text displayed below the login form.",
+        placeholder: "Powered by your organization",
       },
       "display-language": {
         title: "Zobrazovací jazyk",
@@ -934,6 +944,16 @@ const TRANSLATIONS = {
         recommended: "Doporučená velikost: 800 x 200",
         remove: "Odebrat",
         replace: "Nahradit",
+        dark: {
+          title: "Dark mode",
+          description: "Logo shown when the interface uses the dark theme.",
+          alt: "Uploaded dark mode logo",
+        },
+        light: {
+          title: "Light mode",
+          description: "Logo shown when the interface uses the light theme.",
+          alt: "Uploaded light mode logo",
+        },
       },
       "browser-appearance": {
         title: "Vzhled prohlížeče",
@@ -947,6 +967,13 @@ const TRANSLATIONS = {
         favicon: {
           title: "Favicon",
           description: "Použít vlastní favicon pro kartu prohlížeče.",
+          upload: "Upload favicon",
+          replace: "Replace favicon",
+          remove: "Remove favicon",
+          recommended: "Recommended: square PNG, SVG, or ICO",
+          url: "Favicon URL",
+          placeholder: "https://example.com/favicon.png",
+          alt: "Custom favicon preview",
         },
       },
       "sidebar-footer": {
@@ -1605,8 +1632,16 @@ const TRANSLATIONS = {
     profile_updated: "Profil aktualizován.",
     failed_update_user: "Nepodařilo se aktualizovat uživatele: {{error}}",
     account: "Účet",
+    settings: "Settings",
+    back_to_workspaces: "Back to workspaces",
     support: "Podpora",
     signout: "Odhlásit",
+    roles: {
+      superadmin: "Superadministrátor",
+      admin: "Administrátor",
+      manager: "Manažer",
+      default: "Uživatel",
+    },
   },
   "keyboard-shortcuts": {
     title: "Klávesové zkratky",

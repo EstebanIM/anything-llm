@@ -1447,8 +1447,16 @@ const TRANSLATIONS = {
     profile_updated: "Profil mis à jour avec succès.",
     failed_update_user: "Échec de la mise à jour de l'utilisateur : {{error}}",
     account: "Compte",
+    settings: "Settings",
+    back_to_workspaces: "Back to workspaces",
     support: "Support",
     signout: "Déconnexion",
+    roles: {
+      superadmin: "Super administrateur",
+      admin: "Administrateur",
+      manager: "Manager",
+      default: "Utilisateur",
+    },
   },
   customization: {
     interface: {
@@ -1497,9 +1505,19 @@ const TRANSLATIONS = {
         description:
           "Définissez l'adresse e-mail de support affichée aux utilisateurs.",
       },
+      "brand-color": {
+        title: "Brand Color",
+        description:
+          "Set the brand color applied to the chat embed widget (launcher button and user message bubbles).",
+      },
       "app-name": {
         title: "Nom de l'application",
         description: "Définissez le nom affiché dans l'interface.",
+      },
+      "login-powered-by": {
+        title: "Login footer text",
+        description: "Set the powered-by text displayed below the login form.",
+        placeholder: "Powered by your organization",
       },
       "display-language": {
         title: "Langue d'affichage",
@@ -1512,6 +1530,16 @@ const TRANSLATIONS = {
         recommended: "Taille recommandée : 800 x 200",
         remove: "Supprimer",
         replace: "Remplacer",
+        dark: {
+          title: "Dark mode",
+          description: "Logo shown when the interface uses the dark theme.",
+          alt: "Uploaded dark mode logo",
+        },
+        light: {
+          title: "Light mode",
+          description: "Logo shown when the interface uses the light theme.",
+          alt: "Uploaded light mode logo",
+        },
       },
       "browser-appearance": {
         title: "Apparence du navigateur",
@@ -1525,6 +1553,13 @@ const TRANSLATIONS = {
           title: "Favicon",
           description:
             "Définissez l'icône affichée dans l'onglet du navigateur.",
+          upload: "Upload favicon",
+          replace: "Replace favicon",
+          remove: "Remove favicon",
+          recommended: "Recommended: square PNG, SVG, or ICO",
+          url: "Favicon URL",
+          placeholder: "https://example.com/favicon.png",
+          alt: "Custom favicon preview",
         },
       },
       "sidebar-footer": {

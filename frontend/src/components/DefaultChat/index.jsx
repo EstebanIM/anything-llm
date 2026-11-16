@@ -56,8 +56,9 @@ export default function DefaultChatContainer() {
     return (
       <Layout>
         <div className="w-full h-full flex flex-col items-center justify-center overflow-y-auto no-scroll">
-          {/* Logo skeleton */}
-          <div className="w-[140px] h-[140px] mb-5 rounded-lg bg-theme-bg-primary animate-pulse" />
+          {logo && (
+            <div className="w-[140px] h-[140px] mb-5 rounded-lg bg-theme-bg-primary animate-pulse" />
+          )}
           {/* Title skeleton */}
           <div className="w-48 h-6 mb-4 rounded bg-theme-bg-primary animate-pulse" />
           {/* Paragraph skeleton */}
@@ -74,11 +75,13 @@ export default function DefaultChatContainer() {
   return (
     <Layout>
       <div className="w-full h-full flex flex-col items-center justify-center overflow-y-auto no-scroll">
-        <img
-          src={logo}
-          alt="Custom Logo"
-          className=" w-[200px] h-fit mb-5 rounded-lg"
-        />
+        {logo && (
+          <img
+            src={logo}
+            alt="Custom Logo"
+            className=" w-[200px] h-fit mb-5 rounded-lg"
+          />
+        )}
         <h1 className="text-white text-2xl font-semibold">
           {t("home.welcome")}, {user.username}!
         </h1>

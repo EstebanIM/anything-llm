@@ -83,7 +83,7 @@ export function ModalHeader({ title, subtitle, onClose, children }) {
   return (
     <div className="flex flex-col gap-y-1 w-full">
       <div className="flex items-start justify-between gap-x-2 w-full">
-        <h3 className="text-base font-semibold text-slate-50 light:text-slate-900 break-words">
+        <h3 className="min-w-0 text-base font-semibold text-slate-50 light:text-slate-900 break-words">
           {title}
         </h3>
         {onClose && (
@@ -91,7 +91,7 @@ export function ModalHeader({ title, subtitle, onClose, children }) {
             onClick={onClose}
             type="button"
             aria-label="Close"
-            className="border-none bg-transparent p-1 -m-1 rounded-lg text-slate-50 light:text-slate-900 hover:bg-zinc-800 light:hover:bg-slate-100 transition-colors duration-200"
+            className="border-none bg-transparent p-1 -m-1 rounded-lg shrink-0 text-slate-50 light:text-slate-900 hover:bg-zinc-800 light:hover:bg-slate-100 transition-colors duration-200"
           >
             <X size={16} weight="bold" />
           </button>

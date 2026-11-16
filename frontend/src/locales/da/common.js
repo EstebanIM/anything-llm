@@ -1417,8 +1417,16 @@ const TRANSLATIONS = {
     profile_updated: "Profil opdateret.",
     failed_update_user: "Mislykket med at opdatere bruger: {{error}}",
     account: "Konto",
+    settings: "Settings",
+    back_to_workspaces: "Back to workspaces",
     support: "Støtte",
     signout: "Log ud",
+    roles: {
+      superadmin: "Superadministrator",
+      admin: "Administrator",
+      manager: "Manager",
+      default: "Bruger",
+    },
   },
   customization: {
     interface: {
@@ -1467,10 +1475,20 @@ const TRANSLATIONS = {
         description:
           "Angiv e-mailadressen, der skal være tilgængelig for brugere, når de har brug for hjælp.",
       },
+      "brand-color": {
+        title: "Brand Color",
+        description:
+          "Set the brand color applied to the chat embed widget (launcher button and user message bubbles).",
+      },
       "app-name": {
         title: "Navn",
         description:
           "Angiv et navn, der vises på login-siden for alle brugere.",
+      },
+      "login-powered-by": {
+        title: "Login footer text",
+        description: "Set the powered-by text displayed below the login form.",
+        placeholder: "Powered by your organization",
       },
       "display-language": {
         title: "Visningssprog",
@@ -1485,6 +1503,16 @@ const TRANSLATIONS = {
         recommended: "Anbefalet størrelse: 800 x 200",
         remove: "Fjern",
         replace: "Udskift",
+        dark: {
+          title: "Dark mode",
+          description: "Logo shown when the interface uses the dark theme.",
+          alt: "Uploaded dark mode logo",
+        },
+        light: {
+          title: "Light mode",
+          description: "Logo shown when the interface uses the light theme.",
+          alt: "Uploaded light mode logo",
+        },
       },
       "browser-appearance": {
         title: "Browser-udseende",
@@ -1499,6 +1527,13 @@ const TRANSLATIONS = {
         favicon: {
           title: "Favikon",
           description: "Brug et brugerdefineret ikon til browserens fane.",
+          upload: "Upload favicon",
+          replace: "Replace favicon",
+          remove: "Remove favicon",
+          recommended: "Recommended: square PNG, SVG, or ICO",
+          url: "Favicon URL",
+          placeholder: "https://example.com/favicon.png",
+          alt: "Custom favicon preview",
         },
       },
       "sidebar-footer": {

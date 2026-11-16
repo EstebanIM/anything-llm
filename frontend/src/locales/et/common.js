@@ -894,10 +894,20 @@ const TRANSLATIONS = {
         description:
           "Määra e-posti aadress, kuhu kasutajad saavad abi saamiseks pöörduda.",
       },
+      "brand-color": {
+        title: "Brand Color",
+        description:
+          "Set the brand color applied to the chat embed widget (launcher button and user message bubbles).",
+      },
       "app-name": {
         title: "Nimi",
         description:
           "Nimi, mis kuvatakse kõigile kasutajatele sisselogimislehel.",
+      },
+      "login-powered-by": {
+        title: "Login footer text",
+        description: "Set the powered-by text displayed below the login form.",
+        placeholder: "Powered by your organization",
       },
       "display-language": {
         title: "Kuvakeel",
@@ -911,6 +921,16 @@ const TRANSLATIONS = {
         recommended: "Soovituslik suurus: 800 × 200",
         remove: "Eemalda",
         replace: "Asenda",
+        dark: {
+          title: "Dark mode",
+          description: "Logo shown when the interface uses the dark theme.",
+          alt: "Uploaded dark mode logo",
+        },
+        light: {
+          title: "Light mode",
+          description: "Logo shown when the interface uses the light theme.",
+          alt: "Uploaded light mode logo",
+        },
       },
       "browser-appearance": {
         title: "Brauseri välimus",
@@ -923,6 +943,13 @@ const TRANSLATIONS = {
         favicon: {
           title: "Favicon",
           description: "Kasuta kohandatud faviconi brauseri vahekaardil.",
+          upload: "Upload favicon",
+          replace: "Replace favicon",
+          remove: "Remove favicon",
+          recommended: "Recommended: square PNG, SVG, or ICO",
+          url: "Favicon URL",
+          placeholder: "https://example.com/favicon.png",
+          alt: "Custom favicon preview",
         },
       },
       "sidebar-footer": {
@@ -1547,8 +1574,16 @@ const TRANSLATIONS = {
     profile_updated: "Profiil uuendatud.",
     failed_update_user: "Kasutaja uuendamine ebaõnnestus: {{error}}",
     account: "Konto",
+    settings: "Settings",
+    back_to_workspaces: "Back to workspaces",
     support: "Tugi",
     signout: "Logi välja",
+    roles: {
+      superadmin: "Superadministraator",
+      admin: "Administraator",
+      manager: "Juht",
+      default: "Kasutaja",
+    },
   },
   "keyboard-shortcuts": {
     title: "Klaviatuuri otseteed",

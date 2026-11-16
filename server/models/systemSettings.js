@@ -3,9 +3,13 @@ process.env.NODE_ENV === "development"
   : require("dotenv").config();
 
 const { default: slugify } = require("slugify");
-const { isValidUrl, safeJsonParse } = require("../utils/http");
+const { safeJsonParse } = require("../utils/http");
 const prisma = require("../utils/prisma");
 const { MetaGenerator } = require("../utils/boot/MetaGenerator");
+const {
+  extractInternalFaviconFilename,
+  internalFaviconUrl,
+} = require("../utils/files/favicon");
 const { sanitizeThemePalettes } = require("../utils/themePalettes");
 const { PGVector } = require("../utils/vectorDbProviders/pgvector");
 const { NativeEmbedder } = require("../utils/EmbeddingEngines/native");
@@ -40,8 +44,6 @@ const SystemSettings = {
     "Given the following conversation, relevant context, and a follow up question, reply with an answer to the current question the user is asking. The current date and time is {datetime}. Return only your response to the question given the above information following the users instructions as needed.",
   protectedFields: ["multi_user_mode", "hub_api_key", "onboarding_complete"],
   publicFields: [
-    "footer_data",
-    "support_email",
     "text_splitter_chunk_size",
     "text_splitter_chunk_overlap",
     "max_embed_chunk_size",
@@ -61,6 +63,8 @@ const SystemSettings = {
     "agent_clarifying_questions_enabled",
     "agent_clarifying_questions_max_per_turn",
     "custom_app_name",
+    "login_powered_by",
+    "brand_color",
     "feature_flags",
     "meta_page_title",
     "meta_page_favicon",
@@ -69,9 +73,9 @@ const SystemSettings = {
   ],
   supportedFields: [
     "logo_filename",
+    "logo_filename_light",
+    "logo_filename_dark",
     "telemetry_id",
-    "footer_data",
-    "support_email",
 
     "text_splitter_chunk_size",
     "text_splitter_chunk_overlap",
@@ -90,6 +94,8 @@ const SystemSettings = {
     "agent_clarifying_questions_enabled",
     "agent_clarifying_questions_max_per_turn",
     "custom_app_name",
+    "login_powered_by",
+    "brand_color",
     "default_system_prompt",
 
     // Meta page customization
@@ -109,17 +115,6 @@ const SystemSettings = {
   ],
   validations: {
     theme_palettes: (update) => JSON.stringify(sanitizeThemePalettes(update)),
-    footer_data: (updates) => {
-      try {
-        const array = JSON.parse(updates)
-          .filter((setting) => isValidUrl(setting.url))
-          .slice(0, 3); // max of 3 items in footer.
-        return JSON.stringify(array);
-      } catch {
-        console.error(`Failed to run validation function on footer_data`);
-        return JSON.stringify([]);
-      }
-    },
     text_splitter_chunk_size: (update) => {
       try {
         if (isNullOrNaN(update)) throw new Error("Value is not a number.");
@@ -438,9 +433,13 @@ const SystemSettings = {
       }
     },
     meta_page_favicon: (faviconUrl) => {
-      if (!faviconUrl) return null;
       try {
-        const url = new URL(faviconUrl);
+        if (!faviconUrl) return null;
+        const trimmedUrl = String(faviconUrl).trim();
+        const internalFilename = extractInternalFaviconFilename(trimmedUrl);
+        if (internalFilename) return internalFaviconUrl(internalFilename);
+
+        const url = new URL(trimmedUrl);
         return url.toString();
       } catch {
         return null;
@@ -457,6 +456,15 @@ const SystemSettings = {
       if (prompt.trim() === SystemSettings.saneDefaultSystemPrompt)
         return SystemSettings.saneDefaultSystemPrompt;
       return String(prompt.trim());
+    },
+    login_powered_by: (value) => {
+      if (typeof value !== "string" || !value.trim()) return null;
+      return String(value.trim());
+    },
+    brand_color: (value) => {
+      if (typeof value !== "string") return null;
+      const color = value.trim();
+      return /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(color) ? color : null;
     },
   },
   currentSettings: async function () {
@@ -830,9 +838,15 @@ const SystemSettings = {
     }
   },
 
-  currentLogoFilename: async function () {
+  logoFilenameLabel: function (theme = null) {
+    if (theme === "light") return "logo_filename_light";
+    if (theme === "dark") return "logo_filename_dark";
+    return "logo_filename";
+  },
+
+  currentLogoFilename: async function (theme = null) {
     try {
-      const setting = await this.get({ label: "logo_filename" });
+      const setting = await this.get({ label: this.logoFilenameLabel(theme) });
       return setting?.value || null;
     } catch (error) {
       console.error(error.message);

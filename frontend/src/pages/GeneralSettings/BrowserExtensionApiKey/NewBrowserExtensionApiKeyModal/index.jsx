@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import BrowserExtensionApiKey from "@/models/browserExtensionApiKey";
 import { fullApiUrl, POPUP_BROWSER_EXTENSION_EVENT } from "@/utils/constants";
+import useCustomAppName from "@/hooks/useCustomAppName";
 import {
   ModalHeader,
   ModalBody,
@@ -14,6 +15,7 @@ export default function NewBrowserExtensionApiKeyModal({
   onSuccess,
   isMultiUser,
 }) {
+  const { brandName } = useCustomAppName();
   const [apiKey, setApiKey] = useState(null);
   const [error, setError] = useState(null);
   const [copied, setCopied] = useState(false);
@@ -28,9 +30,11 @@ export default function NewBrowserExtensionApiKeyModal({
       const fullApiKey = `${fullApiUrl()}|${newApiKey}`;
       setApiKey(fullApiKey);
       onSuccess();
-
       window.postMessage(
-        { type: POPUP_BROWSER_EXTENSION_EVENT, apiKey: fullApiKey },
+        {
+          type: POPUP_BROWSER_EXTENSION_EVENT,
+          apiKey: fullApiKey,
+        },
         "*"
       );
     }
@@ -74,11 +78,11 @@ export default function NewBrowserExtensionApiKeyModal({
           </p>
         )}
         <p className="text-xs text-zinc-400 light:text-slate-600">
-          After clicking "Create API Key", AnythingLLM will attempt to connect
+          After clicking "Create API Key", {brandName} will attempt to connect
           to your browser extension automatically.
         </p>
         <p className="text-xs text-zinc-400 light:text-slate-600">
-          If you see "Connected to AnythingLLM" in the extension, the connection
+          If you see "Connected to {brandName}" in the extension, the connection
           was successful. If not, please copy the connection string and paste it
           into the extension manually.
         </p>

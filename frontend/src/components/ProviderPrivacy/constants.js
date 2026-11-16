@@ -1,4 +1,4 @@
-import AnythingLLMIcon from "@/media/logo/anything-llm-icon.png";
+import LocalInstanceIcon from "@/media/logo/anything-llm-icon.png";
 import OpenAiLogo from "@/media/llmprovider/openai.png";
 import GenericOpenAiLogo from "@/media/llmprovider/generic-openai.png";
 import AzureOpenAiLogo from "@/media/llmprovider/azure.png";
@@ -253,7 +253,7 @@ const LLM_PROVIDER_PRIVACY_MAP = {
     description: [
       "Your model and chats are only accessible on the server running AnythingLLM.",
     ],
-    logo: AnythingLLMIcon,
+    logo: LocalInstanceIcon,
   },
   omlx: {
     name: "oMLX",
@@ -274,7 +274,7 @@ const LLM_PROVIDER_PRIVACY_MAP = {
   },
 };
 
-const VECTOR_DB_PROVIDER_PRIVACY_MAP = {
+const VECTOR_DB_PROVIDER_PRIVACY_MAP = (brandName) => ({
   pgvector: {
     name: "PGVector",
     description: [
@@ -331,19 +331,19 @@ const VECTOR_DB_PROVIDER_PRIVACY_MAP = {
   lancedb: {
     name: "LanceDB",
     description: [
-      "Your vectors and document text are stored privately on this instance of AnythingLLM.",
+      `Your vectors and document text are stored privately on this instance of ${brandName}.`,
     ],
     logo: LanceDbLogo,
   },
-};
+});
 
-const EMBEDDING_ENGINE_PROVIDER_PRIVACY_MAP = {
+const EMBEDDING_ENGINE_PROVIDER_PRIVACY_MAP = (brandName) => ({
   native: {
-    name: "AnythingLLM Embedder",
+    name: `${brandName} Embedder`,
     description: [
-      "Your document text is embedded privately on this instance of AnythingLLM.",
+      `Your document text is embedded privately on this instance of ${brandName}.`,
     ],
-    logo: AnythingLLMIcon,
+    logo: LocalInstanceIcon,
   },
   openai: {
     name: "OpenAI",
@@ -422,10 +422,10 @@ const EMBEDDING_ENGINE_PROVIDER_PRIVACY_MAP = {
     ],
     logo: LemonadeLogo,
   },
-};
+});
 
-export const PROVIDER_PRIVACY_MAP = {
+export const getProviderPrivacyMap = (brandName = "this instance") => ({
   llm: LLM_PROVIDER_PRIVACY_MAP,
-  embeddingEngine: EMBEDDING_ENGINE_PROVIDER_PRIVACY_MAP,
-  vectorDb: VECTOR_DB_PROVIDER_PRIVACY_MAP,
-};
+  embeddingEngine: EMBEDDING_ENGINE_PROVIDER_PRIVACY_MAP(brandName),
+  vectorDb: VECTOR_DB_PROVIDER_PRIVACY_MAP(brandName),
+});

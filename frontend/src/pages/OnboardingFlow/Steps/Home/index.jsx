@@ -3,14 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import useRedirectToHomeOnOnboardingComplete from "@/hooks/useOnboardingComplete";
 import { OnboardingLogoSVG } from "./components/OnboardingLogoSVG";
-import Wordmark from "./wordmark.svg";
-import WordmarkLight from "./wordmark-light.svg";
-
+import useCustomAppName from "@/hooks/useCustomAppName";
 export default function OnboardingHome() {
   const navigate = useNavigate();
   useRedirectToHomeOnOnboardingComplete();
   const { t } = useTranslation();
-
+  const { brandName } = useCustomAppName();
   return (
     <div className="relative w-screen h-screen flex flex-col overflow-hidden bg-zinc-950 light:bg-slate-50">
       {/* Dark mode background gradient */}
@@ -31,16 +29,9 @@ export default function OnboardingHome() {
       />
 
       <div className="relative z-10 flex justify-center pt-[58px]">
-        <img
-          src={Wordmark}
-          alt="AnythingLLM"
-          className="h-[28px] w-auto light:hidden"
-        />
-        <img
-          src={WordmarkLight}
-          alt="AnythingLLM"
-          className="hidden h-[28px] w-auto light:block"
-        />
+        <p className="text-white/80 light:text-slate-600 text-3xl font-semibold">
+          {brandName}
+        </p>
       </div>
 
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center -mt-8">

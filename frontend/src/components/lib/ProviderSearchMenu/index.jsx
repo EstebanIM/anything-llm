@@ -44,26 +44,30 @@ export default function ProviderSearchMenu({
   return (
     <button
       ref={triggerRef}
-      className="w-full max-w-[640px] h-[64px] bg-theme-settings-input-bg rounded-lg flex items-center p-[14px] justify-between cursor-pointer border-2 border-transparent hover:border-primary-button focus:border-primary-button focus:outline-none transition-all duration-300"
+      className="w-full max-w-[640px] min-h-[64px] h-auto min-w-0 bg-theme-settings-input-bg rounded-lg flex items-center p-[14px] justify-between cursor-pointer border-2 border-transparent hover:border-primary-button focus:border-primary-button focus:outline-none transition-all duration-300"
       type="button"
       onClick={() => setOpen(true)}
     >
-      <div className="flex gap-x-4 items-center">
+      <div className="flex min-w-0 flex-1 gap-x-4 items-center">
         <img
           src={selected.logo}
           alt={`${selected.name} logo`}
-          className="w-10 h-10 rounded-md"
+          className="w-10 h-10 rounded-md shrink-0"
         />
-        <div className="flex flex-col text-left">
-          <div className="text-sm font-semibold text-white">
+        <div className="min-w-0 flex-1 flex flex-col text-left">
+          <div className="text-sm font-semibold text-white break-words">
             {selected.name}
           </div>
-          <div className="mt-1 text-xs text-description">
+          <div className="mt-1 text-xs text-description break-words">
             {selected.description}
           </div>
         </div>
       </div>
-      <CaretUpDown size={24} weight="bold" className="text-white" />
+      <CaretUpDown
+        size={24}
+        weight="bold"
+        className="text-white shrink-0 ml-3"
+      />
     </button>
   );
 }

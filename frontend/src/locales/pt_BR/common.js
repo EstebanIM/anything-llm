@@ -917,10 +917,20 @@ const TRANSLATIONS = {
         title: "Email de Suporte",
         description: "Defina o email de suporte acessível aos usuários.",
       },
+      "brand-color": {
+        title: "Brand Color",
+        description:
+          "Set the brand color applied to the chat embed widget (launcher button and user message bubbles).",
+      },
       "app-name": {
         title: "Nome",
         description:
           "Defina um nome exibido na página de login para todos os usuários.",
+      },
+      "login-powered-by": {
+        title: "Login footer text",
+        description: "Set the powered-by text displayed below the login form.",
+        placeholder: "Powered by your organization",
       },
       "display-language": {
         title: "Idioma",
@@ -934,6 +944,16 @@ const TRANSLATIONS = {
         recommended: "Tamanho recomendado: 800 x 200",
         remove: "Remover",
         replace: "Substituir",
+        dark: {
+          title: "Dark mode",
+          description: "Logo shown when the interface uses the dark theme.",
+          alt: "Uploaded dark mode logo",
+        },
+        light: {
+          title: "Light mode",
+          description: "Logo shown when the interface uses the light theme.",
+          alt: "Uploaded light mode logo",
+        },
       },
       "browser-appearance": {
         title: "Aparência no Navegador",
@@ -945,6 +965,13 @@ const TRANSLATIONS = {
         favicon: {
           title: "Favicon",
           description: "Use um favicon personalizado.",
+          upload: "Upload favicon",
+          replace: "Replace favicon",
+          remove: "Remove favicon",
+          recommended: "Recommended: square PNG, SVG, or ICO",
+          url: "Favicon URL",
+          placeholder: "https://example.com/favicon.png",
+          alt: "Custom favicon preview",
         },
       },
       "sidebar-footer": {
@@ -1582,8 +1609,16 @@ const TRANSLATIONS = {
     profile_updated: "Perfil atualizado com sucesso",
     failed_update_user: "Falha ao atualizar perfil do usuário: {{error}}",
     account: "Conta",
+    settings: "Settings",
+    back_to_workspaces: "Back to workspaces",
     support: "Suporte",
     signout: "Sair",
+    roles: {
+      superadmin: "Superadministrador",
+      admin: "Administrador",
+      manager: "Gerente",
+      default: "Usuário",
+    },
   },
   "keyboard-shortcuts": {
     title: "Atalhos de Teclado",

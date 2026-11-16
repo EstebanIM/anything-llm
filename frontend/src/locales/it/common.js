@@ -1447,8 +1447,16 @@ const TRANSLATIONS = {
     profile_updated: "Profilo aggiornato.",
     failed_update_user: "Errore nell'aggiornamento dell'utente: {{error}}",
     account: "Account",
+    settings: "Settings",
+    back_to_workspaces: "Back to workspaces",
     support: "Support\n\n\nAssistenza",
     signout: "Esci",
+    roles: {
+      superadmin: "Super Admin",
+      admin: "Admin",
+      manager: "Manager",
+      default: "Utente",
+    },
   },
   customization: {
     interface: {
@@ -1502,10 +1510,20 @@ const TRANSLATIONS = {
         description:
           "Definisci l'indirizzo email di supporto che sarà disponibile per gli utenti quando necessitano di assistenza.",
       },
+      "brand-color": {
+        title: "Brand Color",
+        description:
+          "Set the brand color applied to the chat embed widget (launcher button and user message bubbles).",
+      },
       "app-name": {
         title: "Nome",
         description:
           "Definisci un nome che verrà visualizzato sulla pagina di accesso per tutti gli utenti.",
+      },
+      "login-powered-by": {
+        title: "Login footer text",
+        description: "Set the powered-by text displayed below the login form.",
+        placeholder: "Powered by your organization",
       },
       "display-language": {
         title: "Lingua da visualizzare",
@@ -1520,6 +1538,16 @@ const TRANSLATIONS = {
         recommended: "Dimensioni consigliate: 800 x 200",
         remove: "Rimuovi",
         replace: "Sostituire",
+        dark: {
+          title: "Dark mode",
+          description: "Logo shown when the interface uses the dark theme.",
+          alt: "Uploaded dark mode logo",
+        },
+        light: {
+          title: "Light mode",
+          description: "Logo shown when the interface uses the light theme.",
+          alt: "Uploaded light mode logo",
+        },
       },
       "browser-appearance": {
         title: "Aspetto del browser",
@@ -1534,6 +1562,13 @@ const TRANSLATIONS = {
           title: "Favicon",
           description:
             "Utilizza un'icona personalizzata per la scheda del browser.",
+          upload: "Upload favicon",
+          replace: "Replace favicon",
+          remove: "Remove favicon",
+          recommended: "Recommended: square PNG, SVG, or ICO",
+          url: "Favicon URL",
+          placeholder: "https://example.com/favicon.png",
+          alt: "Custom favicon preview",
         },
       },
       "sidebar-footer": {

@@ -5,6 +5,8 @@
  * @property {string|null} content - Text content to be injected between tags. If null self-closing.
  */
 
+const DEFAULT_APP_NAME = "IASMAR";
+
 /**
  * This class serves the default index.html page that is not present when built in production.
  * and therefore this class should not be called when in development mode since it is unused.
@@ -17,18 +19,23 @@
  * static property and will not be reloaded until the page is loaded AND #customConfig is explicitly null. So anytime a setting
  * for meta-props is updated you should get this singleton class and call `.clearConfig` so the next page load will show the new props.
  */
+const {
+  extractInternalFaviconFilename,
+  internalFaviconUrl,
+} = require("../files/favicon");
+
 class MetaGenerator {
   name = "MetaGenerator";
 
   /** @type {MetaGenerator|null} */
   static _instance = null;
 
-  /** @type {MetaTagDefinition[]|null} */
+  /** @type {{title:string,description:string,faviconUrl:string,socialImagePath:string|null}|null} */
   #customConfig = null;
 
   #defaultManifest = {
-    name: "AnythingLLM",
-    short_name: "AnythingLLM",
+    name: DEFAULT_APP_NAME,
+    short_name: DEFAULT_APP_NAME,
     display: "standalone",
     orientation: "portrait",
     start_url: "/",
@@ -49,31 +56,37 @@ class MetaGenerator {
     console.log(`\x1b[36m[${this.name}]\x1b[0m ${text}`, ...args);
   }
 
-  #defaultMeta() {
-    return [
+  #defaultMeta({
+    title = DEFAULT_APP_NAME,
+    description = title,
+    faviconUrl = "/favicon.png",
+    pageUrl = "/",
+    socialImageUrl = null,
+  } = {}) {
+    const tags = [
       {
         tag: "link",
-        props: { type: "image/svg+xml", href: "/favicon.png" },
+        props: { type: "image/svg+xml", href: faviconUrl },
         content: null,
       },
       {
         tag: "title",
         props: null,
-        content: "AnythingLLM | Your personal LLM trained on anything",
+        content: title,
       },
 
       {
         tag: "meta",
         props: {
           name: "title",
-          content: "AnythingLLM | Your personal LLM trained on anything",
+          content: title,
         },
       },
       {
         tag: "meta",
         props: {
-          description: "title",
-          content: "AnythingLLM | Your personal LLM trained on anything",
+          name: "description",
+          content: description,
         },
       },
 
@@ -81,65 +94,52 @@ class MetaGenerator {
       { tag: "meta", props: { property: "og:type", content: "website" } },
       {
         tag: "meta",
-        props: { property: "og:url", content: "https://anythingllm.com" },
+        props: { property: "og:url", content: pageUrl },
       },
       {
         tag: "meta",
         props: {
           property: "og:title",
-          content: "AnythingLLM | Your personal LLM trained on anything",
+          content: title,
         },
       },
       {
         tag: "meta",
         props: {
           property: "og:description",
-          content: "AnythingLLM | Your personal LLM trained on anything",
-        },
-      },
-      {
-        tag: "meta",
-        props: {
-          property: "og:image",
-          content:
-            "https://raw.githubusercontent.com/Mintplex-Labs/anything-llm/master/images/promo.png",
+          content: description,
         },
       },
 
       // <!-- Twitter -->
       {
         tag: "meta",
-        props: { property: "twitter:card", content: "summary_large_image" },
+        props: {
+          property: "twitter:card",
+          content: socialImageUrl ? "summary_large_image" : "summary",
+        },
       },
       {
         tag: "meta",
-        props: { property: "twitter:url", content: "https://anythingllm.com" },
+        props: { property: "twitter:url", content: pageUrl },
       },
       {
         tag: "meta",
         props: {
           property: "twitter:title",
-          content: "AnythingLLM | Your personal LLM trained on anything",
+          content: title,
         },
       },
       {
         tag: "meta",
         props: {
           property: "twitter:description",
-          content: "AnythingLLM | Your personal LLM trained on anything",
-        },
-      },
-      {
-        tag: "meta",
-        props: {
-          property: "twitter:image",
-          content:
-            "https://raw.githubusercontent.com/Mintplex-Labs/anything-llm/master/images/promo.png",
+          content: description,
         },
       },
 
-      { tag: "link", props: { rel: "icon", href: "/favicon.png" } },
-      { tag: "link", props: { rel: "apple-touch-icon", href: "/favicon.png" } },
+      { tag: "link", props: { rel: "icon", href: faviconUrl } },
+      { tag: "link", props: { rel: "apple-touch-icon", href: faviconUrl } },
 
       // PWA specific tags
       {
@@ -159,6 +159,29 @@ class MetaGenerator {
       },
       { tag: "link", props: { rel: "manifest", href: "/manifest.json" } },
     ];
+
+    if (socialImageUrl) {
+      tags.splice(
+        9,
+        0,
+        {
+          tag: "meta",
+          props: {
+            property: "og:image",
+            content: socialImageUrl,
+          },
+        },
+        {
+          tag: "meta",
+          props: {
+            property: "twitter:image",
+            content: socialImageUrl,
+          },
+        }
+      );
+    }
+
+    return tags;
   }
 
   /**
@@ -182,9 +205,9 @@ class MetaGenerator {
    * @param {MetaTagDefinition[]} tagArray
    * @returns {string}
    */
-  #assembleMeta() {
+  #assembleMeta(tags = []) {
     const output = [];
-    for (const tag of this.#customConfig) {
+    for (const tag of tags) {
       let htmlString;
       htmlString = `<${tag.tag} `;
 
@@ -203,8 +226,12 @@ class MetaGenerator {
     return output.join("\n");
   }
 
-  #validUrl(faviconUrl = null) {
+  #validFaviconUrl(faviconUrl = null) {
     if (faviconUrl === null) return "/favicon.png";
+
+    const internalFilename = extractInternalFaviconFilename(faviconUrl);
+    if (internalFilename) return internalFaviconUrl(internalFilename);
+
     try {
       const url = new URL(faviconUrl);
       return url.toString();
@@ -213,9 +240,54 @@ class MetaGenerator {
     }
   }
 
+  #headerValue(request, headerName) {
+    const value =
+      request?.get?.(headerName) ||
+      request?.headers?.[headerName] ||
+      request?.headers?.[headerName.toLowerCase()];
+
+    if (Array.isArray(value)) return value[0];
+    if (typeof value === "string") return value.split(",")[0].trim();
+    return null;
+  }
+
+  #requestOrigin(request) {
+    const host =
+      this.#headerValue(request, "x-forwarded-host") ||
+      this.#headerValue(request, "host");
+    if (!host) return "";
+
+    const protocol =
+      this.#headerValue(request, "x-forwarded-proto") ||
+      request?.protocol ||
+      "http";
+    return `${protocol}://${host}`;
+  }
+
+  #requestUrl(request) {
+    const origin = this.#requestOrigin(request);
+    const path = request?.originalUrl || request?.url || "/";
+    const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+    return origin ? `${origin}${normalizedPath}` : normalizedPath;
+  }
+
+  #absoluteUrl(request, url) {
+    if (!url) return null;
+
+    try {
+      return new URL(url).toString();
+    } catch {}
+
+    const origin = this.#requestOrigin(request);
+    if (!origin) return url;
+    return new URL(url, origin).toString();
+  }
+
   async #fetchConfg() {
     this.#log(`fetching custom meta tag settings...`);
     const { SystemSettings } = require("../../models/systemSettings");
+    const logoFiles = require("../files/logo");
+
     const customTitle = await SystemSettings.getValueOrFallback(
       { label: "meta_page_title" },
       null
@@ -224,84 +296,34 @@ class MetaGenerator {
       { label: "meta_page_favicon" },
       null
     );
+    const customAppName = await SystemSettings.getValueOrFallback(
+      { label: "custom_app_name" },
+      null
+    );
+    const normalizedTitle =
+      typeof customTitle === "string" ? customTitle.trim() : customTitle;
+    const normalizedAppName =
+      typeof customAppName === "string" ? customAppName.trim() : customAppName;
+    const normalizedFaviconURL =
+      typeof faviconURL === "string" && faviconURL.trim()
+        ? faviconURL.trim()
+        : null;
+    const resolvedTitle =
+      normalizedTitle || normalizedAppName || DEFAULT_APP_NAME;
+    const lightLogoFilename = normalizedFaviconURL
+      ? null
+      : await logoFiles.currentLogoFilenameForTheme("light");
 
-    // If nothing defined - assume defaults.
-    if (customTitle === null && faviconURL === null) {
-      this.#customConfig = this.#defaultMeta();
-    } else {
-      // When custom settings exist, include all default meta tags but override specific ones
-      this.#customConfig = this.#defaultMeta().map((tag) => {
-        // Override favicon link
-        if (tag.tag === "link" && tag.props?.rel === "icon") {
-          return {
-            tag: "link",
-            props: { rel: "icon", href: this.#validUrl(faviconURL) },
-          };
-        }
-        // Override page title
-        if (tag.tag === "title") {
-          return {
-            tag: "title",
-            props: null,
-            content:
-              customTitle ??
-              "AnythingLLM | Your personal LLM trained on anything",
-          };
-        }
-        // Override meta title
-        if (tag.tag === "meta" && tag.props?.name === "title") {
-          return {
-            tag: "meta",
-            props: {
-              name: "title",
-              content:
-                customTitle ??
-                "AnythingLLM | Your personal LLM trained on anything",
-            },
-          };
-        }
-        // Override og:title
-        if (tag.tag === "meta" && tag.props?.property === "og:title") {
-          return {
-            tag: "meta",
-            props: {
-              property: "og:title",
-              content:
-                customTitle ??
-                "AnythingLLM | Your personal LLM trained on anything",
-            },
-          };
-        }
-        // Override twitter:title
-        if (tag.tag === "meta" && tag.props?.property === "twitter:title") {
-          return {
-            tag: "meta",
-            props: {
-              property: "twitter:title",
-              content:
-                customTitle ??
-                "AnythingLLM | Your personal LLM trained on anything",
-            },
-          };
-        }
-        // Override apple-touch-icon if custom favicon is set
-        if (
-          tag.tag === "link" &&
-          tag.props?.rel === "apple-touch-icon" &&
-          faviconURL
-        ) {
-          return {
-            tag: "link",
-            props: {
-              rel: "apple-touch-icon",
-              href: this.#validUrl(faviconURL),
-            },
-          };
-        }
-        // Return original tag for everything else (including PWA tags)
-        return tag;
-      });
-    }
+    this.#customConfig = {
+      title: resolvedTitle,
+      description: resolvedTitle,
+      faviconUrl: this.#validFaviconUrl(normalizedFaviconURL),
+      socialImagePath: normalizedFaviconURL
+        ? this.#validFaviconUrl(normalizedFaviconURL)
+        : lightLogoFilename
+          ? "/api/system/logo?theme=light"
+          : null,
+    };
 
     return this.#customConfig;
   }
@@ -317,9 +339,21 @@ class MetaGenerator {
    *
    * @param {import('express').Response} response
    * @param {number} code
+   * @param {import('express').Request|null} request
    */
-  async generate(response, code = 200) {
+  async generate(response, code = 200, request = null) {
     if (this.#customConfig === null) await this.#fetchConfg();
+    const tags = this.#defaultMeta({
+      title: this.#customConfig.title,
+      description: this.#customConfig.description,
+      faviconUrl: this.#customConfig.faviconUrl,
+      pageUrl: this.#requestUrl(request),
+      socialImageUrl: this.#absoluteUrl(
+        request,
+        this.#customConfig.socialImagePath
+      ),
+    });
+
     // Generated SPA pages bypass express.static's frame protection.
     response.setHeader("X-Frame-Options", "DENY");
     response.status(code).send(`
@@ -328,7 +362,7 @@ class MetaGenerator {
           <head>
             <meta charset="UTF-8" />
             <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-            ${this.#assembleMeta()}
+            ${this.#assembleMeta(tags)}
             <script type="module" crossorigin src="/index.js"></script>
             <link rel="stylesheet" href="/index.css">
           </head>
@@ -346,24 +380,26 @@ class MetaGenerator {
   async generateManifest(response) {
     try {
       const { SystemSettings } = require("../../models/systemSettings");
-      const manifestName = await SystemSettings.getValueOrFallback(
+      const metaTitle = await SystemSettings.getValueOrFallback(
         { label: "meta_page_title" },
-        "AnythingLLM"
+        null
       );
+      const customAppName = await SystemSettings.getValueOrFallback(
+        { label: "custom_app_name" },
+        null
+      );
+      const manifestName =
+        (typeof metaTitle === "string" ? metaTitle.trim() : metaTitle) ||
+        (typeof customAppName === "string"
+          ? customAppName.trim()
+          : customAppName) ||
+        DEFAULT_APP_NAME;
       const faviconURL = await SystemSettings.getValueOrFallback(
         { label: "meta_page_favicon" },
         null
       );
 
-      let iconUrl = "/favicon.png";
-      if (faviconURL) {
-        try {
-          new URL(faviconURL);
-          iconUrl = faviconURL;
-        } catch {
-          iconUrl = "/favicon.png";
-        }
-      }
+      const iconUrl = this.#validFaviconUrl(faviconURL);
 
       const manifest = {
         name: manifestName,

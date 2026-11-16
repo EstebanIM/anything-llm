@@ -923,10 +923,20 @@ const TRANSLATIONS = {
         description:
           "Ustaw adres e-mail, który będzie dostępny dla użytkowników, gdy potrzebują pomocy.",
       },
+      "brand-color": {
+        title: "Brand Color",
+        description:
+          "Set the brand color applied to the chat embed widget (launcher button and user message bubbles).",
+      },
       "app-name": {
         title: "Nazwa",
         description:
           "Ustawienie nazwy wyświetlanej na stronie logowania dla wszystkich użytkowników.",
+      },
+      "login-powered-by": {
+        title: "Login footer text",
+        description: "Set the powered-by text displayed below the login form.",
+        placeholder: "Powered by your organization",
       },
       "display-language": {
         title: "Język",
@@ -941,6 +951,16 @@ const TRANSLATIONS = {
         recommended: "Zalecany rozmiar: 800 x 200",
         remove: "Usuń",
         replace: "Zmień",
+        dark: {
+          title: "Dark mode",
+          description: "Logo shown when the interface uses the dark theme.",
+          alt: "Uploaded dark mode logo",
+        },
+        light: {
+          title: "Light mode",
+          description: "Logo shown when the interface uses the light theme.",
+          alt: "Uploaded light mode logo",
+        },
       },
       "browser-appearance": {
         title: "Wygląd przeglądarki",
@@ -955,6 +975,13 @@ const TRANSLATIONS = {
           title: "Favicon",
           description:
             "Użyj niestandardowej ikony favicon dla karty przeglądarki.",
+          upload: "Upload favicon",
+          replace: "Replace favicon",
+          remove: "Remove favicon",
+          recommended: "Recommended: square PNG, SVG, or ICO",
+          url: "Favicon URL",
+          placeholder: "https://example.com/favicon.png",
+          alt: "Custom favicon preview",
         },
       },
       "sidebar-footer": {
@@ -1598,8 +1625,16 @@ const TRANSLATIONS = {
     profile_updated: "Profil został zaktualizowany.",
     failed_update_user: "Nie udało się zaktualizować użytkownika: {{error}}.",
     account: "Konto",
+    settings: "Settings",
+    back_to_workspaces: "Back to workspaces",
     support: "Wsparcie",
     signout: "Wyloguj się",
+    roles: {
+      superadmin: "Superadministrator",
+      admin: "Administrator",
+      manager: "Menedżer",
+      default: "Użytkownik",
+    },
   },
   "keyboard-shortcuts": {
     title: "Skróty klawiaturowe",

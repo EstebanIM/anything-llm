@@ -151,6 +151,26 @@ function handleAssetUpload(request, response, next) {
 }
 
 /**
+ * Handle favicon asset uploads
+ */
+function handleFaviconUpload(request, response, next) {
+  const upload = multer({ storage: assetUploadStorage }).single("favicon");
+  upload(request, response, function (err) {
+    if (err) {
+      response
+        .status(500)
+        .json({
+          success: false,
+          error: `Invalid file upload. ${err.message}`,
+        })
+        .end();
+      return;
+    }
+    next();
+  });
+}
+
+/**
  * Handle PFP file upload as logos
  */
 function handlePfpUpload(request, response, next) {
@@ -224,6 +244,7 @@ module.exports = {
   handleFileUpload,
   handleAPIFileUpload,
   handleAssetUpload,
+  handleFaviconUpload,
   handlePfpUpload,
   handleAudioUpload,
   handleImageGenUpload,

@@ -31,7 +31,9 @@ export default function ChatSettings({ workspace }) {
       data
     );
     if (!updatedWorkspace) {
-      showToast(`Error: ${message}`, "error", { clear: true });
+      showToast(`Error: ${message}`, "error", {
+        clear: true,
+      });
       // Returning false keeps the fields dirty so the next save retries them.
       return false;
     }
@@ -44,7 +46,7 @@ export default function ChatSettings({ workspace }) {
       <AutosaveForm
         onSave={handleUpdate}
         id="chat-settings-form"
-        className="w-full xl:w-1/2 flex flex-col gap-y-[32px]"
+        className="w-full lg:w-1/2 flex flex-col gap-y-[32px]"
       >
         <WorkspaceLLMSelection settings={settings} workspace={workspace} />
         <ChatModeSelection workspace={workspace} />

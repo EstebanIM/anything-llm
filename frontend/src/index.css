@@ -46,6 +46,7 @@
 
   --theme-button-primary: #46c8ff;
   --theme-button-primary-hover: #434343;
+  --theme-button-primary-text: #ffffff;
 
   --theme-button-cta: #7cd4fd;
 
@@ -240,6 +241,7 @@ body {
   padding: 0;
   margin: 0;
   font-family:
+    "metrophobic",
     "plus-jakarta-sans",
     -apple-system,
     BlinkMacSystemFont,
@@ -286,6 +288,21 @@ a {
   font-display: swap;
 }
 
+@font-face {
+  font-family: "metrophobic";
+  src: url("../public/fonts/Metrophobic-Regular.ttf");
+  font-display: swap;
+}
+
+/* The primary button hover follows the instance palette accent. */
+:root[data-palette]:not([data-palette="default"]) {
+  --theme-button-primary-hover: rgb(var(--palette-sky-500));
+}
+
+:root[data-palette]:not([data-palette="default"])[data-theme="light"] {
+  --theme-button-primary-hover: rgb(var(--palette-sky-600));
+}
+
 .grr {
   grid-template-columns: repeat(2, 1fr);
 }
@@ -325,7 +342,6 @@ a {
     padding-top: 1rem;
   }
 }
-
 
 @media (prefers-color-scheme: light) {
   .sidebar-items:after {
@@ -607,6 +623,18 @@ dialog::backdrop {
     rgba(44, 47, 53, 0.3) 100%
   ) !important;
   box-shadow: 0px 4px 30px rgba(0, 0, 0, 0.25);
+}
+
+.auth-glass-input:-webkit-autofill,
+.auth-glass-input:-webkit-autofill:hover,
+.auth-glass-input:-webkit-autofill:focus,
+.auth-glass-input:-webkit-autofill:active {
+  background-color: transparent !important;
+  -webkit-text-fill-color: #0d1117 !important;
+  caret-color: #0d1117;
+  -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
+  box-shadow: 0 0 0 1000px transparent inset !important;
+  transition: background-color 999999s ease-in-out 0s;
 }
 
 .white-fill {
@@ -1174,6 +1202,7 @@ input,
 select,
 textarea {
   font-family:
+    "metrophobic",
     "plus-jakarta-sans",
     Inter,
     ui-sans-serif,

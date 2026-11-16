@@ -3,6 +3,7 @@ import { isMobile } from "react-device-detect";
 import CommunityHubImportItemSteps, {
   CommunityHubImportItemLayout,
 } from "./Steps";
+import useCustomAppName from "@/hooks/useCustomAppName";
 
 function SideBarSelection({ setStep, currentStep }) {
   const currentIndex = Object.keys(CommunityHubImportItemSteps).indexOf(
@@ -68,6 +69,7 @@ function SideBarSelection({ setStep, currentStep }) {
 }
 
 export default function CommunityHubImportItemFlow() {
+  const { brandName } = useCustomAppName();
   const [step, setStep] = useState("itemId");
 
   const StepPage = CommunityHubImportItemSteps.hasOwnProperty(step)
@@ -85,7 +87,7 @@ export default function CommunityHubImportItemFlow() {
               </p>
             </div>
             <p className="text-xs leading-[18px] font-base text-theme-text-secondary">
-              Import items from the AnythingLLM Community Hub to enhance your
+              Import items from the {brandName} Community Hub to enhance your
               instance with community-created prompts, skills, and commands.
             </p>
           </div>

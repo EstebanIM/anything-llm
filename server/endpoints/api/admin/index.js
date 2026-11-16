@@ -779,7 +779,7 @@ function apiAdminEndpoints(app) {
       content: {
         "application/json": {
           example: {
-            support_email: "support@example.com",
+            login_powered_by: "Built by ACME",
           }
         }
       }

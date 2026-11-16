@@ -47,6 +47,7 @@ export default {
         "historical-msg-user": "#2C2F35",
         outline: "#4E5153",
         "primary-button": "var(--theme-button-primary)",
+        "primary-button-hover": "var(--theme-button-primary-hover)",
         "cta-button": "var(--theme-button-cta)",
         secondary: "#2C2F36",
         "dark-input": "#18181B",
@@ -163,6 +164,9 @@ export default {
             "button-hover-border": 'var(--theme-checklist-button-hover-border)',
           },
           button: {
+            primary: 'var(--theme-button-primary)',
+            'primary-hover': 'var(--theme-button-primary-hover)',
+            'primary-text': 'var(--theme-button-primary-text)',
             text: 'var(--theme-button-text)',
             'code-hover-text': 'var(--theme-button-code-hover-text)',
             'code-hover-bg': 'var(--theme-button-code-hover-bg)',
@@ -196,6 +200,7 @@ export default {
       },
       fontFamily: {
         sans: [
+          "metrophobic",
           "plus-jakarta-sans",
           "ui-sans-serif",
           "system-ui",

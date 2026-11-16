@@ -1400,8 +1400,16 @@ const TRANSLATIONS = {
     profile_updated: "プロフィールを更新しました。",
     failed_update_user: "ユーザーの更新に失敗：{{error}}",
     account: "アカウント",
+    settings: "Settings",
+    back_to_workspaces: "Back to workspaces",
     support: "サポート",
     signout: "ログアウト",
+    roles: {
+      superadmin: "スーパー管理者",
+      admin: "管理者",
+      manager: "マネージャー",
+      default: "ユーザー",
+    },
   },
   customization: {
     interface: {
@@ -1451,10 +1459,20 @@ const TRANSLATIONS = {
         description:
           "ユーザーが支援を必要とする際に利用できる、サポート用メールアドレスを設定します。",
       },
+      "brand-color": {
+        title: "Brand Color",
+        description:
+          "Set the brand color applied to the chat embed widget (launcher button and user message bubbles).",
+      },
       "app-name": {
         title: "名前",
         description:
           "ログインページに表示される名前を、すべてのユーザーに設定する。",
+      },
+      "login-powered-by": {
+        title: "Login footer text",
+        description: "Set the powered-by text displayed below the login form.",
+        placeholder: "Powered by your organization",
       },
       "display-language": {
         title: "表示言語",
@@ -1469,6 +1487,16 @@ const TRANSLATIONS = {
         recommended: "推奨サイズ：800 x 200",
         remove: "削除",
         replace: "置き換える",
+        dark: {
+          title: "Dark mode",
+          description: "Logo shown when the interface uses the dark theme.",
+          alt: "Uploaded dark mode logo",
+        },
+        light: {
+          title: "Light mode",
+          description: "Logo shown when the interface uses the light theme.",
+          alt: "Uploaded light mode logo",
+        },
       },
       "browser-appearance": {
         title: "ブラウザの見た目",
@@ -1482,6 +1510,13 @@ const TRANSLATIONS = {
         favicon: {
           title: "Favicon",
           description: "ブラウザのタブにカスタムのfaviconを使用する。",
+          upload: "Upload favicon",
+          replace: "Replace favicon",
+          remove: "Remove favicon",
+          recommended: "Recommended: square PNG, SVG, or ICO",
+          url: "Favicon URL",
+          placeholder: "https://example.com/favicon.png",
+          alt: "Custom favicon preview",
         },
       },
       "sidebar-footer": {

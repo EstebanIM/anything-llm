@@ -1,5 +1,5 @@
 import React from "react";
-import { CaretRight } from "@phosphor-icons/react";
+import { ChevronRight } from "lucide-react";
 
 export default function AgentFlowsList({
   flows = [],
@@ -11,14 +11,6 @@ export default function AgentFlowsList({
     return (
       <div className="text-theme-text-secondary text-center text-xs flex flex-col gap-y-2">
         <p>No agent flows found</p>
-        <a
-          href="https://docs.anythingllm.com/agent-flows/getting-started"
-          target="_blank"
-          className="text-theme-text-secondary underline hover:text-cta-button"
-          rel="noreferrer"
-        >
-          Learn more about Agent Flows.
-        </a>
       </div>
     );
   }
@@ -46,9 +38,9 @@ export default function AgentFlowsList({
             <div className="text-sm text-theme-text-secondary font-medium">
               {activeFlowIds.includes(flow.uuid) ? "On" : "Off"}
             </div>
-            <CaretRight
+            <ChevronRight
+              strokeWidth={1.5}
               size={14}
-              weight="bold"
               className="text-theme-text-secondary"
             />
           </div>

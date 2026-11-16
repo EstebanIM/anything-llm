@@ -912,6 +912,16 @@ const TRANSLATIONS = {
         description:
           "Ange den e-postadress för support som användare kan nå när de behöver hjälp.",
       },
+      "brand-color": {
+        title: "Brand Color",
+        description:
+          "Set the brand color applied to the chat embed widget (launcher button and user message bubbles).",
+      },
+      "login-powered-by": {
+        title: "Login footer text",
+        description: "Set the powered-by text displayed below the login form.",
+        placeholder: "Powered by your organization",
+      },
       "app-name": {
         title: "Namn",
         description:
@@ -929,6 +939,16 @@ const TRANSLATIONS = {
         recommended: "Rekommenderad storlek: 800 × 200",
         remove: "Ta bort",
         replace: "Ersätt",
+        dark: {
+          title: "Dark mode",
+          description: "Logo shown when the interface uses the dark theme.",
+          alt: "Uploaded dark mode logo",
+        },
+        light: {
+          title: "Light mode",
+          description: "Logo shown when the interface uses the light theme.",
+          alt: "Uploaded light mode logo",
+        },
       },
       "browser-appearance": {
         title: "Webbläsarutseende",
@@ -942,6 +962,13 @@ const TRANSLATIONS = {
         favicon: {
           title: "Favicon",
           description: "Använd en egen favicon för webbläsarfliken.",
+          upload: "Upload favicon",
+          replace: "Replace favicon",
+          remove: "Remove favicon",
+          recommended: "Recommended: square PNG, SVG, or ICO",
+          url: "Favicon URL",
+          placeholder: "https://example.com/favicon.png",
+          alt: "Custom favicon preview",
         },
       },
       "sidebar-footer": {
@@ -1834,6 +1861,14 @@ const TRANSLATIONS = {
     },
   },
   profile_settings: {
+    settings: "Settings",
+    back_to_workspaces: "Back to workspaces",
+    roles: {
+      superadmin: "Super Admin",
+      admin: "Admin",
+      manager: "Manager",
+      default: "User",
+    },
     current_password: "Current password",
     current_password_placeholder: "Your current password",
     current_password_hint: "Only needed if you are changing your password.",

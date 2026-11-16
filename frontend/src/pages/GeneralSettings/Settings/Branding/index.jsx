@@ -1,43 +1,39 @@
 import Sidebar from "@/components/SettingsSidebar";
 import { isMobile } from "react-device-detect";
 import { useSearchParams } from "react-router-dom";
-import {
-  AppWindow,
-  IdentificationCard,
-  Palette,
-  SidebarSimple,
-} from "@phosphor-icons/react";
-import FooterCustomization from "../components/FooterCustomization";
-import SupportEmail from "../components/SupportEmail";
+import { AppWindow, Palette, IdCard } from "lucide-react";
 import CustomLogo from "../components/CustomLogo";
 import { useTranslation } from "react-i18next";
 import CustomAppName from "../components/CustomAppName";
+import CustomLoginPoweredBy from "../components/CustomLoginPoweredBy";
 import CustomSiteSettings from "../components/CustomSiteSettings";
+import BrandColor from "../components/BrandColor";
 import InstancePalettes from "@/palettes/InstancePalettes";
-
 const TABS = {
   identity: {
-    icon: IdentificationCard,
+    icon: IdCard,
     Component: () => (
       <>
         <CustomAppName />
+        <CustomLoginPoweredBy />
         <CustomLogo />
       </>
     ),
   },
-  colors: { icon: Palette, Component: InstancePalettes },
-  sidebar: {
-    icon: SidebarSimple,
+  colors: {
+    icon: Palette,
     Component: () => (
       <>
-        <FooterCustomization />
-        <SupportEmail />
+        <InstancePalettes />
+        <BrandColor />
       </>
     ),
   },
-  browser: { icon: AppWindow, Component: CustomSiteSettings },
+  browser: {
+    icon: AppWindow,
+    Component: CustomSiteSettings,
+  },
 };
-
 export default function BrandingSettings() {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -45,12 +41,13 @@ export default function BrandingSettings() {
     ? searchParams.get("tab")
     : "identity";
   const { Component } = TABS[activeTab];
-
   return (
     <div className="w-screen h-screen overflow-hidden bg-zinc-950 light:bg-slate-50 flex">
       <Sidebar />
       <div
-        style={{ height: isMobile ? "100%" : "calc(100% - 32px)" }}
+        style={{
+          height: isMobile ? "100%" : "calc(100% - 32px)",
+        }}
         className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full overflow-y-scroll p-4 md:p-0"
       >
         <div className="flex flex-col w-full px-1 md:pl-6 md:pr-[86px] md:py-6 py-16">
@@ -74,14 +71,19 @@ export default function BrandingSettings() {
                 type="button"
                 role="tab"
                 aria-selected={activeTab === key}
-                onClick={() => setSearchParams({ tab: key }, { replace: true })}
-                className={`flex gap-x-2 items-center pb-3 -mb-[2px] border-b-2 text-sm font-medium whitespace-nowrap transition-colors ${
-                  activeTab === key
-                    ? "text-sky-400 border-sky-400 light:text-sky-600 light:border-sky-600"
-                    : "text-white/60 border-transparent hover:text-sky-400 light:hover:text-sky-600"
-                }`}
+                onClick={() =>
+                  setSearchParams(
+                    {
+                      tab: key,
+                    },
+                    {
+                      replace: true,
+                    }
+                  )
+                }
+                className={`flex gap-x-2 items-center pb-3 -mb-[2px] border-b-2 text-sm font-medium whitespace-nowrap transition-colors ${activeTab === key ? "text-sky-400 border-sky-400 light:text-sky-600 light:border-sky-600" : "text-white/60 border-transparent hover:text-sky-400 light:hover:text-sky-600"}`}
               >
-                <Icon className="h-5 w-5" />
+                <Icon strokeWidth={1.5} className="h-5 w-5" />
                 {t(`customization.branding.tabs.${key}`)}
               </button>
             ))}

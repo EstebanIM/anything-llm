@@ -1409,8 +1409,16 @@ const TRANSLATIONS = {
     profile_updated: "صفحه به‌روز شد.",
     failed_update_user: "عدم به‌روزرسانی کاربر: {{error}}",
     account: "حساب",
+    settings: "Settings",
+    back_to_workspaces: "Back to workspaces",
     support: "حمایت",
     signout: "خروج",
+    roles: {
+      superadmin: "ابرمدیر",
+      admin: "مدیر",
+      manager: "سرپرست",
+      default: "کاربر",
+    },
   },
   customization: {
     interface: {
@@ -1458,9 +1466,19 @@ const TRANSLATIONS = {
         description:
           "آدرس ایمیل پشتیبانی را تعیین کنید که کاربران در صورت نیاز به کمک، می‌توانند از آن استفاده کنند.",
       },
+      "brand-color": {
+        title: "Brand Color",
+        description:
+          "Set the brand color applied to the chat embed widget (launcher button and user message bubbles).",
+      },
       "app-name": {
         title: "نام",
         description: "یک نام را برای تمام کاربران در صفحه ورود مشخص کنید.",
+      },
+      "login-powered-by": {
+        title: "Login footer text",
+        description: "Set the powered-by text displayed below the login form.",
+        placeholder: "Powered by your organization",
       },
       "display-language": {
         title: "زبان نمایش",
@@ -1475,6 +1493,16 @@ const TRANSLATIONS = {
         recommended: "اندازه پیشنهادی: 800 در 200",
         remove: "حذف",
         replace: "جایگزین کردن",
+        dark: {
+          title: "Dark mode",
+          description: "Logo shown when the interface uses the dark theme.",
+          alt: "Uploaded dark mode logo",
+        },
+        light: {
+          title: "Light mode",
+          description: "Logo shown when the interface uses the light theme.",
+          alt: "Uploaded light mode logo",
+        },
       },
       "browser-appearance": {
         title: "ظاهر مرورگر",
@@ -1488,6 +1516,13 @@ const TRANSLATIONS = {
         favicon: {
           title: "آیکون Favicon",
           description: "از آیکون سفارشی برای تب مرورگر استفاده کنید.",
+          upload: "Upload favicon",
+          replace: "Replace favicon",
+          remove: "Remove favicon",
+          recommended: "Recommended: square PNG, SVG, or ICO",
+          url: "Favicon URL",
+          placeholder: "https://example.com/favicon.png",
+          alt: "Custom favicon preview",
         },
       },
       "sidebar-footer": {
