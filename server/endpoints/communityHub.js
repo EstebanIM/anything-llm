@@ -1,6 +1,6 @@
 const { SystemSettings } = require("../models/systemSettings");
 const { validatedRequest } = require("../utils/middleware/validatedRequest");
-const { reqBody } = require("../utils/http");
+const { reqBody, multiUserMode } = require("../utils/http");
 const { CommunityHub } = require("../models/communityHub");
 const {
   communityHubDownloadsEnabled,
@@ -95,6 +95,20 @@ function communityHubEndpoints(app) {
       try {
         const { options = {} } = reqBody(request);
         const item = response.locals.bundleItem;
+
+        // Only superadmins can set the system prompt in multi-user mode.
+        if (
+          item?.itemType === "system-prompt" &&
+          multiUserMode(response) &&
+          response.locals?.user?.role !== ROLES.superadmin
+        ) {
+          response.status(403).json({
+            success: false,
+            error: "Only superadmins can change the system prompt.",
+          });
+          return;
+        }
+
         const { error: applyError } = await CommunityHub.applyItem(item, {
           ...options,
           currentUser: response.locals?.user,

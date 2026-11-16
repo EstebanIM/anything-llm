@@ -559,6 +559,20 @@ const Workspace = {
   },
 
   /**
+   * Stores the order of one container (root or a folder) without dropping
+   * the saved order of the other containers. Ordering only compares
+   * workspaces inside the same container, so their relative order is kept.
+   * @param {number[]} containerIds
+   * @returns {boolean}
+   */
+  storeContainerWorkspaceOrder: function (containerIds = []) {
+    const current =
+      safeJsonParse(localStorage.getItem(this.workspaceOrderStorageKey)) || [];
+    const others = current.filter((id) => !containerIds.includes(id));
+    return this.storeWorkspaceOrder([...others, ...containerIds]);
+  },
+
+  /**
    * Orders workspaces based on the order preference stored in localstorage
    * @param {Array} workspaces - array of workspace JSON objects
    * @returns {Array} - ordered workspaces

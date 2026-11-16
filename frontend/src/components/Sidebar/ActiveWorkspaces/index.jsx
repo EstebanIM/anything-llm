@@ -7,7 +7,7 @@ import ManageWorkspace, {
   useManageWorkspaceModal,
 } from "../../Modals/ManageWorkspace";
 import paths from "@/utils/paths";
-import { useParams, useNavigate, useMatch } from "react-router-dom";
+import { Link, useParams, useNavigate, useMatch } from "react-router-dom";
 import { Settings, Upload, GripVertical } from "lucide-react";
 import useUser from "@/hooks/useUser";
 import ThreadContainer from "./ThreadContainer";
@@ -158,7 +158,9 @@ export default function ActiveWorkspaces() {
         newTree,
         source.droppableId
       );
-      Workspace.storeWorkspaceOrder(containerWorkspaces.map((w) => w.id));
+      Workspace.storeContainerWorkspaceOrder(
+        containerWorkspaces.map((w) => w.id)
+      );
     } else {
       // Move workspace to a different folder (or root)
       const folderId =
@@ -199,8 +201,8 @@ export default function ActiveWorkspaces() {
             role="listitem"
           >
             <div className="flex gap-x-2 items-center justify-between">
-              <a
-                href={isActive ? null : paths.workspace.chat(workspace.slug)}
+              <Link
+                to={paths.workspace.chat(workspace.slug)}
                 data-tooltip-id="workspace-name"
                 data-tooltip-content={workspace.name}
                 aria-current={isActive ? "page" : ""}
@@ -280,7 +282,7 @@ export default function ActiveWorkspaces() {
                     </div>
                   )}
                 </div>
-              </a>
+              </Link>
             </div>
             {isActive && (
               <ThreadContainer
