@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import System from "@/models/system";
 import showToast from "@/utils/toast";
-import { Plus } from "@phosphor-icons/react";
+import { Plus } from "lucide-react";
 import Sidebar from "@/components/SettingsSidebar";
 import { isMobile } from "react-device-detect";
 import CTAButton from "@/components/lib/CTAButton";
@@ -60,7 +60,7 @@ export default function SystemPromptVariables() {
               onClick={openModal}
               className="mt-3 mr-0 mb-4 md:-mb-6 z-10"
             >
-              <Plus className="h-4 w-4" weight="bold" /> Add Variable
+              <Plus strokeWidth={1.5} className="h-4 w-4" /> Add Variable
             </CTAButton>
           </div>
 

@@ -7,7 +7,7 @@ import Modal, {
   ModalFooter,
   ModalPrimaryButton,
 } from "@/components/lib/Modal";
-import { Eye, PushPin } from "@phosphor-icons/react";
+import { Eye, Pin } from "lucide-react";
 import { SEEN_DOC_PIN_ALERT, SEEN_WATCH_ALERT } from "@/utils/constants";
 import paths from "@/utils/paths";
 import { Link } from "react-router-dom";
@@ -405,7 +405,7 @@ const PinAlert = memo(() => {
       <ModalHeader
         title={
           <span className="flex items-center gap-x-2">
-            <PushPin className="w-6 h-6" weight="regular" />
+            <Pin strokeWidth={1.5} className="w-6 h-6" />
             {t("connectors.pinning.what_pinning")}
           </span>
         }
@@ -463,7 +463,7 @@ const DocumentWatchAlert = memo(() => {
       <ModalHeader
         title={
           <span className="flex items-center gap-x-2">
-            <Eye className="w-6 h-6" weight="regular" />
+            <Eye strokeWidth={1.5} className="w-6 h-6" />
             {t("connectors.watching.what_watching")}
           </span>
         }

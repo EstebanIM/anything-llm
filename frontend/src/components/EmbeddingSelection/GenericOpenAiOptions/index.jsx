@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { CaretDown, CaretUp, Info } from "@phosphor-icons/react";
+import { ChevronDown, ChevronUp, Info } from "lucide-react";
 import { Tooltip } from "react-tooltip";
 
 export default function GenericOpenAiEmbeddingOptions({ settings }) {
@@ -43,6 +43,7 @@ export default function GenericOpenAiEmbeddingOptions({ settings }) {
               Max embedding chunk length
             </label>
             <Info
+              strokeWidth={1.5}
               size={18}
               className="text-theme-text-secondary cursor-pointer"
               data-tooltip-id="max-embedding-chunk-length-tooltip"
@@ -103,9 +104,9 @@ export default function GenericOpenAiEmbeddingOptions({ settings }) {
         >
           {showAdvancedControls ? "Hide" : "Show"} advanced settings
           {showAdvancedControls ? (
-            <CaretUp size={14} className="ml-1" />
+            <ChevronUp strokeWidth={1.5} size={14} className="ml-1" />
           ) : (
-            <CaretDown size={14} className="ml-1" />
+            <ChevronDown strokeWidth={1.5} size={14} className="ml-1" />
           )}
         </button>
       </div>
@@ -137,6 +138,7 @@ export default function GenericOpenAiEmbeddingOptions({ settings }) {
                 Passage Prefix
               </label>
               <Info
+                strokeWidth={1.5}
                 size={18}
                 className="text-theme-text-secondary cursor-pointer"
                 data-tooltip-id="embedding-passage-prefix-tooltip"
@@ -182,6 +184,7 @@ export default function GenericOpenAiEmbeddingOptions({ settings }) {
                 Query Prefix
               </label>
               <Info
+                strokeWidth={1.5}
                 size={18}
                 className="text-theme-text-secondary cursor-pointer"
                 data-tooltip-id="embedding-query-prefix-tooltip"

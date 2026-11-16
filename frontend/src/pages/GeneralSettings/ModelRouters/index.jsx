@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Sidebar from "@/components/SettingsSidebar";
 import { isMobile } from "react-device-detect";
-import { CircleNotch, PencilSimple, X } from "@phosphor-icons/react";
+import { LoaderCircle, Pencil, X } from "lucide-react";
 import ModelRouter from "@/models/modelRouter";
 import { useModal } from "@/hooks/useModal";
 import showToast from "@/utils/toast";
@@ -133,7 +133,10 @@ function Layout({ t, showAction, onAction, children }) {
 function LoadingState() {
   return (
     <div className="flex items-center justify-center py-20">
-      <CircleNotch className="h-8 w-8 text-zinc-400 animate-spin" />
+      <LoaderCircle
+        strokeWidth={1.5}
+        className="h-8 w-8 text-zinc-400 animate-spin"
+      />
     </div>
   );
 }
@@ -224,14 +227,14 @@ function RouterRow({ router, removeRouter, onEdit, showDivider }) {
             })}
             className="border-none text-zinc-400 light:text-slate-500 hover:text-white light:hover:text-slate-900 transition-colors"
           >
-            <PencilSimple size={16} weight="bold" />
+            <Pencil strokeWidth={1.5} size={16} />
           </button>
           <button
             onClick={handleDelete}
             aria-label={t("model-router.toast-deleted")}
             className="border-none text-zinc-400 light:text-slate-500 hover:text-red-400 light:hover:text-red-500 transition-colors"
           >
-            <X size={16} weight="bold" />
+            <X strokeWidth={1.5} size={16} />
           </button>
         </div>
       </div>

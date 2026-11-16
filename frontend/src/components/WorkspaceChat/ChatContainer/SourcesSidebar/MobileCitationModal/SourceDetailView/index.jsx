@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import { CaretLeft, Info, X } from "@phosphor-icons/react";
+import { ChevronLeft, Info, X } from "lucide-react";
 import { decode as HTMLDecode } from "he";
 import truncate from "truncate";
 import { useTranslation } from "react-i18next";
@@ -16,7 +16,7 @@ export default function SourceDetailView({ source, onBack, onClose }) {
           type="button"
           className="text-white/60 light:text-slate-400 hover:text-white light:hover:text-slate-900 transition-colors"
         >
-          <CaretLeft size={20} weight="bold" />
+          <ChevronLeft strokeWidth={1.5} size={20} />
         </button>
         <p className="font-semibold text-base leading-6 text-white light:text-slate-900 truncate px-2">
           {truncate(source.title, 30)}
@@ -26,7 +26,7 @@ export default function SourceDetailView({ source, onBack, onClose }) {
           type="button"
           className="text-white/60 light:text-slate-400 hover:text-white light:hover:text-slate-900 transition-colors"
         >
-          <X size={16} weight="bold" />
+          <X strokeWidth={1.5} size={16} />
         </button>
       </div>
       <div className="flex flex-col overflow-y-auto no-scroll">
@@ -38,7 +38,7 @@ export default function SourceDetailView({ source, onBack, onClose }) {
               </p>
               {!!score && (
                 <div className="flex items-center text-xs text-white/60 light:text-slate-500 gap-x-1">
-                  <Info size={14} />
+                  <Info strokeWidth={1.5} size={14} />
                   <p>
                     {toPercentString(score)} {t("chat_window.similarity_match")}
                   </p>

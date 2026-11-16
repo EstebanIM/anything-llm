@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { isMobile } from "react-device-detect";
 import { useTranslation } from "react-i18next";
-import { X } from "@phosphor-icons/react";
+import { X } from "lucide-react";
 import {
   combineLikeSources,
   CitationDetailModal,
@@ -51,7 +51,7 @@ export default function SourcesSidebar() {
               type="button"
               className="text-white/60 light:text-slate-400 hover:text-white light:hover:text-slate-900 transition-colors border-none bg-transparent cursor-pointer"
             >
-              <X size={16} weight="bold" />
+              <X strokeWidth={1.5} size={16} />
             </button>
           </div>
           <div className="flex flex-col gap-3 overflow-y-auto no-scroll">

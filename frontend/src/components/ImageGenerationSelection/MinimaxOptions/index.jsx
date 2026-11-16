@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CaretDown, CaretUp, Info } from "@phosphor-icons/react";
+import { ChevronDown, ChevronUp, Info } from "lucide-react";
 import { Tooltip } from "react-tooltip";
 import ImageModelSelection from "../ImageModelSelection";
 import ImageDimensionSelection, {
@@ -59,9 +59,9 @@ export default function MinimaxImageOptions({ settings }) {
         >
           {showAdvancedControls ? "Hide" : "Show"} advanced settings
           {showAdvancedControls ? (
-            <CaretUp size={14} className="ml-1" />
+            <ChevronUp strokeWidth={1.5} size={14} className="ml-1" />
           ) : (
-            <CaretDown size={14} className="ml-1" />
+            <ChevronDown strokeWidth={1.5} size={14} className="ml-1" />
           )}
         </button>
       </div>
@@ -89,6 +89,7 @@ export default function MinimaxImageOptions({ settings }) {
                 Prompt Enhancement
               </label>
               <Info
+                strokeWidth={1.5}
                 size={18}
                 className="text-theme-text-secondary cursor-pointer"
                 data-tooltip-id="image-gen-minimax-prompt-enhancement"

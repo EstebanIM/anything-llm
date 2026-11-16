@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { List } from "@phosphor-icons/react";
-import { FolderPlus } from "lucide-react";
+import { FolderPlus, List } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import NewWorkspaceModal, {
   useNewWorkspaceModal,
@@ -148,7 +147,7 @@ export function SidebarMobileHeader() {
           onClick={() => setShowSidebar(true)}
           className="rounded-md p-2 flex items-center justify-center text-theme-text-secondary"
         >
-          <List className="h-6 w-6" />
+          <List strokeWidth={1.5} className="h-6 w-6" />
         </button>
         <div className="flex items-center justify-center flex-grow">
           {logo && (

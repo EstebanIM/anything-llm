@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { CircleNotch } from "@phosphor-icons/react";
+import { LoaderCircle } from "lucide-react";
 import ModelRouter from "@/models/modelRouter";
 import System from "@/models/system";
 import Modal, {
@@ -136,7 +136,10 @@ export default function NewRouterModal({
           <ModalPrimaryButton type="submit" disabled={loading}>
             {loading ? (
               <>
-                <CircleNotch className="h-4 w-4 animate-spin" />
+                <LoaderCircle
+                  strokeWidth={1.5}
+                  className="h-4 w-4 animate-spin"
+                />
                 {t("common.saving")}
               </>
             ) : isEdit ? (

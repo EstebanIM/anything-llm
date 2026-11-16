@@ -1,6 +1,6 @@
 import { memo, useState } from "react";
 import { saveAs } from "file-saver";
-import { DownloadSimple, CircleNotch } from "@phosphor-icons/react";
+import { Download, LoaderCircle } from "lucide-react";
 import { humanFileSize } from "@/utils/numbers";
 import StorageFiles from "@/models/files";
 
@@ -55,9 +55,13 @@ function FileDownloadCard({ props }) {
             className="flex items-center gap-x-2 px-4 py-2 rounded-lg border border-zinc-600 light:border-theme-sidebar-border hover:bg-zinc-700 light:hover:bg-theme-bg-secondary transition-colors text-white light:text-theme-text-primary text-sm font-medium flex-shrink-0 ml-4 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {downloading ? (
-              <CircleNotch size={16} weight="bold" className="animate-spin" />
+              <LoaderCircle
+                strokeWidth={1.5}
+                size={16}
+                className="animate-spin"
+              />
             ) : (
-              <DownloadSimple size={16} weight="bold" />
+              <Download strokeWidth={1.5} size={16} />
             )}
             <span>{downloading ? "Downloading..." : "Download"}</span>
           </button>

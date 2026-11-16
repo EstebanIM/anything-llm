@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CaretUpDown, MagnifyingGlass, X } from "@phosphor-icons/react";
+import { ChevronsUpDown, Search, X } from "lucide-react";
 import useScrollActiveItemIntoView from "@/hooks/useScrollActiveItemIntoView";
 
 /**
@@ -63,9 +63,9 @@ export default function ProviderSearchMenu({
           </div>
         </div>
       </div>
-      <CaretUpDown
+      <ChevronsUpDown
+        strokeWidth={1.5}
         size={24}
-        weight="bold"
         className="text-white shrink-0 ml-3"
       />
     </button>
@@ -131,9 +131,9 @@ function SearchPanel({
       <div className="absolute top-0 left-0 w-full max-w-[640px] max-h-[310px] min-h-[64px] bg-theme-settings-input-bg rounded-lg flex flex-col justify-between cursor-pointer border-2 border-primary-button z-20">
         <div className="w-full flex flex-col gap-y-1">
           <div className="flex items-center sticky top-0 z-10 border-b border-[#9CA3AF] mx-4 bg-theme-settings-input-bg">
-            <MagnifyingGlass
+            <Search
+              strokeWidth={1.5}
               size={20}
-              weight="bold"
               className="absolute left-4 z-30 text-theme-text-primary -ml-4 my-2"
             />
             <input
@@ -150,8 +150,8 @@ function SearchPanel({
               className="border-none -ml-4 my-2 bg-transparent z-20 pl-12 h-[38px] w-full px-4 py-1 text-sm outline-none text-theme-text-primary placeholder:text-theme-text-primary placeholder:font-medium [&::-webkit-search-cancel-button]:appearance-none"
             />
             <X
+              strokeWidth={1.5}
               size={20}
-              weight="bold"
               className="cursor-pointer text-theme-text-primary hover:text-x-button"
               onClick={handleXButton}
             />

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import System from "@/models/system";
-import { Warning, Info } from "@phosphor-icons/react";
+import { TriangleAlert, Info } from "lucide-react";
 import { Tooltip } from "react-tooltip";
 
 export default function LiteLLMOptions({ settings }) {
@@ -41,6 +41,7 @@ export default function LiteLLMOptions({ settings }) {
             className="flex gap-x-1 items-center mb-3"
           >
             <Info
+              strokeWidth={1.5}
               size={16}
               className="text-theme-text-secondary cursor-pointer"
             />
@@ -168,7 +169,8 @@ function LiteLLMModelSelection({ settings, basePath = null, apiKey = null }) {
 function EmbeddingModelTooltip() {
   return (
     <div className="flex items-center justify-center -mt-3 ml-1">
-      <Warning
+      <TriangleAlert
+        strokeWidth={1.5}
         size={14}
         className="ml-1 text-orange-500 cursor-pointer"
         data-tooltip-id="model-tooltip"

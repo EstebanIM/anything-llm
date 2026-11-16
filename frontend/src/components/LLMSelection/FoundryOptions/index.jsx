@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import System from "@/models/system";
 import strDistance from "js-levenshtein";
-import { Info } from "@phosphor-icons/react";
+import { Info } from "lucide-react";
 import { Tooltip } from "react-tooltip";
 import { LLM_PREFERENCE_CHANGED_EVENT } from "@/pages/GeneralSettings/LLMPreference";
 import ModelTable from "@/components/lib/ModelTable";
@@ -67,7 +67,11 @@ export default function FoundryOptions({ settings }) {
               data-tooltip-place="top"
               data-tooltip-delay-hide={800}
             >
-              <Info size={18} className="text-theme-text-secondary" />
+              <Info
+                strokeWidth={1.5}
+                size={18}
+                className="text-theme-text-secondary"
+              />
             </div>
           </div>
           <input
@@ -110,7 +114,11 @@ export default function FoundryOptions({ settings }) {
               data-tooltip-place="top"
               data-tooltip-delay-hide={800}
             >
-              <Info size={18} className="text-theme-text-secondary" />
+              <Info
+                strokeWidth={1.5}
+                size={18}
+                className="text-theme-text-secondary"
+              />
             </div>
           </div>
           <input

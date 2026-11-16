@@ -2,12 +2,12 @@ import React, { useEffect, useState } from "react";
 import System from "@/models/system";
 import { LMSTUDIO_COMMON_URLS } from "@/utils/constants";
 import {
-  CaretDown,
-  CaretUp,
+  ChevronDown,
+  ChevronUp,
   Info,
-  CircleNotch,
-  Warning,
-} from "@phosphor-icons/react";
+  LoaderCircle,
+  TriangleAlert,
+} from "lucide-react";
 import { Tooltip } from "react-tooltip";
 import useProviderEndpointAutoDiscovery from "@/hooks/useProviderEndpointAutoDiscovery";
 
@@ -53,6 +53,7 @@ export default function LMStudioEmbeddingOptions({ settings }) {
               Max embedding chunk length
             </label>
             <Info
+              strokeWidth={1.5}
               size={16}
               className="text-theme-text-secondary cursor-pointer"
             />
@@ -84,9 +85,9 @@ export default function LMStudioEmbeddingOptions({ settings }) {
         >
           {showAdvancedControls ? "Hide" : "Show"} Manual Endpoint Input
           {showAdvancedControls ? (
-            <CaretUp size={14} className="ml-1" />
+            <ChevronUp strokeWidth={1.5} size={14} className="ml-1" />
           ) : (
-            <CaretDown size={14} className="ml-1" />
+            <ChevronDown strokeWidth={1.5} size={14} className="ml-1" />
           )}
         </button>
       </div>
@@ -100,6 +101,7 @@ export default function LMStudioEmbeddingOptions({ settings }) {
                   LM Studio Base URL
                 </label>
                 <Info
+                  strokeWidth={1.5}
                   size={18}
                   className="text-theme-text-secondary cursor-pointer"
                   data-tooltip-id="lmstudio-base-url"
@@ -118,7 +120,8 @@ export default function LMStudioEmbeddingOptions({ settings }) {
                 />
               </div>
               {loading ? (
-                <CircleNotch
+                <LoaderCircle
+                  strokeWidth={1.5}
                   size={16}
                   className="text-theme-text-secondary animate-spin"
                 />
@@ -154,6 +157,7 @@ export default function LMStudioEmbeddingOptions({ settings }) {
                 Authentication Token
               </label>
               <Info
+                strokeWidth={1.5}
                 size={18}
                 className="text-theme-text-secondary cursor-pointer"
                 data-tooltip-id="lmstudio-authentication-token"
@@ -236,7 +240,8 @@ function LMStudioModelSelection({ settings, basePath = null, apiKey = null }) {
           </label>
           {!loading && !!basePath && (
             <>
-              <Warning
+              <TriangleAlert
+                strokeWidth={1.5}
                 size={18}
                 className="text-red-400 cursor-pointer"
                 data-tooltip-id="lmstudio-embedding-model"

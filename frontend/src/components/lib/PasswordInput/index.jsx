@@ -1,5 +1,5 @@
 import { useId, useRef, useState } from "react";
-import { Eye, EyeSlash } from "@phosphor-icons/react";
+import { Eye, EyeOff } from "lucide-react";
 import { Tooltip } from "react-tooltip";
 
 /**
@@ -15,7 +15,7 @@ export default function PasswordInput({
   const tooltipId = useId();
   const inputRef = useRef(null);
   const [revealed, setRevealed] = useState(false);
-  const Icon = revealed ? EyeSlash : Eye;
+  const Icon = revealed ? EyeOff : Eye;
 
   // Swapping the input type between password/text resets the caret to the
   // start of the input, so capture the selection and restore it after the
@@ -57,7 +57,7 @@ export default function PasswordInput({
         onTouchEnd={hide}
         className="absolute right-0 top-0 h-full px-2.5 flex items-center border-none bg-transparent text-white text-opacity-60 light:text-theme-text-secondary hover:text-opacity-100 cursor-pointer"
       >
-        <Icon className="h-4 w-4" weight="bold" />
+        <Icon strokeWidth={1.5} className="h-4 w-4" />
       </button>
       <Tooltip
         id={tooltipId}

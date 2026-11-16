@@ -1,6 +1,6 @@
 import moment from "moment";
 import { useNavigate } from "react-router-dom";
-import { Play, PencilSimple, X } from "@phosphor-icons/react";
+import { Play, Pencil, X } from "lucide-react";
 import paths from "@/utils/paths";
 import { humanizeCron } from "../utils/cron";
 import { useTranslation } from "react-i18next";
@@ -63,7 +63,7 @@ export default function JobRow({ job, onTrigger, onToggle, onEdit, onDelete }) {
           className="border-none p-2 rounded-full text-zinc-400 light:text-slate-950 hover:text-red-400 light:hover:text-red-600 hover:bg-white/10 light:hover:bg-slate-300/50 transition-colors"
           title={t("scheduledJobs.row.delete")}
         >
-          <X className="h-4 w-4 shrink-0" />
+          <X strokeWidth={1.5} className="h-4 w-4 shrink-0" />
         </button>
         <button
           type="button"
@@ -71,7 +71,7 @@ export default function JobRow({ job, onTrigger, onToggle, onEdit, onDelete }) {
           className="border-none p-2 rounded-full text-zinc-400 light:text-slate-950 hover:text-white light:hover:text-slate-700 hover:bg-white/10 light:hover:bg-slate-300/50 transition-colors"
           title={t("scheduledJobs.row.edit")}
         >
-          <PencilSimple className="h-4 w-4 shrink-0" />
+          <Pencil strokeWidth={1.5} className="h-4 w-4 shrink-0" />
         </button>
         <button
           type="button"
@@ -80,7 +80,7 @@ export default function JobRow({ job, onTrigger, onToggle, onEdit, onDelete }) {
           className="border-none p-2 rounded-full text-zinc-400 light:text-slate-950 hover:text-white light:hover:text-slate-700 hover:bg-white/10 light:hover:bg-slate-300/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
           title={t("scheduledJobs.row.runNow")}
         >
-          <Play className="h-4 w-4 shrink-0" />
+          <Play strokeWidth={1.5} className="h-4 w-4 shrink-0" />
         </button>
         <button
           type="button"

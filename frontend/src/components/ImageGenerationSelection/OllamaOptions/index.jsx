@@ -1,4 +1,4 @@
-import { CaretDown, CaretUp, CircleNotch, Info } from "@phosphor-icons/react";
+import { ChevronDown, ChevronUp, LoaderCircle, Info } from "lucide-react";
 import { Tooltip } from "react-tooltip";
 import useProviderEndpointAutoDiscovery from "@/hooks/useProviderEndpointAutoDiscovery";
 import { OLLAMA_COMMON_URLS } from "@/utils/constants";
@@ -50,9 +50,9 @@ export default function OllamaImageOptions({ settings }) {
         >
           {showAdvancedControls ? "Hide" : "Show"} advanced settings
           {showAdvancedControls ? (
-            <CaretUp size={14} className="ml-1" />
+            <ChevronUp strokeWidth={1.5} size={14} className="ml-1" />
           ) : (
-            <CaretDown size={14} className="ml-1" />
+            <ChevronDown strokeWidth={1.5} size={14} className="ml-1" />
           )}
         </button>
       </div>
@@ -66,6 +66,7 @@ export default function OllamaImageOptions({ settings }) {
                   Ollama Base URL
                 </label>
                 <Info
+                  strokeWidth={1.5}
                   size={18}
                   className="text-theme-text-secondary cursor-pointer"
                   data-tooltip-id="image-gen-ollama-base-url"
@@ -84,7 +85,8 @@ export default function OllamaImageOptions({ settings }) {
                 />
               </div>
               {loading ? (
-                <CircleNotch
+                <LoaderCircle
+                  strokeWidth={1.5}
                   size={16}
                   className="text-theme-text-secondary animate-spin"
                 />
@@ -121,6 +123,7 @@ export default function OllamaImageOptions({ settings }) {
                 Authentication Token
               </label>
               <Info
+                strokeWidth={1.5}
                 size={18}
                 className="text-theme-text-secondary cursor-pointer"
                 data-tooltip-id="image-gen-ollama-auth-token"

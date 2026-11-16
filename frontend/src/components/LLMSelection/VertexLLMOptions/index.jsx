@@ -1,4 +1,4 @@
-import { ArrowSquareOut, Info } from "@phosphor-icons/react";
+import { SquareArrowOutUpRight, Info } from "lucide-react";
 import { VERTEX_REGIONS } from "./regions";
 import { useState, useEffect } from "react";
 import System from "@/models/system";
@@ -20,7 +20,7 @@ export default function VertexLLMOptions({ settings }) {
       {!settings?.credentialsOnly && (
         <div className="flex flex-col md:flex-row md:items-center gap-x-2 text-white mb-4 bg-blue-800/30 w-fit rounded-lg px-4 py-2">
           <div className="gap-x-2 flex items-center">
-            <Info size={40} />
+            <Info strokeWidth={1.5} size={40} />
             <p className="text-base">
               Connect to Google Cloud Vertex AI using its OpenAI-compatible
               endpoint and a Vertex AI API key.
@@ -32,7 +32,7 @@ export default function VertexLLMOptions({ settings }) {
                 rel="noreferrer"
               >
                 Read more on how to use Google Vertex AI in AnythingLLM
-                <ArrowSquareOut size={14} />
+                <SquareArrowOutUpRight strokeWidth={1.5} size={14} />
               </a>
             </p>
           </div>
@@ -134,7 +134,11 @@ export default function VertexLLMOptions({ settings }) {
                 Model context window
               </label>
               <div className="group relative">
-                <Info size={14} className="text-white/60 cursor-pointer" />
+                <Info
+                  strokeWidth={1.5}
+                  size={14}
+                  className="text-white/60 cursor-pointer"
+                />
                 <div className="hidden group-hover:block absolute left-0 bottom-full mb-1 w-64 p-2 bg-theme-settings-input-bg text-white text-xs rounded-lg shadow-lg z-10">
                   Only needed for manually entered models - known Gemini models
                   resolve their context window automatically.

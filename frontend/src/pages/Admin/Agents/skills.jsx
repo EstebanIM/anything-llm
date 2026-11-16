@@ -10,13 +10,13 @@ import OutlookSkillPanel from "./OutlookSkillPanel";
 import {
   Brain,
   File,
-  Browser,
+  AppWindow,
   ChartBar,
   FolderOpen,
   FilePlus,
   CalendarCheck,
-  ImageSquare,
-} from "@phosphor-icons/react";
+  Image,
+} from "lucide-react";
 import RAGImage from "@/media/agents/rag-memory.png";
 import SummarizeImage from "@/media/agents/view-summarize.png";
 import ScrapeWebsitesImage from "@/media/agents/scrape-websites.png";
@@ -50,7 +50,7 @@ export const getDefaultSkills = (t) => ({
     title: t("agent.skill.scrape.title"),
     description: t("agent.skill.scrape.description"),
     component: DefaultSkillPanel,
-    icon: Browser,
+    icon: AppWindow,
     image: ScrapeWebsitesImage,
     skill: "web-scraping",
   },
@@ -115,7 +115,7 @@ export const getConfigurableSkills = (
       description: t("agent.skill.generateImage.description"),
       component: GenericSkillPanel,
       skill: "generate-image",
-      icon: ImageSquare,
+      icon: Image,
       image: GenerateImageImage,
     },
   }),

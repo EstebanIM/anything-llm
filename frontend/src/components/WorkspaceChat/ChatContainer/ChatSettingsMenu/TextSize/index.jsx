@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CaretRight } from "@phosphor-icons/react";
+import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 function getTextSizes(t) {
@@ -39,9 +39,9 @@ export default function TextSizeRow() {
         <span className="text-sm font-normal text-zinc-50 light:text-slate-800">
           {t("chat_window.text_size_label")}
         </span>
-        <CaretRight
+        <ChevronRight
+          strokeWidth={1.5}
           size={14}
-          weight="bold"
           className="text-zinc-50 light:text-slate-800"
         />
       </div>

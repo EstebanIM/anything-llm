@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Brain } from "@phosphor-icons/react";
+import { Brain } from "lucide-react";
 import { Tooltip } from "react-tooltip";
 import { useTranslation } from "react-i18next";
 import Workspace from "@/models/workspace";
@@ -79,6 +79,7 @@ export default function ReasoningEffortButton({
         }`}
       >
         <Brain
+          strokeWidth={1.5}
           size={18}
           className={`pointer-events-none shrink-0 ${
             open

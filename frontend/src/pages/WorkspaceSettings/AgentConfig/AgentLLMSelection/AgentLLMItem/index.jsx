@@ -10,7 +10,7 @@ import Modal, {
   ModalSecondaryButton,
 } from "@/components/lib/Modal";
 import { useModal } from "@/hooks/useModal";
-import { Gear } from "@phosphor-icons/react";
+import { Settings } from "lucide-react";
 import System from "@/models/system";
 import showToast from "@/utils/toast";
 import { useEffect, useState } from "react";
@@ -91,7 +91,7 @@ export default function AgentLLMItem({
                 className="border-none p-2 text-white/60 hover:text-white hover:bg-theme-bg-hover rounded-md transition-all duration-300"
                 title="Edit Settings"
               >
-                <Gear size={20} weight="bold" />
+                <Settings strokeWidth={1.5} size={20} />
               </button>
             )}
         </div>

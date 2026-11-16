@@ -9,13 +9,13 @@ import Toggle, { SimpleToggleSwitch } from "@/components/lib/Toggle";
 import { Trans, useTranslation } from "react-i18next";
 import debounce from "lodash.debounce";
 import {
-  MagnifyingGlass,
-  CircleNotch,
-  Warning,
-  CaretDown,
-  CheckCircle,
+  Search,
+  LoaderCircle,
+  TriangleAlert,
+  ChevronDown,
+  CircleCheck,
   Info,
-} from "@phosphor-icons/react";
+} from "lucide-react";
 import Admin from "@/models/admin";
 import System from "@/models/system";
 import GoogleAgentSkills from "@/models/googleAgentSkills";
@@ -129,7 +129,11 @@ export default function GoogleCalendarSkillPanel({
 
         {isMultiUserMode && (
           <div className="flex items-center gap-x-2 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-            <Warning size={20} className="text-yellow-500 shrink-0" />
+            <TriangleAlert
+              strokeWidth={1.5}
+              size={20}
+              className="text-yellow-500 shrink-0"
+            />
             <p className="text-yellow-500 text-xs">
               {t("agent.skill.googleCalendar.multiUserWarning")}
             </p>
@@ -161,7 +165,8 @@ export default function GoogleCalendarSkillPanel({
 
             {loading ? (
               <div className="flex items-center justify-center py-4">
-                <CircleNotch
+                <LoaderCircle
+                  strokeWidth={1.5}
                   size={24}
                   className="animate-spin text-theme-text-primary"
                 />
@@ -219,14 +224,19 @@ function ConfigurationSection({
           </span>
           {isConfigured && (
             <div className="flex items-center gap-x-1">
-              <CheckCircle size={14} weight="fill" className="text-green-500" />
+              <CircleCheck
+                strokeWidth={1.5}
+                size={14}
+                className="text-green-500"
+              />
               <span className="text-xs text-green-500">
                 {t("agent.skill.googleCalendar.configured")}
               </span>
             </div>
           )}
         </div>
-        <CaretDown
+        <ChevronDown
+          strokeWidth={1.5}
           size={16}
           className={`text-theme-text-secondary transition-transform ${expanded ? "rotate-180" : ""}`}
         />
@@ -240,6 +250,7 @@ function ConfigurationSection({
                 {t("agent.skill.googleCalendar.deploymentId")}
               </label>
               <Info
+                strokeWidth={1.5}
                 data-tooltip-id="gcal-deployment-id-tooltip"
                 size={16}
                 className="text-theme-text-secondary"
@@ -271,6 +282,7 @@ function ConfigurationSection({
                 {t("agent.skill.googleCalendar.apiKey")}
               </label>
               <Info
+                strokeWidth={1.5}
                 data-tooltip-id="gcal-api-key-tooltip"
                 size={16}
                 className="text-theme-text-secondary"
@@ -297,7 +309,11 @@ function ConfigurationSection({
           </div>
           {!isConfigured && (
             <div className="flex items-center gap-x-2 p-3 bg-orange-500/10 border border-orange-500/30 rounded-lg">
-              <Warning size={20} className="text-orange-500 shrink-0" />
+              <TriangleAlert
+                strokeWidth={1.5}
+                size={20}
+                className="text-orange-500 shrink-0"
+              />
               <p className="text-orange-500 text-xs">
                 {t("agent.skill.googleCalendar.configurationRequired")}
               </p>
@@ -340,10 +356,10 @@ function SkillSearchInput({ onSearch }) {
         onChange={handleChange}
         className="w-full pl-9 pr-3 py-2 bg-theme-bg-primary border border-theme-sidebar-border rounded-lg text-theme-text-primary text-sm placeholder:text-theme-text-secondary/50 search-input"
       />
-      <MagnifyingGlass
+      <Search
+        strokeWidth={1.5}
         size={16}
         className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text-secondary"
-        weight="bold"
       />
     </div>
   );

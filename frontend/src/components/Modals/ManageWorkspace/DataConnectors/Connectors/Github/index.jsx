@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import showToast from "@/utils/toast";
 import pluralize from "pluralize";
 import { TagsInput } from "react-tag-input-component";
-import { Info, Warning } from "@phosphor-icons/react";
+import { Info, TriangleAlert } from "lucide-react";
 import { Tooltip } from "react-tooltip";
 
 const DEFAULT_BRANCHES = ["main", "master"];
@@ -246,7 +246,7 @@ function PATAlert({ accessToken }) {
   return (
     <div className="flex flex-col md:flex-row md:items-center gap-x-2 text-white mb-4 bg-blue-800/30 w-fit rounded-lg px-4 py-2">
       <div className="gap-x-2 flex items-center">
-        <Info className="shrink-0" size={25} />
+        <Info strokeWidth={1.5} className="shrink-0" size={25} />
         <p className="text-sm">
           <span
             dangerouslySetInnerHTML={{
@@ -277,7 +277,8 @@ function PATTooltip({ accessToken }) {
   return (
     <>
       {!accessToken && (
-        <Warning
+        <TriangleAlert
+          strokeWidth={1.5}
           size={14}
           className="ml-1 text-orange-500 cursor-pointer"
           data-tooltip-id="access-token-tooltip"

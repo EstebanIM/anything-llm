@@ -18,7 +18,7 @@ import KeenableSearchIcon from "./icons/keenable.png";
 import AnySearchSearchIcon from "./icons/anysearch.png";
 import FirecrawlSearchIcon from "./icons/firecrawl.png";
 import DeepSeekSearchIcon from "@/media/llmprovider/deepseek.png";
-import { ListMagnifyingGlass } from "@phosphor-icons/react";
+import { ListFilter } from "lucide-react";
 import Toggle from "@/components/lib/Toggle";
 import { DefaultBadge } from "../Badges/default";
 import SearchProviderItem from "./SearchProviderItem";
@@ -218,10 +218,10 @@ export default function AgentWebSearchSelection({
       <div className="flex flex-col gap-y-[18px] max-w-[500px]">
         <div className="flex w-full justify-between items-center">
           <div className="flex items-center gap-x-2">
-            <ListMagnifyingGlass
+            <ListFilter
+              strokeWidth={1.5}
               size={24}
               color="var(--theme-text-primary)"
-              weight="bold"
             />
             <label
               htmlFor="name"

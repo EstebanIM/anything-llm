@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { SpeakerHigh, PauseCircle } from "@phosphor-icons/react";
+import { Volume2, CirclePause } from "lucide-react";
 import messageToSpeech from "@/utils/chat/messageToSpeech";
 
 export default function NativeTTSMessage({ chatId, message }) {
@@ -46,9 +46,9 @@ export default function NativeTTSMessage({ chatId, message }) {
         aria-label={speaking ? "Pause speech" : "Speak message"}
       >
         {speaking ? (
-          <PauseCircle size={18} className="mb-1" />
+          <CirclePause strokeWidth={1.5} size={18} className="mb-1" />
         ) : (
-          <SpeakerHigh size={18} className="mb-1" />
+          <Volume2 strokeWidth={1.5} size={18} className="mb-1" />
         )}
       </button>
     </div>

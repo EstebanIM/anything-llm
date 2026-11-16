@@ -5,12 +5,7 @@ import { useTranslation } from "react-i18next";
 import FolderRow from "./FolderRow";
 import MobileDirectory from "./MobileDirectory";
 import System from "@/models/system";
-import {
-  CircleNotch,
-  MagnifyingGlass,
-  Plus,
-  Trash,
-} from "@phosphor-icons/react";
+import { LoaderCircle, Search, Plus, Trash2 } from "lucide-react";
 import Document from "@/models/document";
 import showToast from "@/utils/toast";
 import FolderSelectionPopup from "./FolderSelectionPopup";
@@ -414,16 +409,16 @@ export default function Directory({
                 className="border-none search-input bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder focus:outline-primary-button active:outline-primary-button outline-none text-sm rounded-lg pl-9 pr-2.5 py-2 w-[250px] h-[32px] light:border-theme-modal-border light:border"
               />
               {searching ? (
-                <CircleNotch
+                <LoaderCircle
+                  strokeWidth={1.5}
                   size={14}
                   className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white animate-spin"
-                  weight="bold"
                 />
               ) : (
-                <MagnifyingGlass
+                <Search
+                  strokeWidth={1.5}
                   size={14}
                   className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white"
-                  weight="bold"
                 />
               )}
             </div>
@@ -432,8 +427,8 @@ export default function Directory({
               onClick={openFolderModal}
             >
               <Plus
+                strokeWidth={1.5}
                 size={18}
-                weight="bold"
                 className="text-theme-text-primary light:text-[#0ba5ec]"
               />
               <div className="text-theme-text-primary light:text-[#0ba5ec] text-xs font-bold leading-[18px]">
@@ -511,7 +506,11 @@ export default function Directory({
             {/* Non-blocking status strip - mutations never blank the tree. */}
             {!!busyMessage && (
               <div className="absolute top-8 left-0 right-0 z-20 flex items-center justify-center gap-x-2 bg-theme-bg-secondary/95 border-b border-theme-modal-border py-1.5">
-                <CircleNotch size={12} className="animate-spin" weight="bold" />
+                <LoaderCircle
+                  strokeWidth={1.5}
+                  size={12}
+                  className="animate-spin"
+                />
                 <p className="text-theme-text-primary text-xs font-medium">
                   {busyMessage}
                 </p>
@@ -551,7 +550,7 @@ export default function Directory({
                       onClick={deleteFiles}
                       className="border-none text-sm font-semibold bg-white light:bg-[#E0F2FE] h-[32px] w-[32px] rounded-lg text-dark-text hover:bg-neutral-800/80 hover:text-white light:text-[#026AA2] light:hover:bg-[#026AA2] light:hover:text-white flex justify-center items-center"
                     >
-                      <Trash size={18} weight="bold" />
+                      <Trash2 strokeWidth={1.5} size={18} />
                     </button>
                   </div>
                 </div>

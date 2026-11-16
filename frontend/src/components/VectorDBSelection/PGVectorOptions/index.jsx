@@ -1,4 +1,4 @@
-import { Info } from "@phosphor-icons/react";
+import { Info } from "lucide-react";
 import { Tooltip } from "react-tooltip";
 
 export default function PGVectorOptions({ settings }) {
@@ -11,6 +11,7 @@ export default function PGVectorOptions({ settings }) {
               Postgres Connection String
             </label>
             <Info
+              strokeWidth={1.5}
               size={16}
               className="text-theme-text-secondary cursor-pointer"
               data-tooltip-id="pgvector-connection-string-tooltip"
@@ -62,6 +63,7 @@ export default function PGVectorOptions({ settings }) {
               Vector Table Name
             </label>
             <Info
+              strokeWidth={1.5}
               size={16}
               className="text-theme-text-secondary cursor-pointer"
               data-tooltip-id="pgvector-table-name-tooltip"

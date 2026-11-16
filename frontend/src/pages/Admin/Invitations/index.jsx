@@ -3,7 +3,7 @@ import Sidebar from "@/components/SettingsSidebar";
 import { isMobile } from "react-device-detect";
 import * as Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
-import { EnvelopeSimple } from "@phosphor-icons/react";
+import { Mail } from "lucide-react";
 import Admin from "@/models/admin";
 import InviteRow from "./InviteRow";
 import NewInviteModal from "./NewInviteModal";
@@ -50,8 +50,7 @@ export default function AdminInvites() {
               onClick={openModal}
               className="mt-3 mr-0 mb-4 md:-mb-12 z-10"
             >
-              <EnvelopeSimple className="h-4 w-4" weight="bold" /> Create Invite
-              Link
+              <Mail strokeWidth={1.5} className="h-4 w-4" /> Create Invite Link
             </CTAButton>
           </div>
           <div className="overflow-x-auto mt-6">

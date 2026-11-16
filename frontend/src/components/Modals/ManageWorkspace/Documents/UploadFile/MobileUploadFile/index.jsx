@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { LinkSimple, UploadSimple } from "@phosphor-icons/react";
+import { Link, Upload } from "lucide-react";
 import FileUploadProgress from "../FileUploadProgress";
 
 /**
@@ -29,13 +29,13 @@ export default function MobileUploadFile({
       <input {...inputProps} />
       <div className="grid grid-cols-2 gap-x-2">
         <UploadButton
-          icon={UploadSimple}
+          icon={Upload}
           label={t("connectors.directory.upload-files")}
           disabled={!ready}
           onClick={openFilePicker}
         />
         <UploadButton
-          icon={LinkSimple}
+          icon={Link}
           label={t("connectors.directory.add-link")}
           active={showLinkForm}
           onClick={() => setShowLinkForm(!showLinkForm)}
@@ -105,7 +105,7 @@ function UploadButton({ icon: Icon, label, onClick, disabled, active }) {
           : "bg-zinc-800 light:bg-slate-100 text-slate-50 light:text-slate-900"
       }`}
     >
-      <Icon size={18} weight="bold" />
+      <Icon strokeWidth={1.5} size={18} />
       {label}
     </button>
   );

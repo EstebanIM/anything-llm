@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CaretDown, CaretUp, Info } from "@phosphor-icons/react";
+import { ChevronDown, ChevronUp, Info } from "lucide-react";
 import { Tooltip } from "react-tooltip";
 
 export default function WeaviateDBOptions({ settings }) {
@@ -81,9 +81,9 @@ function SelfHostedAdvancedSettings({ settings }) {
         >
           {showAdvancedControls ? "Hide" : "Show"} advanced settings
           {showAdvancedControls ? (
-            <CaretUp size={14} className="ml-1" />
+            <ChevronUp strokeWidth={1.5} size={14} className="ml-1" />
           ) : (
-            <CaretDown size={14} className="ml-1" />
+            <ChevronDown strokeWidth={1.5} size={14} className="ml-1" />
           )}
         </button>
       </div>
@@ -144,6 +144,7 @@ function LabelWithTooltip({ id, label, children }) {
     <div className="flex items-center gap-x-1 mb-3">
       <label className="text-white text-sm font-semibold block">{label}</label>
       <Info
+        strokeWidth={1.5}
         size={16}
         className="text-theme-text-secondary cursor-pointer"
         data-tooltip-id={id}

@@ -1,5 +1,5 @@
 import System from "@/models/system";
-import { CaretDown, CaretUp, Info } from "@phosphor-icons/react";
+import { ChevronDown, ChevronUp, Info } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Tooltip } from "react-tooltip";
 
@@ -43,9 +43,9 @@ function AdvancedControls({ settings }) {
       >
         {showAdvancedControls ? "Hide" : "Show"} advanced controls
         {showAdvancedControls ? (
-          <CaretUp size={14} className="ml-1" />
+          <ChevronUp strokeWidth={1.5} size={14} className="ml-1" />
         ) : (
-          <CaretDown size={14} className="ml-1" />
+          <ChevronDown strokeWidth={1.5} size={14} className="ml-1" />
         )}
       </button>
       <div hidden={!showAdvancedControls}>
@@ -170,7 +170,11 @@ function ServiceTierSelection({ settings }) {
           data-tooltip-place="top"
           data-tooltip-content="Not every model honors every tier. Unsupported tiers are usually ignored, but some providers reject them and the request will error."
         >
-          <Info size={18} className="text-theme-text-secondary" />
+          <Info
+            strokeWidth={1.5}
+            size={18}
+            className="text-theme-text-secondary"
+          />
         </div>
       </div>
       <select

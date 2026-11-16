@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import System from "@/models/system";
 import showToast from "@/utils/toast";
-import { Warning } from "@phosphor-icons/react";
+import { TriangleAlert } from "lucide-react";
 import { Tooltip } from "react-tooltip";
 import Toggle from "@/components/lib/Toggle";
 
@@ -187,7 +187,8 @@ export default function ConfluenceOptions() {
                         <p className="font-bold text-white">
                           {t("connectors.confluence.token")}
                         </p>
-                        <Warning
+                        <TriangleAlert
+                          strokeWidth={1.5}
                           size={14}
                           className="ml-1 text-orange-500 cursor-pointer"
                           data-tooltip-id="access-token-tooltip"

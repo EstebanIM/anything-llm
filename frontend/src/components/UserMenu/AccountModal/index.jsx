@@ -4,7 +4,7 @@ import System from "@/models/system";
 import Appearance from "@/models/appearance";
 import { AUTH_USER } from "@/utils/constants";
 import showToast from "@/utils/toast";
-import { Info, Plus } from "@phosphor-icons/react";
+import { Info, Plus } from "lucide-react";
 import Modal, {
   ModalHeader,
   ModalBody,
@@ -130,7 +130,10 @@ export default function AccountModal({ user, hideModal }) {
                       />
                     ) : (
                       <div className="flex flex-col items-center justify-center p-3">
-                        <Plus className="w-8 h-8 text-zinc-400 light:text-slate-500 m-2" />
+                        <Plus
+                          strokeWidth={1.5}
+                          className="w-8 h-8 text-zinc-400 light:text-slate-500 m-2"
+                        />
                         <span className="text-zinc-400 light:text-slate-500 text-sm font-semibold">
                           {t("profile_settings.profile_picture")}
                         </span>
@@ -310,7 +313,7 @@ function AutoSubmitPreference() {
           data-tooltip-content={t("customization.chat.auto_submit.description")}
           className="cursor-pointer h-fit"
         >
-          <Info size={16} weight="bold" className="text-white" />
+          <Info strokeWidth={1.5} size={16} className="text-white" />
         </div>
       </div>
       <Toggle size="lg" enabled={autoSubmitSttInput} onChange={handleChange} />
@@ -355,7 +358,7 @@ function AutoSpeakPreference() {
           data-tooltip-content={t("customization.chat.auto_speak.description")}
           className="cursor-pointer h-fit"
         >
-          <Info size={16} weight="bold" className="text-white" />
+          <Info strokeWidth={1.5} size={16} className="text-white" />
         </div>
       </div>
       <Toggle

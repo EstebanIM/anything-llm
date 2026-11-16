@@ -4,7 +4,7 @@ import {
   getFileExtension,
   middleTruncate,
 } from "@/utils/directories";
-import { File } from "@phosphor-icons/react";
+import { File } from "lucide-react";
 
 function FileRow({ item, selected, folderName, toggleSelection }) {
   const tooltipContent = useMemo(
@@ -40,8 +40,8 @@ function FileRow({ item, selected, folderName, toggleSelection }) {
           {selected && <div className="w-2 h-2 bg-white rounded-[2px]" />}
         </div>
         <File
+          strokeWidth={1.5}
           className="shrink-0 text-base font-bold w-4 h-4 mr-[3px]"
-          weight="fill"
         />
         <p className="whitespace-nowrap overflow-hidden text-ellipsis max-w-[400px]">
           {middleTruncate(item.title, 55)}

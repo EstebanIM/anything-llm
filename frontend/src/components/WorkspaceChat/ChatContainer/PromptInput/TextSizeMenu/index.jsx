@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { TextT } from "@phosphor-icons/react";
+import { Type } from "lucide-react";
 import { Tooltip } from "react-tooltip";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/hooks/useTheme";
@@ -25,9 +25,9 @@ export default function TextSizeButton() {
         onClick={toggleTooltip}
         className="border-none flex justify-center items-center opacity-60 hover:opacity-100 light:opacity-100 light:hover:opacity-60 cursor-pointer"
       >
-        <TextT
+        <Type
+          strokeWidth={1.5}
           color="var(--theme-sidebar-footer-icon-fill)"
-          weight="fill"
           className="w-[20px] h-[20px] pointer-events-none text-white"
         />
       </div>

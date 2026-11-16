@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, memo } from "react";
 import truncate from "truncate";
-import { CheckCircle, XCircle } from "@phosphor-icons/react";
+import { CircleCheck, CircleX } from "lucide-react";
 import Workspace from "../../../../../../models/workspace";
 import { humanFileSize, milliToHms } from "../../../../../../utils/numbers";
 import PreLoader from "../../../../../Preloader";
@@ -87,7 +87,8 @@ function FileUploadProgressComponent({
         } h-14 px-2 py-2 flex items-center gap-x-4 rounded-lg bg-error/40 light:bg-error/30 light:border-solid light:border-error/40 border border-transparent`}
       >
         <div className="w-6 h-6 flex-shrink-0">
-          <XCircle
+          <CircleX
+            strokeWidth={1.5}
             color="var(--theme-bg-primary)"
             className="w-6 h-6 stroke-white bg-error rounded-full p-1 w-full h-full"
           />
@@ -112,7 +113,8 @@ function FileUploadProgressComponent({
         } h-14 px-2 py-2 flex items-center gap-x-4 rounded-lg bg-error/40 light:bg-error/30 light:border-solid light:border-error/40 border border-transparent`}
       >
         <div className="w-6 h-6 flex-shrink-0">
-          <XCircle
+          <CircleX
+            strokeWidth={1.5}
             color="var(--theme-bg-primary)"
             className="w-6 h-6 stroke-white bg-error rounded-full p-1 w-full h-full"
           />
@@ -141,7 +143,8 @@ function FileUploadProgressComponent({
             <PreLoader size="6" />
           </div>
         ) : (
-          <CheckCircle
+          <CircleCheck
+            strokeWidth={1.5}
             color="var(--theme-bg-primary)"
             className="w-6 h-6 stroke-white bg-green-500 rounded-full p-1 w-full h-full"
           />

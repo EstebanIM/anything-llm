@@ -1,16 +1,11 @@
-import {
-  MagnifyingGlass,
-  PaperPlaneTilt,
-  ChartBar,
-  PencilSimple,
-} from "@phosphor-icons/react";
+import { Search, Send, ChartBar, Pencil } from "lucide-react";
 export { filterSkillCategories } from "../utils";
 
 export const getOutlookSkills = (t) => ({
   search: {
     title: t("agent.skill.outlook.categories.search.title"),
     description: t("agent.skill.outlook.categories.search.description"),
-    icon: MagnifyingGlass,
+    icon: Search,
     skills: [
       {
         name: "outlook-get-inbox",
@@ -32,7 +27,7 @@ export const getOutlookSkills = (t) => ({
   drafts: {
     title: t("agent.skill.outlook.categories.drafts.title"),
     description: t("agent.skill.outlook.categories.drafts.description"),
-    icon: PencilSimple,
+    icon: Pencil,
     skills: [
       {
         name: "outlook-create-draft",
@@ -64,7 +59,7 @@ export const getOutlookSkills = (t) => ({
   send: {
     title: t("agent.skill.outlook.categories.send.title"),
     description: t("agent.skill.outlook.categories.send.description"),
-    icon: PaperPlaneTilt,
+    icon: Send,
     skills: [
       {
         name: "outlook-send-email",

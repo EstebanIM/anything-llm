@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import { SlidersHorizontal } from "@phosphor-icons/react";
+import { SlidersHorizontal } from "lucide-react";
 import useLoginMode from "@/hooks/useLoginMode";
 import { useTranslation } from "react-i18next";
 import { isMobile } from "react-device-detect";
@@ -64,6 +64,7 @@ export default function TextSizeMenu() {
         }`}
       >
         <SlidersHorizontal
+          strokeWidth={1.5}
           size={18}
           className={
             showMenu

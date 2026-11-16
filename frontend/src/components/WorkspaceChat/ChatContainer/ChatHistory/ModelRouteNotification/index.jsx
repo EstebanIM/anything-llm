@@ -1,4 +1,4 @@
-import { Shuffle } from "@phosphor-icons/react";
+import { Shuffle } from "lucide-react";
 import RouterAnimation from "@/media/animations/router-animation.webm";
 import { Trans } from "react-i18next";
 
@@ -49,7 +49,10 @@ export default function ModelRouteNotification({ routedTo, isStreaming }) {
 function RouterIcon({ isStreaming }) {
   if (!isStreaming)
     return (
-      <Shuffle className="w-4 h-4 text-zinc-50 light:text-slate-950 flex-shrink-0" />
+      <Shuffle
+        strokeWidth={1.5}
+        className="w-4 h-4 text-zinc-50 light:text-slate-950 flex-shrink-0"
+      />
     );
 
   return (

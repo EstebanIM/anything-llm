@@ -2,13 +2,7 @@ import useScrollActiveItemIntoView from "@/hooks/useScrollActiveItemIntoView";
 import Workspace from "@/models/workspace";
 import paths from "@/utils/paths";
 import showToast from "@/utils/toast";
-import {
-  ArrowCounterClockwise,
-  DotsThree,
-  PencilSimple,
-  Trash,
-  X,
-} from "@phosphor-icons/react";
+import { RotateCcw, Ellipsis, Pencil, Trash2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
@@ -88,7 +82,8 @@ export default function ThreadItem({
                 className="border-none"
                 onClick={() => toggleMarkForDeletion(thread.id)}
               >
-                <ArrowCounterClockwise
+                <RotateCcw
+                  strokeWidth={1.5}
                   className="text-zinc-300 hover:text-white light:text-theme-text-secondary hover:light:text-theme-text-primary"
                   size={18}
                 />
@@ -126,8 +121,8 @@ export default function ThreadItem({
                 onClick={() => toggleMarkForDeletion(thread.id)}
               >
                 <X
+                  strokeWidth={1.5}
                   className="text-zinc-300 light:text-theme-text-secondary hover:text-white hover:light:text-theme-text-primary"
-                  weight="bold"
                   size={18}
                 />
               </button>
@@ -139,7 +134,8 @@ export default function ThreadItem({
                   onClick={() => setShowOptions(!showOptions)}
                   aria-label="Thread options"
                 >
-                  <DotsThree
+                  <Ellipsis
+                    strokeWidth={1.5}
                     className="text-slate-300 light:text-theme-text-secondary hover:text-white hover:light:text-theme-text-primary"
                     size={25}
                   />
@@ -266,7 +262,7 @@ function OptionsMenu({
         type="button"
         className="w-full rounded-md flex items-center p-2 gap-x-2 hover:bg-slate-500/20 text-slate-300 light:text-theme-text-primary"
       >
-        <PencilSimple size={18} />
+        <Pencil strokeWidth={1.5} size={18} />
         <p className="text-sm">Rename</p>
       </button>
       <button
@@ -274,7 +270,7 @@ function OptionsMenu({
         type="button"
         className="w-full rounded-md flex items-center p-2 gap-x-2 hover:bg-red-500/20 text-slate-300 light:text-theme-text-primary hover:text-red-100"
       >
-        <Trash size={18} />
+        <Trash2 strokeWidth={1.5} size={18} />
         <p className="text-sm">Delete Thread</p>
       </button>
     </div>

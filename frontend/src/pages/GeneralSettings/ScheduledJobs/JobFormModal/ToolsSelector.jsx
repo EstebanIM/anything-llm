@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  CaretDown,
-  CaretRight,
+  ChevronDown,
+  ChevronRight,
   Check,
-  MagnifyingGlass,
+  Search,
   Minus,
-  Warning,
+  TriangleAlert,
   X,
-} from "@phosphor-icons/react";
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import paths from "@/utils/paths";
 
@@ -41,15 +41,15 @@ function Checkbox({ state, disabled = false }) {
     >
       {state === "checked" && (
         <Check
+          strokeWidth={1.5}
           size={12}
-          weight="bold"
           className="text-white light:text-white"
         />
       )}
       {state === "indeterminate" && (
         <Minus
+          strokeWidth={1.5}
           size={12}
-          weight="bold"
           className="text-white light:text-white"
         />
       )}
@@ -188,7 +188,8 @@ export default function ToolsSelector({
             placeholder={t("scheduledJobs.modal.toolsSearch", "Search tools")}
             className="border border-transparent light:border-slate-300 bg-zinc-800 light:bg-white text-zinc-300 light:text-slate-700 placeholder:text-zinc-400 light:placeholder:text-slate-500 text-sm rounded-lg focus:outline-sky-500 outline-none block w-full px-3.5 py-2.5 pr-9"
           />
-          <MagnifyingGlass
+          <Search
+            strokeWidth={1.5}
             size={16}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 light:text-slate-500 pointer-events-none"
           />
@@ -220,9 +221,9 @@ export default function ToolsSelector({
                       className="border-none flex items-center gap-2 w-full px-2 py-1.5 rounded-md text-sm font-medium text-zinc-50 light:text-slate-700 bg-zinc-700/50 light:bg-slate-100 hover:bg-zinc-700 light:hover:bg-slate-200 transition-colors"
                     >
                       {expanded ? (
-                        <CaretDown size={12} weight="bold" />
+                        <ChevronDown strokeWidth={1.5} size={12} />
                       ) : (
-                        <CaretRight size={12} weight="bold" />
+                        <ChevronRight strokeWidth={1.5} size={12} />
                       )}
                       <span className="flex-1 text-left truncate flex items-center gap-1.5">
                         {cat.name}
@@ -236,7 +237,7 @@ export default function ToolsSelector({
                               "This skill requires configuration before use"
                             )}
                           >
-                            <Warning size={10} weight="fill" />
+                            <TriangleAlert strokeWidth={1.5} size={10} />
                             {t(
                               "scheduledJobs.modal.needsSetupLabel",
                               "Needs Setup"
@@ -296,7 +297,10 @@ export default function ToolsSelector({
                                         "This skill requires configuration before use"
                                       )}
                                     >
-                                      <Warning size={10} weight="fill" />
+                                      <TriangleAlert
+                                        strokeWidth={1.5}
+                                        size={10}
+                                      />
                                       {t(
                                         "scheduledJobs.modal.needsSetupLabel",
                                         "Needs Setup"
@@ -341,7 +345,7 @@ export default function ToolsSelector({
                 aria-label={`Remove ${labelFor(id)}`}
                 className="border-none text-zinc-400 light:text-slate-500 hover:text-zinc-50 light:hover:text-slate-900 transition-colors"
               >
-                <X size={12} weight="bold" />
+                <X strokeWidth={1.5} size={12} />
               </button>
             </div>
           ))}

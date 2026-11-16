@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import System from "@/models/system";
 import useProviderEndpointAutoDiscovery from "@/hooks/useProviderEndpointAutoDiscovery";
-import { CircleNotch, Info } from "@phosphor-icons/react";
+import { LoaderCircle, Info } from "lucide-react";
 import strDistance from "js-levenshtein";
 import { LLM_PREFERENCE_CHANGED_EVENT } from "@/pages/GeneralSettings/LLMPreference";
 import { LEMONADE_COMMON_URLS } from "@/utils/constants";
@@ -43,7 +43,10 @@ export default function LemonadeOptions({ settings }) {
                 Base URL
               </label>
               {loading ? (
-                <CircleNotch className="w-4 h-4 text-theme-text-secondary animate-spin" />
+                <LoaderCircle
+                  strokeWidth={1.5}
+                  className="w-4 h-4 text-theme-text-secondary animate-spin"
+                />
               ) : (
                 <>
                   {!basePathValue.value && (
@@ -91,7 +94,11 @@ export default function LemonadeOptions({ settings }) {
               data-tooltip-place="top"
               data-tooltip-delay-hide={800}
             >
-              <Info size={18} className="text-theme-text-secondary" />
+              <Info
+                strokeWidth={1.5}
+                size={18}
+                className="text-theme-text-secondary"
+              />
             </div>
           </div>
 
@@ -136,7 +143,11 @@ export default function LemonadeOptions({ settings }) {
               data-tooltip-place="top"
               data-tooltip-delay-hide={800}
             >
-              <Info size={18} className="text-theme-text-secondary" />
+              <Info
+                strokeWidth={1.5}
+                size={18}
+                className="text-theme-text-secondary"
+              />
             </div>
           </div>
           <input
@@ -178,7 +189,11 @@ export default function LemonadeOptions({ settings }) {
               data-tooltip-place="top"
               data-tooltip-delay-hide={800}
             >
-              <Info size={18} className="text-theme-text-secondary" />
+              <Info
+                strokeWidth={1.5}
+                size={18}
+                className="text-theme-text-secondary"
+              />
             </div>
           </div>
           <input

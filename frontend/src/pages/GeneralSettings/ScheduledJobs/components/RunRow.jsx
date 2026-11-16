@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Circle, Stop } from "@phosphor-icons/react";
+import { Circle, Square } from "lucide-react";
 import moment from "moment";
 import paths from "@/utils/paths";
 import StatusBadge from "./StatusBadge";
@@ -64,7 +64,8 @@ export default function RunRow({ run, jobId, onKilled }) {
       <div className="w-[200px] flex items-center gap-2 relative">
         {unreadAndTerminal && (
           <Circle
-            weight="fill"
+            strokeWidth={1.5}
+            fill="currentColor"
             className="h-2 w-2 text-blue-400 light:text-blue-600 absolute -left-4"
           />
         )}
@@ -76,7 +77,7 @@ export default function RunRow({ run, jobId, onKilled }) {
             title={t("scheduledJobs.runHistory.stopJob")}
             className="border-none ml-2 p-1.5 rounded bg-red-500/20 text-red-400 light:bg-red-100 light:text-red-600 hover:bg-red-500/30 light:hover:bg-red-200 transition-colors disabled:opacity-50"
           >
-            <Stop className="h-3.5 w-3.5" weight="bold" />
+            <Square strokeWidth={1.5} className="h-3.5 w-3.5" />
           </button>
         )}
         <StatusBadge status={run.status} />

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import Sidebar from "@/components/SettingsSidebar";
 import { isMobile } from "react-device-detect";
-import { ArrowLeft } from "@phosphor-icons/react";
+import { ArrowLeft } from "lucide-react";
 import ScheduledJobs from "@/models/scheduledJobs";
 import usePolling from "@/hooks/usePolling";
 import showToast from "@/utils/toast";
@@ -144,7 +144,7 @@ function RunHistoryLayout({ job, children }) {
               onClick={() => navigate(paths.settings.scheduledJobs())}
               className="border-none flex items-center gap-2 text-zinc-400 light:text-slate-600 hover:text-zinc-50 light:hover:text-slate-950 text-sm transition-colors w-fit"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft strokeWidth={1.5} className="h-4 w-4" />
               {t("scheduledJobs.runHistory.back")}
             </button>
             <p className="text-lg leading-7 font-semibold text-zinc-50 light:text-slate-950">

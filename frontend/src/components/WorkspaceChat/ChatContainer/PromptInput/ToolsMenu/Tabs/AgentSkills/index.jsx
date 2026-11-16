@@ -12,7 +12,7 @@ import useAgentSkillsState from "./useAgentSkillsState";
 import useSkillSections from "./useSkillSections";
 import SkillRow from "./SkillRow";
 import SkillSection from "./SkillSection";
-import { Wrench, MagnifyingGlass, CircleNotch } from "@phosphor-icons/react";
+import { Wrench, Search, LoaderCircle } from "lucide-react";
 import { useIsAgentSessionActive } from "@/utils/chat/agent";
 
 const MIN_ITEMS_TO_SHOW_SEARCH = 10;
@@ -244,10 +244,10 @@ export default function AgentSkillsTab({
       ))}
       {mcpLoading && (
         <div className="flex items-center gap-1.5 px-2 py-1.5">
-          <CircleNotch
+          <LoaderCircle
+            strokeWidth={1.5}
             size={12}
             className="text-zinc-500 light:text-slate-400 animate-spin"
-            weight="bold"
           />
           <span className="text-[10px] text-zinc-500 light:text-slate-400">
             {t("chat_window.loading_mcp_servers")}
@@ -261,7 +261,11 @@ export default function AgentSkillsTab({
       )}
       <Link to={paths.settings.agentSkills()}>
         <button className="border-none flex items-center gap-1.5 px-2 h-6 rounded cursor-pointer hover:bg-zinc-700/50 light:hover:bg-slate-100 text-theme-text-primary">
-          <Wrench size={12} className="text-theme-text-primary" />
+          <Wrench
+            strokeWidth={1.5}
+            size={12}
+            className="text-theme-text-primary"
+          />
           <span className="text-xs text-theme-text-primary">
             {t("chat_window.manage_agent_skills")}
           </span>
@@ -274,10 +278,10 @@ export default function AgentSkillsTab({
 function SearchInput({ value, onChange, placeholder }) {
   return (
     <div className="relative shrink-0">
-      <MagnifyingGlass
+      <Search
+        strokeWidth={1.5}
         size={12}
         className="absolute left-2 top-1/2 -translate-y-1/2 text-zinc-400 light:text-slate-400"
-        weight="bold"
       />
       <input
         type="text"

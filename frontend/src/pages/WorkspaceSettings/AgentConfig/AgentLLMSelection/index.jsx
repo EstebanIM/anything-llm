@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import AnythingLLMIcon from "@/media/logo/anything-llm-icon.png";
 import AgentLLMItem from "./AgentLLMItem";
 import { ALL_LLM_PROVIDERS } from "@/pages/GeneralSettings/LLMPreference";
-import { Gauge } from "@phosphor-icons/react";
+import { Gauge } from "lucide-react";
 import AgentModelSelection from "../AgentModelSelection";
 import { useTranslation } from "react-i18next";
 import ProviderSearchMenu from "@/components/lib/ProviderSearchMenu";
@@ -94,7 +94,7 @@ export default function AgentLLMSelection({ settings, workspace }) {
       {WARN_PERFORMANCE.includes(selectedLLM) && (
         <div className="flex flex-col md:flex-row md:items-center gap-x-2 text-white bg-blue-800/30 w-fit rounded-lg px-4 py-2">
           <div className="gap-x-2 flex items-center">
-            <Gauge className="shrink-0" size={25} />
+            <Gauge strokeWidth={1.5} className="shrink-0" size={25} />
             <p className="text-sm">{t("agent.performance-warning")}</p>
           </div>
         </div>

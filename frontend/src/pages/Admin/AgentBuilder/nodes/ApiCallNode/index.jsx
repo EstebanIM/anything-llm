@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/refs */
 import React, { useRef, useState } from "react";
-import { Plus, X, CaretDown } from "@phosphor-icons/react";
+import { Plus, X, ChevronDown } from "lucide-react";
 import VariableInput from "../../VariableInput";
 
 export default function ApiCallNode({
@@ -77,8 +77,8 @@ export default function ApiCallNode({
               className="h-full px-3 rounded-lg border-none bg-theme-settings-input-bg text-theme-text-primary hover:bg-theme-action-menu-item-hover transition-colors duration-300 flex items-center gap-1"
               title="Insert variable"
             >
-              <Plus className="w-4 h-4" />
-              <CaretDown className="w-3 h-3" />
+              <Plus strokeWidth={1.5} className="w-4 h-4" />
+              <ChevronDown strokeWidth={1.5} className="w-3 h-3" />
             </button>
             {showVarMenu && (
               <div className="absolute right-0 top-[calc(100%+4px)] w-48 bg-theme-settings-input-bg border-none rounded-lg shadow-lg z-10">
@@ -125,7 +125,7 @@ export default function ApiCallNode({
             className="p-1.5 rounded-lg border-none bg-theme-settings-input-bg text-theme-text-primary hover:bg-theme-action-menu-item-hover transition-colors duration-300"
             title="Add header"
           >
-            <Plus className="w-3.5 h-3.5" />
+            <Plus strokeWidth={1.5} className="w-3.5 h-3.5" />
           </button>
         </div>
         <div className="space-y-2">
@@ -155,7 +155,7 @@ export default function ApiCallNode({
                 className="p-2.5 rounded-lg border-none bg-theme-settings-input-bg text-theme-text-primary hover:text-red-500 hover:border-red-500/20 hover:bg-red-500/10 transition-colors duration-300"
                 title="Remove header"
               >
-                <X className="w-4 h-4" />
+                <X strokeWidth={1.5} className="w-4 h-4" />
               </button>
             </div>
           ))}
@@ -238,7 +238,7 @@ export default function ApiCallNode({
                       className="p-2.5 rounded-lg bg-theme-bg-primary border border-white/5 text-theme-text-primary hover:text-red-500 hover:border-red-500/20 hover:bg-red-500/10 transition-colors duration-300 light:bg-theme-settings-input-bg light:border-black/10"
                       title="Remove field"
                     >
-                      <X className="w-4 h-4" />
+                      <X strokeWidth={1.5} className="w-4 h-4" />
                     </button>
                   </div>
                 ))}

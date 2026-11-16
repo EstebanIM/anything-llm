@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { useNavigate } from "react-router-dom";
-import { CalendarCheck, ArrowRight } from "@phosphor-icons/react";
+import { CalendarCheck, ArrowRight } from "lucide-react";
 import paths from "@/utils/paths";
 
 /**
@@ -28,7 +28,7 @@ function ScheduledJobCreatedCard({ props }) {
         >
           <div className="flex items-center gap-x-3 min-w-0">
             <div className="bg-sky-100 text-sky-700 rounded-lg flex items-center justify-center flex-shrink-0 h-[48px] w-[48px]">
-              <CalendarCheck size={24} weight="bold" />
+              <CalendarCheck strokeWidth={1.5} size={24} />
             </div>
             <div className="flex flex-col min-w-0 text-left">
               <p className="text-white light:text-slate-900 text-sm font-medium truncate leading-snug">
@@ -41,7 +41,7 @@ function ScheduledJobCreatedCard({ props }) {
           </div>
           <div className="flex items-center gap-x-2 px-4 py-2 rounded-lg border border-zinc-600 light:border-theme-sidebar-border text-white light:text-theme-text-primary text-sm font-medium flex-shrink-0 ml-4">
             <span>View job</span>
-            <ArrowRight size={16} weight="bold" />
+            <ArrowRight strokeWidth={1.5} size={16} />
           </div>
         </button>
       </div>

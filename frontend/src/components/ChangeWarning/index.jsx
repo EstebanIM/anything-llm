@@ -1,4 +1,4 @@
-import { Warning } from "@phosphor-icons/react";
+import { TriangleAlert } from "lucide-react";
 import {
   ModalHeader,
   ModalBody,
@@ -17,7 +17,7 @@ export default function ChangeWarningModal({
       <ModalHeader
         title={
           <span className="flex items-center gap-x-2 text-red-500">
-            <Warning className="w-6 h-6 shrink-0" weight="fill" />
+            <TriangleAlert strokeWidth={1.5} className="w-6 h-6 shrink-0" />
             WARNING - This action is irreversible
           </span>
         }

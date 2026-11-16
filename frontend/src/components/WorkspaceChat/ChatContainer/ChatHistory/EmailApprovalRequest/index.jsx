@@ -1,15 +1,15 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  CaretDown,
-  CaretUp,
+  ChevronDown,
+  ChevronUp,
   Check,
-  EnvelopeSimple,
-  FloppyDisk,
-  PaperPlaneTilt,
-  PencilSimple,
+  Mail,
+  Save,
+  Send,
+  Pencil,
   X,
-} from "@phosphor-icons/react";
+} from "lucide-react";
 import useTimeoutProgress from "@/hooks/useTimeoutProgress";
 import RecipientRow, { splitRecipients } from "./RecipientRow";
 
@@ -184,7 +184,7 @@ export default function EmailApprovalRequest({
   const showCc = revealed.cc || draft.cc.length > 0;
   const showBcc = !noBcc && (revealed.bcc || draft.bcc.length > 0);
   const showSubject = canEditHeader || !!draft.subject;
-  const ApproveIcon = isDraft ? FloppyDisk : PaperPlaneTilt;
+  const ApproveIcon = isDraft ? Save : Send;
 
   if (responded)
     return (
@@ -272,7 +272,7 @@ export default function EmailApprovalRequest({
                 onClick={() => respond(false)}
                 className="border-none bg-transparent p-0 flex items-center gap-2 text-sm leading-5 text-zinc-300 light:text-slate-600 hover:text-white light:hover:text-slate-900"
               >
-                <X size={16} />
+                <X strokeWidth={1.5} size={16} />
                 {t("chat_window.agent_invocation.email.deny")}
               </button>
               <button
@@ -312,7 +312,7 @@ function CardHeader({
       className={`w-full flex items-center gap-2.5 p-3 bg-zinc-900 border border-zinc-800 light:bg-slate-200 light:border-slate-200 ${className}`}
     >
       <div className="size-8 shrink-0 rounded flex items-center justify-center bg-zinc-800 text-white light:bg-slate-100 light:text-slate-950">
-        <EnvelopeSimple size={16} />
+        <Mail strokeWidth={1.5} size={16} />
       </div>
       <div className="flex flex-col min-w-0 text-sm leading-5">
         <span
@@ -412,14 +412,14 @@ function EditToggle({ editing, onToggle }) {
   if (editing)
     return (
       <button type="button" onClick={onToggle} className={className}>
-        <Check size={16} />
+        <Check strokeWidth={1.5} size={16} />
         {t("chat_window.agent_invocation.email.done")}
       </button>
     );
 
   return (
     <button type="button" onClick={onToggle} className={className}>
-      <PencilSimple size={16} />
+      <Pencil strokeWidth={1.5} size={16} />
       {t("chat_window.agent_invocation.email.edit")}
     </button>
   );
@@ -429,7 +429,7 @@ function ResolvedCard({ status, action, draft, attachmentCount = 0 }) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const titleClassName = status === "approved" ? "" : "line-through";
-  const CaretIcon = expanded ? CaretUp : CaretDown;
+  const CaretIcon = expanded ? ChevronUp : ChevronDown;
 
   return (
     <div className="flex justify-center w-full mt-3 mb-1 pr-4">

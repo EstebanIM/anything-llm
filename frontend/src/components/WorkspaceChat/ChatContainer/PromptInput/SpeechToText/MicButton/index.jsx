@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from "react";
-import { Microphone, CircleNotch } from "@phosphor-icons/react";
+import { Mic, LoaderCircle } from "lucide-react";
 import { Tooltip } from "react-tooltip";
 import { useTranslation } from "react-i18next";
 import { PROMPT_INPUT_EVENT } from "../../../PromptInput";
@@ -58,14 +58,14 @@ export default function MicButton({
       }`}
     >
       {processing ? (
-        <CircleNotch
+        <LoaderCircle
+          strokeWidth={1.5}
           size={18}
-          weight="bold"
           className="pointer-events-none text-white light:text-slate-800 animate-spin shrink-0"
         />
       ) : (
-        <Microphone
-          weight="regular"
+        <Mic
+          strokeWidth={1.5}
           size={18}
           className={`pointer-events-none text-zinc-300 light:text-slate-600 group-hover:text-white light:group-hover:text-slate-600 shrink-0 ${
             listening

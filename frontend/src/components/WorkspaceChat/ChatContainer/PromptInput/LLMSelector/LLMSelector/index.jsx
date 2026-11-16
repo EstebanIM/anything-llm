@@ -1,4 +1,4 @@
-import { MagnifyingGlass } from "@phosphor-icons/react";
+import { Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 export default function LLMSelectorSidePanel({
@@ -12,10 +12,10 @@ export default function LLMSelectorSidePanel({
   return (
     <div className="w-[40%] h-full flex flex-col gap-4 p-2 border-r border-zinc-700 light:border-slate-300">
       <div className="relative shrink-0 mx-2">
-        <MagnifyingGlass
+        <Search
+          strokeWidth={1.5}
           size={14}
           className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 light:text-slate-400"
-          weight="bold"
         />
         <input
           id="llm-search-input"

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import Sidebar from "@/components/SettingsSidebar";
 import * as Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
-import { QrCode } from "@phosphor-icons/react";
+import { QrCode } from "lucide-react";
 import { useModal } from "@/hooks/useModal";
 import CTAButton from "@/components/lib/CTAButton";
 import MobileConnection from "@/models/mobile";
@@ -66,7 +66,8 @@ export default function MobileDevices() {
               onClick={openModal}
               className="mt-3 mr-0 mb-4 md:-mb-14 z-10"
             >
-              <QrCode className="h-4 w-4" weight="bold" /> Register New Device
+              <QrCode strokeWidth={1.5} className="h-4 w-4" /> Register New
+              Device
             </CTAButton>
           </div>
           <div className="overflow-x-auto mt-6">

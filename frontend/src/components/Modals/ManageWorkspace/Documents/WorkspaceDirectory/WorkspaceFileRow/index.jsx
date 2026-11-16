@@ -4,7 +4,7 @@ import {
   getFileExtension,
   middleTruncate,
 } from "@/utils/directories";
-import { ArrowUUpLeft, Eye, File, PushPin } from "@phosphor-icons/react";
+import { Undo2, Eye, File, Pin } from "lucide-react";
 import Workspace from "@/models/workspace";
 import usePinDocument from "../../hooks/usePinDocument";
 import useWatchDocument from "../../hooks/useWatchDocument";
@@ -90,8 +90,8 @@ export default function WorkspaceFileRow({
           ) : null}
         </div>
         <File
+          strokeWidth={1.5}
           className="shrink-0 text-base font-bold w-4 h-4 mr-[3px] ml-1"
-          weight="fill"
         />
         <p className="whitespace-nowrap overflow-hidden text-ellipsis max-w-[400px]">
           {middleTruncate(item.title, 50)}
@@ -142,9 +142,9 @@ const PinItemToWorkspace = memo(({ workspace, docPath, item }) => {
           </p>
         </div>
       ) : (
-        <PushPin
+        <Pin
+          strokeWidth={1.5}
           size={16}
-          weight="regular"
           className="outline-none text-base font-bold flex-shrink-0"
         />
       )}
@@ -172,13 +172,13 @@ const WatchForChanges = memo(({ workspace, docPath, item }) => {
       }
     >
       <Eye
+        strokeWidth={1.5}
         size={16}
-        weight="regular"
         className="outline-none text-base font-bold flex-shrink-0 group-hover:hidden group-data-[active=true]:hidden"
       />
       <Eye
+        strokeWidth={1.5}
         size={16}
-        weight="fill"
         className="outline-none text-base font-bold flex-shrink-0 hidden group-hover:block group-data-[active=true]:block"
       />
     </div>
@@ -188,7 +188,8 @@ const WatchForChanges = memo(({ workspace, docPath, item }) => {
 const RemoveItemFromWorkspace = ({ item: _item, onClick }) => {
   return (
     <div>
-      <ArrowUUpLeft
+      <Undo2
+        strokeWidth={1.5}
         data-tooltip-id="remove-document"
         data-tooltip-content="Remove document from workspace"
         onClick={onClick}

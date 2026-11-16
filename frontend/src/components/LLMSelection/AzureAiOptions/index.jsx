@@ -1,4 +1,4 @@
-import { Info } from "@phosphor-icons/react";
+import { Info } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Tooltip } from "react-tooltip";
 
@@ -105,7 +105,11 @@ export default function AzureAiOptions({ settings }) {
                 "llm.providers.azure_openai.model_type_tooltip"
               )}
             >
-              <Info size={18} className="text-theme-text-secondary" />
+              <Info
+                strokeWidth={1.5}
+                size={18}
+                className="text-theme-text-secondary"
+              />
             </div>
           </div>
           <select
@@ -148,7 +152,11 @@ export default function AzureAiOptions({ settings }) {
                 "llm.providers.azure_openai.agent_api_tooltip"
               )}
             >
-              <Info size={18} className="text-theme-text-secondary" />
+              <Info
+                strokeWidth={1.5}
+                size={18}
+                className="text-theme-text-secondary"
+              />
             </div>
           </div>
           <select

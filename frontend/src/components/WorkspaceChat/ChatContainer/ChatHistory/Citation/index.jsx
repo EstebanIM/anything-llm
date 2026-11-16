@@ -5,13 +5,13 @@ import Modal, { ModalHeader, ModalBody } from "@/components/lib/Modal";
 import {
   FileText,
   Info,
-  ArrowSquareOut,
-  GithubLogo,
-  YoutubeLogo,
-  LinkSimple,
-  GitlabLogo,
+  SquareArrowOutUpRight,
+  Github,
+  Youtube,
+  Link,
+  Gitlab,
   GitBranch,
-} from "@phosphor-icons/react";
+} from "lucide-react";
 import GmailLogo from "@/pages/Admin/Agents/GMailSkillPanel/gmail.png";
 import GoogleCalendarLogo from "@/pages/Admin/Agents/GoogleCalendarSkillPanel/google-calendar.png";
 import OutlookLogo from "@/pages/Admin/Agents/OutlookSkillPanel/outlook.png";
@@ -21,12 +21,12 @@ import { useSourcesSidebar } from "../../ChatSidebar";
 
 const CIRCLE_ICONS = {
   file: FileText,
-  link: LinkSimple,
-  youtube: YoutubeLogo,
-  github: GithubLogo,
-  gitlab: GitlabLogo,
+  link: Link,
+  youtube: Youtube,
+  github: Github,
+  gitlab: Gitlab,
   gitea: GitBranch,
-  confluence: LinkSimple,
+  confluence: Link,
   drupalwiki: FileText,
   obsidian: FileText,
   paperlessNgx: FileText,
@@ -102,7 +102,7 @@ export function SourceTypeCircle({
           className="object-contain bg-transparent"
         />
       ) : (
-        <Icon size={iconSize} weight="bold" className="text-black" />
+        <Icon strokeWidth={1.5} size={iconSize} className="text-black" />
       )}
     </div>
   );
@@ -214,7 +214,10 @@ export function CitationDetailModal({ source, onClose }) {
               <span className="truncate" title={webpageUrl}>
                 {truncate(webpageUrl, 45)}
               </span>
-              <ArrowSquareOut className="flex-shrink-0" />
+              <SquareArrowOutUpRight
+                strokeWidth={1.5}
+                className="flex-shrink-0"
+              />
             </a>
           ) : (
             truncate(title, 45)
@@ -241,7 +244,7 @@ export function CitationDetailModal({ source, onClose }) {
                       data-tooltip-content={`This is the semantic similarity score of this chunk of text compared to your query calculated by the vector database.`}
                       className="flex items-center gap-x-1"
                     >
-                      <Info size={14} />
+                      <Info strokeWidth={1.5} size={14} />
                       <p>
                         {toPercentString(score)}{" "}
                         {t("chat_window.similarity_match")}

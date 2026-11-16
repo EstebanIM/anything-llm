@@ -1,13 +1,13 @@
 import { useRef, useState, useEffect } from "react";
 import {
-  CaretDown,
-  CaretRight,
+  ChevronDown,
+  ChevronRight,
   Cpu,
   Circle,
-  DotsThreeVertical,
-  CloudArrowDown,
-  CircleNotch,
-} from "@phosphor-icons/react";
+  EllipsisVertical,
+  CloudDownload,
+  LoaderCircle,
+} from "lucide-react";
 import pluralize from "pluralize";
 import { titleCase } from "text-case";
 import { humanFileSize } from "@/utils/numbers";
@@ -60,15 +60,15 @@ export default function ModelTable({
         className="border-none text-theme-text-secondary text-sm font-medium hover:underline flex items-center gap-x-[8px]"
       >
         {showAll ? (
-          <CaretDown
+          <ChevronDown
+            strokeWidth={1.5}
             size={16}
-            weight="bold"
             className="text-theme-text-secondary"
           />
         ) : (
-          <CaretRight
+          <ChevronRight
+            strokeWidth={1.5}
             size={16}
-            weight="bold"
             className="text-theme-text-secondary"
           />
         )}
@@ -114,7 +114,7 @@ function DeviceTypeTagWrapper({ text, bgClass, textClass }) {
         bgClass + " px-1.5 py-1 rounded-full flex items-center gap-x-1 w-fit"
       }
     >
-      <Cpu size={14} weight="bold" className={textClass} />
+      <Cpu strokeWidth={1.5} size={14} className={textClass} />
       <p className={textClass + " text-xs"}>{text}</p>
     </div>
   );
@@ -280,9 +280,9 @@ function ModelRow({
               className="border-none hover:bg-white/20 rounded-lg p-1"
               onClick={() => setShowOptions(!showOptions)}
             >
-              <DotsThreeVertical
+              <EllipsisVertical
+                strokeWidth={1.5}
                 size={22}
-                weight="bold"
                 className="text-theme-text-primary cursor-pointer"
               />
             </button>
@@ -313,9 +313,9 @@ function ModelRow({
             className="border-none hover:bg-white/20 light:hover:bg-black/5 rounded-lg p-2 flex items-center gap-x-1 cursor-pointer"
             onClick={handleSetActiveModel}
           >
-            <CloudArrowDown
+            <CloudDownload
+              strokeWidth={1.5}
               size={20}
-              weight="bold"
               className="text-theme-text-primary"
             />
           </button>
@@ -323,9 +323,9 @@ function ModelRow({
         {!model.downloaded && processing && (
           <div className="flex items-center justify-center gap-x-[10px] whitespace-nowrap">
             {!downloadPercentage && (
-              <CircleNotch
+              <LoaderCircle
+                strokeWidth={1.5}
                 size={16}
-                weight="bold"
                 className="text-theme-text-primary animate-spin"
               />
             )}
@@ -343,7 +343,12 @@ function RenderStatus({ model, isActiveModel }) {
   if (isActiveModel) {
     return (
       <div className="flex items-center justify-center gap-x-[10px] whitespace-nowrap">
-        <Circle size={8} weight="fill" className="text-green-500" />
+        <Circle
+          strokeWidth={1.5}
+          fill="currentColor"
+          size={8}
+          className="text-green-500"
+        />
         <p className="text-theme-text-primary text-sm">Active</p>
       </div>
     );

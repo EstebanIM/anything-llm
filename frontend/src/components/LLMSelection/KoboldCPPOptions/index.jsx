@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import System from "@/models/system";
 import PreLoader from "@/components/Preloader";
 import { KOBOLDCPP_COMMON_URLS } from "@/utils/constants";
-import { CaretDown, CaretUp, Info } from "@phosphor-icons/react";
+import { ChevronDown, ChevronUp, Info } from "lucide-react";
 import useProviderEndpointAutoDiscovery from "@/hooks/useProviderEndpointAutoDiscovery";
 import { Tooltip } from "react-tooltip";
 
@@ -48,6 +48,7 @@ export default function KoboldCPPOptions({ settings }) {
               Model context window
             </label>
             <Info
+              strokeWidth={1.5}
               size={18}
               className="text-theme-text-secondary cursor-pointer"
               data-tooltip-id="koboldcpp-context-window"
@@ -82,6 +83,7 @@ export default function KoboldCPPOptions({ settings }) {
               Max response tokens
             </label>
             <Info
+              strokeWidth={1.5}
               size={18}
               className="text-theme-text-secondary cursor-pointer"
               data-tooltip-id="koboldcpp-max-tokens"
@@ -121,9 +123,9 @@ export default function KoboldCPPOptions({ settings }) {
         >
           {showAdvancedControls ? "Hide" : "Show"} Manual Endpoint Input
           {showAdvancedControls ? (
-            <CaretUp size={14} className="ml-1" />
+            <ChevronUp strokeWidth={1.5} size={14} className="ml-1" />
           ) : (
-            <CaretDown size={14} className="ml-1" />
+            <ChevronDown strokeWidth={1.5} size={14} className="ml-1" />
           )}
         </button>
       </div>
@@ -137,6 +139,7 @@ export default function KoboldCPPOptions({ settings }) {
                   KoboldCPP Base URL
                 </label>
                 <Info
+                  strokeWidth={1.5}
                   size={18}
                   className="text-theme-text-secondary cursor-pointer"
                   data-tooltip-id="koboldcpp-base-url"

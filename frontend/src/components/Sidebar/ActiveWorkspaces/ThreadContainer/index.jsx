@@ -1,7 +1,7 @@
 import Workspace from "@/models/workspace";
 import paths from "@/utils/paths";
 import showToast from "@/utils/toast";
-import { Plus, CircleNotch, Trash } from "@phosphor-icons/react";
+import { Plus, LoaderCircle, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import ThreadItem from "./ThreadItem";
 import { useNavigate, useParams } from "react-router-dom";
@@ -218,14 +218,14 @@ function NewThreadButton({ workspace, onNewThread }) {
       <div className="flex w-full gap-x-2 items-center pl-4">
         <div className="bg-zinc-800 light:bg-slate-50 p-2 rounded-lg h-[24px] w-[24px] flex items-center justify-center">
           {loading ? (
-            <CircleNotch
-              weight="bold"
+            <LoaderCircle
+              strokeWidth={1.5}
               size={14}
               className="shrink-0 animate-spin text-white light:text-theme-text-primary"
             />
           ) : (
             <Plus
-              weight="bold"
+              strokeWidth={1.5}
               size={14}
               className="shrink-0 text-white light:text-theme-text-primary"
             />
@@ -257,8 +257,8 @@ function DeleteAllThreadButton({ ctrlPressed, threads, onDelete }) {
     >
       <div className="flex w-full gap-x-2 items-center pl-4">
         <div className="bg-transparent p-2 rounded-lg h-[24px] w-[24px] flex items-center justify-center">
-          <Trash
-            weight="bold"
+          <Trash2
+            strokeWidth={1.5}
             size={14}
             className="shrink-0 text-white light:text-red-500/50 group-hover:text-red-400"
           />

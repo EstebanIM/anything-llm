@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { SlidersHorizontal } from "@phosphor-icons/react";
+import { SlidersHorizontal } from "lucide-react";
 import useLoginMode from "@/hooks/useLoginMode";
 import TextSizeRow from "./TextSize";
 import MemoriesRow from "./Memories";
@@ -49,6 +49,7 @@ export default function ChatSettingsMenu({
         }`}
       >
         <SlidersHorizontal
+          strokeWidth={1.5}
           size={18}
           className={
             showMenu

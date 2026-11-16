@@ -1,7 +1,7 @@
 import useProviderEndpointAutoDiscovery from "@/hooks/useProviderEndpointAutoDiscovery";
 import System from "@/models/system";
 import { OMLX_COMMON_URLS } from "@/utils/constants";
-import { CaretDown, CaretUp, CircleNotch, Info } from "@phosphor-icons/react";
+import { ChevronDown, ChevronUp, LoaderCircle, Info } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Tooltip } from "react-tooltip";
 
@@ -43,9 +43,9 @@ export default function OMLXOptions({ settings }) {
         >
           {showAdvancedControls ? "Hide" : "Show"} advanced settings
           {showAdvancedControls ? (
-            <CaretUp size={14} className="ml-1" />
+            <ChevronUp strokeWidth={1.5} size={14} className="ml-1" />
           ) : (
-            <CaretDown size={14} className="ml-1" />
+            <ChevronDown strokeWidth={1.5} size={14} className="ml-1" />
           )}
         </button>
       </div>
@@ -60,6 +60,7 @@ export default function OMLXOptions({ settings }) {
                     OMLX Base URL
                   </label>
                   <Info
+                    strokeWidth={1.5}
                     size={18}
                     className="text-theme-text-secondary cursor-pointer"
                     data-tooltip-id="omlx-base-url"
@@ -78,7 +79,8 @@ export default function OMLXOptions({ settings }) {
                   />
                 </div>
                 {loading ? (
-                  <CircleNotch
+                  <LoaderCircle
+                    strokeWidth={1.5}
                     size={16}
                     className="text-theme-text-secondary animate-spin"
                   />
@@ -116,6 +118,7 @@ export default function OMLXOptions({ settings }) {
                   Model context window
                 </label>
                 <Info
+                  strokeWidth={1.5}
                   size={18}
                   className="text-theme-text-secondary cursor-pointer"
                   data-tooltip-id="omlx-model-context-window"
@@ -178,6 +181,7 @@ export default function OMLXOptions({ settings }) {
                   Authentication Token
                 </label>
                 <Info
+                  strokeWidth={1.5}
                   size={18}
                   className="text-theme-text-secondary cursor-pointer"
                   data-tooltip-id="omlx-authentication-token"

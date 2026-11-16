@@ -1,9 +1,5 @@
 import { useState } from "react";
-import {
-  ArrowClockwise,
-  CircleNotch,
-  MagnifyingGlass,
-} from "@phosphor-icons/react";
+import { RefreshCw, LoaderCircle, Search } from "lucide-react";
 
 export default function ModelTableLayout({
   children,
@@ -32,9 +28,9 @@ export default function ModelTableLayout({
       </div>
       <div className="flex w-full items-center gap-x-[16px]">
         <div className="relative flex-1 flex-grow">
-          <MagnifyingGlass
+          <Search
+            strokeWidth={1.5}
             size={16}
-            weight="bold"
             color="var(--theme-text-primary)"
             className="absolute left-[9px] top-[10px] text-theme-settings-input-placeholder peer-focus:invisible"
           />
@@ -59,10 +55,13 @@ export default function ModelTableLayout({
             className="border-none text-theme-text-secondary text-sm font-medium hover:bg-white/10 light:hover:bg-black/5 rounded-lg px-2 h-full flex items-center gap-x-1 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isRefreshing ? (
-              <CircleNotch className="w-4 h-4 text-theme-text-secondary animate-spin" />
+              <LoaderCircle
+                strokeWidth={1.5}
+                className="w-4 h-4 text-theme-text-secondary animate-spin"
+              />
             ) : (
-              <ArrowClockwise
-                weight="bold"
+              <RefreshCw
+                strokeWidth={1.5}
                 className="w-4 h-4 text-theme-text-secondary"
               />
             )}

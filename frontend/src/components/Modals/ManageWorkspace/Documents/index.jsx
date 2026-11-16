@@ -1,4 +1,4 @@
-import { ArrowsDownUp } from "@phosphor-icons/react";
+import { ArrowUpDown } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import Workspace from "../../../../models/workspace";
@@ -178,7 +178,10 @@ export default function DocumentSettings({ workspace, variant = "default" }) {
         moveToWorkspace={moveSelectedItemsToWorkspace}
       />
       <div className="upload-modal-arrow">
-        <ArrowsDownUp className="text-white text-base font-bold rotate-90 w-11 h-11" />
+        <ArrowUpDown
+          strokeWidth={1.5}
+          className="text-white text-base font-bold rotate-90 w-11 h-11"
+        />
       </div>
       <WorkspaceDirectory
         workspace={workspace}

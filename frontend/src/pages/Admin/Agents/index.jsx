@@ -7,14 +7,14 @@ import System from "@/models/system";
 import MCPServers from "@/models/mcpServers";
 import showToast from "@/utils/toast";
 import {
-  CaretLeft,
-  CaretRight,
+  ChevronLeft,
+  ChevronRight,
   Plug,
-  Robot,
+  Bot,
   Hammer,
-  FlowArrow,
+  Workflow,
   Package,
-} from "@phosphor-icons/react";
+} from "lucide-react";
 import ContextualSaveBar from "@/components/ContextualSaveBar";
 import { castToType } from "@/utils/types";
 import { FullScreenLoader } from "@/components/Preloader";
@@ -377,7 +377,7 @@ export default function AdminAgents() {
           >
             <div className="flex justify-between items-center">
               <div className="text-theme-text-primary flex items-center gap-x-2">
-                <Robot size={24} />
+                <Bot strokeWidth={1.5} size={24} />
                 <p className="text-lg font-medium">Agent Skills</p>
               </div>
               <AgentSkillSettings />
@@ -402,7 +402,7 @@ export default function AdminAgents() {
             {Object.keys(appIntegrationSkills).length > 0 && (
               <>
                 <div className="text-theme-text-primary flex items-center gap-x-2 mt-6">
-                  <Package size={24} />
+                  <Package strokeWidth={1.5} size={24} />
                   <p className="text-lg font-medium">App Integrations</p>
                 </div>
                 <SkillList
@@ -415,7 +415,7 @@ export default function AdminAgents() {
             )}
 
             <div className="text-theme-text-primary flex items-center gap-x-2">
-              <Plug size={24} />
+              <Plug strokeWidth={1.5} size={24} />
               <p className="text-lg font-medium">Custom Skills</p>
             </div>
             <ImportedSkillList
@@ -425,7 +425,7 @@ export default function AdminAgents() {
             />
 
             <div className="text-theme-text-primary flex items-center gap-x-2 mt-6">
-              <FlowArrow size={24} />
+              <Workflow strokeWidth={1.5} size={24} />
               <p className="text-lg font-medium">Agent Flows</p>
             </div>
             <AgentFlowsList
@@ -471,7 +471,7 @@ export default function AdminAgents() {
                     className="text-white/60 hover:text-white transition-colors duration-200"
                   >
                     <div className="flex items-center text-sky-400">
-                      <CaretLeft size={24} />
+                      <ChevronLeft strokeWidth={1.5} size={24} />
                       <div>Back</div>
                     </div>
                   </button>
@@ -550,7 +550,7 @@ export default function AdminAgents() {
                       </>
                     ) : (
                       <div className="flex flex-col items-center justify-center h-full text-theme-text-secondary">
-                        <Robot size={40} />
+                        <Bot strokeWidth={1.5} size={40} />
                         <p className="font-medium">
                           Select an Agent Skill, Agent Flow, or MCP Server
                         </p>
@@ -602,7 +602,7 @@ export default function AdminAgents() {
         <div className="flex flex-col min-w-[360px] h-[calc(100vh-90px)]">
           <div className="flex-none flex justify-between items-center mb-4">
             <div className="text-theme-text-primary flex items-center gap-x-2">
-              <Robot size={24} />
+              <Bot strokeWidth={1.5} size={24} />
               <p className="text-lg font-medium">Agent Skills</p>
             </div>
             <AgentSkillSettings />
@@ -630,7 +630,7 @@ export default function AdminAgents() {
               {Object.keys(appIntegrationSkills).length > 0 && (
                 <>
                   <div className="text-theme-text-primary flex items-center gap-x-2 mt-6">
-                    <Package size={24} />
+                    <Package strokeWidth={1.5} size={24} />
                     <p className="text-lg font-medium">App Integrations</p>
                   </div>
                   <SkillList
@@ -643,7 +643,7 @@ export default function AdminAgents() {
               )}
 
               <div className="text-theme-text-primary flex items-center gap-x-2 mt-4">
-                <Plug size={24} />
+                <Plug strokeWidth={1.5} size={24} />
                 <p className="text-lg font-medium">Custom Skills</p>
               </div>
               <ImportedSkillList
@@ -654,7 +654,7 @@ export default function AdminAgents() {
 
               <div className="text-theme-text-primary flex items-center justify-between gap-x-2 mt-4">
                 <div className="flex items-center gap-x-2">
-                  <FlowArrow size={24} />
+                  <Workflow strokeWidth={1.5} size={24} />
                   <p className="text-lg font-medium">Agent Flows</p>
                 </div>
                 {agentFlows.length === 0 ? (
@@ -662,7 +662,7 @@ export default function AdminAgents() {
                     to={paths.agents.builder()}
                     className="text-cta-button flex items-center gap-x-1 hover:underline"
                   >
-                    <Hammer size={16} />
+                    <Hammer strokeWidth={1.5} size={16} />
                     <p className="text-sm">Create Flow</p>
                   </Link>
                 ) : (
@@ -670,7 +670,7 @@ export default function AdminAgents() {
                     to={paths.agents.builder()}
                     className="text-theme-text-secondary hover:text-cta-button flex items-center gap-x-1"
                   >
-                    <Hammer size={16} />
+                    <Hammer strokeWidth={1.5} size={16} />
                     <p className="text-sm">Open Builder</p>
                   </Link>
                 )}
@@ -774,7 +774,7 @@ export default function AdminAgents() {
               </>
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-theme-text-secondary">
-                <Robot size={40} />
+                <Bot strokeWidth={1.5} size={40} />
                 <p className="font-medium">
                   Select an Agent Skill, Agent Flow, or MCP Server
                 </p>
@@ -858,9 +858,9 @@ function SkillList({
                   {activeSkills.includes(skill) ? "On" : "Off"}
                 </div>
               )}
-              <CaretRight
+              <ChevronRight
+                strokeWidth={1.5}
                 size={14}
-                weight="bold"
                 className="text-theme-text-secondary"
               />
             </div>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import System from "@/models/system";
 import { LEMONADE_COMMON_URLS } from "@/utils/constants";
-import { CircleNotch, Info } from "@phosphor-icons/react";
+import { LoaderCircle, Info } from "lucide-react";
 import { Tooltip } from "react-tooltip";
 import useProviderEndpointAutoDiscovery from "@/hooks/useProviderEndpointAutoDiscovery";
 import { originOnly } from "@/utils/url";
@@ -29,7 +29,10 @@ export default function LemonadeSpeechToTextOptions({ settings }) {
                 Base URL
               </label>
               {loading ? (
-                <CircleNotch className="w-4 h-4 text-theme-text-secondary animate-spin" />
+                <LoaderCircle
+                  strokeWidth={1.5}
+                  className="w-4 h-4 text-theme-text-secondary animate-spin"
+                />
               ) : (
                 <>
                   {!basePathValue.value && (
@@ -65,7 +68,11 @@ export default function LemonadeSpeechToTextOptions({ settings }) {
               data-tooltip-place="top"
               data-tooltip-delay-hide={800}
             >
-              <Info size={18} className="text-theme-text-secondary" />
+              <Info
+                strokeWidth={1.5}
+                size={18}
+                className="text-theme-text-secondary"
+              />
             </div>
           </div>
           <input
@@ -112,7 +119,11 @@ export default function LemonadeSpeechToTextOptions({ settings }) {
               data-tooltip-place="top"
               data-tooltip-delay-hide={800}
             >
-              <Info size={18} className="text-theme-text-secondary" />
+              <Info
+                strokeWidth={1.5}
+                size={18}
+                className="text-theme-text-secondary"
+              />
             </div>
           </div>
           <input

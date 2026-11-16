@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { Trash } from "@phosphor-icons/react";
+import { Trash2 } from "lucide-react";
 import { stripUuidAndJsonFromString } from "@/components/Modals/ManageWorkspace/Documents/Directory/utils";
 import moment from "moment";
 import System from "@/models/system";
@@ -35,7 +35,7 @@ export default function DocumentSyncQueueRow({ queue }) {
             onClick={handleDelete}
             className="border-none font-medium px-2 py-1 rounded-lg text-theme-text-primary hover:text-red-500"
           >
-            <Trash className="h-5 w-5" />
+            <Trash2 strokeWidth={1.5} className="h-5 w-5" />
           </button>
         </td>
       </tr>

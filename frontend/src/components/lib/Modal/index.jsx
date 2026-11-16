@@ -1,6 +1,6 @@
 import { Children } from "react";
 import { createPortal } from "react-dom";
-import { X } from "@phosphor-icons/react";
+import { X } from "lucide-react";
 import { useModalEscape } from "@/hooks/useModalEscape";
 import PasswordInput from "@/components/lib/PasswordInput";
 
@@ -93,7 +93,7 @@ export function ModalHeader({ title, subtitle, onClose, children }) {
             aria-label="Close"
             className="border-none bg-transparent p-1 -m-1 rounded-lg shrink-0 text-slate-50 light:text-slate-900 hover:bg-zinc-800 light:hover:bg-slate-100 transition-colors duration-200"
           >
-            <X size={16} weight="bold" />
+            <X strokeWidth={1.5} size={16} />
           </button>
         )}
       </div>

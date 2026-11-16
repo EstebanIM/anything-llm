@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Plus, X } from "@phosphor-icons/react";
+import { Plus, X } from "lucide-react";
 
 const NUMERIC_PROPERTIES = [
   "conversationTokenCount",
@@ -147,7 +147,7 @@ export default function CalculatedFields({
         aria-label={t("model-router.rule-form.add-condition")}
         className="border-none mt-3 bg-zinc-800 light:bg-slate-900 text-white light:text-white rounded-md p-1 hover:opacity-90 transition-opacity"
       >
-        <Plus size={16} weight="bold" />
+        <Plus strokeWidth={1.5} size={16} />
       </button>
     </div>
   );
@@ -250,7 +250,7 @@ function ConditionRow({
           aria-label={t("model-router.rule-form.remove-condition")}
           className={`border-none shrink-0 self-start ${showLabels ? "mt-[34px]" : "mt-2"} text-zinc-400 light:text-slate-500 hover:text-red-400 light:hover:text-red-500 transition-colors`}
         >
-          <X size={16} weight="bold" />
+          <X strokeWidth={1.5} size={16} />
         </button>
       )}
     </div>

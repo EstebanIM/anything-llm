@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import DBConnection from "./DBConnection";
-import { Plus, Database, CircleNotch } from "@phosphor-icons/react";
+import { Plus, Database, LoaderCircle } from "lucide-react";
 import NewSQLConnection from "./SQLConnectionModal";
 import { useModal } from "@/hooks/useModal";
 import SQLAgentImage from "@/media/agents/sql-agent.png";
@@ -99,9 +99,9 @@ export default function AgentSQLConnectorSelection({
           <div className="flex w-full justify-between items-center">
             <div className="flex items-center gap-x-2">
               <Database
+                strokeWidth={1.5}
                 size={24}
                 color="var(--theme-text-primary)"
-                weight="bold"
               />
               <label
                 htmlFor="name"
@@ -144,7 +144,8 @@ export default function AgentSQLConnectorSelection({
                 <div className="flex flex-col gap-y-3">
                   {loading ? (
                     <div className="flex items-center justify-center py-4">
-                      <CircleNotch
+                      <LoaderCircle
+                        strokeWidth={1.5}
                         size={24}
                         className="animate-spin text-theme-text-primary"
                       />
@@ -171,7 +172,7 @@ export default function AgentSQLConnectorSelection({
                     <div className="flex w-full gap-x-2 items-center p-4">
                       <div className="bg-theme-bg-secondary p-2 rounded-lg h-[24px] w-[24px] flex items-center justify-center">
                         <Plus
-                          weight="bold"
+                          strokeWidth={1.5}
                           size={14}
                           className="shrink-0 text-theme-text-primary"
                         />

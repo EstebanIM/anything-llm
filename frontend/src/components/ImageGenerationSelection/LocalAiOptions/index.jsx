@@ -1,4 +1,4 @@
-import { CircleNotch, Info } from "@phosphor-icons/react";
+import { LoaderCircle, Info } from "lucide-react";
 import { Tooltip } from "react-tooltip";
 import { Link } from "react-router-dom";
 import useProviderEndpointAutoDiscovery from "@/hooks/useProviderEndpointAutoDiscovery";
@@ -33,6 +33,7 @@ export default function LocalAiImageOptions({ settings }) {
                 LocalAI Base URL
               </label>
               <Info
+                strokeWidth={1.5}
                 size={18}
                 className="text-theme-text-secondary cursor-pointer"
                 data-tooltip-id="image-gen-localai-base-url"
@@ -63,7 +64,8 @@ export default function LocalAiImageOptions({ settings }) {
               </Tooltip>
             </div>
             {loading ? (
-              <CircleNotch
+              <LoaderCircle
+                strokeWidth={1.5}
                 size={16}
                 className="text-theme-text-secondary animate-spin"
               />

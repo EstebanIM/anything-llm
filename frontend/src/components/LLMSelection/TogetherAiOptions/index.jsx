@@ -1,5 +1,5 @@
 import System from "@/models/system";
-import { CaretDown, CaretUp } from "@phosphor-icons/react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState, useEffect } from "react";
 
 export default function TogetherAiOptions({ settings }) {
@@ -47,9 +47,9 @@ function AdvancedControls({ settings }) {
       >
         {showAdvancedControls ? "Hide" : "Show"} advanced controls
         {showAdvancedControls ? (
-          <CaretUp size={14} className="ml-1" />
+          <ChevronUp strokeWidth={1.5} size={14} className="ml-1" />
         ) : (
-          <CaretDown size={14} className="ml-1" />
+          <ChevronDown strokeWidth={1.5} size={14} className="ml-1" />
         )}
       </button>
       <div hidden={!showAdvancedControls}>

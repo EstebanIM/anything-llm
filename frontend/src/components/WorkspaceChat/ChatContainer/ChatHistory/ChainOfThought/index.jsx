@@ -1,4 +1,4 @@
-import { Brain, CaretRight } from "@phosphor-icons/react";
+import { Brain, ChevronRight } from "lucide-react";
 import {
   createContext,
   memo,
@@ -99,7 +99,7 @@ export function ChainOfThoughtHeader({
       )}
       {...props}
     >
-      {icon ?? <Brain className="size-5 flex-shrink-0" />}
+      {icon ?? <Brain strokeWidth={1.5} className="size-5 flex-shrink-0" />}
       {/*
         No `flex-1` here: the caret should sit next to the label rather than
         out at the container edge. The label still shrinks and truncates when
@@ -117,7 +117,8 @@ export function ChainOfThoughtHeader({
       {trailing && (
         <span className="flex-shrink-0 tabular-nums">{trailing}</span>
       )}
-      <CaretRight
+      <ChevronRight
+        strokeWidth={1.5}
         className={cn(
           "size-3 flex-shrink-0 transition-transform",
           isOpen ? "rotate-90" : "rotate-0"

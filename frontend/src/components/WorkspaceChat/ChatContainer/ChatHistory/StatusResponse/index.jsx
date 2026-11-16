@@ -1,7 +1,7 @@
 import { memo, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import DOMPurify from "dompurify";
-import { Brain } from "@phosphor-icons/react";
+import { Brain } from "lucide-react";
 import AgentAnimation from "@/media/animations/agent-animation.webm";
 import AgentStatic from "@/media/animations/agent-static.png";
 import { renderThoughtMarkdown } from "@/utils/chat/markdown";
@@ -224,7 +224,8 @@ const ThoughtNode = memo(function ThoughtNode({ content }) {
 function ActivityIcon({ active, thinking, hasStatusNodes }) {
   // Thought states use the same brain glyph as the expanded thought nodes;
   // the shimmering header label already signals activity while thinking.
-  if (active && thinking) return <Brain className="size-5 flex-shrink-0" />;
+  if (active && thinking)
+    return <Brain strokeWidth={1.5} className="size-5 flex-shrink-0" />;
 
   if (active)
     return (
@@ -249,5 +250,5 @@ function ActivityIcon({ active, thinking, hasStatusNodes }) {
       />
     );
 
-  return <Brain className="size-5 flex-shrink-0" />;
+  return <Brain strokeWidth={1.5} className="size-5 flex-shrink-0" />;
 }

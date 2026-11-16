@@ -1,5 +1,5 @@
 import { Tooltip } from "react-tooltip";
-import { Brain, CheckCircle } from "@phosphor-icons/react";
+import { Brain, CircleCheck } from "lucide-react";
 import LLMSelectorModal from "./index";
 import { useTheme } from "@/hooks/useTheme";
 import { useRef, useEffect, useState } from "react";
@@ -101,9 +101,15 @@ export default function LLMSelectorAction({ workspaceSlug = null }) {
         className={`border-none relative flex justify-center items-center opacity-60 hover:opacity-100 light:opacity-100 light:hover:opacity-60 cursor-pointer`}
       >
         {saved ? (
-          <CheckCircle className="w-[20px] h-[20px] pointer-events-none text-green-400" />
+          <CircleCheck
+            strokeWidth={1.5}
+            className="w-[20px] h-[20px] pointer-events-none text-green-400"
+          />
         ) : (
-          <Brain className="w-[20px] h-[20px] pointer-events-none text-[var(--theme-sidebar-footer-icon-fill)]" />
+          <Brain
+            strokeWidth={1.5}
+            className="w-[20px] h-[20px] pointer-events-none text-[var(--theme-sidebar-footer-icon-fill)]"
+          />
         )}
       </div>
       <Tooltip

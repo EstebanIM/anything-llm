@@ -3,7 +3,7 @@ import Sidebar from "@/components/SettingsSidebar";
 import { isMobile } from "react-device-detect";
 import * as Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
-import { PlusCircle } from "@phosphor-icons/react";
+import { CirclePlus } from "lucide-react";
 import Admin from "@/models/admin";
 import ApiKeyRow from "./ApiKeyRow";
 import NewApiKeyModal from "./NewApiKeyModal";
@@ -68,7 +68,7 @@ export default function AdminApiKeys() {
               onClick={openModal}
               className="mt-3 mr-0 mb-4 md:-mb-14 z-10"
             >
-              <PlusCircle className="h-4 w-4" weight="bold" />{" "}
+              <CirclePlus strokeWidth={1.5} className="h-4 w-4" />{" "}
               {t("api.generate")}
             </CTAButton>
           </div>

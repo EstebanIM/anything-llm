@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowUUpLeft, Eye, PushPin } from "@phosphor-icons/react";
+import { Undo2, Eye, Pin } from "lucide-react";
 import PreLoader from "@/components/Preloader";
 import EmbeddingFileRow from "@/components/EmbeddingFileRow";
 import MobileWorkspaceFileRow from "./MobileWorkspaceFileRow";
@@ -152,7 +152,7 @@ export default function MobileWorkspaceDirectory({
         {actions && (
           <>
             <MobileSheetOption
-              icon={PushPin}
+              icon={Pin}
               label={
                 actions.pinned
                   ? t("connectors.directory.unpin")
@@ -173,7 +173,7 @@ export default function MobileWorkspaceDirectory({
             )}
             <MobileSheetOption
               danger
-              icon={ArrowUUpLeft}
+              icon={Undo2}
               label={t("connectors.directory.remove-from-workspace")}
               onClick={() => runAction(() => onRemoveItems([actions.item.id]))}
             />

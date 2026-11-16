@@ -1,6 +1,6 @@
 import React, { useState, useEffect, memo } from "react";
 import { createPortal } from "react-dom";
-import { X } from "@phosphor-icons/react";
+import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 import Workspace from "../../../models/workspace";
@@ -53,7 +53,7 @@ const ManageWorkspace = ({ hideModal = noop, providedSlug = null }) => {
             aria-label="Close"
             className="border-none bg-transparent w-11 h-11 shrink-0 flex items-center justify-center rounded-xl text-slate-50 light:text-slate-900 active:bg-zinc-800 light:active:bg-slate-100"
           >
-            <X size={20} weight="bold" />
+            <X strokeWidth={1.5} size={20} />
           </button>
         </div>
         <EmbeddingProgressProvider>
@@ -75,7 +75,7 @@ const ManageWorkspace = ({ hideModal = noop, providedSlug = null }) => {
               type="button"
               className="z-29 border-none bg-transparent rounded-lg text-sm p-1.5 ml-auto inline-flex items-center text-zinc-50 light:text-slate-900 hover:bg-zinc-800 light:hover:bg-slate-100 transition-colors duration-200"
             >
-              <X size={20} weight="bold" />
+              <X strokeWidth={1.5} size={20} />
             </button>
           </div>
 
