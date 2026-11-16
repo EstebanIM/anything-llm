@@ -1,6 +1,6 @@
 import System from "@/models/system";
 import showToast from "@/utils/toast";
-import { Gear, Plug } from "@phosphor-icons/react";
+import { Settings, Plug } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import Toggle from "@/components/lib/Toggle";
 import { formatSkillName } from "../formatSkillName";
@@ -113,7 +113,7 @@ export default function ImportedSkillConfig({
         <div className="flex flex-col gap-y-[18px] max-w-[500px]">
           <div className="flex w-full justify-between items-center">
             <div className="flex items-center gap-x-2">
-              <Plug size={24} weight="bold" className="text-white" />
+              <Plug strokeWidth={1.5} size={24} className="text-white" />
               <label htmlFor="name" className="text-white text-md font-bold">
                 {formatSkillName(config.name)}
               </label>
@@ -233,7 +233,7 @@ function ManageSkillMenu({ config, setImportedSkills }) {
         onClick={() => setOpen(!open)}
         className="p-1.5 rounded-lg text-white hover:bg-theme-action-menu-item-hover transition-colors duration-300"
       >
-        <Gear className="h-5 w-5" weight="bold" />
+        <Settings strokeWidth={1.5} className="h-5 w-5" />
       </button>
       {open && (
         <div className="absolute w-[100px] -top-1 left-7 mt-1 border-[1.5px] border-white/40 rounded-lg bg-theme-action-menu-bg flex flex-col shadow-[0_4px_14px_rgba(0,0,0,0.25)] text-white z-99 md:z-10">

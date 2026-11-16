@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CircleNotch } from "@phosphor-icons/react";
+import { LoaderCircle } from "lucide-react";
 import Modal, {
   ModalHeader,
   ModalBody,
@@ -196,7 +196,10 @@ export default function RuleForm({
           <ModalPrimaryButton type="submit" disabled={loading}>
             {loading ? (
               <>
-                <CircleNotch className="h-4 w-4 animate-spin" />
+                <LoaderCircle
+                  strokeWidth={1.5}
+                  className="h-4 w-4 animate-spin"
+                />
                 {t("model-router.rule-form.saving")}
               </>
             ) : isEditing ? (

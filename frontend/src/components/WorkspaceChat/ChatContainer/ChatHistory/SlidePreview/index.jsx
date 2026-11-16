@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
-import { CaretLeft, CaretRight } from "@phosphor-icons/react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { openImageLightbox } from "@/components/ImageLightbox";
 
 const THUMB_W = 128;
@@ -121,7 +121,7 @@ function SlidePreviewCard({ props }) {
 }
 
 function ScrollButton({ direction, onClick }) {
-  const Icon = direction < 0 ? CaretLeft : CaretRight;
+  const Icon = direction < 0 ? ChevronLeft : ChevronRight;
   return (
     <button
       type="button"
@@ -131,7 +131,7 @@ function ScrollButton({ direction, onClick }) {
         direction < 0 ? "left-3" : "right-3"
       } flex items-center justify-center w-8 h-8 rounded-full border-none cursor-pointer shadow-md bg-zinc-900/80 hover:bg-zinc-900 text-white light:bg-white/90 light:hover:bg-white light:text-slate-800 light:ring-1 light:ring-slate-300 transition-colors`}
     >
-      <Icon size={16} weight="bold" />
+      <Icon strokeWidth={1.5} size={16} />
     </button>
   );
 }

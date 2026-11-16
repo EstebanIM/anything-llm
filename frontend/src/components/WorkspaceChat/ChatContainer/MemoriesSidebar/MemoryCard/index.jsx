@@ -1,6 +1,6 @@
 import moment from "moment";
 import { useEffect, useRef, useState } from "react";
-import { DotsThreeVertical } from "@phosphor-icons/react";
+import { EllipsisVertical } from "lucide-react";
 import { useMemoriesContext, LIMITS } from "../MemoriesContext";
 import CardMenu from "./CardMenu";
 
@@ -55,7 +55,7 @@ export default function MemoryCard({ memory }) {
         onClick={() => setMenuOpen(!menuOpen)}
         className="shrink-0 border-none bg-transparent cursor-pointer text-zinc-400 light:text-slate-400 hover:text-zinc-50 light:hover:text-slate-900 transition-colors p-0"
       >
-        <DotsThreeVertical size={20} weight="bold" />
+        <EllipsisVertical strokeWidth={1.5} size={20} />
       </button>
       {menuOpen && (
         <CardMenu

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import showToast from "@/utils/toast";
-import { CaretDown, Gear, Warning } from "@phosphor-icons/react";
+import { ChevronDown, Settings, TriangleAlert } from "lucide-react";
 import MCPLogo from "@/media/agents/mcp-logo.svg";
 import { titleCase } from "text-case";
 import MCPServers from "@/models/mcpServers";
@@ -76,7 +76,7 @@ function ManageServerMenu({ server, toggleServer, onDelete }) {
         onClick={() => setOpen(!open)}
         className="p-1.5 rounded-lg text-white hover:bg-theme-action-menu-item-hover transition-colors duration-300"
       >
-        <Gear className="h-5 w-5" weight="bold" />
+        <Settings strokeWidth={1.5} className="h-5 w-5" />
       </button>
       {open && (
         <div className="absolute w-[150px] top-1 left-7 mt-1 border-[1.5px] border-white/40 rounded-lg bg-theme-action-menu-bg flex flex-col shadow-[0_4px_14px_rgba(0,0,0,0.25)] text-white z-99 md:z-10">
@@ -164,7 +164,10 @@ function ToolCountWarningBanner({ server, enabledToolCount }) {
 
   return (
     <div className="flex items-center gap-x-2 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-      <Warning className="h-5 w-5 text-yellow-500 shrink-0" weight="fill" />
+      <TriangleAlert
+        strokeWidth={1.5}
+        className="h-5 w-5 text-yellow-500 shrink-0"
+      />
       <p className="text-yellow-500 text-sm">
         <Trans
           i18nKey={`agent.mcp.tool-count-warning`}
@@ -275,7 +278,7 @@ function ServerTool({ serverName, tool, enabled, onToggle }) {
               open ? "rotate-180" : ""
             }`}
           >
-            <CaretDown size={16} />
+            <ChevronDown strokeWidth={1.5} size={16} />
           </div>
         </div>
       </div>

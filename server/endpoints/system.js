@@ -22,6 +22,7 @@ const {
 } = require("../utils/http");
 const {
   handleAssetUpload,
+  handleFaviconUpload,
   handlePfpUpload,
   handleAudioUpload,
 } = require("../utils/files/multer");
@@ -39,8 +40,20 @@ const {
   renameLogoFile,
   removeCustomLogo,
   LOGO_FILENAME,
+  normalizeLogoTheme,
+  currentLogoFilenameForTheme,
   isDefaultFilename,
 } = require("../utils/files/logo");
+const {
+  determineFaviconFilepath,
+  extractInternalFaviconFilename,
+  faviconResponseHeaders,
+  fetchFavicon,
+  internalFaviconUrl,
+  isAllowedFaviconUpload,
+  removeCustomFavicon,
+  renameFaviconFile,
+} = require("../utils/files/favicon");
 const { Telemetry } = require("../models/telemetry");
 const { ApiKey } = require("../models/apiKeys");
 const { getCustomModels } = require("../utils/helpers/customModels");
@@ -676,10 +689,11 @@ function systemEndpoints(app) {
         }
 
         const { username, password } = reqBody(request);
+        // The first account owns the instance, so it starts as superadmin.
         const { user, error } = await User.create({
           username,
           password,
-          role: ROLES.admin,
+          role: ROLES.superadmin,
         });
 
         if (error || !user) {
@@ -736,9 +750,10 @@ function systemEndpoints(app) {
 
   app.get("/system/logo", async function (request, response) {
     try {
-      const darkMode = request?.query?.theme !== "light";
+      const theme = normalizeLogoTheme(request?.query?.theme);
+      const darkMode = theme === "dark";
       const defaultFilename = getDefaultFilename(darkMode);
-      const logoPath = await determineLogoFilepath(defaultFilename);
+      const logoPath = await determineLogoFilepath(defaultFilename, theme);
       const { found, buffer, size, mime } = fetchLogo(logoPath);
 
       if (!found) {
@@ -746,7 +761,7 @@ function systemEndpoints(app) {
         return;
       }
 
-      const currentLogoFilename = await SystemSettings.currentLogoFilename();
+      const currentLogoFilename = await currentLogoFilenameForTheme(theme);
       response.writeHead(200, {
         "Access-Control-Expose-Headers":
           "Content-Disposition,X-Is-Custom-Logo,Content-Type,Content-Length",
@@ -811,6 +826,67 @@ function systemEndpoints(app) {
     }
   });
 
+  // No middleware protection in order to get this on the login page
+  app.get("/system/login-powered-by", async (_, response) => {
+    try {
+      const loginPoweredBy =
+        (
+          await SystemSettings.get({
+            label: "login_powered_by",
+          })
+        )?.value ?? null;
+      response.status(200).json({ loginPoweredBy });
+    } catch (error) {
+      console.error("Error fetching login powered-by text:", error);
+      response.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // No middleware - needed on login page before user authenticates
+  app.get("/system/browser-appearance", async (_, response) => {
+    try {
+      const title = await SystemSettings.getValueOrFallback(
+        { label: "meta_page_title" },
+        null
+      );
+      const favicon = await SystemSettings.getValueOrFallback(
+        { label: "meta_page_favicon" },
+        null
+      );
+      response.status(200).json({ title, favicon });
+    } catch (error) {
+      console.error("Error fetching browser appearance:", error);
+      response.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // No middleware - favicon must be available before authentication.
+  app.get("/system/favicon", async (request, response) => {
+    try {
+      const requestedFilename = String(request.query?.filename || "");
+      const currentFavicon = await SystemSettings.getValueOrFallback(
+        { label: "meta_page_favicon" },
+        null
+      );
+      const currentFilename = extractInternalFaviconFilename(currentFavicon);
+      if (!requestedFilename || requestedFilename !== currentFilename)
+        return response.sendStatus(404).end();
+
+      const faviconPath = determineFaviconFilepath(requestedFilename);
+      if (!faviconPath) return response.sendStatus(404).end();
+
+      const { found, buffer, size } = fetchFavicon(faviconPath);
+      if (!found) return response.sendStatus(404).end();
+
+      response.writeHead(200, faviconResponseHeaders(faviconPath, size));
+      response.end(buffer);
+      return;
+    } catch (error) {
+      console.error("Error processing the favicon request:", error);
+      response.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   app.get(
     "/system/pfp/:id",
     [validatedRequest, flexUserRoleValid([ROLES.all])],
@@ -846,6 +922,12 @@ function systemEndpoints(app) {
     async function (request, response) {
       try {
         const user = await userFromSession(request, response);
+        if (user?.role === ROLES.default) {
+          return response.status(403).json({
+            success: false,
+            error: "Default users cannot change their profile picture.",
+          });
+        }
         const uploadedFileName = request.randomFileName;
         if (!uploadedFileName) {
           return response.status(400).json({ message: "File upload failed." });
@@ -937,6 +1019,12 @@ function systemEndpoints(app) {
     async function (request, response) {
       try {
         const user = await userFromSession(request, response);
+        if (user?.role === ROLES.default) {
+          return response.status(403).json({
+            success: false,
+            error: "Default users cannot change their profile picture.",
+          });
+        }
         const userRecord = await User.get({ id: user.id });
         const oldPfpFilename = userRecord.pfpFilename;
 
@@ -987,11 +1075,14 @@ function systemEndpoints(app) {
 
       try {
         const newFilename = await renameLogoFile(request.file.originalname);
-        const existingLogoFilename = await SystemSettings.currentLogoFilename();
+        const theme = normalizeLogoTheme(request.body?.theme);
+        const existingLogoFilename =
+          await SystemSettings.currentLogoFilename(theme);
         await removeCustomLogo(existingLogoFilename);
 
+        const logoSettingLabel = SystemSettings.logoFilenameLabel(theme);
         const { success, error } = await SystemSettings._updateSettings({
-          logo_filename: newFilename,
+          [logoSettingLabel]: newFilename,
         });
 
         return response.status(success ? 200 : 500).json({
@@ -1006,11 +1097,99 @@ function systemEndpoints(app) {
     }
   );
 
-  app.get("/system/is-default-logo", async (_, response) => {
+  app.post(
+    "/system/upload-favicon",
+    [
+      validatedRequest,
+      flexUserRoleValid([ROLES.admin, ROLES.manager]),
+      handleFaviconUpload,
+    ],
+    async (request, response) => {
+      if (!request?.file || !request?.file.originalname) {
+        return response
+          .status(400)
+          .json({ message: "No favicon file provided." });
+      }
+
+      if (!isAllowedFaviconUpload(request.file)) {
+        fs.rmSync(request.file.path, { force: true });
+        return response.status(400).json({
+          message: "Invalid favicon file. Please upload an image or .ico file.",
+        });
+      }
+
+      let uploadedFaviconUrl = null;
+      try {
+        const currentFavicon = await SystemSettings.getValueOrFallback(
+          { label: "meta_page_favicon" },
+          null
+        );
+        const newFilename = await renameFaviconFile(request.file.filename);
+        uploadedFaviconUrl = internalFaviconUrl(newFilename);
+        const { success, error } = await SystemSettings.updateSettings({
+          meta_page_favicon: uploadedFaviconUrl,
+        });
+
+        if (!success) {
+          await removeCustomFavicon(uploadedFaviconUrl);
+          return response.status(500).json({
+            success: false,
+            error: error || "Failed to update with new favicon.",
+          });
+        }
+
+        await removeCustomFavicon(currentFavicon);
+        return response.status(200).json({
+          success: true,
+          favicon: uploadedFaviconUrl,
+          message: "Favicon uploaded successfully.",
+        });
+      } catch (error) {
+        if (uploadedFaviconUrl) await removeCustomFavicon(uploadedFaviconUrl);
+        console.error("Error processing the favicon upload:", error);
+        response.status(500).json({ message: "Error uploading the favicon." });
+      }
+    }
+  );
+
+  app.delete(
+    "/system/favicon",
+    [validatedRequest, flexUserRoleValid([ROLES.admin, ROLES.manager])],
+    async (_, response) => {
+      try {
+        const currentFavicon = await SystemSettings.getValueOrFallback(
+          { label: "meta_page_favicon" },
+          null
+        );
+        const { success, error } = await SystemSettings.updateSettings({
+          meta_page_favicon: null,
+        });
+
+        if (!success) {
+          return response.status(500).json({
+            success: false,
+            error: error || "Failed to remove favicon.",
+          });
+        }
+
+        await removeCustomFavicon(currentFavicon);
+        return response.status(200).json({
+          success: true,
+          message: "Favicon removed successfully.",
+        });
+      } catch (error) {
+        console.error("Error processing the favicon removal:", error);
+        response.status(500).json({ message: "Error removing the favicon." });
+      }
+    }
+  );
+
+  app.get("/system/is-default-logo", async (request, response) => {
     try {
-      const currentLogoFilename = await SystemSettings.currentLogoFilename();
+      const theme = normalizeLogoTheme(request?.query?.theme);
+      const currentLogoFilename = await currentLogoFilenameForTheme(theme);
       const isDefaultLogo =
-        !currentLogoFilename || currentLogoFilename === LOGO_FILENAME;
+        !currentLogoFilename || isDefaultFilename(currentLogoFilename);
       response.status(200).json({ isDefaultLogo });
     } catch (error) {
       console.error("Error processing the logo request:", error);
@@ -1021,12 +1200,22 @@ function systemEndpoints(app) {
   app.get(
     "/system/remove-logo",
     [validatedRequest, flexUserRoleValid([ROLES.admin, ROLES.manager])],
-    async (_request, response) => {
+    async (request, response) => {
       try {
-        const currentLogoFilename = await SystemSettings.currentLogoFilename();
+        const theme = request?.query?.theme
+          ? normalizeLogoTheme(request.query.theme)
+          : null;
+        const themeLogoFilename = theme
+          ? await SystemSettings.currentLogoFilename(theme)
+          : null;
+        const legacyLogoFilename = await SystemSettings.currentLogoFilename();
+        const currentLogoFilename = themeLogoFilename || legacyLogoFilename;
         await removeCustomLogo(currentLogoFilename);
+        const updates = themeLogoFilename
+          ? { [SystemSettings.logoFilenameLabel(theme)]: null }
+          : { logo_filename: LOGO_FILENAME };
         const { success, error } = await SystemSettings._updateSettings({
-          logo_filename: LOGO_FILENAME,
+          ...updates,
         });
 
         return response.status(success ? 200 : 500).json({
@@ -1264,8 +1453,9 @@ function systemEndpoints(app) {
   // from the UI.
   app.post("/system/user", [validatedRequest], async (request, response) => {
     try {
+      const bcrypt = require("bcryptjs");
       const sessionUser = await userFromSession(request, response);
-      const { username, password, bio } = reqBody(request);
+      const { username, password, currentPassword, bio } = reqBody(request);
       const id = Number(sessionUser.id);
 
       if (!id) {
@@ -1273,10 +1463,35 @@ function systemEndpoints(app) {
         return;
       }
 
+      // Default-role users cannot change their own username.
+      if (sessionUser.role === ROLES.default && username) {
+        response.status(403).json({
+          success: false,
+          error: "Default users cannot change their username.",
+        });
+        return;
+      }
+
+      // Changing your own password requires confirming the current one.
+      // The session user is filtered of its password hash, so it is refetched here.
+      if (password) {
+        const dbUser = await User._get({ id });
+        if (
+          !currentPassword ||
+          !bcrypt.compareSync(String(currentPassword), dbUser.password)
+        ) {
+          response.status(403).json({
+            success: false,
+            error: "Your current password is incorrect.",
+          });
+          return;
+        }
+      }
+
       const updates = {};
       // If the username is being changed, validate it.
       // Otherwise, do not attempt to validate it to allow existing users to keep their username if not changing it.
-      if (username !== sessionUser.username)
+      if (username && username !== sessionUser.username)
         updates.username = User.validations.username(String(username));
       if (password) updates.password = String(password);
       if (bio || bio === "") updates.bio = String(bio);

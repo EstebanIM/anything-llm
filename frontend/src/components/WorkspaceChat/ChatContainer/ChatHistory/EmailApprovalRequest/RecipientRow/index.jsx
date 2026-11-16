@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X } from "@phosphor-icons/react";
+import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 /**
@@ -107,7 +107,7 @@ function RecipientChip({ email, onRemove }) {
           })}
           className="border-none bg-transparent p-0 flex items-center text-zinc-300 light:text-slate-800 hover:text-white light:hover:text-slate-950"
         >
-          <X size={12} weight="bold" />
+          <X strokeWidth={1.5} size={12} />
         </button>
       )}
     </span>

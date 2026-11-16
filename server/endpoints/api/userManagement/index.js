@@ -5,6 +5,7 @@ const {
   simpleSSOEnabled,
 } = require("../../../utils/middleware/simpleSSOEnabled");
 const { validApiKey } = require("../../../utils/middleware/validApiKey");
+const { ROLES } = require("../../../utils/middleware/multiUserProtected");
 
 function apiUserManagementEndpoints(app) {
   if (!app) return;
@@ -105,6 +106,11 @@ function apiUserManagementEndpoints(app) {
         const user = await User.get({ id: Number(userId) });
         if (!user)
           return response.status(404).json({ error: "User not found" });
+        // API keys act as an admin and cannot sign in as a superadmin.
+        if (user.role === ROLES.superadmin)
+          return response
+            .status(403)
+            .json({ error: "Cannot issue a login token for this user." });
 
         const { token, error } = await TemporaryAuthToken.issue(userId);
         if (error) return response.status(500).json({ error: error });

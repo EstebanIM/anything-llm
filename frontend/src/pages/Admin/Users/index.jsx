@@ -3,7 +3,7 @@ import Sidebar from "@/components/SettingsSidebar";
 import { isMobile } from "react-device-detect";
 import * as Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
-import { UserPlus } from "@phosphor-icons/react";
+import { UserPlus } from "lucide-react";
 import Admin from "@/models/admin";
 import UserRow from "./UserRow";
 import useUser from "@/hooks/useUser";
@@ -41,7 +41,7 @@ export default function AdminUsers() {
               onClick={openModal}
               className="mt-3 mr-0 mb-4 md:-mb-6 z-10"
             >
-              <UserPlus className="h-4 w-4" weight="bold" /> Add user
+              <UserPlus strokeWidth={1.5} className="h-4 w-4" /> Add user
             </CTAButton>
           </div>
           <div className="overflow-x-auto">
@@ -122,8 +122,14 @@ const ROLE_HINT = {
     "Cannot modify LLM, vectorDB, embedding, or other connections.",
   ],
   admin: [
+    "Can access standard admin settings and workspace management.",
+    "Can create and manage admin, manager, and default users.",
+    "Cannot create or modify super administrators.",
+  ],
+  superadmin: [
     "Highest user level privilege.",
-    "Can see and do everything across the system.",
+    "Can access all configuration, personalization, and workspace data.",
+    "Can create and manage users at every role level, including super administrators.",
   ],
 };
 
@@ -145,7 +151,7 @@ export function RoleHintDisplay({ role }) {
 }
 
 export function MessageLimitInput({ enabled, limit, updateState, role }) {
-  if (role === "admin") return null;
+  if (["admin", "superadmin"].includes(role)) return null;
   return (
     <div>
       <Toggle

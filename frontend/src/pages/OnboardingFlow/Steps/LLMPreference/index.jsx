@@ -1,4 +1,4 @@
-import { MagnifyingGlass } from "@phosphor-icons/react";
+import { Search } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 import OpenAiLogo from "@/media/llmprovider/openai.png";
 import GenericOpenAiLogo from "@/media/llmprovider/generic-openai.png";
@@ -451,9 +451,9 @@ export default function LLMPreference({
         <div className="w-full relative border-theme-chat-input-border shadow border-2 rounded-lg text-white">
           <div className="w-full p-4 absolute top-0 rounded-t-lg backdrop-blur-sm">
             <div className="w-full flex items-center sticky top-0">
-              <MagnifyingGlass
+              <Search
+                strokeWidth={1.5}
                 size={16}
-                weight="bold"
                 className="absolute left-4 z-30 text-theme-text-primary"
               />
               <input

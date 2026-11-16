@@ -7,7 +7,7 @@ import Modal, {
   ModalPrimaryButton,
   ModalSecondaryButton,
 } from "@/components/lib/Modal";
-import { WarningOctagon } from "@phosphor-icons/react";
+import { OctagonAlert } from "lucide-react";
 import { DB_LOGOS } from "./DBConnection";
 import System from "@/models/system";
 import showToast from "@/utils/toast";
@@ -299,7 +299,7 @@ export default function SQLConnectionModal({
           </p>
           <div className="flex flex-col w-full">
             <div className="border border-red-800 bg-zinc-800 light:bg-red-200/50 p-4 rounded-lg flex items-center gap-x-2 text-sm text-red-400 light:text-red-500">
-              <WarningOctagon size={28} className="shrink-0" />
+              <OctagonAlert strokeWidth={1.5} size={28} className="shrink-0" />
               <p>
                 <b>WARNING:</b> The SQL agent has been <i>instructed</i> to only
                 perform non-modifying queries. This <b>does not</b> prevent a

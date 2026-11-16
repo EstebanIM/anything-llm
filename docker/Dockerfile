@@ -143,9 +143,15 @@ WORKDIR /app
 # This avoids esbuild crashing under QEMU when cross-compiling.
 # The output (static HTML/CSS/JS) is platform-independent.
 FROM --platform=$BUILDPLATFORM node:24-slim AS frontend-build
+# Optional npm registry mirror for networks that cannot reach registry.yarnpkg.com.
+# Lockfile integrity hashes are still checked, only the download host changes.
+ARG YARN_REGISTRY=""
 WORKDIR /app/frontend
 COPY ./frontend/package.json ./frontend/yarn.lock ./
-RUN yarn install --network-timeout 100000 && yarn cache clean
+RUN if [ -n "$YARN_REGISTRY" ]; then \
+      sed -i "s#https://registry.yarnpkg.com#${YARN_REGISTRY}#g; s#https://registry.npmjs.org#${YARN_REGISTRY}#g" yarn.lock; \
+    fi && \
+    yarn install --network-timeout 100000 && yarn cache clean
 COPY ./frontend/ ./
 RUN yarn build
 WORKDIR /app
@@ -153,16 +159,23 @@ WORKDIR /app
 # Install server layer
 # Also pull and build collector deps (chromium issues prevent bad bindings)
 FROM build AS backend-build
+ARG YARN_REGISTRY=""
 COPY --chown=anythingllm:anythingllm ./server /app/server/
 WORKDIR /app/server
-RUN yarn install --production --network-timeout 100000 && yarn cache clean
+RUN if [ -n "$YARN_REGISTRY" ]; then \
+      sed -i "s#https://registry.yarnpkg.com#${YARN_REGISTRY}#g; s#https://registry.npmjs.org#${YARN_REGISTRY}#g" yarn.lock; \
+    fi && \
+    yarn install --production --network-timeout 100000 && yarn cache clean
 WORKDIR /app
 
 # Install collector dependencies
 COPY --chown=anythingllm:anythingllm ./collector/ ./collector/
 WORKDIR /app/collector
 ENV PUPPETEER_DOWNLOAD_BASE_URL=https://storage.googleapis.com/chrome-for-testing-public
-RUN yarn install --production --network-timeout 100000 && yarn cache clean
+RUN if [ -n "$YARN_REGISTRY" ]; then \
+      sed -i "s#https://registry.yarnpkg.com#${YARN_REGISTRY}#g; s#https://registry.npmjs.org#${YARN_REGISTRY}#g" yarn.lock; \
+    fi && \
+    yarn install --production --network-timeout 100000 && yarn cache clean
 
 WORKDIR /app
 USER anythingllm

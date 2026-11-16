@@ -35,7 +35,7 @@ import DOMPurify from "dompurify";
 import { memo, useCallback, useState } from "react";
 import { saveAs } from "file-saver";
 import { useGenerateImage } from "recharts-to-png";
-import { CircleNotch, DownloadSimple } from "@phosphor-icons/react";
+import { LoaderCircle, Download } from "lucide-react";
 
 const dataFormatter = (number) => {
   return Intl.NumberFormat("us").format(number).toString();
@@ -461,13 +461,14 @@ function DownloadGraph({ onClick }) {
       <div className="flex flex-col items-center">
         <div className="p-1 rounded-full border-none">
           {loading ? (
-            <CircleNotch
+            <LoaderCircle
+              strokeWidth={1.5}
               className="text-theme-text-primary w-5 h-5 animate-spin"
               aria-label="Downloading image..."
             />
           ) : (
-            <DownloadSimple
-              weight="bold"
+            <Download
+              strokeWidth={1.5}
               className="text-theme-text-primary w-5 h-5 hover:text-theme-text-primary"
               onClick={handleClick}
               aria-label="Download graph image"

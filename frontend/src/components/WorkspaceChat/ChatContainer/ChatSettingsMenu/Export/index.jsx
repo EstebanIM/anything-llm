@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CaretRight } from "@phosphor-icons/react";
+import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { saveAs } from "file-saver";
 import Workspace from "@/models/workspace";
@@ -59,9 +59,9 @@ export default function ExportRow({
         <span className="text-sm font-normal text-zinc-50 light:text-slate-800">
           {exporting ? t("chat_window.exporting") : t("chat_window.export")}
         </span>
-        <CaretRight
+        <ChevronRight
+          strokeWidth={1.5}
           size={14}
-          weight="bold"
           className="text-zinc-50 light:text-slate-800"
         />
       </div>

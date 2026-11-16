@@ -223,6 +223,25 @@ describeValidation("vectorSearchMode", () => {
   });
 });
 
+describeValidation("folderId", () => {
+  it("accepts numeric folder IDs and coerces IDs submitted as strings", () => {
+    expect(Workspace.validations.folderId(7)).toBe(7);
+    expect(Workspace.validations.folderId("12")).toBe(12);
+  });
+
+  it("returns null when no folder is selected", () => {
+    expect(Workspace.validations.folderId(null)).toBeNull();
+    expect(Workspace.validations.folderId(undefined)).toBeNull();
+    expect(Workspace.validations.folderId("")).toBeNull();
+  });
+
+  it("returns null for values that cannot identify a folder", () => {
+    expect(Workspace.validations.folderId("not-a-folder")).toBeNull();
+    expect(Workspace.validations.folderId("none")).toBeNull();
+    expect(Workspace.validations.folderId(NaN)).toBeNull();
+  });
+});
+
 describeValidation("router_id", () => {
   it("coerces a valid number string", () => {
     expect(Workspace.validations.router_id("5")).toBe(5);
@@ -304,6 +323,18 @@ describe("Workspace.validateFields", () => {
     const validated = Workspace.validateFields({ openAiHistory: null });
     expect(validated.openAiHistory).toBe(20);
   });
+
+  it.each([
+    ["12", 12],
+    [null, null],
+  ])(
+    "preserves a folder assignment update from %p as %p",
+    (folderId, expected) => {
+      expect(Workspace.validateFields({ folderId })).toEqual({
+        folderId: expected,
+      });
+    }
+  );
 });
 
 describe("Workspace.update", () => {

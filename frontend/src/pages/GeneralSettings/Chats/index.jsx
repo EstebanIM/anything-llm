@@ -8,7 +8,7 @@ import useMultiUserMode from "@/hooks/useMultiUserMode";
 import ChatRow from "./ChatRow";
 import showToast from "@/utils/toast";
 import System from "@/models/system";
-import { CaretDown, Download, Trash } from "@phosphor-icons/react";
+import { ChevronDown, Download, Trash2 } from "lucide-react";
 import { saveAs } from "file-saver";
 import { useTranslation } from "react-i18next";
 import { CanViewChatHistory } from "@/components/CanViewChatHistory";
@@ -136,9 +136,9 @@ export default function WorkspaceChats() {
                     onClick={toggleMenu}
                     className="flex items-center gap-x-2 px-4 py-1 rounded-lg bg-primary-button hover:light:bg-theme-bg-primary hover:text-theme-text-primary text-xs font-semibold hover:bg-secondary shadow-[0_4px_14px_rgba(0,0,0,0.25)] h-[34px] w-fit"
                   >
-                    <Download size={18} weight="bold" />
+                    <Download strokeWidth={1.5} size={18} />
                     {t("recorded.export")}
-                    <CaretDown size={18} weight="bold" />
+                    <ChevronDown strokeWidth={1.5} size={18} />
                   </button>
                   <div
                     ref={menuRef}
@@ -167,7 +167,7 @@ export default function WorkspaceChats() {
                     onClick={handleClearAllChats}
                     className="flex items-center gap-x-2 px-4 py-1 border hover:border-transparent light:border-theme-sidebar-border border-white/40 text-white/40 light:text-theme-text-secondary rounded-lg bg-transparent hover:light:text-theme-bg-primary hover:text-theme-text-primary text-xs font-semibold hover:bg-red-500 shadow-[0_4px_14px_rgba(0,0,0,0.25)] h-[34px] w-fit"
                   >
-                    <Trash size={18} weight="bold" />
+                    <Trash2 strokeWidth={1.5} size={18} />
                     Clear Chats
                   </button>
                 )}

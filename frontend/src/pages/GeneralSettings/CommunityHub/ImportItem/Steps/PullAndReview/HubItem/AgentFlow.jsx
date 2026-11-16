@@ -2,7 +2,7 @@ import CTAButton from "@/components/lib/CTAButton";
 import CommunityHubImportItemSteps from "../..";
 import showToast from "@/utils/toast";
 import paths from "@/utils/paths";
-import { CircleNotch } from "@phosphor-icons/react";
+import { LoaderCircle } from "lucide-react";
 import { useState } from "react";
 import AgentFlows from "@/models/agentFlows";
 import { safeJsonParse } from "@/utils/request";
@@ -72,7 +72,9 @@ export default function AgentFlow({ item, setStep }) {
         className="text-dark-text w-full mt-[18px] h-[34px] hover:bg-accent"
         onClick={importAgentFlow}
       >
-        {loading ? <CircleNotch size={16} className="animate-spin" /> : null}
+        {loading ? (
+          <LoaderCircle strokeWidth={1.5} size={16} className="animate-spin" />
+        ) : null}
         {loading ? "Importing..." : "Import agent flow"}
       </CTAButton>
     </div>

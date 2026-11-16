@@ -1,15 +1,15 @@
 import React from "react";
 import {
   X,
-  CaretUp,
-  CaretDown,
+  ChevronUp,
+  ChevronDown,
   Globe,
-  Browser,
+  AppWindow,
   Brain,
   Flag,
   Info,
-  BracketsCurly,
-} from "@phosphor-icons/react";
+  Braces,
+} from "lucide-react";
 import { Tooltip } from "react-tooltip";
 import Toggle from "@/components/lib/Toggle";
 import StartNode from "../nodes/StartNode";
@@ -37,7 +37,9 @@ const BLOCK_TYPES = {
 const BLOCK_INFO = {
   [BLOCK_TYPES.FLOW_INFO]: {
     label: "Flow Information",
-    icon: <Info className="w-5 h-5 text-theme-text-primary" />,
+    icon: (
+      <Info strokeWidth={1.5} className="w-5 h-5 text-theme-text-primary" />
+    ),
     description: "Basic flow information",
     defaultConfig: {
       name: "",
@@ -47,7 +49,9 @@ const BLOCK_INFO = {
   },
   [BLOCK_TYPES.START]: {
     label: "Flow Variables",
-    icon: <BracketsCurly className="w-5 h-5 text-theme-text-primary" />,
+    icon: (
+      <Braces strokeWidth={1.5} className="w-5 h-5 text-theme-text-primary" />
+    ),
     description: "Configure agent variables and settings",
     getSummary: (config) => {
       const varCount = config.variables?.filter((v) => v.name)?.length || 0;
@@ -56,7 +60,9 @@ const BLOCK_INFO = {
   },
   [BLOCK_TYPES.API_CALL]: {
     label: "API Call",
-    icon: <Globe className="w-5 h-5 text-theme-text-primary" />,
+    icon: (
+      <Globe strokeWidth={1.5} className="w-5 h-5 text-theme-text-primary" />
+    ),
     description: "Make an HTTP request",
     defaultConfig: {
       url: "",
@@ -113,7 +119,9 @@ const BLOCK_INFO = {
   */
   [BLOCK_TYPES.LLM_INSTRUCTION]: {
     label: "LLM Instruction",
-    icon: <Brain className="w-5 h-5 text-theme-text-primary" />,
+    icon: (
+      <Brain strokeWidth={1.5} className="w-5 h-5 text-theme-text-primary" />
+    ),
     description: "Process data using LLM instructions",
     defaultConfig: {
       instruction: "",
@@ -124,7 +132,12 @@ const BLOCK_INFO = {
   },
   [BLOCK_TYPES.WEB_SCRAPING]: {
     label: "Web Scraping",
-    icon: <Browser className="w-5 h-5 text-theme-text-primary" />,
+    icon: (
+      <AppWindow
+        strokeWidth={1.5}
+        className="w-5 h-5 text-theme-text-primary"
+      />
+    ),
     description: "Scrape content from a webpage",
     defaultConfig: {
       url: "",
@@ -137,7 +150,7 @@ const BLOCK_INFO = {
   },
   [BLOCK_TYPES.FINISH]: {
     label: "Flow Complete",
-    icon: <Flag className="w-4 h-4" />,
+    icon: <Flag strokeWidth={1.5} className="w-4 h-4" />,
     description: "End of agent flow",
     getSummary: () => "Flow will end here",
     defaultConfig: {},
@@ -265,7 +278,10 @@ export default function BlockList({
                           data-tooltip-id="block-action"
                           data-tooltip-content="Move block up"
                         >
-                          <CaretUp className="w-3.5 h-3.5" />
+                          <ChevronUp
+                            strokeWidth={1.5}
+                            className="w-3.5 h-3.5"
+                          />
                         </button>
                       )}
                       {index < blocks.length - 2 && (
@@ -278,7 +294,10 @@ export default function BlockList({
                           data-tooltip-id="block-action"
                           data-tooltip-content="Move block down"
                         >
-                          <CaretDown className="w-3.5 h-3.5" />
+                          <ChevronDown
+                            strokeWidth={1.5}
+                            className="w-3.5 h-3.5"
+                          />
                         </button>
                       )}
                       <button
@@ -290,7 +309,7 @@ export default function BlockList({
                         data-tooltip-id="block-action"
                         data-tooltip-content="Delete block"
                       >
-                        <X className="w-3.5 h-3.5" />
+                        <X strokeWidth={1.5} className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   )}

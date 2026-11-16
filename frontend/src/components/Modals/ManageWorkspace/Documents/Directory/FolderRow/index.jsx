@@ -1,6 +1,6 @@
 import { useState } from "react";
 import FileRow from "../FileRow";
-import { CaretDown, FolderNotch, CircleNotch } from "@phosphor-icons/react";
+import { ChevronDown, Folder, LoaderCircle } from "lucide-react";
 import { middleTruncate } from "@/utils/directories";
 import { useTranslation } from "react-i18next";
 
@@ -128,11 +128,14 @@ export default function FolderRow({
               expanded ? "rotate-360" : " rotate-270"
             }`}
           >
-            <CaretDown className="text-base font-bold w-4 h-4" />
+            <ChevronDown
+              strokeWidth={1.5}
+              className="text-base font-bold w-4 h-4"
+            />
           </div>
-          <FolderNotch
+          <Folder
+            strokeWidth={1.5}
             className="shrink-0 text-base font-bold w-4 h-4 mr-[3px]"
-            weight="fill"
           />
           <p className="whitespace-nowrap overflow-show max-w-[400px]">
             {middleTruncate(item.name, 35)}
@@ -147,10 +150,10 @@ export default function FolderRow({
             </span>
           )}
           {loading && files.length > 0 && (
-            <CircleNotch
+            <LoaderCircle
+              strokeWidth={1.5}
               size={12}
               className="animate-spin ml-1 shrink-0"
-              weight="bold"
             />
           )}
         </div>
@@ -160,7 +163,11 @@ export default function FolderRow({
       {expanded && loading && files.length === 0 && (
         <tr className="text-theme-text-secondary text-xs py-2 pl-8 pr-8">
           <td className="flex items-center gap-x-2 py-2 pl-8">
-            <CircleNotch size={14} className="animate-spin" weight="bold" />
+            <LoaderCircle
+              strokeWidth={1.5}
+              size={14}
+              className="animate-spin"
+            />
             <span>{t("common.loading")}...</span>
           </td>
         </tr>

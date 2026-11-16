@@ -1,12 +1,13 @@
 import System from "@/models/system";
 import paths from "@/utils/paths";
 import showToast from "@/utils/toast";
-import { ArrowSquareOut } from "@phosphor-icons/react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import Toggle from "@/components/lib/Toggle";
+import useCustomAppName from "@/hooks/useCustomAppName";
 
 export default function LiveSyncToggle({ enabled = false, onToggle }) {
+  const { brandName } = useCustomAppName();
   const [status, setStatus] = useState(enabled);
 
   async function toggleFeatureFlag() {
@@ -42,8 +43,8 @@ export default function LiveSyncToggle({ enabled = false, onToggle }) {
         <div className="flex flex-col space-y-4">
           <p className="text-theme-text-secondary text-sm">
             Enable the ability to specify a document to be "watched". Watched
-            document's content will be regularly fetched and updated in
-            AnythingLLM.
+            document's content will be regularly fetched and updated in{" "}
+            {brandName}.
           </p>
           <p className="text-theme-text-secondary text-sm">
             Watched documents will automatically update in all workspaces they
@@ -57,17 +58,6 @@ export default function LiveSyncToggle({ enabled = false, onToggle }) {
       </div>
       <div className="mt-8">
         <ul className="space-y-2">
-          <li>
-            <a
-              href="https://docs.anythingllm.com/beta-preview/active-features/live-document-sync"
-              target="_blank"
-              className="text-sm text-blue-400 light:text-blue-500 hover:underline flex items-center gap-x-1"
-              rel="noreferrer"
-            >
-              <ArrowSquareOut size={14} />
-              <span>Feature Documentation and Warnings</span>
-            </a>
-          </li>
           <li>
             <Link
               to={paths.experimental.liveDocumentSync.manage()}

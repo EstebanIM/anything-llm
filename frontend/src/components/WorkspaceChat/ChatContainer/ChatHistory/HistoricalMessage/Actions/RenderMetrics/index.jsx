@@ -2,6 +2,7 @@ import { formatDateTimeAsMoment } from "@/utils/directories";
 import { formatDuration, numberWithCommas } from "@/utils/numbers";
 import React, { useEffect, useState, useContext } from "react";
 import { isMobile } from "react-device-detect";
+import useUser from "@/hooks/useUser";
 const MetricsContext = React.createContext();
 const SHOW_METRICS_KEY = "anythingllm_show_chat_metrics";
 const SHOW_METRICS_EVENT = "anythingllm_show_metrics_change";
@@ -103,6 +104,9 @@ export default function RenderMetrics({ metrics = {} }) {
   // Inherit the showMetricsAutomatically state from the MetricsProvider so the state is shared across all chats
   const { showMetricsAutomatically, setShowMetricsAutomatically } =
     useContext(MetricsContext);
+  const { user } = useUser();
+  // The metrics string exposes the model in use, so default users do not see it.
+  if (!!user && user.role === "default") return null;
   if (!metrics?.duration || !metrics?.outputTps || isMobile) return null;
 
   return (

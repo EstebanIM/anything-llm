@@ -137,6 +137,25 @@ const TRANSLATIONS = {
     title: "Nouvel Espace de Travail",
     placeholder: "Mon Espace de Travail",
   },
+  "workspace-folders": {
+    new: "New folder",
+    label: "Folder",
+    placeholder: "Folder name",
+    rename: "Rename",
+    delete: "Delete",
+    "add-subfolder": "Add subfolder",
+    root: "No folder (root)",
+    "max-depth": "Maximum folder depth reached (5 levels).",
+    move: "Move",
+    "move-title": "Move folder",
+    "move-description": "Choose a destination for this folder.",
+    "move-button": "Move",
+    "move-success": "Folder moved",
+    "move-current": "Current",
+    "move-cancel": "Cancel",
+    "move-moving": "Moving...",
+    "move-loading": "Loading...",
+  },
   "workspaces—settings": {
     general: "Paramètres généraux",
     chat: "Paramètres du chat",
@@ -1407,6 +1426,10 @@ const TRANSLATIONS = {
     },
   },
   profile_settings: {
+    current_password: "Current password",
+    current_password_placeholder: "Your current password",
+    current_password_hint: "Only needed if you are changing your password.",
+    username_managed_by_admin: "Your administrator manages your username.",
     edit_account: "Modifier le compte",
     profile_picture: "Photo de profil",
     remove_profile_picture: "Supprimer la photo de profil",
@@ -1424,8 +1447,16 @@ const TRANSLATIONS = {
     profile_updated: "Profil mis à jour avec succès.",
     failed_update_user: "Échec de la mise à jour de l'utilisateur : {{error}}",
     account: "Compte",
+    settings: "Settings",
+    back_to_workspaces: "Back to workspaces",
     support: "Support",
     signout: "Déconnexion",
+    roles: {
+      superadmin: "Super administrateur",
+      admin: "Administrateur",
+      manager: "Manager",
+      default: "Utilisateur",
+    },
   },
   customization: {
     interface: {
@@ -1474,9 +1505,19 @@ const TRANSLATIONS = {
         description:
           "Définissez l'adresse e-mail de support affichée aux utilisateurs.",
       },
+      "brand-color": {
+        title: "Brand Color",
+        description:
+          "Set the brand color applied to the chat embed widget (launcher button and user message bubbles).",
+      },
       "app-name": {
         title: "Nom de l'application",
         description: "Définissez le nom affiché dans l'interface.",
+      },
+      "login-powered-by": {
+        title: "Login footer text",
+        description: "Set the powered-by text displayed below the login form.",
+        placeholder: "Powered by your organization",
       },
       "display-language": {
         title: "Langue d'affichage",
@@ -1489,6 +1530,16 @@ const TRANSLATIONS = {
         recommended: "Taille recommandée : 800 x 200",
         remove: "Supprimer",
         replace: "Remplacer",
+        dark: {
+          title: "Dark mode",
+          description: "Logo shown when the interface uses the dark theme.",
+          alt: "Uploaded dark mode logo",
+        },
+        light: {
+          title: "Light mode",
+          description: "Logo shown when the interface uses the light theme.",
+          alt: "Uploaded light mode logo",
+        },
       },
       "browser-appearance": {
         title: "Apparence du navigateur",
@@ -1502,6 +1553,13 @@ const TRANSLATIONS = {
           title: "Favicon",
           description:
             "Définissez l'icône affichée dans l'onglet du navigateur.",
+          upload: "Upload favicon",
+          replace: "Replace favicon",
+          remove: "Remove favicon",
+          recommended: "Recommended: square PNG, SVG, or ICO",
+          url: "Favicon URL",
+          placeholder: "https://example.com/favicon.png",
+          alt: "Custom favicon preview",
         },
       },
       "sidebar-footer": {

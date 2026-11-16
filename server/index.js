@@ -12,6 +12,7 @@ const path = require("path");
 const { reqBody } = require("./utils/http");
 const { systemEndpoints } = require("./endpoints/system");
 const { workspaceEndpoints } = require("./endpoints/workspaces");
+const { workspaceFolderEndpoints } = require("./endpoints/workspaceFolders");
 const { chatEndpoints } = require("./endpoints/chat");
 const { embeddedEndpoints } = require("./endpoints/embed");
 const { embedManagementEndpoints } = require("./endpoints/embedManagement");
@@ -100,6 +101,7 @@ systemEndpoints(apiRouter);
 themePalettesEndpoints(apiRouter);
 extensionEndpoints(apiRouter);
 workspaceEndpoints(apiRouter);
+workspaceFolderEndpoints(apiRouter);
 workspaceThreadEndpoints(apiRouter);
 chatEndpoints(apiRouter);
 adminEndpoints(apiRouter);
@@ -154,8 +156,8 @@ if (process.env.NODE_ENV !== "development") {
     response.send("User-agent: *\nDisallow: /").end();
   });
 
-  app.use("/", function (_, response) {
-    IndexPage.generate(response);
+  app.use("/", function (request, response) {
+    IndexPage.generate(response, 200, request);
     return;
   });
 } else {

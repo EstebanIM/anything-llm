@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { CheckCircle, CopySimple } from "@phosphor-icons/react";
+import { CircleCheck, Copy } from "lucide-react";
 import showToast from "@/utils/toast";
 import hljs from "highlight.js";
 import "@/utils/chat/themes/github-dark.css";
@@ -32,15 +32,12 @@ export default function CodeSnippetModal({ embed, closeModal }) {
 function createScriptTagSnippet(embed, scriptHost, serverHost) {
   return `<!--
 Paste this script at the bottom of your HTML before the </body> tag.
-See more style and config options on our docs
-https://github.com/Mintplex-Labs/anythingllm-embed/blob/main/README.md
 -->
 <script
   data-embed-id="${embed.uuid}"
   data-base-api-url="${serverHost}/api/embed"
   src="${scriptHost}/embed/anythingllm-chat-widget.min.js">
 </script>
-<!-- AnythingLLM (https://anythingllm.com) -->
 `;
 }
 
@@ -73,14 +70,6 @@ const ScriptTag = ({ embed }) => {
           Have your workspace chat embed function like a help desk chat bottom
           in the corner of your website.
         </ModalHint>
-        <a
-          href="https://github.com/Mintplex-Labs/anythingllm-embed/blob/main/README.md"
-          target="_blank"
-          rel="noreferrer"
-          className="text-blue-300 light:text-blue-500 hover:underline"
-        >
-          View all style and configuration options &rarr;
-        </a>
       </div>
       <button
         disabled={copied}
@@ -97,12 +86,17 @@ const ScriptTag = ({ embed }) => {
           }}
         />
         {copied ? (
-          <CheckCircle
+          <CircleCheck
+            strokeWidth={1.5}
             size={14}
             className="text-green-300 light:text-green-600 absolute top-2 right-2"
           />
         ) : (
-          <CopySimple size={14} className="absolute top-2 right-2" />
+          <Copy
+            strokeWidth={1.5}
+            size={14}
+            className="absolute top-2 right-2"
+          />
         )}
       </button>
     </div>

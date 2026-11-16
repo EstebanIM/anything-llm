@@ -2,8 +2,8 @@
   "openapi": "3.0.0",
   "info": {
     "version": "1.0.0",
-    "title": "AnythingLLM Developer API",
-    "description": "API endpoints that enable programmatic reading, writing, and updating of your AnythingLLM instance. UI supplied by Swagger.io."
+    "title": "Developer API",
+    "description": "API endpoints that enable programmatic reading, writing, and updating of your application instance. UI supplied by Swagger.io."
   },
   "servers": [
     {
@@ -237,6 +237,9 @@
               }
             }
           },
+          "400": {
+            "description": "Bad Request"
+          },
           "401": {
             "description": "Instance is not in Multi-User mode. Method denied"
           },
@@ -304,6 +307,9 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Bad Request"
           },
           "401": {
             "description": "Instance is not in Multi-User mode. Method denied"
@@ -837,7 +843,7 @@
           "content": {
             "application/json": {
               "example": {
-                "support_email": "support@example.com"
+                "login_powered_by": "Built by ACME"
               }
             }
           }

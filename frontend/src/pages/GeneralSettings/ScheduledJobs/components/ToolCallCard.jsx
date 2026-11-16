@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Wrench } from "@phosphor-icons/react";
+import { Wrench } from "lucide-react";
 import hljs from "highlight.js";
 import { safeJsonParse } from "@/utils/request";
 import { useTheme } from "@/hooks/useTheme";
@@ -51,7 +51,7 @@ export default function ToolCallCard({ toolCall }) {
     <div className="border border-white/5 rounded-lg p-3 bg-theme-bg-primary/30">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <Wrench className="h-3.5 w-3.5 text-blue-400" />
+          <Wrench strokeWidth={1.5} className="h-3.5 w-3.5 text-blue-400" />
           <span className="text-sm font-medium text-theme-text-primary">
             {toolCall.toolName}
           </span>

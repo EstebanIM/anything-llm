@@ -6,6 +6,7 @@ import showToast from "@/utils/toast";
 import { useModal } from "@/hooks/useModal";
 import CTAButton from "@/components/lib/CTAButton";
 import { useTranslation } from "react-i18next";
+import useCustomAppName from "@/hooks/useCustomAppName";
 import PreLoader from "@/components/Preloader";
 import ChangeWarningModal from "@/components/ChangeWarning";
 import Modal from "@/components/lib/Modal";
@@ -32,86 +33,84 @@ import ZillizCloudOptions from "@/components/VectorDBSelection/ZillizCloudOption
 import AstraDBOptions from "@/components/VectorDBSelection/AstraDBOptions";
 import PGVectorOptions from "@/components/VectorDBSelection/PGVectorOptions";
 import ProviderSearchMenu from "@/components/lib/ProviderSearchMenu";
-
-const VECTOR_DBS = [
-  {
-    name: "LanceDB",
-    value: "lancedb",
-    logo: LanceDbLogo,
-    options: (_) => <LanceDBOptions />,
-    description:
-      "100% local vector DB that runs on the same instance as AnythingLLM.",
-  },
-  {
-    name: "PGVector",
-    value: "pgvector",
-    logo: PGVectorLogo,
-    options: (settings) => <PGVectorOptions settings={settings} />,
-    description: "Vector search powered by PostgreSQL.",
-  },
-  {
-    name: "Chroma",
-    value: "chroma",
-    logo: ChromaLogo,
-    options: (settings) => <ChromaDBOptions settings={settings} />,
-    description:
-      "Open source vector database you can host yourself or on the cloud.",
-  },
-  {
-    name: "Chroma Cloud",
-    value: "chromacloud",
-    logo: ChromaLogo,
-    options: (settings) => <ChromaCloudOptions settings={settings} />,
-    description:
-      "Fully managed Chroma cloud service with enterprise features and support.",
-  },
-  {
-    name: "Pinecone",
-    value: "pinecone",
-    logo: PineconeLogo,
-    options: (settings) => <PineconeDBOptions settings={settings} />,
-    description: "100% cloud-based vector database for enterprise use cases.",
-  },
-  {
-    name: "Zilliz Cloud",
-    value: "zilliz",
-    logo: ZillizLogo,
-    options: (settings) => <ZillizCloudOptions settings={settings} />,
-    description:
-      "Cloud hosted vector database built for enterprise with SOC 2 compliance.",
-  },
-  {
-    name: "QDrant",
-    value: "qdrant",
-    logo: QDrantLogo,
-    options: (settings) => <QDrantDBOptions settings={settings} />,
-    description: "Open source local and distributed cloud vector database.",
-  },
-  {
-    name: "Weaviate",
-    value: "weaviate",
-    logo: WeaviateLogo,
-    options: (settings) => <WeaviateDBOptions settings={settings} />,
-    description:
-      "Open source local and cloud hosted multi-modal vector database.",
-  },
-  {
-    name: "Milvus",
-    value: "milvus",
-    logo: MilvusLogo,
-    options: (settings) => <MilvusDBOptions settings={settings} />,
-    description: "Open-source, highly scalable, and blazing fast.",
-  },
-  {
-    name: "AstraDB",
-    value: "astra",
-    logo: AstraDBLogo,
-    options: (settings) => <AstraDBOptions settings={settings} />,
-    description: "Vector Search for Real-world GenAI.",
-  },
-];
-
 export default function GeneralVectorDatabase() {
+  const { brandName } = useCustomAppName();
+  const VECTOR_DBS = [
+    {
+      name: "LanceDB",
+      value: "lancedb",
+      logo: LanceDbLogo,
+      options: (_) => <LanceDBOptions />,
+      description: `100% local vector DB that runs on the same instance as ${brandName}.`,
+    },
+    {
+      name: "PGVector",
+      value: "pgvector",
+      logo: PGVectorLogo,
+      options: (settings) => <PGVectorOptions settings={settings} />,
+      description: "Vector search powered by PostgreSQL.",
+    },
+    {
+      name: "Chroma",
+      value: "chroma",
+      logo: ChromaLogo,
+      options: (settings) => <ChromaDBOptions settings={settings} />,
+      description:
+        "Open source vector database you can host yourself or on the cloud.",
+    },
+    {
+      name: "Chroma Cloud",
+      value: "chromacloud",
+      logo: ChromaLogo,
+      options: (settings) => <ChromaCloudOptions settings={settings} />,
+      description:
+        "Fully managed Chroma cloud service with enterprise features and support.",
+    },
+    {
+      name: "Pinecone",
+      value: "pinecone",
+      logo: PineconeLogo,
+      options: (settings) => <PineconeDBOptions settings={settings} />,
+      description: "100% cloud-based vector database for enterprise use cases.",
+    },
+    {
+      name: "Zilliz Cloud",
+      value: "zilliz",
+      logo: ZillizLogo,
+      options: (settings) => <ZillizCloudOptions settings={settings} />,
+      description:
+        "Cloud hosted vector database built for enterprise with SOC 2 compliance.",
+    },
+    {
+      name: "QDrant",
+      value: "qdrant",
+      logo: QDrantLogo,
+      options: (settings) => <QDrantDBOptions settings={settings} />,
+      description: "Open source local and distributed cloud vector database.",
+    },
+    {
+      name: "Weaviate",
+      value: "weaviate",
+      logo: WeaviateLogo,
+      options: (settings) => <WeaviateDBOptions settings={settings} />,
+      description:
+        "Open source local and cloud hosted multi-modal vector database.",
+    },
+    {
+      name: "Milvus",
+      value: "milvus",
+      logo: MilvusLogo,
+      options: (settings) => <MilvusDBOptions settings={settings} />,
+      description: "Open-source, highly scalable, and blazing fast.",
+    },
+    {
+      name: "AstraDB",
+      value: "astra",
+      logo: AstraDBLogo,
+      options: (settings) => <AstraDBOptions settings={settings} />,
+      description: "Vector Search for Real-world GenAI.",
+    },
+  ];
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [hasEmbeddings, setHasEmbeddings] = useState(false);
@@ -174,7 +173,9 @@ export default function GeneralVectorDatabase() {
       <Sidebar />
       {loading ? (
         <div
-          style={{ height: isMobile ? "100%" : "calc(100% - 32px)" }}
+          style={{
+            height: isMobile ? "100%" : "calc(100% - 32px)",
+          }}
           className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full overflow-y-scroll p-4 md:p-0"
         >
           <div className="w-full h-full flex justify-center items-center">
@@ -183,7 +184,9 @@ export default function GeneralVectorDatabase() {
         </div>
       ) : (
         <div
-          style={{ height: isMobile ? "100%" : "calc(100% - 32px)" }}
+          style={{
+            height: isMobile ? "100%" : "calc(100% - 32px)",
+          }}
           className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full overflow-y-scroll p-4 md:p-0"
         >
           <form

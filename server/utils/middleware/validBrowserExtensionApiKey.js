@@ -42,7 +42,7 @@ async function validBrowserExtensionApiKey(request, response, next) {
       return;
     }
 
-    if (![ROLES.admin, ROLES.manager].includes(user.role)) {
+    if (![ROLES.superadmin, ROLES.admin, ROLES.manager].includes(user.role)) {
       response.status(403).json({
         error: "User does not have permission to use this API key.",
       });

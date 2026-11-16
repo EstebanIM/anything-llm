@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import debounce from "lodash.debounce";
-import { ArrowUp, At } from "@phosphor-icons/react";
+import { ArrowUp, AtSign } from "lucide-react";
 import StopGenerationButton from "./StopGenerationButton";
 import SpeechToText from "./SpeechToText";
 import { Tooltip } from "react-tooltip";
@@ -452,7 +452,8 @@ function AgentSessionButton({
         aria-label={t("chat_window.start_agent_session")}
         className="group border-none relative flex justify-center items-center cursor-pointer w-6 h-6 rounded-full hover:bg-zinc-700 light:hover:bg-slate-200"
       >
-        <At
+        <AtSign
+          strokeWidth={1.5}
           size={18}
           className="pointer-events-none text-zinc-300 light:text-slate-600 group-hover:text-white light:group-hover:text-slate-600 shrink-0"
         />
@@ -526,8 +527,8 @@ function SendPromptButton({ formRef, promptInput, isDisabled }) {
         aria-label={t("chat_window.send")}
       >
         <ArrowUp
+          strokeWidth={1.5}
           className="w-[18px] h-[18px] pointer-events-none text-zinc-800 light:text-white"
-          weight="bold"
         />
         <span className="sr-only">{t("chat_window.send")}</span>
       </button>

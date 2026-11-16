@@ -1,4 +1,4 @@
-import { Info } from "@phosphor-icons/react";
+import { Info } from "lucide-react";
 
 const TOGGLE_STYLES = {
   sm: "h-[12px] w-[20px] after:h-[8px] after:w-[8px] after:top-[2px] after:left-[2px] peer-checked:after:translate-x-full",
@@ -164,6 +164,7 @@ function TextContent({
           {label}
           {hint && (
             <Info
+              strokeWidth={1.5}
               size={14}
               className="text-theme-text-secondary cursor-pointer"
               data-tooltip-id={hint}

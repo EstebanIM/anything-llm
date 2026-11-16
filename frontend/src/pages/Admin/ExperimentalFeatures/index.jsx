@@ -3,7 +3,7 @@ import Sidebar from "@/components/SettingsSidebar";
 import { isMobile } from "react-device-detect";
 import Admin from "@/models/admin";
 import { FullScreenLoader } from "@/components/Preloader";
-import { CaretRight, Flask } from "@phosphor-icons/react";
+import { ChevronRight, FlaskConical } from "lucide-react";
 import { configurableFeatures } from "./features";
 import Modal, {
   ModalHeader,
@@ -13,7 +13,7 @@ import Modal, {
 } from "@/components/lib/Modal";
 import paths from "@/utils/paths";
 import showToast from "@/utils/toast";
-
+import useCustomAppName from "@/hooks/useCustomAppName";
 export default function ExperimentalFeatures() {
   const [featureFlags, setFeatureFlags] = useState({});
   const [loading, setLoading] = useState(true);
@@ -43,7 +43,9 @@ export default function ExperimentalFeatures() {
   if (loading) {
     return (
       <div
-        style={{ height: isMobile ? "100%" : "calc(100% - 32px)" }}
+        style={{
+          height: isMobile ? "100%" : "calc(100% - 32px)",
+        }}
         className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] w-full h-full flex justify-center items-center"
       >
         <FullScreenLoader />
@@ -57,7 +59,7 @@ export default function ExperimentalFeatures() {
         {/* Feature settings nav */}
         <div className="flex flex-col gap-y-[18px]">
           <div className="text-white flex items-center gap-x-2">
-            <Flask size={24} />
+            <FlaskConical strokeWidth={1.5} size={24} />
             <p className="text-lg font-medium">Experimental Features</p>
           </div>
           {/* Feature list */}
@@ -97,7 +99,7 @@ export default function ExperimentalFeatures() {
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-white/60">
-                  <Flask size={40} />
+                  <FlaskConical strokeWidth={1.5} size={40} />
                   <p className="font-medium">Select an experimental feature</p>
                 </div>
               )}
@@ -117,7 +119,9 @@ function FeatureLayout({ children }) {
     >
       <Sidebar />
       <div
-        style={{ height: isMobile ? "100%" : "calc(100% - 32px)" }}
+        style={{
+          height: isMobile ? "100%" : "calc(100% - 32px)",
+        }}
         className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] w-full h-full flex"
       >
         {children}
@@ -136,9 +140,7 @@ function FeatureItem({
   return (
     <div
       key={feature.key}
-      className={`py-3 px-4 flex items-center justify-between cursor-pointer transition-all duration-300 hover:bg-white/5 ${borderClass} ${
-        isSelected ? "bg-white/10 light:bg-theme-bg-sidebar" : ""
-      }`}
+      className={`py-3 px-4 flex items-center justify-between cursor-pointer transition-all duration-300 hover:bg-white/5 ${borderClass} ${isSelected ? "bg-white/10 light:bg-theme-bg-sidebar" : ""}`}
       onClick={() => {
         if (feature?.href) window.location = feature.href;
         else handleClick?.(feature.key);
@@ -158,9 +160,9 @@ function FeatureItem({
             <div className="text-sm text-theme-text-secondary font-medium">
               {isActive ? "On" : "Off"}
             </div>
-            <CaretRight
+            <ChevronRight
+              strokeWidth={1.5}
               size={14}
-              weight="bold"
               className="text-theme-text-secondary"
             />
           </>
@@ -180,8 +182,8 @@ function SelectedFeatureComponent({ feature, settings, refresh }) {
     />
   ) : null;
 }
-
 function FeatureVerification({ children }) {
+  const { brandName } = useCustomAppName();
   if (
     !window.localStorage.getItem("anythingllm_tos_experimental_feature_set")
   ) {
@@ -209,7 +211,7 @@ function FeatureVerification({ children }) {
             <ModalHeader
               title={
                 <span className="flex items-center gap-2">
-                  <Flask size={24} />
+                  <FlaskConical strokeWidth={1.5} size={24} />
                   Terms of use for experimental features
                 </span>
               }
@@ -217,7 +219,7 @@ function FeatureVerification({ children }) {
             <ModalBody>
               <div className="w-full text-zinc-300 light:text-slate-700 text-md flex flex-col gap-y-4">
                 <p>
-                  Experimental features of AnythingLLM are features that we are
+                  Experimental features of {brandName} are features that we are
                   piloting and are <b>opt-in</b>. We proactively will condition
                   or warn you on any potential concerns should any exist prior
                   to approval of any feature.
@@ -237,7 +239,7 @@ function FeatureVerification({ children }) {
                       Increased cost or use of any connected LLM or embedding
                       provider.
                     </li>
-                    <li>Potential bugs or issues using AnythingLLM.</li>
+                    <li>Potential bugs or issues using {brandName}.</li>
                   </ul>
                 </div>
 
@@ -251,7 +253,7 @@ function FeatureVerification({ children }) {
                     <li>The feature being used is not currently stable.</li>
                     <li>
                       The feature may not be available in future versions,
-                      configurations, or subscriptions of AnythingLLM.
+                      configurations, or subscriptions of {brandName}.
                     </li>
                     <li>
                       Your privacy settings <b>will be honored</b> with use of
@@ -261,23 +263,7 @@ function FeatureVerification({ children }) {
                   </ul>
                 </div>
 
-                <p>
-                  Access to any features requires approval of this modal. If you
-                  would like to read more you can refer to{" "}
-                  <a
-                    href="https://docs.anythingllm.com/beta-preview/overview"
-                    className="underline text-blue-500"
-                  >
-                    docs.anythingllm.com
-                  </a>{" "}
-                  or email{" "}
-                  <a
-                    href="mailto:team@mintplexlabs.com"
-                    className="underline text-blue-500"
-                  >
-                    team@mintplexlabs.com
-                  </a>
-                </p>
+                <p>Access to any features requires approval of this modal.</p>
               </div>
             </ModalBody>
             <ModalFooter>

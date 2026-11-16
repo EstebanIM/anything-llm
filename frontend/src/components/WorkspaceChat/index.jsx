@@ -14,7 +14,7 @@ import {
   DndUploaderContext,
   PASTE_ATTACHMENT_EVENT,
 } from "./ChatContainer/DnDWrapper";
-import { WarningCircle } from "@phosphor-icons/react";
+import { CircleAlert } from "lucide-react";
 import {
   TTSProvider,
   useWatchForAutoPlayAssistantTTSResponse,
@@ -107,7 +107,7 @@ export default function WorkspaceChat({ loading, workspace }) {
             <ModalHeader
               title={
                 <span className="flex items-center gap-x-2 text-red-500">
-                  <WarningCircle className="w-5 h-5" weight="fill" />
+                  <CircleAlert strokeWidth={1.5} className="w-5 h-5" />
                   Workspace not found
                 </span>
               }

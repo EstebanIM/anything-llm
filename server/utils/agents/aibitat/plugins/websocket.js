@@ -19,7 +19,7 @@ async function userCanToggleTools(userId = null) {
 
   const { User } = require("../../../../models/user");
   const user = await User.get({ id: Number(userId) });
-  return user?.role === ROLES.admin;
+  return [ROLES.superadmin, ROLES.admin].includes(user?.role);
 }
 
 /**

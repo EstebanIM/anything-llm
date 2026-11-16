@@ -133,6 +133,25 @@ const TRANSLATIONS = {
     title: "新增工作區",
     placeholder: "我的工作區",
   },
+  "workspace-folders": {
+    new: "New folder",
+    label: "Folder",
+    placeholder: "Folder name",
+    rename: "Rename",
+    delete: "Delete",
+    "add-subfolder": "Add subfolder",
+    root: "No folder (root)",
+    "max-depth": "Maximum folder depth reached (5 levels).",
+    move: "Move",
+    "move-title": "Move folder",
+    "move-description": "Choose a destination for this folder.",
+    "move-button": "Move",
+    "move-success": "Folder moved",
+    "move-current": "Current",
+    "move-cancel": "Cancel",
+    "move-moving": "Moving...",
+    "move-loading": "Loading...",
+  },
   "workspaces—settings": {
     general: "一般設定",
     chat: "對話設定",
@@ -1294,6 +1313,10 @@ const TRANSLATIONS = {
     },
   },
   profile_settings: {
+    current_password: "Current password",
+    current_password_placeholder: "Your current password",
+    current_password_hint: "Only needed if you are changing your password.",
+    username_managed_by_admin: "Your administrator manages your username.",
     edit_account: "編輯帳戶",
     profile_picture: "個人資料圖片",
     remove_profile_picture: "移除個人資料圖片",
@@ -1310,8 +1333,16 @@ const TRANSLATIONS = {
     profile_updated: "個人資料已更新。",
     failed_update_user: "更新使用者資料失敗：{{error}}",
     account: "帳戶",
+    settings: "Settings",
+    back_to_workspaces: "Back to workspaces",
     support: "支援",
     signout: "登出",
+    roles: {
+      superadmin: "超級管理員",
+      admin: "管理員",
+      manager: "經理",
+      default: "使用者",
+    },
   },
   customization: {
     interface: {
@@ -1357,9 +1388,19 @@ const TRANSLATIONS = {
         title: "支援信箱",
         description: "設定當使用者需要協助時可聯絡的支援電子郵件地址。",
       },
+      "brand-color": {
+        title: "Brand Color",
+        description:
+          "Set the brand color applied to the chat embed widget (launcher button and user message bubbles).",
+      },
       "app-name": {
         title: "名稱",
         description: "設定顯示在登入頁面、讓所有使用者都看得到的名稱。",
+      },
+      "login-powered-by": {
+        title: "Login footer text",
+        description: "Set the powered-by text displayed below the login form.",
+        placeholder: "Powered by your organization",
       },
       "display-language": {
         title: "顯示語言",
@@ -1372,6 +1413,16 @@ const TRANSLATIONS = {
         recommended: "建議尺寸：800 x 200",
         remove: "移除",
         replace: "更換",
+        dark: {
+          title: "Dark mode",
+          description: "Logo shown when the interface uses the dark theme.",
+          alt: "Uploaded dark mode logo",
+        },
+        light: {
+          title: "Light mode",
+          description: "Logo shown when the interface uses the light theme.",
+          alt: "Uploaded light mode logo",
+        },
       },
       "browser-appearance": {
         title: "瀏覽器外觀",
@@ -1383,6 +1434,13 @@ const TRANSLATIONS = {
         favicon: {
           title: "網站圖示 (Favicon)",
           description: "為瀏覽器分頁設定自訂網站圖示。",
+          upload: "Upload favicon",
+          replace: "Replace favicon",
+          remove: "Remove favicon",
+          recommended: "Recommended: square PNG, SVG, or ICO",
+          url: "Favicon URL",
+          placeholder: "https://example.com/favicon.png",
+          alt: "Custom favicon preview",
         },
       },
       "sidebar-footer": {

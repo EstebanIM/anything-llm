@@ -181,6 +181,25 @@ const TRANSLATIONS = {
     title: "नया वर्कस्पेस",
     placeholder: "मेरा वर्कस्पेस",
   },
+  "workspace-folders": {
+    new: "New folder",
+    label: "Folder",
+    placeholder: "Folder name",
+    rename: "Rename",
+    delete: "Delete",
+    "add-subfolder": "Add subfolder",
+    root: "No folder (root)",
+    "max-depth": "Maximum folder depth reached (5 levels).",
+    move: "Move",
+    "move-title": "Move folder",
+    "move-description": "Choose a destination for this folder.",
+    "move-button": "Move",
+    "move-success": "Folder moved",
+    "move-current": "Current",
+    "move-cancel": "Cancel",
+    "move-moving": "Moving...",
+    "move-loading": "Loading...",
+  },
   "workspaces—settings": {
     general: "सामान्य सेटिंग्स",
     chat: "चैट सेटिंग्स",
@@ -885,6 +904,16 @@ const TRANSLATIONS = {
         description:
           "वह समर्थन ईमेल पता सेट करें जो उपयोगकर्ता को सहायता की आवश्यकता होने पर सुलभ होना चाहिए।",
       },
+      "brand-color": {
+        title: "Brand Color",
+        description:
+          "Set the brand color applied to the chat embed widget (launcher button and user message bubbles).",
+      },
+      "login-powered-by": {
+        title: "Login footer text",
+        description: "Set the powered-by text displayed below the login form.",
+        placeholder: "Powered by your organization",
+      },
       "app-name": {
         title: "नाम",
         description:
@@ -902,6 +931,16 @@ const TRANSLATIONS = {
         recommended: "अनुशंसित आकार: 800 x 200",
         remove: "हटाएँ",
         replace: "बदलें",
+        dark: {
+          title: "Dark mode",
+          description: "Logo shown when the interface uses the dark theme.",
+          alt: "Uploaded dark mode logo",
+        },
+        light: {
+          title: "Light mode",
+          description: "Logo shown when the interface uses the light theme.",
+          alt: "Uploaded light mode logo",
+        },
       },
       "browser-appearance": {
         title: "ब्राउज़र रूप",
@@ -914,6 +953,13 @@ const TRANSLATIONS = {
         favicon: {
           title: "फ़ेविकॉन",
           description: "ब्राउज़र टैब के लिए कस्टम फ़ेविकॉन का उपयोग करें।",
+          upload: "Upload favicon",
+          replace: "Replace favicon",
+          remove: "Remove favicon",
+          recommended: "Recommended: square PNG, SVG, or ICO",
+          url: "Favicon URL",
+          placeholder: "https://example.com/favicon.png",
+          alt: "Custom favicon preview",
         },
       },
       "sidebar-footer": {
@@ -1797,6 +1843,18 @@ const TRANSLATIONS = {
     },
   },
   profile_settings: {
+    settings: "Settings",
+    back_to_workspaces: "Back to workspaces",
+    roles: {
+      superadmin: "Super Admin",
+      admin: "Admin",
+      manager: "Manager",
+      default: "User",
+    },
+    current_password: "Current password",
+    current_password_placeholder: "Your current password",
+    current_password_hint: "Only needed if you are changing your password.",
+    username_managed_by_admin: "Your administrator manages your username.",
     edit_account: "खाता संपादित करें",
     profile_picture: "प्रोफ़ाइल चित्र",
     remove_profile_picture: "प्रोफ़ाइल चित्र हटाएँ",

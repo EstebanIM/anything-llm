@@ -1,6 +1,6 @@
 import moment from "moment";
 import truncate from "truncate";
-import { Trash } from "@phosphor-icons/react";
+import { Trash2 } from "lucide-react";
 import System from "@/models/system";
 import Modal, { ModalHeader, ModalBody } from "@/components/lib/Modal";
 import { useModal } from "@/hooks/useModal";
@@ -62,7 +62,7 @@ export default function ChatRow({ chat, onDelete }) {
             onClick={handleDelete}
             className="text-xs font-medium text-white/80 light:text-black/80 hover:light:text-red-500 hover:text-red-300 rounded-lg px-2 py-1 hover:bg-white hover:light:bg-red-50 hover:bg-opacity-10"
           >
-            <Trash className="h-5 w-5" />
+            <Trash2 strokeWidth={1.5} className="h-5 w-5" />
           </button>
         </td>
       </tr>

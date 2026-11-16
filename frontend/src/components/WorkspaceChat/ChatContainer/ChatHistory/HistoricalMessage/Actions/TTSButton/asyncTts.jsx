@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { SpeakerHigh, PauseCircle, CircleNotch } from "@phosphor-icons/react";
+import { Volume2, CirclePause, LoaderCircle } from "lucide-react";
 import Workspace from "@/models/workspace";
 import showToast from "@/utils/toast";
 import { useTranslation } from "react-i18next";
@@ -69,13 +69,17 @@ export default function AsyncTTSMessage({ slug, chatId }) {
         aria-label={speaking ? "Pause speech" : "Speak message"}
       >
         {speaking ? (
-          <PauseCircle size={18} className="mb-1" />
+          <CirclePause strokeWidth={1.5} size={18} className="mb-1" />
         ) : (
           <>
             {loading ? (
-              <CircleNotch size={18} className="mb-1 animate-spin" />
+              <LoaderCircle
+                strokeWidth={1.5}
+                size={18}
+                className="mb-1 animate-spin"
+              />
             ) : (
-              <SpeakerHigh size={18} className="mb-1" />
+              <Volume2 strokeWidth={1.5} size={18} className="mb-1" />
             )}
           </>
         )}

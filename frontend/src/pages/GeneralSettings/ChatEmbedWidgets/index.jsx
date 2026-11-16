@@ -1,10 +1,9 @@
 import { useState } from "react";
 import Sidebar from "@/components/SettingsSidebar";
 import { isMobile } from "react-device-detect";
-import { CaretLeft, CaretRight } from "@phosphor-icons/react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import EmbedConfigsView from "./EmbedConfigs";
 import EmbedChatsView from "./EmbedChats";
-
 export default function ChatEmbedWidgets() {
   const [selectedView, setSelectedView] = useState("configs");
   const [showViewModal, setShowViewModal] = useState(false);
@@ -41,7 +40,7 @@ export default function ChatEmbedWidgets() {
                     className="text-white/60 hover:text-white transition-colors duration-200"
                   >
                     <div className="flex items-center text-sky-400">
-                      <CaretLeft size={24} />
+                      <ChevronLeft strokeWidth={1.5} size={24} />
                       <div>Back</div>
                     </div>
                   </button>
@@ -82,8 +81,8 @@ export default function ChatEmbedWidgets() {
             </div>
           </div>
         </div>
-        <div className="flex-[2] flex flex-col gap-y-[18px] mt-10 min-w-0">
-          <div className="bg-theme-bg-secondary text-white rounded-xl flex-1 p-4 overflow-y-scroll no-scroll">
+        <div className="flex-[2] min-w-0 flex flex-col gap-y-[18px] mt-10">
+          <div className="bg-theme-bg-secondary text-theme-text-primary rounded-xl flex-1 min-w-0 p-4 overflow-y-scroll no-scroll">
             {selectedView === "configs" ? (
               <EmbedConfigsView />
             ) : (
@@ -104,8 +103,10 @@ function WidgetLayout({ children }) {
     >
       <Sidebar />
       <div
-        style={{ height: isMobile ? "100%" : "calc(100% - 32px)" }}
-        className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] w-full h-full flex min-w-0"
+        style={{
+          height: isMobile ? "100%" : "calc(100% - 32px)",
+        }}
+        className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] flex-1 min-w-0 h-full flex"
       >
         {children}
       </div>
@@ -130,21 +131,13 @@ function WidgetList({ selectedView, handleClick }) {
       {Object.entries(views).map(([view, settings], index) => (
         <div
           key={view}
-          className={`py-3 px-4 flex items-center justify-between ${
-            index === 0 ? "rounded-t-xl" : ""
-          } ${
-            index === Object.keys(views).length - 1
-              ? "rounded-b-xl"
-              : "border-b border-white/10"
-          } cursor-pointer transition-all duration-300 hover:bg-theme-bg-primary ${
-            selectedView === view ? "bg-white/10 light:bg-theme-bg-sidebar" : ""
-          }`}
+          className={`py-3 px-4 flex items-center justify-between ${index === 0 ? "rounded-t-xl" : ""} ${index === Object.keys(views).length - 1 ? "rounded-b-xl" : "border-b border-white/10"} cursor-pointer transition-all duration-300 hover:bg-theme-bg-primary ${selectedView === view ? "bg-white/10 light:bg-theme-bg-sidebar" : ""}`}
           onClick={() => handleClick?.(view)}
         >
           <div className="text-sm font-light">{settings.title}</div>
-          <CaretRight
+          <ChevronRight
+            strokeWidth={1.5}
             size={14}
-            weight="bold"
             className="text-theme-text-secondary"
           />
         </div>

@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
 import System from "@/models/system";
 import { OLLAMA_COMMON_URLS } from "@/utils/constants";
-import { CaretDown, CaretUp, Info, CircleNotch } from "@phosphor-icons/react";
+import { ChevronDown, ChevronUp, Info, LoaderCircle } from "lucide-react";
 import useProviderEndpointAutoDiscovery from "@/hooks/useProviderEndpointAutoDiscovery";
 import { Tooltip } from "react-tooltip";
 import { Link } from "react-router-dom";
+import useCustomAppName from "@/hooks/useCustomAppName";
 
 export default function OllamaLLMOptions({ settings }) {
+  const { brandName } = useCustomAppName();
   const {
     autoDetecting: loading,
     basePath,
@@ -44,9 +46,9 @@ export default function OllamaLLMOptions({ settings }) {
         >
           {showAdvancedControls ? "Hide" : "Show"} advanced settings
           {showAdvancedControls ? (
-            <CaretUp size={14} className="ml-1" />
+            <ChevronUp strokeWidth={1.5} size={14} className="ml-1" />
           ) : (
-            <CaretDown size={14} className="ml-1" />
+            <ChevronDown strokeWidth={1.5} size={14} className="ml-1" />
           )}
         </button>
       </div>
@@ -61,6 +63,7 @@ export default function OllamaLLMOptions({ settings }) {
                     Ollama Base URL
                   </label>
                   <Info
+                    strokeWidth={1.5}
                     size={18}
                     className="text-theme-text-secondary cursor-pointer"
                     data-tooltip-id="ollama-base-url"
@@ -79,7 +82,8 @@ export default function OllamaLLMOptions({ settings }) {
                   />
                 </div>
                 {loading ? (
-                  <CircleNotch
+                  <LoaderCircle
+                    strokeWidth={1.5}
                     size={16}
                     className="text-theme-text-secondary animate-spin"
                   />
@@ -116,6 +120,7 @@ export default function OllamaLLMOptions({ settings }) {
                   Ollama Keep Alive
                 </label>
                 <Info
+                  strokeWidth={1.5}
                   size={18}
                   className="text-theme-text-secondary cursor-pointer"
                   data-tooltip-id="ollama-keep-alive"
@@ -167,6 +172,7 @@ export default function OllamaLLMOptions({ settings }) {
                   Model context window
                 </label>
                 <Info
+                  strokeWidth={1.5}
                   size={18}
                   className="text-theme-text-secondary cursor-pointer"
                   data-tooltip-id="ollama-model-context-window"
@@ -200,7 +206,7 @@ export default function OllamaLLMOptions({ settings }) {
                     tokens if the model supports more than that and no value is
                     specified.
                     <br /> <br />
-                    If an invalid value is entered, AnythingLLM will handle this
+                    If an invalid value is entered, {brandName} will handle this
                     for you so that chats do not fail.
                   </p>
                 </Tooltip>
@@ -227,6 +233,7 @@ export default function OllamaLLMOptions({ settings }) {
                   Authentication Token
                 </label>
                 <Info
+                  strokeWidth={1.5}
                   size={18}
                   className="text-theme-text-secondary cursor-pointer"
                   data-tooltip-id="ollama-authentication-token"

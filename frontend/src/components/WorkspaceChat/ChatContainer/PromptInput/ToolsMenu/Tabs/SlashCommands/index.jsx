@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { Plus } from "@phosphor-icons/react";
+import { Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import System from "@/models/system";
 import { useModal } from "@/hooks/useModal";
@@ -197,8 +197,8 @@ export default function SlashCommandsTab({
         className="flex items-center gap-1.5 px-2 py-1 rounded cursor-pointer hover:bg-zinc-700/50 light:hover:bg-slate-100"
       >
         <Plus
+          strokeWidth={1.5}
           size={12}
-          weight="bold"
           className="text-white light:text-slate-900"
         />
         <span className="text-xs text-white light:text-slate-900">

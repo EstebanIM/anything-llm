@@ -1,4 +1,4 @@
-import { PencilSimple } from "@phosphor-icons/react";
+import { Pencil } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 function OptionButton({ label, description, index, selected, onClick }) {
@@ -45,7 +45,7 @@ function OtherRow({ selected, onToggle, allowSkip, onSkip }) {
         }`}
       >
         <span className="flex items-center justify-center shrink-0 w-7 h-7 rounded-lg bg-zinc-700 light:bg-slate-300 text-white light:text-slate-900">
-          <PencilSimple size={16} />
+          <Pencil strokeWidth={1.5} size={16} />
         </span>
         <span
           className={`text-sm leading-5 ${

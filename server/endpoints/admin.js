@@ -31,6 +31,7 @@ const {
 const {
   workspaceDeletionProtection,
 } = require("../utils/middleware/workspaceDeletionProtection");
+const { removeCustomFavicon } = require("../utils/files/favicon");
 
 function adminEndpoints(app) {
   if (!app) return;
@@ -359,8 +360,8 @@ function adminEndpoints(app) {
         // These match the ManagerRoute pages in the frontend.
         const managerAllowedFields = [
           "custom_app_name",
-          "footer_data",
-          "support_email",
+          "login_powered_by",
+          "brand_color",
           "meta_page_title",
           "meta_page_favicon",
         ];
@@ -386,12 +387,6 @@ function adminEndpoints(app) {
             : await SystemSettings.get({ label });
 
           switch (label) {
-            case "footer_data":
-              requestedSettings[label] = setting?.value ?? JSON.stringify([]);
-              break;
-            case "support_email":
-              requestedSettings[label] = setting?.value || null;
-              break;
             case "text_splitter_chunk_size":
               requestedSettings[label] =
                 setting?.value || embedder?.embeddingMaxChunkLength || null;
@@ -435,6 +430,12 @@ function adminEndpoints(app) {
               requestedSettings[label] = ImportedPlugin.listImportedPlugins();
               break;
             case "custom_app_name":
+              requestedSettings[label] = setting?.value || null;
+              break;
+            case "login_powered_by":
+              requestedSettings[label] = setting?.value || null;
+              break;
+            case "brand_color":
               requestedSettings[label] = setting?.value || null;
               break;
             case "feature_flags":
@@ -482,8 +483,8 @@ function adminEndpoints(app) {
         if (user?.role === ROLES.manager) {
           const managerAllowedFields = [
             "custom_app_name",
-            "footer_data",
-            "support_email",
+            "login_powered_by",
+            "brand_color",
             "meta_page_title",
             "meta_page_favicon",
             "theme_palettes",
@@ -497,7 +498,31 @@ function adminEndpoints(app) {
           updates = filteredUpdates;
         }
 
-        await SystemSettings.updateSettings(updates);
+        const hasFaviconUpdate = Object.prototype.hasOwnProperty.call(
+          updates,
+          "meta_page_favicon"
+        );
+        const previousFavicon = hasFaviconUpdate
+          ? await SystemSettings.getValueOrFallback(
+              { label: "meta_page_favicon" },
+              null
+            )
+          : null;
+
+        const { success, error } = await SystemSettings.updateSettings(updates);
+        if (!success) {
+          return response.status(500).json({ success: false, error });
+        }
+
+        if (hasFaviconUpdate) {
+          const nextFavicon = await SystemSettings.getValueOrFallback(
+            { label: "meta_page_favicon" },
+            null
+          );
+          if (previousFavicon !== nextFavicon)
+            await removeCustomFavicon(previousFavicon);
+        }
+
         response.status(200).json({ success: true, error: null });
       } catch (e) {
         console.error(e);

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Info, CaretDown, CaretUp } from "@phosphor-icons/react";
+import { Info, ChevronDown, ChevronUp } from "lucide-react";
 import paths from "@/utils/paths";
 import System from "@/models/system";
 import PreLoader from "@/components/Preloader";
@@ -29,7 +29,7 @@ export default function LocalAiOptions({ settings, showAlert = false }) {
       {showAlert && (
         <div className="flex flex-col md:flex-row md:items-center gap-x-2 text-white mb-6 bg-blue-800/30 w-fit rounded-lg px-4 py-2">
           <div className="gap-x-2 flex items-center">
-            <Info size={12} className="hidden md:visible" />
+            <Info strokeWidth={1.5} size={12} className="hidden md:visible" />
             <p className="text-sm md:text-base">
               LocalAI as your LLM requires you to set an embedding service to
               use.
@@ -81,9 +81,9 @@ export default function LocalAiOptions({ settings, showAlert = false }) {
         >
           {showAdvancedControls ? "Hide" : "Show"} advanced settings
           {showAdvancedControls ? (
-            <CaretUp size={14} className="ml-1" />
+            <ChevronUp strokeWidth={1.5} size={14} className="ml-1" />
           ) : (
-            <CaretDown size={14} className="ml-1" />
+            <ChevronDown strokeWidth={1.5} size={14} className="ml-1" />
           )}
         </button>
       </div>
@@ -128,6 +128,7 @@ export default function LocalAiOptions({ settings, showAlert = false }) {
                 Model Context Window
               </label>
               <Info
+                strokeWidth={1.5}
                 size={18}
                 className="text-theme-text-secondary cursor-pointer"
                 data-tooltip-id="localai-max-tokens"

@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import {
   Info,
-  CaretDown,
-  CaretUp,
-  CircleNotch,
-  Warning,
-} from "@phosphor-icons/react";
+  ChevronDown,
+  ChevronUp,
+  LoaderCircle,
+  TriangleAlert,
+} from "lucide-react";
 import paths from "@/utils/paths";
 import System from "@/models/system";
 import { LMSTUDIO_COMMON_URLS } from "@/utils/constants";
@@ -41,7 +41,7 @@ export default function LMStudioOptions({ settings, showAlert = false }) {
       {showAlert && (
         <div className="flex flex-col md:flex-row md:items-center gap-x-2 text-white mb-6 bg-blue-800/30 w-fit rounded-lg px-4 py-2">
           <div className="gap-x-2 flex items-center">
-            <Info size={12} className="hidden md:visible" />
+            <Info strokeWidth={1.5} size={12} className="hidden md:visible" />
             <p className="text-sm md:text-base">
               LMStudio as your LLM requires you to set an embedding service to
               use.
@@ -72,9 +72,9 @@ export default function LMStudioOptions({ settings, showAlert = false }) {
         >
           {showAdvancedControls ? "Hide" : "Show"} advanced settings
           {showAdvancedControls ? (
-            <CaretUp size={14} className="ml-1" />
+            <ChevronUp strokeWidth={1.5} size={14} className="ml-1" />
           ) : (
-            <CaretDown size={14} className="ml-1" />
+            <ChevronDown strokeWidth={1.5} size={14} className="ml-1" />
           )}
         </button>
       </div>
@@ -88,6 +88,7 @@ export default function LMStudioOptions({ settings, showAlert = false }) {
                   LM Studio Base URL
                 </label>
                 <Info
+                  strokeWidth={1.5}
                   size={18}
                   className="text-theme-text-secondary cursor-pointer"
                   data-tooltip-id="lmstudio-base-url"
@@ -106,7 +107,8 @@ export default function LMStudioOptions({ settings, showAlert = false }) {
                 />
               </div>
               {loading ? (
-                <CircleNotch
+                <LoaderCircle
+                  strokeWidth={1.5}
                   size={16}
                   className="text-theme-text-secondary animate-spin"
                 />
@@ -142,6 +144,7 @@ export default function LMStudioOptions({ settings, showAlert = false }) {
                 Model Context Window
               </label>
               <Info
+                strokeWidth={1.5}
                 size={18}
                 className="text-theme-text-secondary cursor-pointer"
                 data-tooltip-id="lmstudio-max-tokens"
@@ -179,6 +182,7 @@ export default function LMStudioOptions({ settings, showAlert = false }) {
                 Authentication Token
               </label>
               <Info
+                strokeWidth={1.5}
                 size={18}
                 className="text-theme-text-secondary cursor-pointer"
                 data-tooltip-id="lmstudio-authentication-token"
@@ -261,7 +265,8 @@ function LMStudioModelSelection({ settings, basePath = null, apiKey = null }) {
           </label>
           {!loading && !!basePath && (
             <>
-              <Warning
+              <TriangleAlert
+                strokeWidth={1.5}
                 size={18}
                 className="text-red-400 cursor-pointer"
                 data-tooltip-id="lmstudio-selected-model"

@@ -1,10 +1,4 @@
-import {
-  CheckCircle,
-  XCircle,
-  CircleNotch,
-  Clock,
-  X,
-} from "@phosphor-icons/react";
+import { CircleCheck, CircleX, LoaderCircle, Clock, X } from "lucide-react";
 import { middleTruncate } from "@/utils/directories";
 
 /**
@@ -22,9 +16,9 @@ const STATUS_STYLES = {
   pending: {
     icon: (
       <Clock
+        strokeWidth={1.5}
         size={16}
         className="text-slate-100 light:text-slate-900/40 shrink-0"
-        weight="regular"
       />
     ),
     textColor: "text-slate-100 light:text-slate-900/70",
@@ -32,10 +26,10 @@ const STATUS_STYLES = {
   },
   embedding: {
     icon: (
-      <CircleNotch
+      <LoaderCircle
+        strokeWidth={1.5}
         size={16}
         className="text-slate-100 light:text-slate-900/40 animate-spin shrink-0"
-        weight="bold"
       />
     ),
     textColor: "text-slate-100 light:text-slate-900/70",
@@ -43,10 +37,10 @@ const STATUS_STYLES = {
   },
   complete: {
     icon: (
-      <CheckCircle
+      <CircleCheck
+        strokeWidth={1.5}
         size={16}
         className="text-green-400 light:text-green-600 shrink-0"
-        weight="fill"
       />
     ),
     textColor: "text-green-400 light:text-green-600",
@@ -54,10 +48,10 @@ const STATUS_STYLES = {
   },
   failed: {
     icon: (
-      <XCircle
+      <CircleX
+        strokeWidth={1.5}
         size={16}
         className="text-red-400 light:text-red-600 shrink-0"
-        weight="fill"
       />
     ),
     textColor: "text-red-400 light:text-red-600",
@@ -116,6 +110,7 @@ export default function EmbeddingFileRow({
                 title="Remove from queue"
               >
                 <X
+                  strokeWidth={1.5}
                   size={14}
                   className="text-slate-100 light:text-slate-900/40 hover:text-slate-100 light:hover:text-slate-900"
                 />

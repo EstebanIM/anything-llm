@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Tooltip } from "react-tooltip";
-import { At } from "@phosphor-icons/react";
+import { AtSign } from "lucide-react";
 import { useIsAgentSessionActive } from "@/utils/chat/agent";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
@@ -20,7 +20,8 @@ export default function AvailableAgentsButton({ showing, setShowAgents }) {
         showing ? "!opacity-100" : ""
       }`}
     >
-      <At
+      <AtSign
+        strokeWidth={1.5}
         color="var(--theme-sidebar-footer-icon-fill)"
         className="w-[20px] h-[20px] pointer-events-none text-theme-text-primary"
       />

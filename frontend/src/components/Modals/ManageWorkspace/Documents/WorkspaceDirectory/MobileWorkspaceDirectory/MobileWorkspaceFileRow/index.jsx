@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { DotsThreeVertical, Eye, File, PushPin } from "@phosphor-icons/react";
+import { EllipsisVertical, Eye, File, Pin } from "lucide-react";
 import { middleTruncate } from "@/utils/directories";
 import MobileCheckbox from "../../../MobileCheckbox";
 import usePinDocument from "../../../hooks/usePinDocument";
@@ -38,7 +38,7 @@ export default function MobileWorkspaceFileRow({
     >
       {selectable && <MobileCheckbox state={selected ? "all" : "none"} />}
       <File
-        weight="fill"
+        strokeWidth={1.5}
         className="w-5 h-5 shrink-0 text-zinc-500 light:text-slate-400"
       />
       <div className="flex-1 min-w-0 ml-3 py-1.5">
@@ -68,7 +68,7 @@ export default function MobileWorkspaceFileRow({
           }}
           className="border-none bg-transparent w-11 h-11 shrink-0 flex items-center justify-center rounded-xl text-zinc-400 light:text-slate-500 active:bg-zinc-700 light:active:bg-slate-200"
         >
-          <DotsThreeVertical size={20} weight="bold" />
+          <EllipsisVertical strokeWidth={1.5} size={20} />
         </button>
       ) : (
         <div className="w-3 shrink-0" />
@@ -92,13 +92,13 @@ function RowStatus({ staged, folderName, pinned, watched }) {
       <span className="truncate">{folderName}</span>
       {pinned && (
         <span className="flex items-center gap-x-0.5 shrink-0 text-sky-400 light:text-sky-700">
-          <PushPin size={12} weight="fill" />
+          <Pin strokeWidth={1.5} size={12} />
           {t("connectors.directory.pinned")}
         </span>
       )}
       {watched && (
         <span className="flex items-center gap-x-0.5 shrink-0 text-sky-400 light:text-sky-700">
-          <Eye size={12} weight="fill" />
+          <Eye strokeWidth={1.5} size={12} />
           {t("connectors.directory.watching")}
         </span>
       )}

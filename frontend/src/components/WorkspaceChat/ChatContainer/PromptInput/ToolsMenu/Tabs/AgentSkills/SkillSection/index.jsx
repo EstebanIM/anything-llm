@@ -1,5 +1,5 @@
 import { useRef, useEffect } from "react";
-import { CaretDown } from "@phosphor-icons/react";
+import { ChevronDown } from "lucide-react";
 
 export default function SkillSection({
   name,
@@ -31,9 +31,9 @@ export default function SkillSection({
         onClick={onToggle}
       >
         <div className="flex items-center gap-1.5">
-          <CaretDown
+          <ChevronDown
+            strokeWidth={1.5}
             size={10}
-            weight="bold"
             className={`text-zinc-400 light:text-slate-500 transition-transform duration-150 ${
               expanded ? "" : "-rotate-90"
             }`}

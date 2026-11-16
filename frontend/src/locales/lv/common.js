@@ -174,6 +174,25 @@ const TRANSLATIONS = {
     title: "Jauna darba telpa",
     placeholder: "Mana darba telpa",
   },
+  "workspace-folders": {
+    new: "New folder",
+    label: "Folder",
+    placeholder: "Folder name",
+    rename: "Rename",
+    delete: "Delete",
+    "add-subfolder": "Add subfolder",
+    root: "No folder (root)",
+    "max-depth": "Maximum folder depth reached (5 levels).",
+    move: "Move",
+    "move-title": "Move folder",
+    "move-description": "Choose a destination for this folder.",
+    "move-button": "Move",
+    "move-success": "Folder moved",
+    "move-current": "Current",
+    "move-cancel": "Cancel",
+    "move-moving": "Moving...",
+    "move-loading": "Loading...",
+  },
   "workspaces—settings": {
     general: "Vispārīgie iestatījumi",
     chat: "Sarunas iestatījumi",
@@ -894,10 +913,20 @@ const TRANSLATIONS = {
         description:
           "Iestatiet atbalsta e-pasta adresi, kam lietotājiem jābūt pieejamam, kad viņiem nepieciešama palīdzība.",
       },
+      "brand-color": {
+        title: "Brand Color",
+        description:
+          "Set the brand color applied to the chat embed widget (launcher button and user message bubbles).",
+      },
       "app-name": {
         title: "Nosaukums",
         description:
           "Iestatiet nosaukumu, kas tiek rādīts pieteikšanās lapā visiem lietotājiem.",
+      },
+      "login-powered-by": {
+        title: "Login footer text",
+        description: "Set the powered-by text displayed below the login form.",
+        placeholder: "Powered by your organization",
       },
       "display-language": {
         title: "Displeja valoda",
@@ -912,6 +941,16 @@ const TRANSLATIONS = {
         recommended: "Ieteicamais izmērs: 800 x 200",
         remove: "Noņemt",
         replace: "Aizvietot",
+        dark: {
+          title: "Dark mode",
+          description: "Logo shown when the interface uses the dark theme.",
+          alt: "Uploaded dark mode logo",
+        },
+        light: {
+          title: "Light mode",
+          description: "Logo shown when the interface uses the light theme.",
+          alt: "Uploaded light mode logo",
+        },
       },
       "browser-appearance": {
         title: "Pārlūkprogrammas izskats",
@@ -925,6 +964,13 @@ const TRANSLATIONS = {
         favicon: {
           title: "Favicon",
           description: "Izmantojiet pielāgotu favicon pārlūkprogrammas cilnei.",
+          upload: "Upload favicon",
+          replace: "Replace favicon",
+          remove: "Remove favicon",
+          recommended: "Recommended: square PNG, SVG, or ICO",
+          url: "Favicon URL",
+          placeholder: "https://example.com/favicon.png",
+          alt: "Custom favicon preview",
         },
       },
       "sidebar-footer": {
@@ -1552,6 +1598,10 @@ const TRANSLATIONS = {
     },
   },
   profile_settings: {
+    current_password: "Current password",
+    current_password_placeholder: "Your current password",
+    current_password_hint: "Only needed if you are changing your password.",
+    username_managed_by_admin: "Your administrator manages your username.",
     edit_account: "Rediģēt kontu",
     profile_picture: "Profila attēls",
     remove_profile_picture: "Noņemt profila attēlu",
@@ -1568,8 +1618,16 @@ const TRANSLATIONS = {
     profile_updated: "Profils atjaunināts.",
     failed_update_user: "Neizdevās atjaunināt lietotāju: {{error}}",
     account: "Konta",
+    settings: "Settings",
+    back_to_workspaces: "Back to workspaces",
     support: "Atbalsts",
     signout: "Iziet",
+    roles: {
+      superadmin: "Superadministrators",
+      admin: "Administrators",
+      manager: "Vadītājs",
+      default: "Lietotājs",
+    },
   },
   "keyboard-shortcuts": {
     title: "Taustiņu atvieglojumi",

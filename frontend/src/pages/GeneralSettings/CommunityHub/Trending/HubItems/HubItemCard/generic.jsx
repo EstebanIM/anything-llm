@@ -1,5 +1,5 @@
 import paths from "@/utils/paths";
-import { Eye, LockSimple } from "@phosphor-icons/react";
+import { Eye, Lock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Tooltip } from "react-tooltip";
 
@@ -24,7 +24,7 @@ export default function GenericHubCard({ item }) {
 }
 
 export function VisibilityIcon({ visibility = "public" }) {
-  const Icon = visibility === "private" ? LockSimple : Eye;
+  const Icon = visibility === "private" ? Lock : Eye;
 
   return (
     <>

@@ -1,4 +1,4 @@
-import { DotsThreeVertical } from "@phosphor-icons/react";
+import { EllipsisVertical } from "lucide-react";
 import { useRef, useState, useEffect } from "react";
 import PromptHistory from "@/models/promptHistory";
 import { useTranslation } from "react-i18next";
@@ -79,7 +79,7 @@ export default function PromptHistoryItem({
               className="border-none text-theme-text-secondary cursor-pointer hover:text-primary-button flex items-center justify-center"
               onClick={() => setShowMenu(!showMenu)}
             >
-              <DotsThreeVertical size={16} weight="bold" />
+              <EllipsisVertical strokeWidth={1.5} size={16} />
             </button>
             {showMenu && (
               <div

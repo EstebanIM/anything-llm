@@ -5,7 +5,7 @@ import Modal, {
   ModalPrimaryButton,
   ModalSecondaryButton,
 } from "@/components/lib/Modal";
-import { WarningCircle } from "@phosphor-icons/react";
+import { CircleAlert } from "lucide-react";
 import System from "@/models/system";
 import showToast from "@/utils/toast";
 import { useTranslation } from "react-i18next";
@@ -80,7 +80,8 @@ export function NoSetupWarning({ showing, onSetupClick }) {
 
   return (
     <div className="flex items-start gap-1.5">
-      <WarningCircle
+      <CircleAlert
+        strokeWidth={1.5}
         size={16}
         className="text-white light:text-slate-800 shrink-0 mt-0.5"
       />

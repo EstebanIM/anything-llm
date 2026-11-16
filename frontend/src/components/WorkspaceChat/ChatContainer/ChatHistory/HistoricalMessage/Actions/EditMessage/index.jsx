@@ -1,4 +1,4 @@
-import { Info, Pencil } from "@phosphor-icons/react";
+import { Info, Pencil } from "lucide-react";
 import { useRef, useEffect } from "react";
 import Appearance from "@/models/appearance";
 import { useTranslation } from "react-i18next";
@@ -39,7 +39,7 @@ export function EditMessageAction({ chatId = null, role, isEditing }) {
         className="border-none text-zinc-300 light:text-slate-500 px-0"
         aria-label={`Edit ${role === "user" ? t("chat_window.edit_prompt") : t("chat_window.edit_response")}`}
       >
-        <Pencil size={21} className="mb-1" />
+        <Pencil strokeWidth={1.5} size={21} className="mb-1" />
       </button>
     </div>
   );
@@ -138,6 +138,7 @@ function EditActionBar({ onCancel, onSave, isUserMessage = false }) {
     <div className="mt-2 flex flex-col md:flex-row md:items-center justify-between gap-2 bg-zinc-800 light:bg-slate-200 rounded-lg p-2">
       <div className="flex items-start gap-2">
         <Info
+          strokeWidth={1.5}
           size={12}
           className="shrink-0 mt-0.5 text-zinc-200 light:text-slate-800"
         />

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Info } from "@phosphor-icons/react";
+import { Info } from "lucide-react";
 import { Tooltip } from "react-tooltip";
 import System from "@/models/system";
 import { Link } from "react-router-dom";
@@ -45,6 +45,7 @@ export default function PrivateModeOptions({ settings }) {
               Privatemode Proxy URL
             </label>
             <Info
+              strokeWidth={1.5}
               size={18}
               className="text-theme-text-secondary cursor-pointer"
               data-tooltip-id="private-mode-base-url"

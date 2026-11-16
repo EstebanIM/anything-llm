@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CaretUpDown, MagnifyingGlass, X } from "@phosphor-icons/react";
+import { ChevronsUpDown, Search, X } from "lucide-react";
 import useScrollActiveItemIntoView from "@/hooks/useScrollActiveItemIntoView";
 
 /**
@@ -44,26 +44,30 @@ export default function ProviderSearchMenu({
   return (
     <button
       ref={triggerRef}
-      className="w-full max-w-[640px] h-[64px] bg-theme-settings-input-bg rounded-lg flex items-center p-[14px] justify-between cursor-pointer border-2 border-transparent hover:border-primary-button focus:border-primary-button focus:outline-none transition-all duration-300"
+      className="w-full max-w-[640px] min-h-[64px] h-auto min-w-0 bg-theme-settings-input-bg rounded-lg flex items-center p-[14px] justify-between cursor-pointer border-2 border-transparent hover:border-primary-button focus:border-primary-button focus:outline-none transition-all duration-300"
       type="button"
       onClick={() => setOpen(true)}
     >
-      <div className="flex gap-x-4 items-center">
+      <div className="flex min-w-0 flex-1 gap-x-4 items-center">
         <img
           src={selected.logo}
           alt={`${selected.name} logo`}
-          className="w-10 h-10 rounded-md"
+          className="w-10 h-10 rounded-md shrink-0"
         />
-        <div className="flex flex-col text-left">
-          <div className="text-sm font-semibold text-white">
+        <div className="min-w-0 flex-1 flex flex-col text-left">
+          <div className="text-sm font-semibold text-white break-words">
             {selected.name}
           </div>
-          <div className="mt-1 text-xs text-description">
+          <div className="mt-1 text-xs text-description break-words">
             {selected.description}
           </div>
         </div>
       </div>
-      <CaretUpDown size={24} weight="bold" className="text-white" />
+      <ChevronsUpDown
+        strokeWidth={1.5}
+        size={24}
+        className="text-white shrink-0 ml-3"
+      />
     </button>
   );
 }
@@ -127,9 +131,9 @@ function SearchPanel({
       <div className="absolute top-0 left-0 w-full max-w-[640px] max-h-[310px] min-h-[64px] bg-theme-settings-input-bg rounded-lg flex flex-col justify-between cursor-pointer border-2 border-primary-button z-20">
         <div className="w-full flex flex-col gap-y-1">
           <div className="flex items-center sticky top-0 z-10 border-b border-[#9CA3AF] mx-4 bg-theme-settings-input-bg">
-            <MagnifyingGlass
+            <Search
+              strokeWidth={1.5}
               size={20}
-              weight="bold"
               className="absolute left-4 z-30 text-theme-text-primary -ml-4 my-2"
             />
             <input
@@ -146,8 +150,8 @@ function SearchPanel({
               className="border-none -ml-4 my-2 bg-transparent z-20 pl-12 h-[38px] w-full px-4 py-1 text-sm outline-none text-theme-text-primary placeholder:text-theme-text-primary placeholder:font-medium [&::-webkit-search-cancel-button]:appearance-none"
             />
             <X
+              strokeWidth={1.5}
               size={20}
-              weight="bold"
               className="cursor-pointer text-theme-text-primary hover:text-x-button"
               onClick={handleXButton}
             />

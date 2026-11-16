@@ -1,4 +1,4 @@
-import { Check, Minus } from "@phosphor-icons/react";
+import { Check, Minus } from "lucide-react";
 
 /**
  * @param {Object} props
@@ -15,8 +15,8 @@ export default function MobileCheckbox({ state = "none", onToggle, label }) {
           : "bg-sky-500 text-white"
       }`}
     >
-      {state === "all" && <Check size={12} weight="bold" />}
-      {state === "some" && <Minus size={12} weight="bold" />}
+      {state === "all" && <Check strokeWidth={1.5} size={12} />}
+      {state === "some" && <Minus strokeWidth={1.5} size={12} />}
     </span>
   );
 

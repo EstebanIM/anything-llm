@@ -181,6 +181,25 @@ const TRANSLATIONS = {
     title: "Nový pracovní prostor",
     placeholder: "Můj pracovní prostor",
   },
+  "workspace-folders": {
+    new: "New folder",
+    label: "Folder",
+    placeholder: "Folder name",
+    rename: "Rename",
+    delete: "Delete",
+    "add-subfolder": "Add subfolder",
+    root: "No folder (root)",
+    "max-depth": "Maximum folder depth reached (5 levels).",
+    move: "Move",
+    "move-title": "Move folder",
+    "move-description": "Choose a destination for this folder.",
+    "move-button": "Move",
+    "move-success": "Folder moved",
+    "move-current": "Current",
+    "move-cancel": "Cancel",
+    "move-moving": "Moving...",
+    "move-loading": "Loading...",
+  },
   "workspaces—settings": {
     general: "Obecná nastavení",
     chat: "Nastavení chatu",
@@ -897,10 +916,20 @@ const TRANSLATIONS = {
         description:
           "Nastavte e-mailovou adresu podpory, která má být přístupná uživatelům, když potřebují pomoc.",
       },
+      "brand-color": {
+        title: "Brand Color",
+        description:
+          "Set the brand color applied to the chat embed widget (launcher button and user message bubbles).",
+      },
       "app-name": {
         title: "Název",
         description:
           "Nastavte název, který je zobrazen na přihlašovací stránce všem uživatelům.",
+      },
+      "login-powered-by": {
+        title: "Login footer text",
+        description: "Set the powered-by text displayed below the login form.",
+        placeholder: "Powered by your organization",
       },
       "display-language": {
         title: "Zobrazovací jazyk",
@@ -915,6 +944,16 @@ const TRANSLATIONS = {
         recommended: "Doporučená velikost: 800 x 200",
         remove: "Odebrat",
         replace: "Nahradit",
+        dark: {
+          title: "Dark mode",
+          description: "Logo shown when the interface uses the dark theme.",
+          alt: "Uploaded dark mode logo",
+        },
+        light: {
+          title: "Light mode",
+          description: "Logo shown when the interface uses the light theme.",
+          alt: "Uploaded light mode logo",
+        },
       },
       "browser-appearance": {
         title: "Vzhled prohlížeče",
@@ -928,6 +967,13 @@ const TRANSLATIONS = {
         favicon: {
           title: "Favicon",
           description: "Použít vlastní favicon pro kartu prohlížeče.",
+          upload: "Upload favicon",
+          replace: "Replace favicon",
+          remove: "Remove favicon",
+          recommended: "Recommended: square PNG, SVG, or ICO",
+          url: "Favicon URL",
+          placeholder: "https://example.com/favicon.png",
+          alt: "Custom favicon preview",
         },
       },
       "sidebar-footer": {
@@ -1566,6 +1612,10 @@ const TRANSLATIONS = {
     },
   },
   profile_settings: {
+    current_password: "Current password",
+    current_password_placeholder: "Your current password",
+    current_password_hint: "Only needed if you are changing your password.",
+    username_managed_by_admin: "Your administrator manages your username.",
     edit_account: "Upravit účet",
     profile_picture: "Profilový obrázek",
     remove_profile_picture: "Odebrat profilový obrázek",
@@ -1582,8 +1632,16 @@ const TRANSLATIONS = {
     profile_updated: "Profil aktualizován.",
     failed_update_user: "Nepodařilo se aktualizovat uživatele: {{error}}",
     account: "Účet",
+    settings: "Settings",
+    back_to_workspaces: "Back to workspaces",
     support: "Podpora",
     signout: "Odhlásit",
+    roles: {
+      superadmin: "Superadministrátor",
+      admin: "Administrátor",
+      manager: "Manažer",
+      default: "Uživatel",
+    },
   },
   "keyboard-shortcuts": {
     title: "Klávesové zkratky",

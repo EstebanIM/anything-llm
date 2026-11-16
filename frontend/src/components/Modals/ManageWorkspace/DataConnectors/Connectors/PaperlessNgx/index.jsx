@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import System from "@/models/system";
 import showToast from "@/utils/toast";
-import { Info } from "@phosphor-icons/react";
+import { Info } from "lucide-react";
 
 export default function PaperlessNgxOptions() {
   const [loading, setLoading] = useState(false);
@@ -96,7 +96,7 @@ export default function PaperlessNgxOptions() {
           <div className="flex flex-col gap-y-2 w-full pr-10">
             <div className="flex flex-col md:flex-row md:items-center gap-x-2 text-white mb-4 bg-blue-800/30 w-fit rounded-lg px-4 py-2">
               <div className="gap-x-2 flex items-center">
-                <Info className="shrink-0" size={25} />
+                <Info strokeWidth={1.5} className="shrink-0" size={25} />
                 <p className="text-sm">
                   Make sure your Paperless-ngx instance is running and
                   accessible from this machine.

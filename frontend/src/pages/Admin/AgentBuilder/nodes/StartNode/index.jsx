@@ -1,5 +1,5 @@
 import React, { Fragment } from "react";
-import { Plus, X } from "@phosphor-icons/react";
+import { Plus, X } from "lucide-react";
 import { VARIABLE_HIGHLIGHT_CLASS } from "../../VariableInput";
 
 const INPUT_CLASS =
@@ -66,7 +66,7 @@ export default function StartNode({
             className="p-1.5 rounded-lg border-none bg-theme-settings-input-bg text-theme-text-primary hover:bg-theme-action-menu-item-hover transition-colors duration-300"
             title="Add variable"
           >
-            <Plus className="w-3.5 h-3.5" />
+            <Plus strokeWidth={1.5} className="w-3.5 h-3.5" />
           </button>
         </div>
         <p className="text-xs text-theme-text-secondary">
@@ -142,7 +142,7 @@ export default function StartNode({
                   className="p-2.5 rounded-lg border-none bg-theme-settings-input-bg text-theme-text-primary hover:text-red-500 hover:border-red-500/20 hover:bg-red-500/10 transition-colors duration-300"
                   title="Delete variable"
                 >
-                  <X className="w-4 h-4" />
+                  <X strokeWidth={1.5} className="w-4 h-4" />
                 </button>
               )}
             </div>

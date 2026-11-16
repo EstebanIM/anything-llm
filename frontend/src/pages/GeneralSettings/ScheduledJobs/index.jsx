@@ -11,7 +11,7 @@ import Modal from "@/components/lib/Modal";
 import { useModal } from "@/hooks/useModal";
 import showToast from "@/utils/toast";
 import JobRow from "./components/JobRow";
-import { Bell } from "@phosphor-icons/react";
+import { Bell } from "lucide-react";
 import { Tooltip } from "react-tooltip";
 
 export default function ScheduledJobsPage() {
@@ -230,7 +230,7 @@ function NotificationBellButton() {
         )}
         className="border-none flex items-center justify-center w-9 h-9 rounded-lg hover:bg-white/10 light:hover:bg-slate-200 transition-colors"
       >
-        <Bell size={20} className="text-orange-400" />
+        <Bell strokeWidth={1.5} size={20} className="text-orange-400" />
       </button>
       <Tooltip
         id="notification-bell-tooltip"

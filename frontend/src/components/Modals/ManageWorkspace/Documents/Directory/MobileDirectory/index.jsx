@@ -1,12 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  CircleNotch,
-  FolderNotch,
-  FolderPlus,
-  MagnifyingGlass,
-  Trash,
-} from "@phosphor-icons/react";
+import { LoaderCircle, Folder, FolderPlus, Search, Trash2 } from "lucide-react";
 import PreLoader from "@/components/Preloader";
 import UploadFile from "../../UploadFile";
 import MoveToFolderIcon from "../MoveToFolderIcon";
@@ -91,15 +85,15 @@ export default function MobileDirectory({
               className="search-input w-full h-11 pl-10 pr-3 rounded-xl text-base outline-none border border-transparent bg-zinc-800 light:bg-slate-100 text-slate-50 light:text-slate-900 placeholder:text-zinc-500 light:placeholder:text-slate-400 focus:border-sky-500"
             />
             {searching ? (
-              <CircleNotch
+              <LoaderCircle
+                strokeWidth={1.5}
                 size={16}
-                weight="bold"
                 className="absolute left-3.5 top-1/2 -translate-y-1/2 animate-spin text-zinc-400 light:text-slate-500"
               />
             ) : (
-              <MagnifyingGlass
+              <Search
+                strokeWidth={1.5}
                 size={16}
-                weight="bold"
                 className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 light:text-slate-500"
               />
             )}
@@ -108,7 +102,7 @@ export default function MobileDirectory({
             label={t("connectors.directory.new-folder")}
             onClick={onNewFolder}
           >
-            <FolderPlus size={20} />
+            <FolderPlus strokeWidth={1.5} size={20} />
           </MobileActionIconButton>
         </div>
       </div>
@@ -138,7 +132,7 @@ export default function MobileDirectory({
 
       {!!busyMessage && (
         <div className="shrink-0 flex items-center gap-x-2 mx-4 mb-2 px-3 py-2 rounded-xl text-xs font-medium bg-zinc-800 light:bg-slate-100 text-slate-50 light:text-slate-900">
-          <CircleNotch size={14} weight="bold" className="animate-spin" />
+          <LoaderCircle strokeWidth={1.5} size={14} className="animate-spin" />
           {busyMessage}
         </div>
       )}
@@ -184,7 +178,7 @@ export default function MobileDirectory({
           label={t("chat_window.delete")}
           onClick={onDelete}
         >
-          <Trash size={20} />
+          <Trash2 strokeWidth={1.5} size={20} />
         </MobileActionIconButton>
       </MobileActionBar>
 
@@ -196,7 +190,7 @@ export default function MobileDirectory({
         {folders.map((folder) => (
           <MobileSheetOption
             key={folder.name}
-            icon={FolderNotch}
+            icon={Folder}
             label={folder.name}
             onClick={() => {
               setShowFolderSheet(false);

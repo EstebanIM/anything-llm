@@ -1,9 +1,8 @@
-import { CaretDown, CaretUp, Plus, CaretLeft } from "@phosphor-icons/react";
+import { ChevronDown, ChevronUp, Plus, ChevronLeft } from "lucide-react";
 import AnythingInfinityLogo from "@/media/logo/anything-llm-infinity.png";
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import paths from "@/utils/paths";
-import { Link } from "react-router-dom";
 
 export default function HeaderMenu({
   agentName,
@@ -33,25 +32,25 @@ export default function HeaderMenu({
   }, []);
 
   return (
-    <div className="absolute top-[calc(40px+16px)] left-4 right-4">
-      <div className="flex justify-between items-start max-w-[1700px] mx-auto">
-        <div className="flex items-center gap-x-2">
+    <div className="absolute top-4 md:top-[calc(40px+16px)] left-4 right-4">
+      <div className="flex flex-col md:flex-row gap-3 md:gap-0 md:justify-between md:items-start max-w-[1700px] mx-auto">
+        <div className="flex items-center gap-x-2 min-w-0">
           <button
             onClick={() => navigate(paths.settings.agentSkills())}
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-theme-settings-input-bg border border-white/10 hover:bg-theme-action-menu-bg transition-colors duration-300"
+            className="w-8 h-8 shrink-0 flex items-center justify-center rounded-full bg-theme-settings-input-bg border border-white/10 hover:bg-theme-action-menu-bg transition-colors duration-300"
           >
-            <CaretLeft
-              weight="bold"
+            <ChevronLeft
+              strokeWidth={1.5}
               className="w-5 h-5 text-theme-text-primary"
             />
           </button>
           <div
-            className="flex items-center bg-theme-settings-input-bg rounded-md border border-white/10 pointer-events-auto"
+            className="flex min-w-0 flex-1 md:flex-none items-center bg-theme-settings-input-bg rounded-md border border-white/10 pointer-events-auto"
             ref={dropdownRef}
           >
             <button
               onClick={() => navigate(paths.settings.agentSkills())}
-              className="!border-t-transparent !border-l-transparent !border-b-transparent flex items-center gap-x-2 px-4 py-2 border-r border-white/10 hover:bg-theme-action-menu-bg transition-colors duration-300"
+              className="!border-t-transparent !border-l-transparent !border-b-transparent flex shrink-0 items-center gap-x-2 px-3 md:px-4 py-2 border-r border-white/10 hover:bg-theme-action-menu-bg transition-colors duration-300"
             >
               <img
                 src={AnythingInfinityLogo}
@@ -65,7 +64,7 @@ export default function HeaderMenu({
             <div className="relative">
               <button
                 disabled={!hasOtherFlows}
-                className="border-none flex items-center justify-between gap-x-1 text-theme-text-primary text-sm px-4 py-2 enabled:hover:bg-theme-action-menu-bg transition-colors duration-300 min-w-[200px] max-w-[300px]"
+                className="border-none flex min-w-0 items-center justify-between gap-x-1 text-theme-text-primary text-sm px-3 md:px-4 py-2 enabled:hover:bg-theme-action-menu-bg transition-colors duration-300 w-full md:min-w-[200px] md:max-w-[300px]"
                 onClick={() => {
                   if (!agentName && !hasOtherFlows) {
                     const agentNameInput = document.getElementById(
@@ -84,8 +83,8 @@ export default function HeaderMenu({
                 </span>
                 {hasOtherFlows && (
                   <div className="flex flex-col ml-2 shrink-0">
-                    <CaretUp size={10} />
-                    <CaretDown size={10} />
+                    <ChevronUp strokeWidth={1.5} size={10} />
+                    <ChevronDown strokeWidth={1.5} size={10} />
                   </div>
                 )}
               </button>
@@ -114,13 +113,13 @@ export default function HeaderMenu({
         </div>
 
         <div className="flex flex-col gap-y-1 items-end">
-          <div className="flex items-center gap-x-[15px]">
+          <div className="flex w-full md:w-auto items-center justify-end gap-x-2 md:gap-x-[15px]">
             <button
               onClick={onNewFlow}
-              className="flex items-center gap-x-2 text-theme-text-primary text-sm font-medium px-3 py-2 rounded-lg border border-white bg-theme-settings-input-bg hover:bg-theme-action-menu-bg transition-colors duration-300"
+              className="flex min-w-0 items-center gap-x-2 text-theme-text-primary text-sm font-medium px-3 py-2 rounded-lg border border-white bg-theme-settings-input-bg hover:bg-theme-action-menu-bg transition-colors duration-300"
             >
-              <Plus className="w-4 h-4" />
-              New Flow
+              <Plus strokeWidth={1.5} className="w-4 h-4" />
+              <span className="truncate">New Flow</span>
             </button>
             <button
               onClick={onPublishFlow}
@@ -135,12 +134,6 @@ export default function HeaderMenu({
               Save
             </button>
           </div>
-          <Link
-            to="https://docs.anythingllm.com/agent-flows/overview"
-            className="text-theme-text-secondary text-sm hover:underline hover:text-cta-button flex items-center gap-x-1 w-fit float-right"
-          >
-            view documentation &rarr;
-          </Link>
         </div>
       </div>
     </div>

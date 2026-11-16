@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CircleNotch } from "@phosphor-icons/react";
+import { LoaderCircle } from "lucide-react";
 import Telegram from "@/models/telegram";
 import showToast from "@/utils/toast";
 import { useTranslation } from "react-i18next";
@@ -78,7 +78,7 @@ function DisconnectButton({ onDisconnected }) {
     >
       {disconnecting ? (
         <>
-          <CircleNotch className="h-4 w-4 animate-spin" />
+          <LoaderCircle strokeWidth={1.5} className="h-4 w-4 animate-spin" />
           {t("telegram.connected.disconnecting")}
         </>
       ) : (

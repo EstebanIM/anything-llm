@@ -21,14 +21,14 @@ export default function ChatModeSelection({ workspace }) {
         </label>
       </div>
 
-      <div className="flex flex-col gap-y-[8px]">
-        <div className="w-fit flex gap-x-1 items-center p-1 rounded-lg bg-theme-settings-input-bg ">
+      <div className="flex flex-col gap-y-1 mt-2">
+        <div className="w-full sm:w-fit flex gap-x-1 items-center p-1 rounded-lg bg-theme-settings-input-bg ">
           <input type="hidden" name="chatMode" value={chatMode} />
           <button
             type="button"
             disabled={chatMode === "automatic"}
             onClick={() => selectMode("automatic")}
-            className="border-none transition-bg duration-200 px-6 py-1 text-md text-white/60 disabled:text-white bg-transparent disabled:bg-[#687280] rounded-md hover:bg-white/10"
+            className="border-none transition-bg duration-200 flex-1 sm:flex-none px-3 sm:px-6 py-2 sm:py-1 text-sm sm:text-base text-white/60 disabled:text-white bg-transparent disabled:bg-[#687280] rounded-md hover:bg-white/10 whitespace-nowrap"
           >
             {t("chat.mode.automatic.title")}
           </button>
@@ -36,7 +36,7 @@ export default function ChatModeSelection({ workspace }) {
             type="button"
             disabled={chatMode === "chat"}
             onClick={() => selectMode("chat")}
-            className="border-none transition-bg duration-200 px-6 py-1 text-md text-white/60 disabled:text-white bg-transparent disabled:bg-[#687280] rounded-md hover:bg-white/10 light:hover:bg-black/10"
+            className="border-none transition-bg duration-200 flex-1 sm:flex-none px-3 sm:px-6 py-2 sm:py-1 text-sm sm:text-base text-white/60 disabled:text-white bg-transparent disabled:bg-[#687280] rounded-md hover:bg-white/10 light:hover:bg-black/10 whitespace-nowrap"
           >
             {t("chat.mode.chat.title")}
           </button>
@@ -44,7 +44,7 @@ export default function ChatModeSelection({ workspace }) {
             type="button"
             disabled={chatMode === "query"}
             onClick={() => selectMode("query")}
-            className="border-none transition-bg duration-200 px-6 py-1 text-md text-white/60 disabled:text-white bg-transparent disabled:bg-[#687280] rounded-md hover:bg-white/10 light:hover:bg-black/10"
+            className="border-none transition-bg duration-200 flex-1 sm:flex-none px-3 sm:px-6 py-2 sm:py-1 text-sm sm:text-base text-white/60 disabled:text-white bg-transparent disabled:bg-[#687280] rounded-md hover:bg-white/10 light:hover:bg-black/10 whitespace-nowrap"
           >
             {t("chat.mode.query.title")}
           </button>
@@ -67,7 +67,10 @@ function ChatModeExplanation({ chatMode = "chat" }) {
       <b>{t(`chat.mode.${chatMode}.title`)}</b>{" "}
       <Trans
         i18nKey={`chat.mode.${chatMode}.description`}
-        components={{ b: <b />, br: <br /> }}
+        components={{
+          b: <b />,
+          br: <br />,
+        }}
       />
     </p>
   );

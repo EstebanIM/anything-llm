@@ -5,12 +5,12 @@ import Sidebar from "@/components/SettingsSidebar";
 import { isMobile } from "react-device-detect";
 import {
   ArrowLeft,
-  ChatText,
+  MessageSquareText,
   Brain,
   Wrench,
   File,
-  Stop,
-} from "@phosphor-icons/react";
+  Square,
+} from "lucide-react";
 import ScheduledJobs from "@/models/scheduledJobs";
 import usePolling from "@/hooks/usePolling";
 import showToast from "@/utils/toast";
@@ -201,7 +201,7 @@ function RunHeader({
           onClick={onBack}
           className="border-none flex items-center gap-2 text-zinc-400 light:text-slate-600 hover:text-zinc-50 light:hover:text-slate-950 text-sm transition-colors w-fit"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft strokeWidth={1.5} className="h-4 w-4" />
           {t("scheduledJobs.runDetail.back")}
         </button>
         <p className="text-lg leading-7 font-semibold text-zinc-50 light:text-slate-950">
@@ -233,7 +233,7 @@ function RunHeader({
             title={t("scheduledJobs.runDetail.stopJob")}
             className="border-none h-9 px-5 rounded-lg bg-red-500/20 text-red-400 light:bg-red-100 light:text-red-600 text-sm font-medium hover:bg-red-500/30 light:hover:bg-red-200 transition-colors disabled:opacity-50 shrink-0 flex items-center gap-2"
           >
-            <Stop className="h-4 w-4" weight="bold" />
+            <Square strokeWidth={1.5} className="h-4 w-4" />
             {killing
               ? t("scheduledJobs.runDetail.killing")
               : t("scheduledJobs.runDetail.stopJob")}
@@ -367,7 +367,7 @@ function FinalResponseSection({ t, result }) {
   return (
     <CollapsibleSection
       title={t("scheduledJobs.runDetail.sections.response")}
-      icon={ChatText}
+      icon={MessageSquareText}
       defaultOpen={true}
       copyableContent={msgToRender}
     >

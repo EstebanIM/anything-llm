@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { CaretDown, Check, X, Hammer } from "@phosphor-icons/react";
+import { ChevronDown, Check, X, Hammer } from "lucide-react";
 import AgentSkillWhitelist from "@/models/agentSkillWhitelist";
 import { useTranslation } from "react-i18next";
 import useTimeoutProgress from "@/hooks/useTimeoutProgress";
@@ -115,7 +115,7 @@ function ToolApprovalHeader({
   return (
     <div className="flex w-full items-center justify-between">
       <div className="flex items-center gap-2">
-        <Hammer size={16} />
+        <Hammer strokeWidth={1.5} size={16} />
         <div className="text-white/80 light:text-slate-900 font-medium text-sm flex gap-x-1">
           {t("chat_window.agent_invocation.model_wants_to_call")}
           <span className="font-semibold text-sky-400 light:text-sky-600">
@@ -129,7 +129,8 @@ function ToolApprovalHeader({
           className="absolute top-4 right-4 border-none"
           aria-label={isExpanded ? "Hide details" : "Show details"}
         >
-          <CaretDown
+          <ChevronDown
+            strokeWidth={1.5}
             className={`w-4 h-4 transform transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
           />
         </button>
@@ -211,7 +212,7 @@ function ToolApprovalResponseMessage({ approved }) {
   if (approved === false) {
     return (
       <div className="flex items-center gap-1 text-sm font-medium text-red-400 light:text-red-500">
-        <X size={16} weight="bold" />
+        <X strokeWidth={1.5} size={16} />
         <span>{t("chat_window.agent_invocation.tool_call_was_rejected")}</span>
       </div>
     );
@@ -219,7 +220,7 @@ function ToolApprovalResponseMessage({ approved }) {
 
   return (
     <div className="flex items-center gap-1 text-sm font-medium text-green-400 light:text-green-500">
-      <Check size={16} weight="bold" />
+      <Check strokeWidth={1.5} size={16} />
       <span>{t("chat_window.agent_invocation.tool_call_was_approved")}</span>
     </div>
   );

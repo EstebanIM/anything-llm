@@ -1,10 +1,6 @@
 import { useState } from "react";
-import {
-  CircleNotch,
-  Eye,
-  EyeSlash,
-  TelegramLogo,
-} from "@phosphor-icons/react";
+import { LoaderCircle, Eye, EyeOff } from "lucide-react";
+import { TelegramLogo } from "@phosphor-icons/react";
 import Telegram from "@/models/telegram";
 import showToast from "@/utils/toast";
 import CreateBotSection from "./CreateBotSection";
@@ -53,7 +49,10 @@ export default function SetupView({ onConnected }) {
         >
           {connecting ? (
             <>
-              <CircleNotch className="h-4 w-4 animate-spin" />
+              <LoaderCircle
+                strokeWidth={1.5}
+                className="h-4 w-4 animate-spin"
+              />
               {t("telegram.setup.step2.connecting")}
             </>
           ) : (
@@ -71,7 +70,7 @@ export default function SetupView({ onConnected }) {
 function BotTokenInput({ botToken, setBotToken }) {
   const { t } = useTranslation();
   const [showToken, setShowToken] = useState(false);
-  const Icon = showToken ? Eye : EyeSlash;
+  const Icon = showToken ? Eye : EyeOff;
 
   return (
     <div className="flex flex-col gap-y-1.5 w-[320px]">

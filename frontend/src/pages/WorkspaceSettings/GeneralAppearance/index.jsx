@@ -1,20 +1,27 @@
 import Workspace from "@/models/workspace";
+import WorkspaceFolderModel from "@/models/workspaceFolder";
 import { castToType } from "@/utils/types";
 import showToast from "@/utils/toast";
 import { useEffect, useState } from "react";
 import AutosaveForm from "@/components/AutosaveForm";
 import WorkspaceName from "./WorkspaceName";
+import WorkspaceFolder from "./WorkspaceFolder";
 import SuggestedChatMessages from "./SuggestedChatMessages";
 import DeleteWorkspace from "./DeleteWorkspace";
 
 export default function GeneralInfo({ slug, deletionProtected = false }) {
   const [workspace, setWorkspace] = useState(null);
+  const [folders, setFolders] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchWorkspace() {
-      const workspace = await Workspace.bySlug(slug);
+      const [workspace, tree] = await Promise.all([
+        Workspace.bySlug(slug),
+        WorkspaceFolderModel.tree(),
+      ]);
       setWorkspace(workspace);
+      setFolders(tree?.folders || []);
       setLoading(false);
     }
     fetchWorkspace();
@@ -41,6 +48,7 @@ export default function GeneralInfo({ slug, deletionProtected = false }) {
         className="w-full xl:w-1/2 flex flex-col"
       >
         <WorkspaceName key={workspace.slug} workspace={workspace} />
+        <WorkspaceFolder workspace={workspace} folders={folders} />
       </AutosaveForm>
       <SuggestedChatMessages slug={workspace.slug} />
       <DeleteWorkspace workspace={workspace} visible={!deletionProtected} />

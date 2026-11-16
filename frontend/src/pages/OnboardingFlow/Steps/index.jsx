@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight } from "@phosphor-icons/react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useState } from "react";
 import { isMobile } from "react-device-detect";
 import useRedirectToHomeOnOnboardingComplete from "@/hooks/useOnboardingComplete";
@@ -62,6 +62,7 @@ export function OnboardingLayout({ children }) {
                   className="group p-2 rounded-lg border-2 border-zinc-300 disabled:border-zinc-600 h-fit w-fit disabled:not-allowed hover:bg-zinc-100 disabled:hover:bg-transparent"
                 >
                   <ArrowLeft
+                    strokeWidth={1.5}
                     className="text-white group-hover:text-black group-disabled:text-gray-500"
                     size={30}
                   />
@@ -77,6 +78,7 @@ export function OnboardingLayout({ children }) {
                   className="group p-2 rounded-lg border-2 border-zinc-300 disabled:border-zinc-600 h-fit w-fit disabled:not-allowed hover:bg-teal disabled:hover:bg-transparent"
                 >
                   <ArrowRight
+                    strokeWidth={1.5}
                     className="text-white group-hover:text-teal group-disabled:text-gray-500"
                     size={30}
                   />
@@ -103,6 +105,7 @@ export function OnboardingLayout({ children }) {
             aria-label="Back"
           >
             <ArrowLeft
+              strokeWidth={1.5}
               className="text-theme-text-secondary group-hover:text-theme-text-primary group-disabled:text-gray-500"
               size={30}
             />
@@ -131,6 +134,7 @@ export function OnboardingLayout({ children }) {
             aria-label="Continue"
           >
             <ArrowRight
+              strokeWidth={1.5}
               className="text-theme-text-secondary group-hover:text-white group-disabled:text-gray-500"
               size={30}
             />

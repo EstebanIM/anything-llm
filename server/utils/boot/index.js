@@ -8,6 +8,7 @@ const markOnboarded = require("./markOnboarded");
 const migrateWebBrowsingToDefault = require("./migrateWebBrowsingToDefault");
 const { PushNotifications } = require("../PushNotifications");
 const { TelegramBotService } = require("../telegramBot");
+const { ensureSuperAdmin } = require("./ensureSuperAdmin");
 
 // Testing SSL? You can make a self signed certificate and point the ENVs to that location
 // make a directory in server called 'sslcert' - cd into it
@@ -34,6 +35,7 @@ function bootSSL(app, port = 3001) {
       .listen(port, async () => {
         await migrateWebBrowsingToDefault(); // must run before markOnboarded() so a fresh instance is not mistaken for an existing one.
         await markOnboarded();
+        await ensureSuperAdmin();
         await setupTelemetry();
         new CommunicationKey(true);
         new EncryptionManager();
@@ -68,6 +70,7 @@ function bootHTTP(app, port = 3001) {
     .listen(port, async () => {
       await migrateWebBrowsingToDefault(); // must run before markOnboarded() so a fresh instance is not mistaken for an existing one.
       await markOnboarded();
+      await ensureSuperAdmin();
       await setupTelemetry();
       new CommunicationKey(true);
       new EncryptionManager();

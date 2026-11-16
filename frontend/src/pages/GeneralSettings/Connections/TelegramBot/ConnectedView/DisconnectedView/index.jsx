@@ -1,10 +1,6 @@
 import { useState } from "react";
-import {
-  CircleNotch,
-  Eye,
-  EyeSlash,
-  TelegramLogo,
-} from "@phosphor-icons/react";
+import { LoaderCircle, Eye, EyeOff } from "lucide-react";
+import { TelegramLogo } from "@phosphor-icons/react";
 import Telegram from "@/models/telegram";
 import showToast from "@/utils/toast";
 import { useTranslation } from "react-i18next";
@@ -18,7 +14,7 @@ export default function DisconnectedView({
   const { t } = useTranslation();
   const [reconnecting, setReconnecting] = useState(false);
   const [showToken, setShowToken] = useState(false);
-  const Icon = showToken ? Eye : EyeSlash;
+  const Icon = showToken ? Eye : EyeOff;
 
   async function handleReconnect(e) {
     e.preventDefault();
@@ -89,7 +85,10 @@ export default function DisconnectedView({
             className="flex items-center justify-center gap-x-1.5 text-sm font-medium bg-zinc-50 light:bg-slate-900 text-zinc-900 light:text-white rounded-lg h-8 px-5 hover:opacity-90 transition-opacity duration-200 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
           >
             {reconnecting ? (
-              <CircleNotch className="h-4 w-4 animate-spin" />
+              <LoaderCircle
+                strokeWidth={1.5}
+                className="h-4 w-4 animate-spin"
+              />
             ) : (
               t("telegram.connected.reconnect")
             )}

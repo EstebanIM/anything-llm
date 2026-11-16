@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CircleNotch } from "@phosphor-icons/react";
+import { LoaderCircle } from "lucide-react";
 import debounce from "lodash.debounce";
 import Toggle from "@/components/lib/Toggle";
 import System from "@/models/system";
@@ -55,7 +55,8 @@ export default function AgentSkillReranker() {
           {t("agent.settings.intelligent-skill-selection.description")}
         </p>
         {loading ? (
-          <CircleNotch
+          <LoaderCircle
+            strokeWidth={1.5}
             size={16}
             className="shrink-0 animate-spin text-zinc-400 light:text-slate-600"
           />

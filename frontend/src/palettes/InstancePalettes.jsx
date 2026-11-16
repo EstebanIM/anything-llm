@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { PencilSimple, Plus, Trash } from "@phosphor-icons/react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import Admin from "@/models/admin";
 import showToast from "@/utils/toast";
 import { useTheme } from "@/hooks/useTheme";
@@ -153,14 +153,14 @@ function PaletteSettings({ draft, setDraft }) {
                       })
                     }
                   >
-                    <PencilSimple size={14} />
+                    <Pencil strokeWidth={1.5} size={14} />
                   </IconButton>
                   <IconButton
                     label={t("customization.items.instance-palettes.delete")}
                     onClick={() => removePalette(key)}
                     danger
                   >
-                    <Trash size={14} />
+                    <Trash2 strokeWidth={1.5} size={14} />
                   </IconButton>
                 </>
               )
@@ -173,7 +173,7 @@ function PaletteSettings({ draft, setDraft }) {
             onClick={startNew}
             className="flex items-center gap-x-2 rounded-lg py-2 px-3 text-sm text-white/60 hover:text-white border border-dashed border-theme-sidebar-border"
           >
-            <Plus size={14} />
+            <Plus strokeWidth={1.5} size={14} />
             {t("customization.items.instance-palettes.new")}
           </button>
         )}

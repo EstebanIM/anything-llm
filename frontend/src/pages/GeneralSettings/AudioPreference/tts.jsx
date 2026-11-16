@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import System from "@/models/system";
+import useCustomAppName from "@/hooks/useCustomAppName";
 import showToast from "@/utils/toast";
 import LLMItem from "@/components/LLMSelection/LLMItem";
 import CTAButton from "@/components/lib/CTAButton";
@@ -64,8 +65,8 @@ const PROVIDERS = [
       "Connect to an OpenAI compatible TTS service running locally or remotely.",
   },
 ];
-
 export default function TextToSpeechProvider({ settings }) {
+  const { brandName } = useCustomAppName();
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState(
@@ -75,9 +76,10 @@ export default function TextToSpeechProvider({ settings }) {
   const handleSubmit = async (e) => {
     e?.preventDefault();
     const form = e.target;
-    const data = { TextToSpeechProvider: selectedProvider };
+    const data = {
+      TextToSpeechProvider: selectedProvider,
+    };
     const formData = new FormData(form);
-
     for (var [key, value] of formData.entries()) data[key] = value;
     const { error } = await System.updateSystem(data);
     setSaving(true);
@@ -111,7 +113,7 @@ export default function TextToSpeechProvider({ settings }) {
           </div>
           <p className="text-xs leading-[18px] font-base text-white text-opacity-60">
             Here you can specify what kind of text-to-speech providers you would
-            want to use in your AnythingLLM experience. By default, we use the
+            want to use in your {brandName} experience. By default, we use the
             browser's built in support for these services, but you may want to
             use others.
           </p>

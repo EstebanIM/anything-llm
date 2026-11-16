@@ -1,6 +1,6 @@
 import useUser from "@/hooks/useUser";
 import paths from "@/utils/paths";
-import { ArrowUUpLeft, Wrench } from "@phosphor-icons/react";
+import { Undo2, Wrench } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useMatch } from "react-router-dom";
 
@@ -20,9 +20,9 @@ export default function SettingsButton() {
           data-tooltip-id="footer-item"
           data-tooltip-content="Back to workspaces"
         >
-          <ArrowUUpLeft
+          <Undo2
+            strokeWidth={1.5}
             className="h-5 w-5 text-white light:text-slate-800"
-            weight="fill"
           />
         </Link>
       </div>
@@ -38,8 +38,8 @@ export default function SettingsButton() {
         data-tooltip-content="Open settings"
       >
         <Wrench
+          strokeWidth={1.5}
           className="h-5 w-5 text-white light:text-slate-800"
-          weight="fill"
         />
       </Link>
     </div>

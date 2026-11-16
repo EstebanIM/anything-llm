@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { SpeakerHigh, PauseCircle, CircleNotch } from "@phosphor-icons/react";
+import { Volume2, CirclePause, LoaderCircle } from "lucide-react";
 import PiperTTSClient from "@/utils/piperTTS";
 import messageToSpeech from "@/utils/chat/messageToSpeech";
 
@@ -169,13 +169,17 @@ export default function PiperTTS({ chatId, voiceId = null, message }) {
         aria-label={speaking ? "Pause speech" : "Speak message"}
       >
         {speaking ? (
-          <PauseCircle size={18} className="mb-1" />
+          <CirclePause strokeWidth={1.5} size={18} className="mb-1" />
         ) : (
           <>
             {loading ? (
-              <CircleNotch size={18} className="mb-1 animate-spin" />
+              <LoaderCircle
+                strokeWidth={1.5}
+                size={18}
+                className="mb-1 animate-spin"
+              />
             ) : (
-              <SpeakerHigh size={18} className="mb-1" />
+              <Volume2 strokeWidth={1.5} size={18} className="mb-1" />
             )}
           </>
         )}

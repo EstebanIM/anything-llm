@@ -1,5 +1,5 @@
 import ConnectorImages from "@/components/DataConnectorOption/media";
-import { MagnifyingGlass } from "@phosphor-icons/react";
+import { Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import GithubOptions from "./Connectors/Github";
 import GitlabOptions from "./Connectors/Gitlab";
@@ -84,9 +84,9 @@ export default function DataConnectors() {
     <div className="flex upload-modal -mt-10 relative h-[70vh] w-[70vw]">
       <div className="w-full p-4 top-0 z-20 overflow-y-auto h-full">
         <div className="w-full flex items-center sticky top-0 z-50">
-          <MagnifyingGlass
+          <Search
+            strokeWidth={1.5}
             size={16}
-            weight="bold"
             className="absolute left-4 z-30 text-white"
           />
           <input

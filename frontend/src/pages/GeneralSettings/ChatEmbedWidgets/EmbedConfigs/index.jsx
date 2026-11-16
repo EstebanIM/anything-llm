@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import * as Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
-import { CodeBlock } from "@phosphor-icons/react";
+import { SquareCode } from "lucide-react";
 import EmbedRow from "./EmbedRow";
 import NewEmbedModal from "./NewEmbedModal";
 import { useModal } from "@/hooks/useModal";
@@ -48,14 +48,14 @@ export default function EmbedConfigsView() {
           </p>
         </div>
 
-        <div className="flex gap-x-10 mr-8">
-          <p className="text-xs leading-[18px] font-base text-theme-text-secondary mt-2">
+        <div className="flex flex-col items-start gap-3 w-full">
+          <p className="text-xs leading-[18px] font-base text-theme-text-secondary mt-2 max-w-2xl">
             {t("embeddable.description")}
           </p>
 
           <div>
             <CTAButton onClick={openModal} className="text-theme-bg-chat">
-              <CodeBlock className="h-4 w-4" weight="bold" />{" "}
+              <SquareCode strokeWidth={1.5} className="h-4 w-4" />{" "}
               {t("embeddable.create")}
             </CTAButton>
           </div>
@@ -63,7 +63,7 @@ export default function EmbedConfigsView() {
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-xs text-left rounded-lg min-w-[640px] border-spacing-0">
-          <thead className="text-theme-text-secondary text-xs leading-[18px] uppercase border-white/10 border-b">
+          <thead className="text-theme-text-secondary text-xs leading-[18px] uppercase border-theme-modal-border border-b">
             <tr>
               <th scope="col" className="px-6 py-3">
                 {t("embeddable.table.workspace")}

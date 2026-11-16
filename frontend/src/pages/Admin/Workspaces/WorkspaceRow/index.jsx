@@ -2,18 +2,20 @@ import moment from "moment";
 import { useRef } from "react";
 import Admin from "@/models/admin";
 import paths from "@/utils/paths";
-import { LinkSimple, Trash } from "@phosphor-icons/react";
+import { Link, Trash2 } from "lucide-react";
+import useCustomAppName from "@/hooks/useCustomAppName";
 
 export default function WorkspaceRow({
   workspace,
   users: _users,
   deletionProtected = false,
 }) {
+  const { brandName } = useCustomAppName();
   const rowRef = useRef(null);
   const handleDelete = async () => {
     if (
       !window.confirm(
-        `Are you sure you want to delete ${workspace.name}?\nAfter you do this it will be unavailable in this instance of AnythingLLM.\n\nThis action is irreversible.`
+        `Are you sure you want to delete ${workspace.name}?\nAfter you do this it will be unavailable in this instance of ${brandName}.\n\nThis action is irreversible.`
       )
     )
       return false;
@@ -37,7 +39,7 @@ export default function WorkspaceRow({
             rel="noreferrer"
             className="text-white flex items-center hover:underline"
           >
-            <LinkSimple className="mr-2 w-4 h-4" /> {workspace.slug}
+            <Link strokeWidth={1.5} className="mr-2 w-4 h-4" /> {workspace.slug}
           </a>
         </td>
         <td className="px-6">
@@ -55,7 +57,7 @@ export default function WorkspaceRow({
               onClick={handleDelete}
               className="text-xs font-medium text-white/80 light:text-black/80 hover:light:text-red-500 hover:text-red-300 rounded-lg px-2 py-1 hover:bg-white hover:light:bg-red-50 hover:bg-opacity-10"
             >
-              <Trash className="h-5 w-5" />
+              <Trash2 strokeWidth={1.5} className="h-5 w-5" />
             </button>
           )}
         </td>

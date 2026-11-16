@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { Copy, Check } from "@phosphor-icons/react";
+import { Copy, Check } from "lucide-react";
 import Admin from "@/models/admin";
 import paths from "@/utils/paths";
 import { userFromStorage } from "@/utils/request";
 import System from "@/models/system";
+import useCustomAppName from "@/hooks/useCustomAppName";
 import { useTranslation } from "react-i18next";
 import {
   ModalHeader,
@@ -13,9 +14,9 @@ import {
   ModalSecondaryButton,
   ModalInput,
 } from "@/components/lib/Modal";
-
 export default function NewApiKeyModal({ closeModal, onSuccess }) {
   const { t } = useTranslation();
+  const { brandName } = useCustomAppName();
   const [apiKey, setApiKey] = useState(null);
   const [name, setName] = useState("");
   const [error, setError] = useState(null);
@@ -59,7 +60,9 @@ export default function NewApiKeyModal({ closeModal, onSuccess }) {
       <ModalBody>
         {error && (
           <p className="text-red-400 text-sm">
-            {t("api.messages.error", { error })}
+            {t("api.messages.error", {
+              error,
+            })}
           </p>
         )}
         {!apiKey && (
@@ -87,19 +90,19 @@ export default function NewApiKeyModal({ closeModal, onSuccess }) {
               className="border-none absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md bg-transparent hover:bg-zinc-800 light:hover:bg-slate-100 transition-all duration-300"
             >
               {copied ? (
-                <Check size={20} className="text-green-400" weight="bold" />
+                <Check strokeWidth={1.5} size={20} className="text-green-400" />
               ) : (
                 <Copy
+                  strokeWidth={1.5}
                   size={20}
                   className="text-slate-50 light:text-slate-900"
-                  weight="bold"
                 />
               )}
             </button>
           </div>
         )}
         <p className="text-xs text-zinc-400 light:text-slate-600">
-          {t("api.modal.helper")}
+          {t("api.modal.helper", { appName: brandName })}
         </p>
         <a
           href={paths.apiDocs()}

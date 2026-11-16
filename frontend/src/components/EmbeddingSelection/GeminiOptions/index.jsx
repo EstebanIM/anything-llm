@@ -1,4 +1,4 @@
-import { Info } from "@phosphor-icons/react";
+import { Info } from "lucide-react";
 import { Tooltip } from "react-tooltip";
 
 const DEFAULT_MODELS = [
@@ -69,6 +69,7 @@ export default function GeminiOptions({ settings }) {
             Output dimensions
           </label>
           <Info
+            strokeWidth={1.5}
             size={16}
             className="text-theme-text-secondary cursor-pointer"
           />

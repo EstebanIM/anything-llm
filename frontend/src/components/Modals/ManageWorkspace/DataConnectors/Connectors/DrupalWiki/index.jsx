@@ -8,7 +8,7 @@
 import { useState } from "react";
 import System from "@/models/system";
 import showToast from "@/utils/toast";
-import { Warning } from "@phosphor-icons/react";
+import { TriangleAlert } from "lucide-react";
 import { Tooltip } from "react-tooltip";
 
 export default function DrupalWikiOptions() {
@@ -124,7 +124,8 @@ export default function DrupalWikiOptions() {
                     <p className="font-bold text-white">
                       Drupal Wiki API Token
                     </p>
-                    <Warning
+                    <TriangleAlert
+                      strokeWidth={1.5}
                       size={14}
                       className="ml-1 text-orange-500 cursor-pointer"
                       data-tooltip-id="access-token-tooltip"

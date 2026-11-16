@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { MagnifyingGlass } from "@phosphor-icons/react";
+import { Search } from "lucide-react";
 import Admin from "@/models/admin";
 import showToast from "@/utils/toast";
 import {
@@ -62,7 +62,7 @@ export default function AddMemberModal({ closeModal, workspace, users }) {
     .filter((user) =>
       user.username.toLowerCase().includes(searchTerm.toLowerCase())
     )
-    .filter((user) => user.role !== "admin")
+    .filter((user) => !["admin", "superadmin"].includes(user.role))
     .filter((user) => user.role !== "manager");
 
   return (
@@ -74,9 +74,9 @@ export default function AddMemberModal({ closeModal, workspace, users }) {
             className="w-full h-[34px] bg-zinc-800 light:bg-white border border-zinc-800 light:border-slate-300 rounded-[100px] text-zinc-100 light:text-slate-900 placeholder:text-zinc-400 light:placeholder:text-slate-400 text-sm px-10 pl-10 outline-none focus:border-sky-500 light:focus:border-sky-500"
             placeholder="Search for a user"
           />
-          <MagnifyingGlass
+          <Search
+            strokeWidth={1.5}
             size={16}
-            weight="bold"
             className="text-zinc-400 light:text-slate-500 absolute left-3 top-1/2 transform -translate-y-1/2"
           />
         </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Plus, MagnifyingGlass } from "@phosphor-icons/react";
+import { Plus, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import paths from "@/utils/paths";
@@ -67,10 +67,10 @@ export default function SearchBox({ user, showNewWsModal }) {
           onFocus={(e) => e.target.select()}
           className="border-none w-full h-full rounded-lg bg-theme-sidebar-item-default pl-9 focus:pl-4 pr-1 placeholder:text-white/50 light:placeholder:text-slate-500 placeholder:font-semibold outline-none text-theme-text-primary search-input peer text-sm"
         />
-        <MagnifyingGlass
+        <Search
+          strokeWidth={1.5}
           size={14}
           className="absolute left-3 top-1/2 transform -translate-y-1/2 text-theme-settings-input-placeholder peer-focus:invisible"
-          weight="bold"
           hidden={!!searchTerm}
         />
       </div>
@@ -204,8 +204,8 @@ function ShortWidthNewWorkspaceButton({ user, showNewWsModal }) {
         className="border-none flex items-center justify-center bg-white  rounded-lg p-[8px] hover:bg-white/80 light:hover:bg-slate-300 transition-all duration-300"
       >
         <Plus
+          strokeWidth={1.5}
           size={16}
-          weight="bold"
           className="text-black light:text-slate-500"
         />
       </button>

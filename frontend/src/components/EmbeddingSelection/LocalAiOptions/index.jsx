@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { CaretDown, CaretUp, Info } from "@phosphor-icons/react";
+import { ChevronDown, ChevronUp, Info } from "lucide-react";
 import System from "@/models/system";
 import PreLoader from "@/components/Preloader";
 import { LOCALAI_COMMON_URLS } from "@/utils/constants";
@@ -37,6 +37,7 @@ export default function LocalAiOptions({ settings }) {
                 Local AI API Key
               </label>
               <Info
+                strokeWidth={1.5}
                 size={16}
                 data-tooltip-id="localai-api-key-tooltip"
                 className="text-theme-text-secondary cursor-pointer"
@@ -80,6 +81,7 @@ export default function LocalAiOptions({ settings }) {
               Max embedding chunk length
             </label>
             <Info
+              strokeWidth={1.5}
               size={16}
               className="text-theme-text-secondary cursor-pointer"
             />
@@ -119,6 +121,7 @@ export default function LocalAiOptions({ settings }) {
               Output dimensions
             </label>
             <Info
+              strokeWidth={1.5}
               size={16}
               className="text-theme-text-secondary cursor-pointer"
             />
@@ -163,9 +166,9 @@ export default function LocalAiOptions({ settings }) {
         >
           {showAdvancedControls ? "Hide" : "Show"} advanced settings
           {showAdvancedControls ? (
-            <CaretUp size={14} className="ml-1" />
+            <ChevronUp strokeWidth={1.5} size={14} className="ml-1" />
           ) : (
-            <CaretDown size={14} className="ml-1" />
+            <ChevronDown strokeWidth={1.5} size={14} className="ml-1" />
           )}
         </button>
       </div>

@@ -3,7 +3,7 @@ import {
   ONBOARDING_SURVEY_URL,
 } from "@/utils/constants";
 import paths from "@/utils/paths";
-import { CheckCircle } from "@phosphor-icons/react";
+import { CircleCheck } from "lucide-react";
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -124,16 +124,14 @@ export default function Survey({ setHeader, setForwardBtn, setBackBtn }) {
       <div className="w-full flex justify-center items-center py-40">
         <div className="w-full flex items-center justify-center px-1 md:px-8 py-4">
           <div className="w-auto flex flex-col gap-y-1 items-center">
-            <CheckCircle size={60} className="text-green-500" />
+            <CircleCheck
+              strokeWidth={1.5}
+              size={60}
+              className="text-green-500"
+            />
             <p className="text-white text-lg">
               {t("onboarding.survey.thankYou")}
             </p>
-            <a
-              href={paths.mailToMintplex()}
-              className="text-sky-400 underline text-xs"
-            >
-              team@mintplexlabs.com
-            </a>
           </div>
         </div>
       </div>

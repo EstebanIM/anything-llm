@@ -1,6 +1,6 @@
 import { useModal } from "@/hooks/useModal";
 import Modal, { ModalHeader } from "@/components/lib/Modal";
-import { SlidersHorizontal } from "@phosphor-icons/react";
+import { SlidersHorizontal } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import MaxToolCallStack from "./MaxToolCallStack";
 import AgentClarifyingQuestions from "./AgentClarifyingQuestions";
@@ -15,7 +15,11 @@ export default function AgentSkillSettings() {
         onClick={openModal}
         className={`w-10 h-10 flex items-center justify-center light:border-black/10 light:border-solid border-none light:!border rounded-lg transition-colors outline-none bg-transparent hover:bg-theme-bg-secondary`}
       >
-        <SlidersHorizontal size={24} className={`text-theme-text-secondary`} />
+        <SlidersHorizontal
+          strokeWidth={1.5}
+          size={24}
+          className={`text-theme-text-secondary`}
+        />
       </button>
       <AgentSkillSettingsModal isOpen={isOpen} closeModal={closeModal} />
     </>

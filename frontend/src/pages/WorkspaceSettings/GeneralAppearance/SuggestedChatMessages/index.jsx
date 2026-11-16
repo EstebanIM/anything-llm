@@ -2,7 +2,7 @@ import PreLoader from "@/components/Preloader";
 import Workspace from "@/models/workspace";
 import showToast from "@/utils/toast";
 import { useEffect, useState } from "react";
-import { Plus, X } from "@phosphor-icons/react";
+import { Plus, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 export default function SuggestedChatMessages({ slug }) {
@@ -140,7 +140,7 @@ export default function SuggestedChatMessages({ slug }) {
               }}
               onClick={() => handleRemoveMessage(index)}
             >
-              <X className="m-[1px]" size={20} />
+              <X strokeWidth={1.5} className="m-[1px]" size={20} />
             </button>
             <button
               key={index}
@@ -180,7 +180,7 @@ export default function SuggestedChatMessages({ slug }) {
           className="flex gap-x-2 items-center justify-start text-white text-sm hover:text-sky-400 transition-all duration-300"
         >
           {t("general.message.add")}{" "}
-          <Plus className="" size={24} weight="fill" />
+          <Plus strokeWidth={1.5} className="" size={24} />
         </button>
       )}
 

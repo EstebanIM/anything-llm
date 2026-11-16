@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Warning } from "@phosphor-icons/react";
+import { TriangleAlert } from "lucide-react";
 import renderMarkdown from "@/utils/chat/markdown";
 import DOMPurify from "@/utils/chat/purify";
 import Citations from "../Citation";
@@ -50,7 +50,10 @@ const PromptReply = ({ uuid, reply, pending, error, sources = [] }) => {
             className="inline-block p-2 rounded-lg bg-red-50 text-red-500"
             role="alert"
           >
-            <Warning className="h-4 w-4 mb-1 inline-block" />{" "}
+            <TriangleAlert
+              strokeWidth={1.5}
+              className="h-4 w-4 mb-1 inline-block"
+            />{" "}
             {t("chat_window.response_failed")}
             <span className="text-xs">
               {t("chat_window.response_failed_reason", {

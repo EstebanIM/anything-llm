@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
-import { Check } from "@phosphor-icons/react";
+import { Check } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 const AutosaveFormContext = createContext();
@@ -120,7 +120,7 @@ export function SavedIndicator({ name }) {
   if (!savedFields.includes(name)) return null;
   return (
     <span className="ml-2 inline-flex items-center gap-x-1 text-xs font-normal text-green-400 light:text-green-600">
-      <Check size={12} weight="bold" />
+      <Check strokeWidth={1.5} size={12} />
       {t("common.saved")}
     </span>
   );

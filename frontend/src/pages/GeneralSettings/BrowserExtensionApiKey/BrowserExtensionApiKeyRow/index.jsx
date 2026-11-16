@@ -2,7 +2,7 @@ import moment from "moment";
 import { useRef, useState } from "react";
 import BrowserExtensionApiKey from "@/models/browserExtensionApiKey";
 import showToast from "@/utils/toast";
-import { Trash, Copy, Check, Plug } from "@phosphor-icons/react";
+import { Trash2, Copy, Check, Plug } from "lucide-react";
 import { POPUP_BROWSER_EXTENSION_EVENT } from "@/utils/constants";
 
 export default function BrowserExtensionApiKeyRow({
@@ -72,9 +72,9 @@ export default function BrowserExtensionApiKeyRow({
               className="border-none text-theme-text-primary hover:text-theme-text-secondary transition-colors duration-200 p-1 rounded"
             >
               {copied ? (
-                <Check className="h-4 w-4 text-green-500" />
+                <Check strokeWidth={1.5} className="h-4 w-4 text-green-500" />
               ) : (
-                <Copy className="h-4 w-4" />
+                <Copy strokeWidth={1.5} className="h-4 w-4" />
               )}
             </button>
 
@@ -84,7 +84,7 @@ export default function BrowserExtensionApiKeyRow({
               data-tooltip-content="Automatically connect to extension"
               className="border-none text-theme-text-primary hover:text-theme-text-secondary transition-colors duration-200 p-1 rounded"
             >
-              <Plug className="h-4 w-4" />
+              <Plug strokeWidth={1.5} className="h-4 w-4" />
             </button>
           </div>
         </div>
@@ -100,7 +100,7 @@ export default function BrowserExtensionApiKeyRow({
           onClick={handleRevoke}
           className="text-xs font-medium text-white/80 light:text-black/80 hover:light:text-red-500 hover:text-red-300 rounded-lg px-2 py-1 hover:bg-white hover:light:bg-red-50 hover:bg-opacity-10"
         >
-          <Trash className="h-4 w-4" />
+          <Trash2 strokeWidth={1.5} className="h-4 w-4" />
         </button>
       </td>
     </tr>

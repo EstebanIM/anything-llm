@@ -55,6 +55,7 @@ const Workspace = {
     "agentModel",
     "queryRefusalResponse",
     "vectorSearchMode",
+    "folderId",
     "router_id",
   ],
 
@@ -130,6 +131,11 @@ const Workspace = {
       )
         return "default";
       return value;
+    },
+    folderId: (value) => {
+      if (value === null || value === undefined || value === "") return null;
+      const parsed = parseInt(value);
+      return isNaN(parsed) ? null : parsed;
     },
     router_id: (value) => {
       if ([null, undefined, "", "none"].includes(value)) return null;
@@ -292,7 +298,7 @@ const Workspace = {
   },
 
   getWithUser: async function (user = null, clause = {}) {
-    if ([ROLES.admin, ROLES.manager].includes(user.role))
+    if ([ROLES.superadmin, ROLES.admin, ROLES.manager].includes(user.role))
       return this.get(clause);
 
     try {
@@ -418,7 +424,7 @@ const Workspace = {
     limit = null,
     orderBy = null
   ) {
-    if ([ROLES.admin, ROLES.manager].includes(user.role))
+    if ([ROLES.superadmin, ROLES.admin, ROLES.manager].includes(user.role))
       return await this.where(clause, limit, orderBy);
 
     try {

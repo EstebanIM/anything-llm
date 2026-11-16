@@ -1,13 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
-import { List } from "@phosphor-icons/react";
+import { FolderPlus, List } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import NewWorkspaceModal, {
   useNewWorkspaceModal,
 } from "../Modals/NewWorkspace";
-import ActiveWorkspaces from "./ActiveWorkspaces";
+import NewFolderModal, { useNewFolderModal } from "../Modals/NewFolderModal";
+import ActiveWorkspaces, { REFETCH_WORKSPACES_EVENT } from "./ActiveWorkspaces";
 import useLogo from "@/hooks/useLogo";
 import useUser from "@/hooks/useUser";
 import Footer from "../Footer";
-import SettingsButton from "../SettingsButton";
 import { Link } from "react-router-dom";
 import paths from "@/utils/paths";
 import { useSidebarToggle, ToggleSidebarButton } from "./SidebarToggle";
@@ -16,6 +17,7 @@ import { Tooltip } from "react-tooltip";
 import { createPortal } from "react-dom";
 
 export default function Sidebar() {
+  const { t } = useTranslation();
   const { user } = useUser();
   const { logo } = useLogo();
   const sidebarRef = useRef(null);
@@ -25,6 +27,11 @@ export default function Sidebar() {
     showModal: showNewWsModal,
     hideModal: hideNewWsModal,
   } = useNewWorkspaceModal();
+  const {
+    showing: showingNewFolderModal,
+    showModal: showNewFolderModal,
+    hideModal: hideNewFolderModal,
+  } = useNewFolderModal();
 
   return (
     <>
@@ -42,26 +49,42 @@ export default function Sidebar() {
           />
         )}
         <div className="overflow-hidden h-full">
-          <div className="flex shrink-0 w-full justify-center my-[18px]">
-            <div className="flex w-[250px] min-w-[250px]">
-              <Link to={paths.home()} aria-label="Home">
-                <img
-                  src={logo}
-                  alt="Logo"
-                  className={`rounded max-h-[24px] object-contain transition-opacity duration-500 ${showSidebar ? "opacity-100" : "opacity-0"}`}
-                />
-              </Link>
+          {logo && (
+            <div className="flex shrink-0 w-full justify-center my-[18px]">
+              <div className="flex w-[250px] min-w-[250px]">
+                <Link to={paths.home()} aria-label="Home">
+                  <img
+                    src={logo}
+                    alt="Logo"
+                    className={`rounded max-h-[24px] object-contain transition-opacity duration-500 ${showSidebar ? "opacity-100" : "opacity-0"}`}
+                  />
+                </Link>
+              </div>
             </div>
-          </div>
+          )}
           <div
             ref={sidebarRef}
-            className="relative m-[16px] rounded-[16px] bg-zinc-925 light:bg-slate-200 border-[2px] border-theme-sidebar-border light:border-none min-w-[250px] p-[10px] h-[calc(100%-76px)]"
+            className={`relative m-[16px] rounded-[16px] bg-zinc-925 light:bg-slate-200 border-[2px] border-theme-sidebar-border light:border-none min-w-[250px] p-[10px] ${logo ? "h-[calc(100%-76px)]" : "h-[calc(100%-32px)]"}`}
           >
             <div className="flex flex-col h-full overflow-hidden">
               <div className="flex-grow flex flex-col min-w-[235px] min-h-0">
                 <div className="relative h-[calc(100%-60px)] flex flex-col w-full justify-between pt-[10px] overflow-y-scroll no-scroll">
                   <div className="flex flex-col gap-y-[14px]">
                     <SearchBox user={user} showNewWsModal={showNewWsModal} />
+                    {(!user || user?.role !== "default") && (
+                      <button
+                        type="button"
+                        onClick={showNewFolderModal}
+                        className="flex items-center gap-x-2 w-full px-3 py-[5px] rounded-full text-white/60 hover:text-white light:text-slate-600 light:hover:text-slate-900 hover:bg-theme-sidebar-subitem-hover transition-colors duration-150 text-sm"
+                      >
+                        <FolderPlus
+                          strokeWidth={1.5}
+                          size={16}
+                          aria-hidden="true"
+                        />
+                        <span>{t("workspace-folders.new")}</span>
+                      </button>
+                    )}
                     <ActiveWorkspaces />
                   </div>
                 </div>
@@ -73,6 +96,14 @@ export default function Sidebar() {
           </div>
         </div>
         {showingNewWsModal && <NewWorkspaceModal hideModal={hideNewWsModal} />}
+        {showingNewFolderModal && (
+          <NewFolderModal
+            hideModal={hideNewFolderModal}
+            onFolderCreated={() =>
+              window.dispatchEvent(new CustomEvent(REFETCH_WORKSPACES_EVENT))
+            }
+          />
+        )}
       </div>
       <WorkspaceAndThreadTooltips />
     </>
@@ -116,15 +147,17 @@ export function SidebarMobileHeader() {
           onClick={() => setShowSidebar(true)}
           className="rounded-md p-2 flex items-center justify-center text-theme-text-secondary"
         >
-          <List className="h-6 w-6" />
+          <List strokeWidth={1.5} className="h-6 w-6" />
         </button>
         <div className="flex items-center justify-center flex-grow">
-          <img
-            src={logo}
-            alt="Logo"
-            className="block mx-auto h-6 w-auto"
-            style={{ maxHeight: "40px", objectFit: "contain" }}
-          />
+          {logo && (
+            <img
+              src={logo}
+              alt="Logo"
+              className="block mx-auto h-6 w-auto"
+              style={{ maxHeight: "40px", objectFit: "contain" }}
+            />
+          )}
         </div>
         <div className="w-12"></div>
       </div>
@@ -148,18 +181,15 @@ export function SidebarMobileHeader() {
         >
           <div className="w-full h-full flex flex-col overflow-x-hidden items-between">
             {/* Header Information */}
-            <div className="flex w-full items-center justify-between gap-x-4">
-              <div className="flex shrink-1 w-fit items-center justify-start">
-                <img
-                  src={logo}
-                  alt="Logo"
-                  className="rounded w-full max-h-[40px]"
-                  style={{ objectFit: "contain" }}
-                />
-              </div>
-              {(!user || user?.role !== "default") && (
-                <div className="flex gap-x-2 items-center text-slate-500 shink-0">
-                  <SettingsButton />
+            <div className="flex w-full items-center justify-start gap-x-4">
+              {logo && (
+                <div className="flex shrink-1 w-fit items-center justify-start">
+                  <img
+                    src={logo}
+                    alt="Logo"
+                    className="rounded w-full max-h-[40px]"
+                    style={{ objectFit: "contain" }}
+                  />
                 </div>
               )}
             </div>
@@ -173,7 +203,7 @@ export function SidebarMobileHeader() {
                 </div>
               </div>
               <div className="z-99 absolute bottom-0 left-0 right-0 pt-2 pb-6 rounded-br-[26px] bg-zinc-925/80 light:bg-slate-200/80 backdrop-filter backdrop-blur-md">
-                <Footer />
+                <Footer allowMobile />
               </div>
             </div>
           </div>

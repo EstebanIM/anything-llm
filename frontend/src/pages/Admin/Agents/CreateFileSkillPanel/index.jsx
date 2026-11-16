@@ -2,13 +2,12 @@ import React, { useEffect, useState, useRef } from "react";
 import Toggle, { SimpleToggleSwitch } from "@/components/lib/Toggle";
 import { useTranslation } from "react-i18next";
 import {
-  FilePpt,
-  FileXls,
-  FileDoc,
-  FilePdf,
-  FileText,
-  CircleNotch,
-} from "@phosphor-icons/react";
+  Presentation,
+  FileSpreadsheet,
+  FileType,
+  FileText as FileTextIcon,
+  LoaderCircle,
+} from "lucide-react";
 import Admin from "@/models/admin";
 
 export const getCreateFileSkills = (t) => [
@@ -18,31 +17,31 @@ export const getCreateFileSkills = (t) => [
     description: t(
       "agent.skill.createFiles.skills.create-text-file.description"
     ),
-    icon: FileText,
+    icon: FileTextIcon,
   },
   {
     name: "create-pptx-presentation",
     title: t("agent.skill.createFiles.skills.create-pptx.title"),
     description: t("agent.skill.createFiles.skills.create-pptx.description"),
-    icon: FilePpt,
+    icon: Presentation,
   },
   {
     name: "create-pdf-file",
     title: t("agent.skill.createFiles.skills.create-pdf.title"),
     description: t("agent.skill.createFiles.skills.create-pdf.description"),
-    icon: FilePdf,
+    icon: FileTextIcon,
   },
   {
     name: "create-excel-file",
     title: t("agent.skill.createFiles.skills.create-xlsx.title"),
     description: t("agent.skill.createFiles.skills.create-xlsx.description"),
-    icon: FileXls,
+    icon: FileSpreadsheet,
   },
   {
     name: "create-docx-file",
     title: t("agent.skill.createFiles.skills.create-docx.title"),
     description: t("agent.skill.createFiles.skills.create-docx.description"),
-    icon: FileDoc,
+    icon: FileType,
   },
 ];
 
@@ -137,7 +136,8 @@ export default function CreateFileSkillPanel({
               </p>
               {loading ? (
                 <div className="flex items-center justify-center py-4">
-                  <CircleNotch
+                  <LoaderCircle
+                    strokeWidth={1.5}
                     size={24}
                     className="animate-spin text-theme-text-primary"
                   />

@@ -1,17 +1,11 @@
-import {
-  MagnifyingGlass,
-  EnvelopeOpen,
-  PaperPlaneTilt,
-  ChartBar,
-  PencilSimple,
-} from "@phosphor-icons/react";
+import { Search, MailOpen, Send, ChartBar, Pencil } from "lucide-react";
 export { filterSkillCategories } from "../utils";
 
 export const getGmailSkills = (t) => ({
   search: {
     title: t("agent.skill.gmail.categories.search.title"),
     description: t("agent.skill.gmail.categories.search.description"),
-    icon: MagnifyingGlass,
+    icon: Search,
     skills: [
       {
         name: "gmail-get-inbox",
@@ -33,7 +27,7 @@ export const getGmailSkills = (t) => ({
   drafts: {
     title: t("agent.skill.gmail.categories.drafts.title"),
     description: t("agent.skill.gmail.categories.drafts.description"),
-    icon: PencilSimple,
+    icon: Pencil,
     skills: [
       {
         name: "gmail-create-draft",
@@ -75,7 +69,7 @@ export const getGmailSkills = (t) => ({
   send: {
     title: t("agent.skill.gmail.categories.send.title"),
     description: t("agent.skill.gmail.categories.send.description"),
-    icon: PaperPlaneTilt,
+    icon: Send,
     skills: [
       {
         name: "gmail-send-email",
@@ -92,7 +86,7 @@ export const getGmailSkills = (t) => ({
   threads: {
     title: t("agent.skill.gmail.categories.threads.title"),
     description: t("agent.skill.gmail.categories.threads.description"),
-    icon: EnvelopeOpen,
+    icon: MailOpen,
     skills: [
       {
         name: "gmail-mark-read",

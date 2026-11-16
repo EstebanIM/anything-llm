@@ -1,5 +1,5 @@
 import showToast from "@/utils/toast";
-import { DownloadSimple, Key } from "@phosphor-icons/react";
+import { Download, Key } from "lucide-react";
 import { saveAs } from "file-saver";
 import { useState } from "react";
 import {
@@ -42,7 +42,7 @@ export default function RecoveryCodeModal({
       <ModalHeader
         title={
           <span className="flex items-center gap-x-2">
-            <Key size={20} weight="bold" />
+            <Key strokeWidth={1.5} size={20} />
             Recovery Codes
           </span>
         }
@@ -76,7 +76,7 @@ export default function RecoveryCodeModal({
             "Close"
           ) : (
             <span className="flex items-center gap-x-2">
-              <DownloadSimple weight="bold" size={18} />
+              <Download strokeWidth={1.5} size={18} />
               Download
             </span>
           )}

@@ -138,6 +138,25 @@ const TRANSLATIONS = {
     title: "Nieuwe Werkruimte",
     placeholder: "Mijn Werkruimte",
   },
+  "workspace-folders": {
+    new: "New folder",
+    label: "Folder",
+    placeholder: "Folder name",
+    rename: "Rename",
+    delete: "Delete",
+    "add-subfolder": "Add subfolder",
+    root: "No folder (root)",
+    "max-depth": "Maximum folder depth reached (5 levels).",
+    move: "Move",
+    "move-title": "Move folder",
+    "move-description": "Choose a destination for this folder.",
+    "move-button": "Move",
+    "move-success": "Folder moved",
+    "move-current": "Current",
+    "move-cancel": "Cancel",
+    "move-moving": "Moving...",
+    "move-loading": "Loading...",
+  },
   "workspaces—settings": {
     general: "Algemene Instellingen",
     chat: "Chat Instellingen",
@@ -1390,6 +1409,10 @@ const TRANSLATIONS = {
     },
   },
   profile_settings: {
+    current_password: "Current password",
+    current_password_placeholder: "Your current password",
+    current_password_hint: "Only needed if you are changing your password.",
+    username_managed_by_admin: "Your administrator manages your username.",
     edit_account: "Account bewerken",
     profile_picture: "Profielafbeelding",
     remove_profile_picture: "Profielafbeelding verwijderen",
@@ -1406,8 +1429,16 @@ const TRANSLATIONS = {
     profile_updated: "Profiel bijgewerkt.",
     failed_update_user: "Gebruiker bijwerken mislukt: {{error}}",
     account: "Account",
+    settings: "Settings",
+    back_to_workspaces: "Back to workspaces",
     support: "Ondersteuning",
     signout: "Afmelden",
+    roles: {
+      superadmin: "Superbeheerder",
+      admin: "Beheerder",
+      manager: "Manager",
+      default: "Gebruiker",
+    },
   },
   customization: {
     interface: {
@@ -1457,10 +1488,20 @@ const TRANSLATIONS = {
         description:
           "Stel het e-mailadres voor ondersteuning in dat toegankelijk moet zijn voor gebruikers wanneer ze hulp nodig hebben.",
       },
+      "brand-color": {
+        title: "Brand Color",
+        description:
+          "Set the brand color applied to the chat embed widget (launcher button and user message bubbles).",
+      },
       "app-name": {
         title: "Naam",
         description:
           "Stel een naam in die op de inlogpagina voor alle gebruikers wordt weergegeven.",
+      },
+      "login-powered-by": {
+        title: "Login footer text",
+        description: "Set the powered-by text displayed below the login form.",
+        placeholder: "Powered by your organization",
       },
       "display-language": {
         title: "Weergavetaal",
@@ -1474,6 +1515,16 @@ const TRANSLATIONS = {
         recommended: "Aanbevolen formaat: 800 x 200",
         remove: "Verwijderen",
         replace: "Vervangen",
+        dark: {
+          title: "Dark mode",
+          description: "Logo shown when the interface uses the dark theme.",
+          alt: "Uploaded dark mode logo",
+        },
+        light: {
+          title: "Light mode",
+          description: "Logo shown when the interface uses the light theme.",
+          alt: "Uploaded light mode logo",
+        },
       },
       "browser-appearance": {
         title: "Browserweergave",
@@ -1488,6 +1539,13 @@ const TRANSLATIONS = {
           title: "Favicon",
           description:
             "Gebruik een aangepaste favicon voor het browsertabblad.",
+          upload: "Upload favicon",
+          replace: "Replace favicon",
+          remove: "Remove favicon",
+          recommended: "Recommended: square PNG, SVG, or ICO",
+          url: "Favicon URL",
+          placeholder: "https://example.com/favicon.png",
+          alt: "Custom favicon preview",
         },
       },
       "sidebar-footer": {

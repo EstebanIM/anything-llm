@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { CaretRight } from "@phosphor-icons/react";
+import { ChevronRight } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { safeJsonParse } from "@/utils/request";
 import { isPathMatch } from "@/utils/paths";
@@ -105,9 +105,9 @@ export default function MenuOption({
         </Link>
         {hasChildren && (
           <button onClick={handleClick} className="p-2 text-white">
-            <CaretRight
+            <ChevronRight
+              strokeWidth={1.5}
               size={16}
-              weight="bold"
               // color={isExpanded ? "#000000" : "var(--theme-sidebar-subitem-icon)"}
               className={`transition-transform text-white light:text-black ${
                 isExpanded ? "rotate-90" : ""

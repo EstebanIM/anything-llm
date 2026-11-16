@@ -1,24 +1,26 @@
 import { useState, useEffect } from "react";
 import System from "@/models/system";
-import { PROVIDER_PRIVACY_MAP } from "./constants";
-import { ArrowSquareOut } from "@phosphor-icons/react";
-import AnythingLLMIcon from "@/media/logo/anything-llm-icon.png";
+import { getProviderPrivacyMap } from "./constants";
+import { SquareArrowOutUpRight } from "lucide-react";
+import LocalInstanceIcon from "@/media/logo/anything-llm-icon.png";
 import { Link } from "react-router-dom";
 import { titleCase, sentenceCase } from "text-case";
+import useCustomAppName from "@/hooks/useCustomAppName";
 
-function defaultProvider(providerString) {
+function defaultProvider(providerString, brandName) {
   return {
     name: providerString
       ? titleCase(sentenceCase(String(providerString)))
       : "Unknown",
     description: [
-      `"${providerString}" has no known data handling policy defined in AnythingLLM.`,
+      `"${providerString}" has no known data handling policy defined in ${brandName}.`,
     ],
-    logo: AnythingLLMIcon,
+    logo: LocalInstanceIcon,
   };
 }
 
 export default function ProviderPrivacy() {
+  const { brandName } = useCustomAppName();
   const [loading, setLoading] = useState(true);
   const [providers, setProviders] = useState({
     llmProvider: null,
@@ -29,15 +31,16 @@ export default function ProviderPrivacy() {
   useEffect(() => {
     async function fetchProviders() {
       const _settings = await System.keys();
+      const providerPrivacyMap = getProviderPrivacyMap(brandName);
       const providerDefinition =
-        PROVIDER_PRIVACY_MAP.llm[_settings?.LLMProvider] ||
-        defaultProvider(_settings?.LLMProvider);
+        providerPrivacyMap.llm[_settings?.LLMProvider] ||
+        defaultProvider(_settings?.LLMProvider, brandName);
       const embeddingEngineDefinition =
-        PROVIDER_PRIVACY_MAP.embeddingEngine[_settings?.EmbeddingEngine] ||
-        defaultProvider(_settings?.EmbeddingEngine);
+        providerPrivacyMap.embeddingEngine[_settings?.EmbeddingEngine] ||
+        defaultProvider(_settings?.EmbeddingEngine, brandName);
       const vectorDbDefinition =
-        PROVIDER_PRIVACY_MAP.vectorDb[_settings?.VectorDB] ||
-        defaultProvider(_settings?.VectorDB);
+        providerPrivacyMap.vectorDb[_settings?.VectorDB] ||
+        defaultProvider(_settings?.VectorDB, brandName);
 
       setProviders({
         llmProvider: providerDefinition,
@@ -47,7 +50,7 @@ export default function ProviderPrivacy() {
       setLoading(false);
     }
     fetchProviders();
-  }, []);
+  }, [brandName]);
 
   if (loading) return null;
   return (
@@ -97,7 +100,7 @@ function ProviderPrivacyItem({ title, provider, altText }) {
                 rel="noopener noreferrer"
               >
                 privacy policy
-                <ArrowSquareOut size={12} />
+                <SquareArrowOutUpRight strokeWidth={1.5} size={12} />
               </Link>
               .
             </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import AgentFlows from "@/models/agentFlows";
 import showToast from "@/utils/toast";
-import { FlowArrow, Gear } from "@phosphor-icons/react";
+import { Workflow, Settings } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import paths from "@/utils/paths";
 import Toggle from "@/components/lib/Toggle";
@@ -50,7 +50,7 @@ function ManageFlowMenu({ flow, onDelete }) {
         onClick={() => setOpen(!open)}
         className="p-1.5 rounded-lg text-white hover:bg-theme-action-menu-item-hover transition-colors duration-300"
       >
-        <Gear className="h-5 w-5" weight="bold" />
+        <Settings strokeWidth={1.5} className="h-5 w-5" />
       </button>
       {open && (
         <div className="absolute min-w-[140px] top-full right-0 mt-1 border-[1.5px] border-white/40 rounded-lg bg-theme-action-menu-bg flex flex-col shadow-[0_4px_14px_rgba(0,0,0,0.25)] text-white z-99 md:z-10">
@@ -95,7 +95,7 @@ export default function FlowPanel({ flow, toggleFlow, enabled, onDelete }) {
         <div className="flex flex-col gap-y-[18px] max-w-[500px]">
           <div className="flex w-full justify-between items-center">
             <div className="flex items-center gap-x-2">
-              <FlowArrow size={24} weight="bold" className="text-white" />
+              <Workflow strokeWidth={1.5} size={24} className="text-white" />
               <label htmlFor="name" className="text-white text-md font-bold">
                 {flow.name}
               </label>

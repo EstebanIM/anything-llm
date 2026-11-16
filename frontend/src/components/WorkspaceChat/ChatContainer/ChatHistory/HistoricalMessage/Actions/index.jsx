@@ -1,6 +1,6 @@
 import React, { memo, useState } from "react";
 import useCopyText from "@/hooks/useCopyText";
-import { Check, ThumbsUp, ArrowsClockwise, Copy } from "@phosphor-icons/react";
+import { Check, ThumbsUp, RefreshCw, Copy } from "lucide-react";
 import Workspace from "@/models/workspace";
 import { EditMessageAction } from "./EditMessage";
 import RenderMetrics from "./RenderMetrics";
@@ -89,9 +89,10 @@ function FeedbackButton({
         aria-label={tooltipContent}
       >
         <IconComponent
+          strokeWidth={1.5}
+          fill={isSelected ? "currentColor" : "none"}
           size={20}
           className="mb-1"
-          weight={isSelected ? "fill" : "regular"}
         />
       </button>
     </div>
@@ -113,9 +114,9 @@ function CopyMessage({ message }) {
           aria-label={t("chat_window.copy")}
         >
           {copied ? (
-            <Check size={20} className="mb-1" />
+            <Check strokeWidth={1.5} size={20} className="mb-1" />
           ) : (
-            <Copy size={20} className="mb-1" />
+            <Copy strokeWidth={1.5} size={20} className="mb-1" />
           )}
         </button>
       </div>
@@ -135,7 +136,7 @@ function RegenerateMessage({ regenerateMessage, chatId }) {
         className="border-none text-zinc-300 light:text-slate-500"
         aria-label={t("chat_window.regenerate")}
       >
-        <ArrowsClockwise size={20} className="mb-1" weight="fill" />
+        <RefreshCw strokeWidth={1.5} size={20} className="mb-1" />
       </button>
     </div>
   );

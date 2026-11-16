@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "@/components/SettingsSidebar";
 import { isMobile } from "react-device-detect";
-import { CircleNotch } from "@phosphor-icons/react";
+import { LoaderCircle } from "lucide-react";
 import Telegram from "@/models/telegram";
 import ConnectedView from "./ConnectedView";
 import SetupView from "./SetupView";
@@ -36,7 +36,10 @@ export default function TelegramBotSettings() {
     return (
       <ConnectionsLayout>
         <div className="flex items-center justify-center h-full">
-          <CircleNotch className="h-8 w-8 text-zinc-400 light:text-slate-400 animate-spin" />
+          <LoaderCircle
+            strokeWidth={1.5}
+            className="h-8 w-8 text-zinc-400 light:text-slate-400 animate-spin"
+          />
         </div>
       </ConnectionsLayout>
     );

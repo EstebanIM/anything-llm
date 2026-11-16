@@ -1,7 +1,7 @@
 import moment from "moment";
 import { useEffect, useState } from "react";
 import Admin from "@/models/admin";
-import { Trash } from "@phosphor-icons/react";
+import { Trash2 } from "lucide-react";
 import { userFromStorage } from "@/utils/request";
 import System from "@/models/system";
 import { useTranslation } from "react-i18next";
@@ -64,7 +64,7 @@ export default function ApiKeyRow({ apiKey, removeApiKey }) {
               onClick={handleDelete}
               className="text-xs font-medium text-white/80 light:text-black/80 hover:light:text-red-500 hover:text-red-300 rounded-lg px-2 py-1 hover:bg-white hover:light:bg-red-50 hover:bg-opacity-10"
             >
-              <Trash className="h-5 w-5" />
+              <Trash2 strokeWidth={1.5} className="h-5 w-5" />
             </button>
           </div>
         </td>

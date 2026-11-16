@@ -1,11 +1,6 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  CaretRight,
-  CircleNotch,
-  File,
-  FolderNotch,
-} from "@phosphor-icons/react";
+import { ChevronRight, LoaderCircle, File, Folder } from "lucide-react";
 import {
   formatDateTimeAsMoment,
   getFileExtension,
@@ -47,8 +42,8 @@ export default function MobileFolderRow({
           label={item.name}
           onToggle={() => onToggleFolder(item, files)}
         />
-        <FolderNotch
-          weight="fill"
+        <Folder
+          strokeWidth={1.5}
           className="w-5 h-5 shrink-0 text-zinc-400 light:text-slate-400"
         />
         <div className="flex-1 min-w-0 ml-3">
@@ -68,15 +63,15 @@ export default function MobileFolderRow({
           </p>
         </div>
         {loading && files.length > 0 && (
-          <CircleNotch
+          <LoaderCircle
+            strokeWidth={1.5}
             size={14}
-            weight="bold"
             className="animate-spin shrink-0 mr-2 text-zinc-400 light:text-slate-500"
           />
         )}
-        <CaretRight
+        <ChevronRight
+          strokeWidth={1.5}
           size={16}
-          weight="bold"
           className={`shrink-0 text-zinc-500 light:text-slate-400 transition-transform duration-200 ease-in-out ${
             expanded ? "rotate-90" : ""
           }`}
@@ -87,7 +82,11 @@ export default function MobileFolderRow({
         <div className="pl-5">
           {loading && files.length === 0 && (
             <div className="flex items-center gap-x-2 h-12 pl-4 text-xs text-zinc-400 light:text-slate-500">
-              <CircleNotch size={14} weight="bold" className="animate-spin" />
+              <LoaderCircle
+                strokeWidth={1.5}
+                size={14}
+                className="animate-spin"
+              />
               {t("common.loading")}...
             </div>
           )}
@@ -132,7 +131,7 @@ const MobileFileRow = memo(
       >
         <MobileCheckbox state={selected ? "all" : "none"} />
         <File
-          weight="fill"
+          strokeWidth={1.5}
           className="w-5 h-5 shrink-0 text-zinc-500 light:text-slate-400"
         />
         <div className="flex-1 min-w-0 ml-3 py-1.5">

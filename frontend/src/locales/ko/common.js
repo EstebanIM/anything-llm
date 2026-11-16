@@ -172,6 +172,25 @@ const TRANSLATIONS = {
     title: "새 워크스페이스",
     placeholder: "내 워크스페이스",
   },
+  "workspace-folders": {
+    new: "New folder",
+    label: "Folder",
+    placeholder: "Folder name",
+    rename: "Rename",
+    delete: "Delete",
+    "add-subfolder": "Add subfolder",
+    root: "No folder (root)",
+    "max-depth": "Maximum folder depth reached (5 levels).",
+    move: "Move",
+    "move-title": "Move folder",
+    "move-description": "Choose a destination for this folder.",
+    "move-button": "Move",
+    "move-success": "Folder moved",
+    "move-current": "Current",
+    "move-cancel": "Cancel",
+    "move-moving": "Moving...",
+    "move-loading": "Loading...",
+  },
   "workspaces—settings": {
     general: "일반 설정",
     chat: "채팅 설정",
@@ -867,10 +886,20 @@ const TRANSLATIONS = {
         description:
           "사용자가 도움이 필요할 때 접근할 수 있는 지원 이메일 주소를 설정하세요.",
       },
+      "brand-color": {
+        title: "Brand Color",
+        description:
+          "Set the brand color applied to the chat embed widget (launcher button and user message bubbles).",
+      },
       "app-name": {
         title: "이름",
         description:
           "로그인 페이지에 모든 사용자에게 표시될 애플리케이션 이름을 설정하세요.",
+      },
+      "login-powered-by": {
+        title: "Login footer text",
+        description: "Set the powered-by text displayed below the login form.",
+        placeholder: "Powered by your organization",
       },
       "display-language": {
         title: "표시 언어",
@@ -884,6 +913,16 @@ const TRANSLATIONS = {
         recommended: "권장 크기: 800 x 200",
         remove: "제거",
         replace: "교체",
+        dark: {
+          title: "Dark mode",
+          description: "Logo shown when the interface uses the dark theme.",
+          alt: "Uploaded dark mode logo",
+        },
+        light: {
+          title: "Light mode",
+          description: "Logo shown when the interface uses the light theme.",
+          alt: "Uploaded light mode logo",
+        },
       },
       "browser-appearance": {
         title: "브라우저 표시 설정",
@@ -897,6 +936,13 @@ const TRANSLATIONS = {
         favicon: {
           title: "파비콘",
           description: "브라우저 탭에 사용할 맞춤 파비콘을 지정하세요.",
+          upload: "Upload favicon",
+          replace: "Replace favicon",
+          remove: "Remove favicon",
+          recommended: "Recommended: square PNG, SVG, or ICO",
+          url: "Favicon URL",
+          placeholder: "https://example.com/favicon.png",
+          alt: "Custom favicon preview",
         },
       },
       "sidebar-footer": {
@@ -1508,6 +1554,10 @@ const TRANSLATIONS = {
     },
   },
   profile_settings: {
+    current_password: "Current password",
+    current_password_placeholder: "Your current password",
+    current_password_hint: "Only needed if you are changing your password.",
+    username_managed_by_admin: "Your administrator manages your username.",
     edit_account: "계정 정보 수정",
     profile_picture: "프로필 사진",
     remove_profile_picture: "프로필 사진 삭제",
@@ -1524,8 +1574,16 @@ const TRANSLATIONS = {
     profile_updated: "프로필이 업데이트되었습니다.",
     failed_update_user: "사용자 정보 업데이트 실패: {{error}}",
     account: "계정",
+    settings: "Settings",
+    back_to_workspaces: "Back to workspaces",
     support: "지원",
     signout: "로그아웃",
+    roles: {
+      superadmin: "슈퍼관리자",
+      admin: "관리자",
+      manager: "매니저",
+      default: "사용자",
+    },
   },
   "keyboard-shortcuts": {
     title: "단축키 안내",

@@ -3,19 +3,19 @@ import Toggle, { SimpleToggleSwitch } from "@/components/lib/Toggle";
 import { Link } from "react-router-dom";
 import { useTranslation, Trans } from "react-i18next";
 import {
-  Warning,
+  TriangleAlert,
   File,
   Files,
-  PencilSimple,
-  FloppyDisk,
+  Pencil,
+  Save,
   FolderPlus,
   FolderOpen,
-  ArrowsLeftRight,
-  MagnifyingGlass,
+  ArrowLeftRight,
+  Search,
   Info,
-  CircleNotch,
+  LoaderCircle,
   Copy,
-} from "@phosphor-icons/react";
+} from "lucide-react";
 import Admin from "@/models/admin";
 import paths from "@/utils/paths";
 
@@ -52,7 +52,7 @@ export const getFileSystemSubSkills = (t) => {
       name: "filesystem-search-files",
       title: t("agent.skill.filesystem.skills.search-files.title"),
       description: t("agent.skill.filesystem.skills.search-files.description"),
-      icon: MagnifyingGlass,
+      icon: Search,
       category: "read",
     },
     {
@@ -68,14 +68,14 @@ export const getFileSystemSubSkills = (t) => {
       description: t(
         "agent.skill.filesystem.skills.write-text-file.description"
       ),
-      icon: FloppyDisk,
+      icon: Save,
       category: "write",
     },
     {
       name: "filesystem-edit-file",
       title: t("agent.skill.filesystem.skills.edit-file.title"),
       description: t("agent.skill.filesystem.skills.edit-file.description"),
-      icon: PencilSimple,
+      icon: Pencil,
       category: "write",
     },
     {
@@ -98,7 +98,7 @@ export const getFileSystemSubSkills = (t) => {
       name: "filesystem-move-file",
       title: t("agent.skill.filesystem.skills.move-file.title"),
       description: t("agent.skill.filesystem.skills.move-file.description"),
-      icon: ArrowsLeftRight,
+      icon: ArrowLeftRight,
       category: "write",
     },
   ];
@@ -212,7 +212,8 @@ export default function FileSystemSkillPanel({
               </div>
               {loading ? (
                 <div className="flex items-center justify-center py-4">
-                  <CircleNotch
+                  <LoaderCircle
+                    strokeWidth={1.5}
                     size={24}
                     className="animate-spin text-theme-text-primary"
                   />
@@ -237,10 +238,10 @@ export default function FileSystemSkillPanel({
 
                   <div className="flex flex-col gap-y-2">
                     <p className="text-theme-text-secondary text-xs font-medium uppercase tracking-wide flex items-center gap-x-1">
-                      <Warning
+                      <TriangleAlert
+                        strokeWidth={1.5}
                         size={12}
                         className="text-orange-400"
-                        weight="fill"
                       />
                       {t("agent.skill.filesystem.writeActions")}
                     </p>
@@ -269,7 +270,11 @@ export default function FileSystemSkillPanel({
 function WarningBanner() {
   return (
     <div className="flex items-start gap-x-2.5 p-2.5 bg-orange-800/20 light:bg-orange-800/10 text-orange-400 light:text-orange-600 border border-orange-400/30 rounded-lg items-center">
-      <Warning size={20} className="flex-shrink-0 mt-0.5" weight="fill" />
+      <TriangleAlert
+        strokeWidth={1.5}
+        size={20}
+        className="flex-shrink-0 mt-0.5"
+      />
       <p className="text-xs font-medium">
         <Trans
           i18nKey="agent.skill.filesystem.warning"
@@ -303,6 +308,7 @@ function SubSkillRow({ subSkill, disabled, onToggle, isWriteOperation }) {
     >
       <div className="flex items-center gap-x-2">
         <Icon
+          strokeWidth={1.5}
           size={16}
           className={
             disabled
@@ -311,7 +317,6 @@ function SubSkillRow({ subSkill, disabled, onToggle, isWriteOperation }) {
                 ? "text-orange-400"
                 : "text-theme-text-primary"
           }
-          weight="bold"
         />
         <div className="flex flex-col">
           <span

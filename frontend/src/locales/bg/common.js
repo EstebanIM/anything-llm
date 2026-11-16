@@ -183,6 +183,25 @@ const TRANSLATIONS = {
     title: "Ново работно пространство",
     placeholder: "Моето пространство",
   },
+  "workspace-folders": {
+    new: "New folder",
+    label: "Folder",
+    placeholder: "Folder name",
+    rename: "Rename",
+    delete: "Delete",
+    "add-subfolder": "Add subfolder",
+    root: "No folder (root)",
+    "max-depth": "Maximum folder depth reached (5 levels).",
+    move: "Move",
+    "move-title": "Move folder",
+    "move-description": "Choose a destination for this folder.",
+    "move-button": "Move",
+    "move-success": "Folder moved",
+    "move-current": "Current",
+    "move-cancel": "Cancel",
+    "move-moving": "Moving...",
+    "move-loading": "Loading...",
+  },
   "workspaces—settings": {
     general: "Общи настройки",
     chat: "Настройки на чата",
@@ -905,6 +924,16 @@ const TRANSLATIONS = {
         description:
           "Задайте имейл адрес за поддръжка, достъпен за потребителите, когато имат нужда от помощ.",
       },
+      "brand-color": {
+        title: "Brand Color",
+        description:
+          "Set the brand color applied to the chat embed widget (launcher button and user message bubbles).",
+      },
+      "login-powered-by": {
+        title: "Login footer text",
+        description: "Set the powered-by text displayed below the login form.",
+        placeholder: "Powered by your organization",
+      },
       "app-name": {
         title: "Име",
         description:
@@ -923,6 +952,16 @@ const TRANSLATIONS = {
         recommended: "Препоръчителен размер: 800 x 200",
         remove: "Премахни",
         replace: "Замени",
+        dark: {
+          title: "Dark mode",
+          description: "Logo shown when the interface uses the dark theme.",
+          alt: "Uploaded dark mode logo",
+        },
+        light: {
+          title: "Light mode",
+          description: "Logo shown when the interface uses the light theme.",
+          alt: "Uploaded light mode logo",
+        },
       },
       "browser-appearance": {
         title: "Изглед в браузъра",
@@ -936,6 +975,13 @@ const TRANSLATIONS = {
         favicon: {
           title: "Икона (favicon)",
           description: "Използвайте собствена икона за раздела на браузъра.",
+          upload: "Upload favicon",
+          replace: "Replace favicon",
+          remove: "Remove favicon",
+          recommended: "Recommended: square PNG, SVG, or ICO",
+          url: "Favicon URL",
+          placeholder: "https://example.com/favicon.png",
+          alt: "Custom favicon preview",
         },
       },
       "sidebar-footer": {
@@ -1841,6 +1887,18 @@ const TRANSLATIONS = {
     },
   },
   profile_settings: {
+    settings: "Settings",
+    back_to_workspaces: "Back to workspaces",
+    roles: {
+      superadmin: "Super Admin",
+      admin: "Admin",
+      manager: "Manager",
+      default: "User",
+    },
+    current_password: "Current password",
+    current_password_placeholder: "Your current password",
+    current_password_hint: "Only needed if you are changing your password.",
+    username_managed_by_admin: "Your administrator manages your username.",
     edit_account: "Редакция на акаунта",
     profile_picture: "Профилна снимка",
     remove_profile_picture: "Премахни профилната снимка",

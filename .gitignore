@@ -10,3 +10,10 @@ aws_cf_deploy_anything_llm.json
 yarn.lock
 *.bak
 .idea
+
+# Despliegue: paquetes, datos y descargas generadas (no versionar)
+docker-deploy/transfer/
+docker-deploy/data/
+docker-deploy/build/*/dist*/
+docker-deploy/**/*.gguf
+docker-deploy/**/*.tar.gz

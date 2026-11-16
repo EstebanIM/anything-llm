@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import CommunityHub from "@/models/communityHub";
 import showToast from "@/utils/toast";
-import { X, CaretRight } from "@phosphor-icons/react";
+import { X, ChevronRight } from "lucide-react";
 import { BLOCK_INFO } from "@/pages/Admin/AgentBuilder/BlockList";
 import {
   ModalHeader,
@@ -12,7 +12,6 @@ import {
   ModalInput,
   ModalTextarea,
 } from "@/components/lib/Modal";
-
 export default function AgentFlows({ entity, onSuccess }) {
   const { t } = useTranslation();
   const formRef = useRef(null);
@@ -20,7 +19,6 @@ export default function AgentFlows({ entity, onSuccess }) {
   const [tags, setTags] = useState([]);
   const [tagInput, setTagInput] = useState("");
   const [expandedStep, setExpandedStep] = useState(null);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -53,7 +51,6 @@ export default function AgentFlows({ entity, onSuccess }) {
       setIsSubmitting(false);
     }
   };
-
   const handleKeyDown = (e) => {
     if (e.key === "Enter" || e.key === ",") {
       e.preventDefault();
@@ -65,11 +62,9 @@ export default function AgentFlows({ entity, onSuccess }) {
       }
     }
   };
-
   const removeTag = (tagToRemove) => {
     setTags(tags.filter((tag) => tag !== tagToRemove));
   };
-
   return (
     <>
       <div className="w-full flex gap-x-2 items-center mb-3 -mt-8 px-6 py-3">
@@ -123,7 +118,7 @@ export default function AgentFlows({ entity, onSuccess }) {
                     onClick={() => removeTag(tag)}
                     className="border-none bg-transparent text-slate-50 light:text-slate-900 hover:text-zinc-400 light:hover:text-slate-600 cursor-pointer"
                   >
-                    <X size={14} />
+                    <X strokeWidth={1.5} size={14} />
                   </button>
                 </span>
               ))}
@@ -182,7 +177,7 @@ export default function AgentFlows({ entity, onSuccess }) {
                         <span
                           className={`ml-2 text-zinc-400 light:text-slate-600 transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}
                         >
-                          <CaretRight size={16} />
+                          <ChevronRight strokeWidth={1.5} size={16} />
                         </span>
                       </div>
                       {isExpanded && summary && (

@@ -175,6 +175,25 @@ const TRANSLATIONS = {
     title: "Spațiu de lucru nou",
     placeholder: "Spațiul meu de lucru",
   },
+  "workspace-folders": {
+    new: "New folder",
+    label: "Folder",
+    placeholder: "Folder name",
+    rename: "Rename",
+    delete: "Delete",
+    "add-subfolder": "Add subfolder",
+    root: "No folder (root)",
+    "max-depth": "Maximum folder depth reached (5 levels).",
+    move: "Move",
+    "move-title": "Move folder",
+    "move-description": "Choose a destination for this folder.",
+    "move-button": "Move",
+    "move-success": "Folder moved",
+    "move-current": "Current",
+    "move-cancel": "Cancel",
+    "move-moving": "Moving...",
+    "move-loading": "Loading...",
+  },
   "workspaces—settings": {
     general: "Setări generale",
     chat: "Setări chat",
@@ -776,6 +795,10 @@ const TRANSLATIONS = {
     },
   },
   profile_settings: {
+    current_password: "Current password",
+    current_password_placeholder: "Your current password",
+    current_password_hint: "Only needed if you are changing your password.",
+    username_managed_by_admin: "Your administrator manages your username.",
     edit_account: "Editează contul",
     profile_picture: "Poză profil",
     remove_profile_picture: "Șterge poza profil",
@@ -792,8 +815,16 @@ const TRANSLATIONS = {
     profile_updated: "Profil actualizat.",
     failed_update_user: "Actualizarea utilizatorului a eșuat: {{error}}",
     account: "Cont",
+    settings: "Settings",
+    back_to_workspaces: "Back to workspaces",
     support: "Suport",
     signout: "Deconectare",
+    roles: {
+      superadmin: "Superadministrator",
+      admin: "Administrator",
+      manager: "Manager",
+      default: "Utilizator",
+    },
   },
   "keyboard-shortcuts": {
     title: "Scurtături de tastatură",
@@ -1504,10 +1535,20 @@ const TRANSLATIONS = {
         description:
           "Setează adresa de email de suport care ar trebui să fie accesibilă utilizatorilor atunci când au nevoie de ajutor.",
       },
+      "brand-color": {
+        title: "Brand Color",
+        description:
+          "Set the brand color applied to the chat embed widget (launcher button and user message bubbles).",
+      },
       "app-name": {
         title: "Nume aplicație",
         description:
           "Setează un nume care este afișat pe pagina de autentificare tuturor utilizatorilor.",
+      },
+      "login-powered-by": {
+        title: "Login footer text",
+        description: "Set the powered-by text displayed below the login form.",
+        placeholder: "Powered by your organization",
       },
       "display-language": {
         title: "Limba de afișare",
@@ -1522,6 +1563,16 @@ const TRANSLATIONS = {
         recommended: "Dimensiune recomandată: 800 x 200",
         remove: "Elimină",
         replace: "Înlocuiește",
+        dark: {
+          title: "Dark mode",
+          description: "Logo shown when the interface uses the dark theme.",
+          alt: "Uploaded dark mode logo",
+        },
+        light: {
+          title: "Light mode",
+          description: "Logo shown when the interface uses the light theme.",
+          alt: "Uploaded light mode logo",
+        },
       },
       "browser-appearance": {
         title: "Aspect browser",
@@ -1536,6 +1587,13 @@ const TRANSLATIONS = {
           title: "Favicon",
           description:
             "Folosește un favicon personalizat pentru tabul browserului.",
+          upload: "Upload favicon",
+          replace: "Replace favicon",
+          remove: "Remove favicon",
+          recommended: "Recommended: square PNG, SVG, or ICO",
+          url: "Favicon URL",
+          placeholder: "https://example.com/favicon.png",
+          alt: "Custom favicon preview",
         },
       },
       "sidebar-footer": {

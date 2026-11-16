@@ -1,5 +1,5 @@
 import moment from "moment";
-import { CaretDown, CaretUp } from "@phosphor-icons/react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import { safeJsonParse } from "@/utils/request";
 import useMultiUserMode from "@/hooks/useMultiUserMode";
@@ -48,14 +48,14 @@ export default function LogRow({ log }) {
               <td
                 className={`px-2 gap-x-1 flex items-center justify-center transform transition-transform duration-200`}
               >
-                <CaretUp weight="bold" size={20} />
+                <ChevronUp strokeWidth={1.5} size={20} />
                 <p className="text-xs text-white/50 w-[20px]">hide</p>
               </td>
             ) : (
               <td
                 className={`px-2 gap-x-1 flex items-center justify-center transform transition-transform duration-200`}
               >
-                <CaretDown weight="bold" size={20} />
+                <ChevronDown strokeWidth={1.5} size={20} />
                 <p className="text-xs text-white/50 w-[20px]">show</p>
               </td>
             )}

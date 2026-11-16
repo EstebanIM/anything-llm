@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { FolderOpen, Info } from "@phosphor-icons/react";
+import { FolderOpen, Info } from "lucide-react";
 import System from "@/models/system";
 import showToast from "@/utils/toast";
 
@@ -95,7 +95,7 @@ export default function ObsidianOptions() {
             <div className="w-full flex flex-col gap-4">
               <div className="flex flex-col md:flex-row md:items-center gap-x-2 text-white mb-4 bg-blue-800/30 w-fit rounded-lg px-4 py-2">
                 <div className="gap-x-2 flex items-center">
-                  <Info className="shrink-0" size={25} />
+                  <Info strokeWidth={1.5} className="shrink-0" size={25} />
                   <p className="text-sm">
                     {t("connectors.obsidian.vault_warning")}
                   </p>
@@ -124,7 +124,7 @@ export default function ObsidianOptions() {
                     readOnly
                   />
                   <label className="px-3 py-2 bg-theme-settings-input-bg border border-none rounded-lg text-white hover:bg-theme-settings-input-bg/80 cursor-pointer">
-                    <FolderOpen size={20} />
+                    <FolderOpen strokeWidth={1.5} size={20} />
                     <input
                       type="file"
                       webkitdirectory=""

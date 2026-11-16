@@ -18,11 +18,14 @@ function waitForElm(selector) {
   });
 }
 
-// Force change the Swagger logo in the header
 waitForElm(".topbar-wrapper").then((elm) => {
-  if (window.SWAGGER_DOCS_ENV === "development") {
-    elm.innerHTML = `<img href='${window.location.origin}' src='http://localhost:3000/public/anything-llm-light.png' width='200'/>`;
-  } else {
-    elm.innerHTML = `<img href='${window.location.origin}' src='${window.location.origin}/anything-llm-light.png' width='200'/>`;
-  }
+  const brandName = window.SWAGGER_BRAND_NAME || "Developer API";
+  const link = document.createElement("a");
+  link.href = window.location.origin;
+  link.textContent = brandName;
+  link.style.color = "#fff";
+  link.style.fontSize = "20px";
+  link.style.fontWeight = "700";
+  link.style.textDecoration = "none";
+  elm.replaceChildren(link);
 });

@@ -1,4 +1,4 @@
-import { X, Check } from "@phosphor-icons/react";
+import { X, Check } from "lucide-react";
 import Telegram from "@/models/telegram";
 import showToast from "@/utils/toast";
 import { useTranslation } from "react-i18next";
@@ -123,13 +123,13 @@ function UserRow({ user, isPending = false, onApprove, onDeny, onRevoke }) {
                 onClick={() => onDeny(chatId)}
                 className="text-zinc-400 light:text-slate-400 hover:text-red-400 light:hover:text-red-500 transition-colors"
               >
-                <X className="h-4 w-4" weight="bold" />
+                <X strokeWidth={1.5} className="h-4 w-4" />
               </button>
               <button
                 onClick={() => onApprove(chatId)}
                 className="text-zinc-400 light:text-slate-400 hover:text-green-400 light:hover:text-green-500 transition-colors"
               >
-                <Check className="h-4 w-4" weight="bold" />
+                <Check strokeWidth={1.5} className="h-4 w-4" />
               </button>
             </>
           ) : (

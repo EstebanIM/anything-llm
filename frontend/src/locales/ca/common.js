@@ -183,6 +183,25 @@ const TRANSLATIONS = {
     title: "Nou espai de treball",
     placeholder: "El meu espai de treball",
   },
+  "workspace-folders": {
+    new: "New folder",
+    label: "Folder",
+    placeholder: "Folder name",
+    rename: "Rename",
+    delete: "Delete",
+    "add-subfolder": "Add subfolder",
+    root: "No folder (root)",
+    "max-depth": "Maximum folder depth reached (5 levels).",
+    move: "Move",
+    "move-title": "Move folder",
+    "move-description": "Choose a destination for this folder.",
+    "move-button": "Move",
+    "move-success": "Folder moved",
+    "move-current": "Current",
+    "move-cancel": "Cancel",
+    "move-moving": "Moving...",
+    "move-loading": "Loading...",
+  },
   "workspaces—settings": {
     general: "Configuració general",
     chat: "Configuració del xat",
@@ -917,10 +936,20 @@ const TRANSLATIONS = {
         description:
           "Estableix l'adreça de correu electrònic de suport que hauran de poder consultar els usuaris quan necessitin ajuda.",
       },
+      "brand-color": {
+        title: "Brand Color",
+        description:
+          "Set the brand color applied to the chat embed widget (launcher button and user message bubbles).",
+      },
       "app-name": {
         title: "Nom",
         description:
           "Estableix un nom que es mostri a la pàgina d'inici de sessió per a tots els usuaris.",
+      },
+      "login-powered-by": {
+        title: "Login footer text",
+        description: "Set the powered-by text displayed below the login form.",
+        placeholder: "Powered by your organization",
       },
       "display-language": {
         title: "Idioma de visualització",
@@ -935,6 +964,16 @@ const TRANSLATIONS = {
         recommended: "Mida recomanada: 800 x 200",
         remove: "Elimina",
         replace: "Substitueix",
+        dark: {
+          title: "Dark mode",
+          description: "Logo shown when the interface uses the dark theme.",
+          alt: "Uploaded dark mode logo",
+        },
+        light: {
+          title: "Light mode",
+          description: "Logo shown when the interface uses the light theme.",
+          alt: "Uploaded light mode logo",
+        },
       },
       "browser-appearance": {
         title: "Aparença del navegador",
@@ -949,6 +988,13 @@ const TRANSLATIONS = {
           title: "Favicon",
           description:
             "Usa un favicon personalitzat per a la pestanya del navegador.",
+          upload: "Upload favicon",
+          replace: "Replace favicon",
+          remove: "Remove favicon",
+          recommended: "Recommended: square PNG, SVG, or ICO",
+          url: "Favicon URL",
+          placeholder: "https://example.com/favicon.png",
+          alt: "Custom favicon preview",
         },
       },
       "sidebar-footer": {
@@ -1661,6 +1707,10 @@ const TRANSLATIONS = {
     },
   },
   profile_settings: {
+    current_password: "Current password",
+    current_password_placeholder: "Your current password",
+    current_password_hint: "Only needed if you are changing your password.",
+    username_managed_by_admin: "Your administrator manages your username.",
     edit_account: "Edita el compte",
     profile_picture: "Foto de perfil",
     remove_profile_picture: "Elimina la foto de perfil",
@@ -1677,8 +1727,16 @@ const TRANSLATIONS = {
     profile_updated: "Perfil actualitzat.",
     failed_update_user: "No s'ha pogut actualitzar l'usuari: {{error}}",
     account: "Compte",
+    settings: "Settings",
+    back_to_workspaces: "Back to workspaces",
     support: "Suport",
     signout: "Tanca la sessió",
+    roles: {
+      superadmin: "Superadministrador",
+      admin: "Administrador",
+      manager: "Gestor",
+      default: "Usuari",
+    },
   },
   "keyboard-shortcuts": {
     title: "Dreceres de teclat",

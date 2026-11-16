@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import {
-  CaretDown,
-  CheckCircle,
-  CircleNotch,
+  ChevronDown,
+  CircleCheck,
+  LoaderCircle,
   Info,
-  Lightning,
+  Zap,
   Plus,
-} from "@phosphor-icons/react";
+} from "lucide-react";
 import { Tooltip } from "react-tooltip";
 import strDistance from "js-levenshtein";
 import System from "@/models/system";
@@ -173,8 +173,8 @@ export default function EmbeddedLemonadeOptions({
           <div className="flex w-full gap-x-2 items-center">
             {showAdvancedSettings ? "Hide" : "Show"} Advanced Settings
           </div>
-          <CaretDown
-            weight="bold"
+          <ChevronDown
+            strokeWidth={1.5}
             size={14}
             className={`shrink-0 text-theme-text-secondary transition-transform ${showAdvancedSettings ? "rotate-180" : ""}`}
           />
@@ -257,7 +257,11 @@ function AdvancedSettings({ settings }) {
             className="text-theme-text-secondary cursor-pointer hover:bg-theme-bg-primary flex items-center justify-center rounded-full"
             data-tooltip-id="embedded-lemonade-context-window"
           >
-            <Info size={18} className="text-theme-text-secondary" />
+            <Info
+              strokeWidth={1.5}
+              size={18}
+              className="text-theme-text-secondary"
+            />
           </div>
         </div>
         <input
@@ -311,7 +315,7 @@ function EngineStatus() {
     );
   return (
     <div className="flex items-center gap-x-2 text-theme-text-secondary text-sm">
-      <CircleNotch className="w-4 h-4 animate-spin" />
+      <LoaderCircle strokeWidth={1.5} className="w-4 h-4 animate-spin" />
       <p>
         {status.message}
         {status.progress !== null ? ` ${status.progress}%` : ""}
@@ -325,8 +329,8 @@ function DownloadStatus({ download }) {
   return (
     <div className="flex h-[40px] items-center gap-x-2">
       <div className="border-none bg-theme-bg-secondary p-2 rounded-lg h-[24px] w-[24px] flex items-center justify-center">
-        <CircleNotch
-          weight="bold"
+        <LoaderCircle
+          strokeWidth={1.5}
           size={14}
           className="shrink-0 animate-spin text-theme-text-secondary"
         />
@@ -371,7 +375,7 @@ function RecommendedModels({
   if (!result)
     return (
       <div className="flex items-center gap-x-2 text-theme-text-secondary text-sm">
-        <CircleNotch className="w-4 h-4 animate-spin" />
+        <LoaderCircle strokeWidth={1.5} className="w-4 h-4 animate-spin" />
         <p>Finding models for your hardware...</p>
       </div>
     );
@@ -421,9 +425,9 @@ function RecommendedModels({
                     {label}
                   </p>
                   {selected && (
-                    <CheckCircle
+                    <CircleCheck
+                      strokeWidth={1.5}
                       size={18}
-                      weight="fill"
                       className="text-primary-button shrink-0"
                     />
                   )}
@@ -593,7 +597,7 @@ function PullFromHuggingFace({ onPull }) {
         <div className="flex w-full gap-x-2 items-center">
           <div className="border-none bg-theme-bg-secondary p-2 rounded-lg h-[24px] w-[24px] flex items-center justify-center">
             <Plus
-              weight="bold"
+              strokeWidth={1.5}
               size={14}
               className="shrink-0 text-theme-text-secondary"
             />
@@ -680,9 +684,9 @@ function ModelBadges(model) {
   if (!mtp) return null;
   return (
     <div className="flex items-center gap-x-1">
-      <Lightning
+      <Zap
+        strokeWidth={1.5}
         size={16}
-        weight="duotone"
         className="text-amber-400 light:text-amber-600"
         data-tooltip-id="embedded-lemonade-model-badge"
         data-tooltip-content="Multi-token prediction: usually faster on a GPU, uses a little more memory"

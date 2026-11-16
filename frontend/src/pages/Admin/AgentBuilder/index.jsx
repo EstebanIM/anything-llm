@@ -355,7 +355,7 @@ export default function AgentBuilder() {
         />
         <div className="flex-1 min-h-0 p-6 overflow-y-auto">
           <div
-            className={`max-w-xl mx-auto mt-14 ${showBlockMenu ? "pb-52" : ""}`}
+            className={`max-w-xl mx-auto mt-28 md:mt-14 ${showBlockMenu ? "pb-52" : ""}`}
           >
             <BlockList
               blocks={blocks}

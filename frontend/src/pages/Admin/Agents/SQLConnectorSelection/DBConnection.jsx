@@ -1,7 +1,7 @@
 import PostgreSQLLogo from "./icons/postgresql.png";
 import MySQLLogo from "./icons/mysql.png";
 import MSSQLLogo from "./icons/mssql.png";
-import { PencilSimple, X } from "@phosphor-icons/react";
+import { Pencil, X } from "lucide-react";
 import { useModal } from "@/hooks/useModal";
 import EditSQLConnection from "./SQLConnectionModal";
 
@@ -50,7 +50,7 @@ export default function DBConnection({
             className="border-none text-theme-text-secondary hover:text-theme-text-primary transition-colors duration-200 p-1 rounded"
             onClick={openModal}
           >
-            <PencilSimple size={18} />
+            <Pencil strokeWidth={1.5} size={18} />
           </button>
           <button
             type="button"
@@ -58,7 +58,7 @@ export default function DBConnection({
             onClick={removeConfirmation}
             className="border-none text-theme-text-secondary hover:text-red-500"
           >
-            <X size={18} />
+            <X strokeWidth={1.5} size={18} />
           </button>
         </div>
       </div>

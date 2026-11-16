@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { DotsThree } from "@phosphor-icons/react";
+import { Ellipsis } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 export default function SlashCommandRow({
@@ -73,7 +73,7 @@ export default function SlashCommandRow({
             }}
             className="border-none cursor-pointer text-zinc-400 light:text-slate-500 p-0.5 hover:text-white light:hover:text-slate-900 rounded opacity-0 group-hover:opacity-100"
           >
-            <DotsThree size={16} weight="bold" />
+            <Ellipsis strokeWidth={1.5} size={16} />
           </button>
 
           {menuOpen &&
