@@ -1,0 +1,81 @@
+name: anythingllm-deploy
+
+services:
+  anythingllm:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        ARG_UID: ${UID:-1000}
+        ARG_GID: ${GID:-1000}
+        YARN_REGISTRY: ${YARN_REGISTRY:-}
+    image: anythingllm-iasmar:deploy
+    container_name: anythingllm-server
+    cap_add:
+      - SYS_ADMIN
+    ports:
+      - "2603:3031"
+    env_file:
+      - .env
+    environment:
+      - SERVER_PORT=3031
+      - STORAGE_DIR=/app/server/storage
+      - NODE_ENV=production
+    volumes:
+      - ./data/server-storage:/app/server/storage
+      - ./data/collector-hotdir:/app/collector/hotdir
+      - ./data/collector-outputs:/app/collector/outputs
+    depends_on:
+      - llama-llm
+      - llama-embed
+      - chroma
+    restart: unless-stopped
+    networks:
+      - anythingllm-net
+
+  llama-llm:
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda
+    container_name: llama-llm-server
+    volumes:
+      - ./data/lmstudio-models:/models:ro
+    command: ["-m", "/models/${LLM_MODEL_FILE:-unsloth/Qwen3.5-9B-GGUF/Qwen3.5-9B-Q6_K.gguf}", "--host", "0.0.0.0", "--port", "8091", "-c", "${LLM_CTX:-65536}", "-ngl", "999", "--chat-template-kwargs", '{"enable_thinking": false}']
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: ["gpu"]
+    restart: unless-stopped
+    networks:
+      - anythingllm-net
+
+  llama-embed:
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda
+    container_name: llama-embed-server
+    volumes:
+      - ./data/lmstudio-models:/models:ro
+    command: ["-m", "/models/ggml-org/bge-m3-Q8_0-GGUF/bge-m3-q8_0.gguf", "--embedding", "--host", "0.0.0.0", "--port", "8092", "-c", "8192", "-b", "8192", "-ub", "8192", "-ngl", "999"]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: ["gpu"]
+    restart: unless-stopped
+    networks:
+      - anythingllm-net
+
+  chroma:
+    image: chromadb/chroma:1.4.4
+    container_name: chroma-server
+    volumes:
+      - ./data/chroma:/data
+    restart: unless-stopped
+    networks:
+      - anythingllm-net
+
+networks:
+  anythingllm-net:
+    driver: bridge
