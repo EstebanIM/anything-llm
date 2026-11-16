@@ -5,7 +5,7 @@
  * @property {string|null} content - Text content to be injected between tags. If null self-closing.
  */
 
-const DEFAULT_APP_NAME = "IASMAR";
+const { DEFAULT_APP_NAME } = require("../brand");
 
 /**
  * This class serves the default index.html page that is not present when built in production.

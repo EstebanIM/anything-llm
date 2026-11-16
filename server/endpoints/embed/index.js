@@ -67,6 +67,57 @@ function embeddedEndpoints(app) {
     }
   );
 
+  // Public branding read by the embed widget on load, so it shows the same
+  // name, logo and brand color as the platform. Must be declared before
+  // "/embed/:embedId/:sessionId" or "branding" would be taken as a session id.
+  app.get(
+    "/embed/:embedId/branding",
+    [validEmbedConfig],
+    async (request, response) => {
+      try {
+        const { SystemSettings } = require("../../models/systemSettings");
+        const {
+          currentLogoFilenameForTheme,
+        } = require("../../utils/files/logo");
+        const readSetting = async (label) =>
+          (await SystemSettings.get({ label }))?.value || null;
+
+        const { DEFAULT_APP_NAME } = require("../../utils/brand");
+        const assistantName =
+          (await readSetting("custom_app_name")) || DEFAULT_APP_NAME;
+        const brandColor = await readSetting("brand_color");
+        const loginPoweredBy = await readSetting("login_powered_by");
+
+        // The widget renders on a white background, so it uses the light-theme
+        // logo; null unless a custom logo was uploaded.
+        const hasCustomLogo = !!(await currentLogoFilenameForTheme("light"));
+
+        // Built from the request itself; forwarded headers are not trusted here.
+        const host = request.get("host");
+        const origin = host ? `${request.protocol}://${host}` : "";
+        const brandImageUrl =
+          hasCustomLogo && origin
+            ? `${origin}/api/system/logo?theme=light`
+            : null;
+
+        const hasSponsor = !!loginPoweredBy;
+        response.status(200).json({
+          assistantName,
+          brandImageUrl,
+          buttonColor: brandColor,
+          userBgColor: brandColor,
+          sponsorText: hasSponsor ? loginPoweredBy : null,
+          sponsorLink: hasSponsor && origin ? origin : null,
+          noSponsor: !hasSponsor,
+        });
+      } catch (e) {
+        console.error(e.message, e);
+        // The widget falls back to its neutral defaults.
+        response.status(200).json({});
+      }
+    }
+  );
+
   app.get(
     "/embed/:embedId/:sessionId",
     [validEmbedConfig, canAccessHistory],

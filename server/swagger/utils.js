@@ -3,7 +3,9 @@ const path = require("path");
 const swaggerUi = require("swagger-ui-express");
 const { SystemSettings } = require("../models/systemSettings");
 
-const DEFAULT_SWAGGER_BRAND_NAME = "IASMAR";
+const {
+  DEFAULT_APP_NAME: DEFAULT_SWAGGER_BRAND_NAME,
+} = require("../utils/brand");
 
 async function getSwaggerBrandName() {
   const brandName = await SystemSettings.getValueOrFallback(
