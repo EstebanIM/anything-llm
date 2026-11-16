@@ -31,6 +31,8 @@ import {
 export default function AccountModal({ user, hideModal }) {
   const { pfp, setPfp } = usePfp();
   const { t } = useTranslation();
+  const isDefaultUser = user?.role === "default";
+  const [newPassword, setNewPassword] = useState("");
 
   const handleFileUpload = async (event) => {
     const file = event.target.files[0];
@@ -73,7 +75,8 @@ export default function AccountModal({ user, hideModal }) {
     if (success) {
       let storedUser = safeJsonParse(localStorage.getItem(AUTH_USER), null);
       if (storedUser) {
-        storedUser.username = data.username;
+        // Default users do not submit a username, so it must not be overwritten.
+        if (data.username) storedUser.username = data.username;
         storedUser.bio = data.bio;
         localStorage.setItem(AUTH_USER, JSON.stringify(storedUser));
       }
@@ -95,55 +98,88 @@ export default function AccountModal({ user, hideModal }) {
         <ModalBody>
           <div className="flex flex-col md:flex-row items-center justify-center gap-8">
             <div className="flex flex-col items-center">
-              <label className="group w-48 h-48 flex flex-col items-center justify-center bg-zinc-800 hover:bg-zinc-700 light:bg-sky-100 light:hover:bg-transparent transition-colors duration-300 rounded-full border-2 border-dashed border-white light:border-slate-400 cursor-pointer hover:opacity-60">
-                <input
-                  id="logo-upload"
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleFileUpload}
-                />
-                {pfp ? (
-                  <img
-                    src={pfp}
-                    alt="User profile picture"
-                    className="w-48 h-48 rounded-full object-cover bg-white"
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center p-3">
-                    <Plus className="w-8 h-8 text-zinc-400 light:text-slate-500 m-2" />
-                    <span className="text-zinc-400 light:text-slate-500 text-sm font-semibold">
+              {isDefaultUser ? (
+                <div className="w-48 h-48 rounded-full bg-zinc-800 light:bg-sky-100 border-2 border-dashed border-white/20 light:border-slate-400 flex items-center justify-center">
+                  {pfp ? (
+                    <img
+                      src={pfp}
+                      alt="User profile picture"
+                      className="w-48 h-48 rounded-full object-cover bg-white"
+                    />
+                  ) : (
+                    <span className="text-zinc-400 light:text-slate-500 text-xs text-center px-4">
                       {t("profile_settings.profile_picture")}
                     </span>
-                    <span className="text-zinc-400 light:text-slate-500 text-xs">
-                      800 x 800
-                    </span>
-                  </div>
-                )}
-              </label>
-              {pfp && (
-                <button
-                  type="button"
-                  onClick={handleRemovePfp}
-                  className="border-none bg-transparent mt-3 text-zinc-400 light:text-slate-500 text-sm font-medium hover:underline"
-                >
-                  {t("profile_settings.remove_profile_picture")}
-                </button>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <label className="group w-48 h-48 flex flex-col items-center justify-center bg-zinc-800 hover:bg-zinc-700 light:bg-sky-100 light:hover:bg-transparent transition-colors duration-300 rounded-full border-2 border-dashed border-white light:border-slate-400 cursor-pointer hover:opacity-60">
+                    <input
+                      id="logo-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleFileUpload}
+                    />
+                    {pfp ? (
+                      <img
+                        src={pfp}
+                        alt="User profile picture"
+                        className="w-48 h-48 rounded-full object-cover bg-white"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center p-3">
+                        <Plus className="w-8 h-8 text-zinc-400 light:text-slate-500 m-2" />
+                        <span className="text-zinc-400 light:text-slate-500 text-sm font-semibold">
+                          {t("profile_settings.profile_picture")}
+                        </span>
+                        <span className="text-zinc-400 light:text-slate-500 text-xs">
+                          800 x 800
+                        </span>
+                      </div>
+                    )}
+                  </label>
+                  {pfp && (
+                    <button
+                      type="button"
+                      onClick={handleRemovePfp}
+                      className="border-none bg-transparent mt-3 text-zinc-400 light:text-slate-500 text-sm font-medium hover:underline"
+                    >
+                      {t("profile_settings.remove_profile_picture")}
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </div>
+          {isDefaultUser ? (
+            <p className="text-xs text-zinc-400 light:text-slate-500 text-center">
+              {t("profile_settings.username_managed_by_admin")}
+            </p>
+          ) : (
+            <ModalInput
+              label={t("profile_settings.username")}
+              name="username"
+              type="text"
+              placeholder="User's username"
+              minLength={USERNAME_MIN_LENGTH}
+              maxLength={USERNAME_MAX_LENGTH}
+              pattern={USERNAME_PATTERN}
+              defaultValue={user.username}
+              required
+              autoComplete="off"
+              hint={t("common.username_requirements")}
+            />
+          )}
           <ModalInput
-            label={t("profile_settings.username")}
-            name="username"
-            type="text"
-            placeholder="User's username"
-            minLength={USERNAME_MIN_LENGTH}
-            maxLength={USERNAME_MAX_LENGTH}
-            pattern={USERNAME_PATTERN}
-            defaultValue={user.username}
-            required
-            autoComplete="off"
-            hint={t("common.username_requirements")}
+            label={t("profile_settings.current_password")}
+            name="currentPassword"
+            type="password"
+            placeholder={t("profile_settings.current_password_placeholder")}
+            autoComplete="current-password"
+            required={!!newPassword}
+            hint={t("profile_settings.current_password_hint")}
           />
           <ModalInput
             label={t("profile_settings.new_password")}
@@ -151,6 +187,9 @@ export default function AccountModal({ user, hideModal }) {
             type="password"
             placeholder={`${user.username}'s new password`}
             minLength={8}
+            autoComplete="new-password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
             hint={t("profile_settings.password_description")}
           />
           <ModalTextarea

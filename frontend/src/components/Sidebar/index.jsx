@@ -1,9 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import { List } from "@phosphor-icons/react";
+import { FolderPlus } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import NewWorkspaceModal, {
   useNewWorkspaceModal,
 } from "../Modals/NewWorkspace";
-import ActiveWorkspaces from "./ActiveWorkspaces";
+import NewFolderModal, { useNewFolderModal } from "../Modals/NewFolderModal";
+import ActiveWorkspaces, { REFETCH_WORKSPACES_EVENT } from "./ActiveWorkspaces";
 import useLogo from "@/hooks/useLogo";
 import useUser from "@/hooks/useUser";
 import Footer from "../Footer";
@@ -16,6 +19,7 @@ import { Tooltip } from "react-tooltip";
 import { createPortal } from "react-dom";
 
 export default function Sidebar() {
+  const { t } = useTranslation();
   const { user } = useUser();
   const { logo } = useLogo();
   const sidebarRef = useRef(null);
@@ -25,6 +29,11 @@ export default function Sidebar() {
     showModal: showNewWsModal,
     hideModal: hideNewWsModal,
   } = useNewWorkspaceModal();
+  const {
+    showing: showingNewFolderModal,
+    showModal: showNewFolderModal,
+    hideModal: hideNewFolderModal,
+  } = useNewFolderModal();
 
   return (
     <>
@@ -62,6 +71,20 @@ export default function Sidebar() {
                 <div className="relative h-[calc(100%-60px)] flex flex-col w-full justify-between pt-[10px] overflow-y-scroll no-scroll">
                   <div className="flex flex-col gap-y-[14px]">
                     <SearchBox user={user} showNewWsModal={showNewWsModal} />
+                    {(!user || user?.role !== "default") && (
+                      <button
+                        type="button"
+                        onClick={showNewFolderModal}
+                        className="flex items-center gap-x-2 w-full px-3 py-[5px] rounded-full text-white/60 hover:text-white light:text-slate-600 light:hover:text-slate-900 hover:bg-theme-sidebar-subitem-hover transition-colors duration-150 text-sm"
+                      >
+                        <FolderPlus
+                          strokeWidth={1.5}
+                          size={16}
+                          aria-hidden="true"
+                        />
+                        <span>{t("workspace-folders.new")}</span>
+                      </button>
+                    )}
                     <ActiveWorkspaces />
                   </div>
                 </div>
@@ -73,6 +96,14 @@ export default function Sidebar() {
           </div>
         </div>
         {showingNewWsModal && <NewWorkspaceModal hideModal={hideNewWsModal} />}
+        {showingNewFolderModal && (
+          <NewFolderModal
+            hideModal={hideNewFolderModal}
+            onFolderCreated={() =>
+              window.dispatchEvent(new CustomEvent(REFETCH_WORKSPACES_EVENT))
+            }
+          />
+        )}
       </div>
       <WorkspaceAndThreadTooltips />
     </>

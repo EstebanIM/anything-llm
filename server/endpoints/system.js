@@ -846,6 +846,12 @@ function systemEndpoints(app) {
     async function (request, response) {
       try {
         const user = await userFromSession(request, response);
+        if (user?.role === ROLES.default) {
+          return response.status(403).json({
+            success: false,
+            error: "Default users cannot change their profile picture.",
+          });
+        }
         const uploadedFileName = request.randomFileName;
         if (!uploadedFileName) {
           return response.status(400).json({ message: "File upload failed." });
@@ -937,6 +943,12 @@ function systemEndpoints(app) {
     async function (request, response) {
       try {
         const user = await userFromSession(request, response);
+        if (user?.role === ROLES.default) {
+          return response.status(403).json({
+            success: false,
+            error: "Default users cannot change their profile picture.",
+          });
+        }
         const userRecord = await User.get({ id: user.id });
         const oldPfpFilename = userRecord.pfpFilename;
 
@@ -1264,8 +1276,9 @@ function systemEndpoints(app) {
   // from the UI.
   app.post("/system/user", [validatedRequest], async (request, response) => {
     try {
+      const bcrypt = require("bcryptjs");
       const sessionUser = await userFromSession(request, response);
-      const { username, password, bio } = reqBody(request);
+      const { username, password, currentPassword, bio } = reqBody(request);
       const id = Number(sessionUser.id);
 
       if (!id) {
@@ -1273,10 +1286,35 @@ function systemEndpoints(app) {
         return;
       }
 
+      // Default-role users cannot change their own username.
+      if (sessionUser.role === ROLES.default && username) {
+        response.status(403).json({
+          success: false,
+          error: "Default users cannot change their username.",
+        });
+        return;
+      }
+
+      // Changing your own password requires confirming the current one.
+      // The session user is filtered of its password hash, so it is refetched here.
+      if (password) {
+        const dbUser = await User._get({ id });
+        if (
+          !currentPassword ||
+          !bcrypt.compareSync(String(currentPassword), dbUser.password)
+        ) {
+          response.status(403).json({
+            success: false,
+            error: "Your current password is incorrect.",
+          });
+          return;
+        }
+      }
+
       const updates = {};
       // If the username is being changed, validate it.
       // Otherwise, do not attempt to validate it to allow existing users to keep their username if not changing it.
-      if (username !== sessionUser.username)
+      if (username && username !== sessionUser.username)
         updates.username = User.validations.username(String(username));
       if (password) updates.password = String(password);
       if (bio || bio === "") updates.bio = String(bio);

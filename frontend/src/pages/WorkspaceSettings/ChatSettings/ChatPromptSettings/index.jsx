@@ -8,9 +8,17 @@ import ChatPromptHistory from "./ChatPromptHistory";
 import PublishEntityModal from "@/components/CommunityHub/PublishEntityModal";
 import { useModal } from "@/hooks/useModal";
 import System from "@/models/system";
+import { userFromStorage } from "@/utils/request";
 import { useAutosaveForm, SavedIndicator } from "@/components/AutosaveForm";
 
 export default function ChatPromptSettings({ workspace }) {
+  // Only superadmins can edit the system prompt; the server enforces the same rule.
+  const currentUser = userFromStorage();
+  if (currentUser?.role && currentUser.role !== "superadmin") return null;
+  return <ChatPromptSettingsForm workspace={workspace} />;
+}
+
+function ChatPromptSettingsForm({ workspace }) {
   const { t } = useTranslation();
   const { markDirty, save, hasChanges } = useAutosaveForm();
   const [searchParams] = useSearchParams();

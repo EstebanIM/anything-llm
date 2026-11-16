@@ -52,7 +52,7 @@ async function generateImage(
   try {
     getImageGeneratorProvider();
   } catch {
-    const canConfigure = !user || user.role === "admin";
+    const canConfigure = !user || ["superadmin", "admin"].includes(user.role);
     return {
       uuid: msgUUID,
       type: "textResponse",

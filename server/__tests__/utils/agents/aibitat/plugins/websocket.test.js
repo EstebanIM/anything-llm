@@ -233,6 +233,13 @@ describe("websocket plugin requestUserClarification", () => {
 });
 
 describe("websocket plugin handleToolToggle", () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+    require("../../../../../models/systemSettings").SystemSettings.isMultiUserMode.mockResolvedValue(
+      false
+    );
+  });
+
   it.each(MALFORMED_TEXT_FRAMES)("does not claim %j", (frame) => {
     const { socket, aibitat } = setupPlugin();
 
@@ -257,6 +264,37 @@ describe("websocket plugin handleToolToggle", () => {
       serverName: null,
     });
   });
+
+  it.each([
+    ["superadmin", true],
+    ["admin", true],
+    ["manager", false],
+    ["default", false],
+  ])(
+    "authorizes tool toggles for %s according to its role",
+    async (role, allowed) => {
+      const {
+        SystemSettings,
+      } = require("../../../../../models/systemSettings");
+      const { User } = require("../../../../../models/user");
+      SystemSettings.isMultiUserMode.mockResolvedValue(true);
+      jest.spyOn(User, "get").mockResolvedValue({ id: 7, role });
+      const { socket, aibitat } = setupPlugin({ userId: 7 });
+
+      expect(
+        socket.handleToolToggle(
+          JSON.stringify({
+            type: "agentToolToggle",
+            skill: "web-browsing",
+            enabled: false,
+          })
+        )
+      ).toBe(true);
+      await flushPromises();
+
+      expect(aibitat.toggleAgentTool).toHaveBeenCalledTimes(allowed ? 1 : 0);
+    }
+  );
 });
 
 describe("websocket plugin session reasoning effort", () => {

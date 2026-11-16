@@ -57,8 +57,12 @@ function workspaceEndpoints(app) {
     async (request, response) => {
       try {
         const user = await userFromSession(request, response);
-        const { name = null } = reqBody(request);
-        const { workspace, message } = await Workspace.new(name, user?.id);
+        const { name = null, folderId = null } = reqBody(request);
+        const { workspace, message } = await Workspace.new(
+          name,
+          user?.id,
+          folderId !== null ? { folderId } : {}
+        );
         await Telemetry.sendTelemetry(
           "workspace_created",
           {
@@ -95,6 +99,13 @@ function workspaceEndpoints(app) {
         const user = await userFromSession(request, response);
         const { slug = null } = request.params;
         const data = reqBody(request);
+
+        // Only superadmins can set the system prompt.
+        // In single-user mode there is no role restriction.
+        if (multiUserMode(response) && user?.role !== ROLES.superadmin) {
+          delete data.openAiPrompt;
+        }
+
         const currWorkspace = multiUserMode(response)
           ? await Workspace.getWithUser(user, { slug })
           : await Workspace.get({ slug });

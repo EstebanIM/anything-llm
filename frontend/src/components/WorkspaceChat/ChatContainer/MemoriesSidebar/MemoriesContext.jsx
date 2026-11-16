@@ -22,7 +22,7 @@ export function useMemoriesContext() {
 export function MemoriesProvider({ workspace, children }) {
   const { sidebarOpen, closeSidebar } = useMemoriesSidebar();
   const { user } = useUser();
-  const canToggle = !user || user?.role === "admin";
+  const canToggle = !user || ["admin", "superadmin"].includes(user?.role);
 
   const [memories, setMemories] = useState({ global: [], workspace: [] });
   const [activeTab, setActiveTab] = useState("workspace");

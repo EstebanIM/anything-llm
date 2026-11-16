@@ -8,6 +8,7 @@ import { useModal } from "@/hooks/useModal";
 import Modal from "@/components/lib/Modal";
 
 const ModMap = {
+  superadmin: ["superadmin", "admin", "manager", "default"],
   admin: ["admin", "manager", "default"],
   manager: ["manager", "default"],
   default: [],

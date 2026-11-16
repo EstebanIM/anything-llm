@@ -5,9 +5,18 @@ const { User } = require("../../../models/user");
 const { Workspace } = require("../../../models/workspace");
 const { WorkspaceChats } = require("../../../models/workspaceChats");
 const { WorkspaceUser } = require("../../../models/workspaceUsers");
-const { canModifyAdmin } = require("../../../utils/helpers/admin");
+const {
+  canModifyAdmin,
+  validCanModify,
+  validRoleSelection,
+} = require("../../../utils/helpers/admin");
 const { multiUserMode, reqBody, toBoundedInt } = require("../../../utils/http");
 const { validApiKey } = require("../../../utils/middleware/validApiKey");
+const { ROLES } = require("../../../utils/middleware/multiUserProtected");
+
+// API keys carry no user, so they act with admin rights: superadmins can only
+// be created, changed or removed from the UI by another superadmin.
+const API_KEY_CALLER = { role: ROLES.admin };
 
 function apiAdminEndpoints(app) {
   if (!app) return;
@@ -132,6 +141,12 @@ function apiAdminEndpoints(app) {
       }
 
       const newUserParams = reqBody(request);
+      const roleValidation = validRoleSelection(API_KEY_CALLER, newUserParams);
+      if (!roleValidation.valid) {
+        response.status(400).json({ user: null, error: roleValidation.error });
+        return;
+      }
+
       const { user: newUser, error } = await User.create(newUserParams);
       response.status(newUser ? 200 : 400).json({ user: newUser, error });
     } catch (e) {
@@ -200,6 +215,15 @@ function apiAdminEndpoints(app) {
         return;
       }
 
+      for (const check of [
+        validCanModify(API_KEY_CALLER, user),
+        validRoleSelection(API_KEY_CALLER, updates),
+      ]) {
+        if (check.valid) continue;
+        response.status(400).json({ success: false, error: check.error });
+        return;
+      }
+
       const validAdminRoleModification = await canModifyAdmin(user, updates);
 
       if (!validAdminRoleModification.valid) {
@@ -260,6 +284,12 @@ function apiAdminEndpoints(app) {
 
         const { id } = request.params;
         const user = await User.get({ id: Number(id) });
+        const canDelete = validCanModify(API_KEY_CALLER, user);
+        if (!canDelete.valid) {
+          response.status(400).json({ success: false, error: canDelete.error });
+          return;
+        }
+
         await User.delete({ id: user.id });
         await EventLogs.logEvent("api_user_deleted", {
           userName: user.username,
