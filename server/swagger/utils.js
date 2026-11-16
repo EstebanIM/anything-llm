@@ -17,10 +17,25 @@ async function getSwaggerBrandName() {
     : DEFAULT_SWAGGER_BRAND_NAME;
 }
 
+// The brand name is admin/manager input: escape it for the HTML title and keep
+// it from closing the inline <script> that swagger-ui-express renders.
+function escapeHtml(value = "") {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function inlineScriptJson(value) {
+  return JSON.stringify(value).replace(/</g, "\\u003c");
+}
+
 function getSwaggerCustomJs(brandName, environment) {
   return [
-    `window.SWAGGER_DOCS_ENV = ${JSON.stringify(environment)};`,
-    `window.SWAGGER_BRAND_NAME = ${JSON.stringify(brandName)};`,
+    `window.SWAGGER_DOCS_ENV = ${inlineScriptJson(environment)};`,
+    `window.SWAGGER_BRAND_NAME = ${inlineScriptJson(brandName)};`,
     "",
     fs.readFileSync(path.resolve(__dirname, "index.js"), "utf8"),
   ].join("\n");
@@ -32,7 +47,7 @@ function getSwaggerOptions(brandName) {
       fs.readFileSync(path.resolve(__dirname, "index.css")),
       fs.readFileSync(path.resolve(__dirname, "dark-swagger.css")),
     ].join("\n\n\n"),
-    customSiteTitle: `${brandName} Developer API Documentation`,
+    customSiteTitle: `${escapeHtml(brandName)} Developer API Documentation`,
     customfavIcon: faviconUrl(),
   };
 }
@@ -119,5 +134,7 @@ module.exports = {
   faviconUrl,
   getBrandedOpenApiDocument,
   getSwaggerBrandName,
+  getSwaggerCustomJs,
+  getSwaggerOptions,
   useSwagger,
 };

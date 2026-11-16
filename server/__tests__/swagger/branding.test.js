@@ -8,6 +8,8 @@ const { SystemSettings } = require("../../models/systemSettings");
 const {
   getBrandedOpenApiDocument,
   getSwaggerBrandName,
+  getSwaggerCustomJs,
+  getSwaggerOptions,
 } = require("../../swagger/utils");
 
 describe("Swagger API docs branding", () => {
@@ -23,6 +25,22 @@ describe("Swagger API docs branding", () => {
       { label: "custom_app_name" },
       "IASMAR"
     );
+  });
+
+  test("escapes the app name in the docs page title", () => {
+    const { customSiteTitle } = getSwaggerOptions(
+      "</title><script>alert(1)</script>"
+    );
+    expect(customSiteTitle).not.toMatch(/<script>|<\/title>/);
+    expect(customSiteTitle).toContain("&lt;/title&gt;");
+  });
+
+  test("keeps the app name from closing the inline docs script", () => {
+    const js = getSwaggerCustomJs(
+      "</script><script>alert(1)</script>",
+      "production"
+    );
+    expect(js).not.toMatch(/<\/script>/i);
   });
 
   test("getSwaggerBrandName falls back to IASMAR when no name is set", async () => {

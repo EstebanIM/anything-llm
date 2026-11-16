@@ -77,6 +77,8 @@ function apiWorkspaceEndpoints(app) {
     */
     try {
       const { name = null, ...additionalFields } = reqBody(request);
+      // Only superadmins set the system prompt; an API key acts as an admin.
+      if (multiUserMode(response)) delete additionalFields.openAiPrompt;
       const { workspace, message } = await Workspace.new(
         name,
         null,
@@ -335,6 +337,8 @@ function apiWorkspaceEndpoints(app) {
       try {
         const { slug = null } = request.params;
         const data = reqBody(request);
+        // Only superadmins set the system prompt; an API key acts as an admin.
+        if (multiUserMode(response)) delete data.openAiPrompt;
         const currWorkspace = await Workspace.get({ slug: String(slug) });
 
         if (!currWorkspace) {

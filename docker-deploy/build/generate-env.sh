@@ -8,7 +8,7 @@ ENV_OUT="$DEPLOY_DIR/transfer/.env"
 mkdir -p "$DEPLOY_DIR/transfer"
 
 if [ -f "$ENV_OUT" ]; then
-  echo "Ya existe $ENV_OUT — no se sobreescribe. Borralo a mano si querés regenerar los secretos." >&2
+  echo "Ya existe $ENV_OUT: no se sobrescribe. Bórralo a mano si quieres regenerar los secretos." >&2
   exit 1
 fi
 

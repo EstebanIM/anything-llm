@@ -47,8 +47,10 @@ const {
 const {
   determineFaviconFilepath,
   extractInternalFaviconFilename,
+  faviconResponseHeaders,
   fetchFavicon,
   internalFaviconUrl,
+  isAllowedFaviconUpload,
   removeCustomFavicon,
   renameFaviconFile,
 } = require("../utils/files/favicon");
@@ -89,32 +91,6 @@ const { isReservedCommand } = require("../utils/chats");
 const { AgentSkillWhitelist } = require("../models/agentSkillWhitelist");
 const { Memory } = require("../models/memory");
 const { dummyHashCompare } = require("../utils/helpers/dummyHashCompare");
-
-function faviconAssetsDirectory() {
-  return process.env.NODE_ENV === "development"
-    ? path.resolve(__dirname, "../storage/assets")
-    : path.resolve(process.env.STORAGE_DIR, "assets");
-}
-
-function removeUploadedFavicon(filename = null) {
-  if (!filename) return;
-  try {
-    const assetPath = path.join(
-      faviconAssetsDirectory(),
-      normalizePath(filename)
-    );
-    if (!isWithin(faviconAssetsDirectory(), assetPath)) return;
-    if (fs.existsSync(assetPath)) fs.unlinkSync(assetPath);
-  } catch {}
-}
-
-function isValidFaviconUpload(file = null) {
-  if (!file) return false;
-  const extname = path
-    .extname(file.originalname || file.filename || "")
-    .toLowerCase();
-  return file.mimetype?.startsWith("image/") || extname === ".ico";
-}
 
 function systemEndpoints(app) {
   if (!app) return;
@@ -713,10 +689,11 @@ function systemEndpoints(app) {
         }
 
         const { username, password } = reqBody(request);
+        // The first account owns the instance, so it starts as superadmin.
         const { user, error } = await User.create({
           username,
           password,
-          role: ROLES.admin,
+          role: ROLES.superadmin,
         });
 
         if (error || !user) {
@@ -898,16 +875,10 @@ function systemEndpoints(app) {
       const faviconPath = determineFaviconFilepath(requestedFilename);
       if (!faviconPath) return response.sendStatus(404).end();
 
-      const { found, buffer, size, mime } = fetchFavicon(faviconPath);
+      const { found, buffer, size } = fetchFavicon(faviconPath);
       if (!found) return response.sendStatus(404).end();
 
-      response.writeHead(200, {
-        "Content-Type": mime || "image/png",
-        "Content-Disposition": `inline; filename=${path.basename(faviconPath)}`,
-        "Content-Length": size,
-        "Cache-Control": "public, max-age=300",
-        "X-Content-Type-Options": "nosniff",
-      });
+      response.writeHead(200, faviconResponseHeaders(faviconPath, size));
       response.end(buffer);
       return;
     } catch (error) {
@@ -1140,8 +1111,8 @@ function systemEndpoints(app) {
           .json({ message: "No favicon file provided." });
       }
 
-      if (!isValidFaviconUpload(request.file)) {
-        removeUploadedFavicon(request.file.originalname);
+      if (!isAllowedFaviconUpload(request.file)) {
+        fs.rmSync(request.file.path, { force: true });
         return response.status(400).json({
           message: "Invalid favicon file. Please upload an image or .ico file.",
         });
@@ -1153,7 +1124,7 @@ function systemEndpoints(app) {
           { label: "meta_page_favicon" },
           null
         );
-        const newFilename = await renameFaviconFile(request.file.originalname);
+        const newFilename = await renameFaviconFile(request.file.filename);
         uploadedFaviconUrl = internalFaviconUrl(newFilename);
         const { success, error } = await SystemSettings.updateSettings({
           meta_page_favicon: uploadedFaviconUrl,

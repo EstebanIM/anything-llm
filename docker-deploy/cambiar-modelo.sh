@@ -5,11 +5,11 @@
 #   ./cambiar-modelo.sh 27b             -> Qwen3.6-27B (contexto 65536)
 #   ./cambiar-modelo.sh 27b 32768       -> Qwen3.6-27B con contexto 32768
 #
-# Solo un modelo esta activo a la vez (los dos no entran juntos en la VRAM).
+# Solo un modelo está activo a la vez (los dos no entran juntos en la VRAM).
 # Cada uno corre solo, con toda la GPU disponible. El cambio recrea el
 # contenedor llama-llm y tarda ~1-2 min en cargar el modelo nuevo.
 #
-# Debe correrse parado en ~/anythingllm-deploy (donde estan .env y
+# Debe ejecutarse desde ~/anythingllm-deploy (donde están .env y
 # docker-compose.yml).
 set -euo pipefail
 
@@ -25,11 +25,11 @@ CTX="${2:-65536}"
 
 if [ ! -f "data/lmstudio-models/$FILE" ]; then
   echo "ERROR: no encuentro el modelo en data/lmstudio-models/$FILE"
-  echo "Verifica que el bloque del modelo se haya transferido y extraido."
+  echo "Verifica que el bloque del modelo se haya transferido y extraído."
   exit 1
 fi
 
-# Persistir la eleccion en .env (compose lo lee en cada 'up'), sin tocar
+# Persistir la elección en .env (compose lo lee en cada 'up'), sin tocar
 # el resto del archivo (secretos, etc.).
 touch .env
 grep -v '^LLM_MODEL_FILE=' .env | grep -v '^LLM_CTX=' > .env.tmp || true
@@ -41,7 +41,7 @@ echo "Activando $NOMBRE (contexto $CTX)..."
 docker compose up -d --force-recreate llama-llm
 
 echo ""
-echo "Listo. El modelo esta cargando (tarda ~1-2 min)."
+echo "Listo. El modelo está cargando (tarda ~1-2 min)."
 echo "Ver progreso:  docker compose logs -f llama-llm"
-echo "Esperar la linea 'listening on http://0.0.0.0:8091', despues probar el chat."
+echo "Esperar la línea 'listening on http://0.0.0.0:8091', después probar el chat."
 echo "Confirmar uso de GPU:  nvidia-smi"

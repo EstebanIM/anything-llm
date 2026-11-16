@@ -11,7 +11,10 @@ process.env.STORAGE_DIR = importStorageDir;
 const {
   determineFaviconFilepath,
   extractInternalFaviconFilename,
+  faviconResponseHeaders,
+  faviconUploadFilename,
   internalFaviconUrl,
+  isAllowedFaviconUpload,
   removeCustomFavicon,
   renameFaviconFile,
 } = require("../../../utils/files/favicon");
@@ -79,5 +82,36 @@ describe("favicon file helpers", () => {
     await removeCustomFavicon("https://cdn.example.com/icon.png");
 
     expect(fs.existsSync(faviconPath)).toBe(false);
+  });
+
+  it.each([
+    [{ originalname: "logo.png", mimetype: "image/png" }, true],
+    [{ originalname: "icon.ico", mimetype: "application/octet-stream" }, true],
+    [{ originalname: "mark.svg", mimetype: "image/svg+xml" }, true],
+    [{ originalname: "page.html", mimetype: "image/png" }, false],
+    [{ originalname: "script.js", mimetype: "image/png" }, false],
+    [{ originalname: "logo.png", mimetype: "text/html" }, false],
+  ])("decides whether %p is an allowed favicon upload", (file, allowed) => {
+    expect(isAllowedFaviconUpload(file)).toBe(allowed);
+  });
+
+  it("never stores an upload under its original name", () => {
+    const name = faviconUploadFilename("anything-llm.png");
+    expect(name).not.toBe("anything-llm.png");
+    expect(name).toMatch(/^favicon-upload-[\w-]+\.png$/);
+    expect(faviconUploadFilename("Evil.HTML")).toMatch(/\.invalid$/);
+  });
+
+  it("does not resolve favicons with a disallowed extension", () => {
+    fs.writeFileSync(path.join(assetsDir, "favicon-1.html"), "<script></script>");
+    expect(determineFaviconFilepath("favicon-1.html")).toBeNull();
+  });
+
+  it("serves favicons sandboxed so scripts never run", () => {
+    const headers = faviconResponseHeaders("favicon-1.svg", 10);
+    expect(headers["Content-Type"]).toBe("image/svg+xml");
+    expect(headers["Content-Security-Policy"]).toMatch(/sandbox/);
+    expect(headers["Content-Security-Policy"]).toMatch(/default-src 'none'/);
+    expect(headers["X-Content-Type-Options"]).toBe("nosniff");
   });
 });

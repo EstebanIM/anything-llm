@@ -45,20 +45,37 @@ const fileAPIUploadStorage = multer.diskStorage({
 });
 
 // Asset storage for logos
+function assetUploadDestination(_, __, cb) {
+  const uploadOutput =
+    process.env.NODE_ENV === "development"
+      ? path.resolve(__dirname, `../../storage/assets`)
+      : path.resolve(process.env.STORAGE_DIR, "assets");
+  fs.mkdirSync(uploadOutput, { recursive: true });
+  return cb(null, uploadOutput);
+}
+
 const assetUploadStorage = multer.diskStorage({
-  destination: function (_, __, cb) {
-    const uploadOutput =
-      process.env.NODE_ENV === "development"
-        ? path.resolve(__dirname, `../../storage/assets`)
-        : path.resolve(process.env.STORAGE_DIR, "assets");
-    fs.mkdirSync(uploadOutput, { recursive: true });
-    return cb(null, uploadOutput);
-  },
+  destination: assetUploadDestination,
   filename: function (_, file, cb) {
     file.originalname = sanitizeFileName(
       normalizePath(Buffer.from(file.originalname, "latin1").toString("utf8"))
     );
     cb(null, file.originalname);
+  },
+});
+
+/**
+ * Favicons are written under a random name so an upload can never
+ * overwrite an existing asset such as the current logo.
+ */
+const faviconUploadStorage = multer.diskStorage({
+  destination: assetUploadDestination,
+  filename: function (_, file, cb) {
+    file.originalname = sanitizeFileName(
+      normalizePath(Buffer.from(file.originalname, "latin1").toString("utf8"))
+    );
+    const { faviconUploadFilename } = require("./favicon");
+    cb(null, faviconUploadFilename(file.originalname));
   },
 });
 
@@ -154,7 +171,7 @@ function handleAssetUpload(request, response, next) {
  * Handle favicon asset uploads
  */
 function handleFaviconUpload(request, response, next) {
-  const upload = multer({ storage: assetUploadStorage }).single("favicon");
+  const upload = multer({ storage: faviconUploadStorage }).single("favicon");
   upload(request, response, function (err) {
     if (err) {
       response
