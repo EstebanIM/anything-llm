@@ -2,14 +2,21 @@ import Workspace from "@/models/workspace";
 import WorkspaceFolderModel from "@/models/workspaceFolder";
 import { castToType } from "@/utils/types";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import AutosaveForm from "@/components/AutosaveForm";
 import WorkspaceName from "./WorkspaceName";
 import WorkspaceFolder from "./WorkspaceFolder";
 import SuggestedChatMessages from "./SuggestedChatMessages";
 import DeleteWorkspace from "./DeleteWorkspace";
 
-export default function GeneralInfo({ slug, deletionProtected = false }) {
+export default function GeneralInfo({
+  slug,
+  deletionProtected = false,
+  onWorkspaceUpdated,
+}) {
+  const { t } = useTranslation();
   const [workspace, setWorkspace] = useState(null);
   const [folders, setFolders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,9 +42,19 @@ export default function GeneralInfo({ slug, deletionProtected = false }) {
       workspace.slug,
       data
     );
-    if (!updatedWorkspace)
-      showToast(`Error: ${message}`, "error", { clear: true });
-    return !!updatedWorkspace;
+    if (!updatedWorkspace) {
+      showToast(
+        serverErrorMessage(message, t, "provider-pages.toast.failed"),
+        "error",
+        {
+          clear: true,
+        }
+      );
+      return false;
+    }
+    // Keeps the page title in step with a renamed workspace.
+    onWorkspaceUpdated?.(updatedWorkspace);
+    return true;
   };
 
   if (!workspace || loading) return null;
@@ -45,7 +62,7 @@ export default function GeneralInfo({ slug, deletionProtected = false }) {
     <div className="w-full relative flex flex-col gap-y-[32px]">
       <AutosaveForm
         onSave={handleUpdate}
-        className="w-full xl:w-1/2 flex flex-col"
+        className="w-full xl:w-1/2 flex flex-col gap-y-6"
       >
         <WorkspaceName key={workspace.slug} workspace={workspace} />
         <WorkspaceFolder workspace={workspace} folders={folders} />

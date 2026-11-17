@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ChevronDown,
@@ -193,20 +193,34 @@ export default function EmailApprovalRequest({
         action={action}
         draft={draft}
         attachmentCount={payload.attachmentCount}
+        // The buttons the user pressed are gone; keep their focus on the card.
+        focusOnMount={status !== "timeout"}
       />
     );
 
+  const cardTitle = t(`chat_window.agent_invocation.email.${action}_title`);
   return (
     <div className="flex justify-center w-full mt-3 mb-1 pr-4">
-      <div className="relative w-full flex flex-col rounded-lg overflow-hidden font-normal">
+      <div
+        role="group"
+        aria-label={cardTitle}
+        // Reading or touching the email holds the approval clock, not only editing.
+        onPointerDownCapture={hold}
+        onKeyDownCapture={hold}
+        onFocusCapture={hold}
+        className="relative w-full flex flex-col rounded-xl overflow-hidden font-normal"
+      >
+        <span className="sr-only" role="status">
+          {t("chat-history.approval.announce-email", { action: cardTitle })}
+        </span>
         <CardHeader
-          title={t(`chat_window.agent_invocation.email.${action}_title`)}
+          title={cardTitle}
           subtitle={t("chat_window.agent_invocation.email.via_provider", {
             provider,
           })}
-          className="rounded-t-lg"
+          className="rounded-t-xl"
         />
-        <div className="w-full flex flex-col gap-6 p-4 rounded-b-lg bg-zinc-800 light:bg-transparent light:border light:border-t-0 light:border-slate-300">
+        <div className="w-full flex flex-col gap-6 p-4 rounded-b-xl bg-zinc-800 light:bg-transparent light:border light:border-t-0 light:border-slate-300">
           <div className="flex flex-col gap-2 w-full">
             {showTo && (
               <RecipientRow
@@ -270,25 +284,28 @@ export default function EmailApprovalRequest({
               <button
                 type="button"
                 onClick={() => respond(false)}
-                className="border-none bg-transparent p-0 flex items-center gap-2 text-sm leading-5 text-zinc-300 light:text-slate-600 hover:text-white light:hover:text-slate-900"
+                className="border-none bg-transparent px-2 min-h-[44px] md:min-h-0 md:p-0 flex items-center gap-2 text-sm leading-5 text-zinc-300 light:text-slate-600 hover:text-white light:hover:text-slate-900"
               >
-                <X strokeWidth={1.5} size={16} />
+                <X strokeWidth={1.5} size={16} aria-hidden="true" />
                 {t("chat_window.agent_invocation.email.deny")}
               </button>
               <button
                 type="button"
                 onClick={() => respond(true)}
                 disabled={requiresTo && draft.to.length === 0}
-                className="border-none h-8 px-3 rounded-lg flex items-center gap-2 text-sm leading-5 font-medium bg-white text-zinc-950 light:bg-slate-950 light:text-white hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="border-none h-11 md:h-8 px-3 rounded-lg flex items-center gap-2 text-sm leading-5 font-medium bg-white text-zinc-950 light:bg-slate-950 light:text-white hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <ApproveIcon size={16} />
+                <ApproveIcon strokeWidth={1.5} size={16} aria-hidden="true" />
                 {t("chat_window.agent_invocation.approve")}
               </button>
             </div>
           </div>
         </div>
         {timeoutMs && !held && (
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-zinc-700 light:bg-slate-300">
+          <div
+            aria-hidden="true"
+            className="absolute bottom-0 left-0 right-0 h-1 bg-zinc-700 light:bg-slate-300"
+          >
             <div
               className="h-full bg-sky-500 light:bg-sky-600 transition-none"
               style={{ width: `${progressPercent}%` }}
@@ -312,7 +329,7 @@ function CardHeader({
       className={`w-full flex items-center gap-2.5 p-3 bg-zinc-900 border border-zinc-800 light:bg-slate-200 light:border-slate-200 ${className}`}
     >
       <div className="size-8 shrink-0 rounded flex items-center justify-center bg-zinc-800 text-white light:bg-slate-100 light:text-slate-950">
-        <Mail strokeWidth={1.5} size={16} />
+        <Mail strokeWidth={1.5} size={16} aria-hidden="true" />
       </div>
       <div className="flex flex-col min-w-0 text-sm leading-5">
         <span
@@ -371,7 +388,7 @@ function SubjectRow({ editing, value, onChange }) {
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="flex-1 min-w-0 bg-transparent border-none outline-none p-0 text-sm leading-5 font-medium text-white light:text-slate-950"
+          className="flex-1 min-w-0 bg-transparent border-none rounded-sm p-0 text-sm leading-5 font-medium text-white light:text-slate-950"
         />
       </label>
     );
@@ -387,13 +404,15 @@ function SubjectRow({ editing, value, onChange }) {
 }
 
 function BodyField({ editing, value, onChange }) {
+  const { t } = useTranslation();
   if (editing)
     return (
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        aria-label={t("chat-history.email-body")}
         rows={Math.max(4, value.split("\n").length + 1)}
-        className="w-full bg-transparent border-none outline-none resize-y p-0 text-sm leading-5 text-white light:text-slate-950"
+        className="w-full bg-transparent border-none rounded-sm resize-y p-0 text-sm leading-5 text-white light:text-slate-950"
       />
     );
 
@@ -407,34 +426,46 @@ function BodyField({ editing, value, onChange }) {
 function EditToggle({ editing, onToggle }) {
   const { t } = useTranslation();
   const className =
-    "border-none bg-transparent p-0 flex items-center gap-2 text-sm leading-5 text-zinc-300 light:text-slate-600 hover:text-white light:hover:text-slate-900";
+    "border-none bg-transparent px-2 min-h-[44px] md:min-h-0 md:p-0 flex items-center gap-2 text-sm leading-5 text-zinc-300 light:text-slate-600 hover:text-white light:hover:text-slate-900";
 
   if (editing)
     return (
       <button type="button" onClick={onToggle} className={className}>
-        <Check strokeWidth={1.5} size={16} />
+        <Check strokeWidth={1.5} size={16} aria-hidden="true" />
         {t("chat_window.agent_invocation.email.done")}
       </button>
     );
 
   return (
     <button type="button" onClick={onToggle} className={className}>
-      <Pencil strokeWidth={1.5} size={16} />
+      <Pencil strokeWidth={1.5} size={16} aria-hidden="true" />
       {t("chat_window.agent_invocation.email.edit")}
     </button>
   );
 }
 
-function ResolvedCard({ status, action, draft, attachmentCount = 0 }) {
+function ResolvedCard({
+  status,
+  action,
+  draft,
+  attachmentCount = 0,
+  focusOnMount = false,
+}) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
+  const buttonRef = useRef(null);
+
+  useEffect(() => {
+    if (focusOnMount) buttonRef.current?.focus();
+  }, []);
   const titleClassName = status === "approved" ? "" : "line-through";
   const CaretIcon = expanded ? ChevronUp : ChevronDown;
 
   return (
     <div className="flex justify-center w-full mt-3 mb-1 pr-4">
-      <div className="w-full flex flex-col rounded-lg overflow-hidden font-normal">
+      <div className="w-full flex flex-col rounded-xl overflow-hidden font-normal">
         <button
+          ref={buttonRef}
           type="button"
           onClick={() => setExpanded(!expanded)}
           aria-expanded={expanded}
@@ -457,10 +488,12 @@ function ResolvedCard({ status, action, draft, attachmentCount = 0 }) {
               />
             }
             titleClassName={titleClassName}
-            className={expanded ? "rounded-t-lg" : "rounded-lg"}
+            className={expanded ? "rounded-t-xl" : "rounded-xl"}
             trailing={
               <CaretIcon
+                strokeWidth={1.5}
                 size={16}
+                aria-hidden="true"
                 className="ml-auto shrink-0 text-zinc-400 light:text-slate-600"
               />
             }
@@ -477,7 +510,7 @@ function EmailPreview({ draft }) {
   const rows = ["to", "cc", "bcc"].filter((field) => draft[field].length > 0);
 
   return (
-    <div className="w-full flex flex-col gap-6 p-4 rounded-b-lg bg-zinc-800 light:bg-transparent light:border light:border-t-0 light:border-slate-300">
+    <div className="w-full flex flex-col gap-6 p-4 rounded-b-xl bg-zinc-800 light:bg-transparent light:border light:border-t-0 light:border-slate-300">
       <div className="flex flex-col gap-2 w-full">
         {rows.map((field) => (
           <RecipientRow

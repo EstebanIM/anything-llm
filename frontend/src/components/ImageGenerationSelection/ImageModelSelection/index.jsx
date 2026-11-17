@@ -1,8 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
+import { useTranslation } from "react-i18next";
 import System from "@/models/system";
-
-const INPUT_CLASSES =
-  "border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5";
+import {
+  FIELD_COL,
+  FIELD_ERROR,
+  FIELD_HELP,
+  FIELD_INPUT,
+  FIELD_LABEL,
+  FIELD_SELECT,
+  ModelsErrorText,
+} from "@/components/ProviderFields";
 
 /**
  * Model picker for image generation providers. Fetches the provider's
@@ -12,60 +19,75 @@ const INPUT_CLASSES =
  * @param {object} props
  * @param {string} props.provider - customModels provider key (e.g. "openai-imggen")
  * @param {string|boolean|null} [props.apiKey] - current API key (or true when already saved)
+ * @param {boolean} [props.apiKeyRequired] - when set, models are only fetched
+ * once an API key is present (saved or typed).
  * @param {string|null} [props.basePath] - current base path for self-hosted providers
  * @param {object} props.settings - system settings (for the saved model preference)
  * @param {string|null} [props.endpointName] - when set, models are only fetched
- * once a basePath is present and this name is used in the placeholder prompt
- * (e.g. "Ollama URL").
+ * once a basePath is present.
  */
 export default function ImageModelSelection({
   provider,
   apiKey = null,
+  apiKeyRequired = false,
   basePath = null,
   settings,
   endpointName = null,
 }) {
+  const { t } = useTranslation();
+  const id = useId();
   const [models, setModels] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [attempt, setAttempt] = useState(0);
   const needsBasePath = !!endpointName && !basePath;
+  const needsApiKey = apiKeyRequired && !apiKey;
 
   useEffect(() => {
     async function fetchModels() {
-      if (needsBasePath) {
+      if (needsBasePath || needsApiKey) {
         setModels([]);
+        setError(null);
         setLoading(false);
         return;
       }
 
       setLoading(true);
       try {
-        const { models } = await System.customModels(
+        const { models, error } = await System.customModels(
           provider,
           typeof apiKey === "boolean" ? null : apiKey,
           basePath
         );
         setModels(models || []);
+        setError(error || null);
       } catch (error) {
         console.error("Failed to fetch image generation models:", error);
         setModels([]);
+        setError(error.message);
       }
       setLoading(false);
     }
     fetchModels();
-  }, [provider, apiKey, basePath, needsBasePath]);
+  }, [provider, apiKey, basePath, needsBasePath, needsApiKey, attempt]);
 
-  if (loading || needsBasePath) {
+  if (loading || needsBasePath || needsApiKey) {
     return (
-      <ModelSelectionWrapper>
+      <ModelSelectionWrapper htmlFor={`${id}-model`}>
         <select
+          key="pending"
+          id={`${id}-model`}
           name="ImageGenerationModelPref"
           disabled={true}
-          className={INPUT_CLASSES}
+          aria-busy={loading && !needsBasePath && !needsApiKey}
+          className={FIELD_SELECT}
         >
-          <option disabled={true} selected={true}>
+          <option value="">
             {needsBasePath
-              ? `Enter ${endpointName} first`
-              : "-- loading available models --"}
+              ? t("provider-fields.models-need-url")
+              : needsApiKey
+                ? t("provider-fields.models-need-key")
+                : t("provider-fields.models-loading")}
           </option>
         </select>
       </ModelSelectionWrapper>
@@ -74,78 +96,87 @@ export default function ImageModelSelection({
 
   if (models.length === 0) {
     return (
-      <ModelSelectionWrapper hint="No image models could be found for this provider - enter the model name manually.">
+      <ModelSelectionWrapper htmlFor={`${id}-model`}>
         <input
+          key="manual"
+          id={`${id}-model`}
           type="text"
           name="ImageGenerationModelPref"
-          className={INPUT_CLASSES}
-          placeholder="Image model name"
+          className={FIELD_INPUT}
+          placeholder={t("provider-forms.image-generation.model-placeholder")}
           defaultValue={settings?.ImageGenerationModelPref || ""}
           required={true}
           autoComplete="off"
           spellCheck={false}
+          aria-describedby={`${id}-model-help`}
         />
+        {error ? (
+          <p id={`${id}-model-help`} role="alert" className={FIELD_ERROR}>
+            <ModelsErrorText error={error} />{" "}
+            {t("provider-forms.image-generation.models-manual-short")}{" "}
+            <button
+              type="button"
+              onClick={() => setAttempt((n) => n + 1)}
+              className="inline-flex items-center min-h-[44px] md:min-h-0 font-semibold underline underline-offset-2"
+            >
+              {t("provider-fields.retry")}
+            </button>
+          </p>
+        ) : (
+          <p id={`${id}-model-help`} className={FIELD_HELP}>
+            {t("provider-forms.image-generation.models-manual")}
+          </p>
+        )}
       </ModelSelectionWrapper>
     );
   }
 
-  const groupedModels = groupModelsByOrganization(models);
+  const groupedModels = groupModelsByOrganization(
+    models,
+    t("provider-forms.image-generation.other-organization")
+  );
   return (
-    <ModelSelectionWrapper>
+    <ModelSelectionWrapper htmlFor={`${id}-model`}>
       <select
+        key="ready"
+        id={`${id}-model`}
         name="ImageGenerationModelPref"
         required={true}
-        className={INPUT_CLASSES}
+        defaultValue={settings?.ImageGenerationModelPref}
+        className={FIELD_SELECT}
       >
         {Object.keys(groupedModels).length > 0
           ? Object.entries(groupedModels).map(([organization, models]) => (
               <optgroup key={organization} label={organization}>
                 {models.map((model) => (
-                  <ModelOption
-                    key={model.id}
-                    model={model}
-                    settings={settings}
-                  />
+                  <ModelOption key={model.id} model={model} />
                 ))}
               </optgroup>
             ))
-          : models.map((model) => (
-              <ModelOption key={model.id} model={model} settings={settings} />
-            ))}
+          : models.map((model) => <ModelOption key={model.id} model={model} />)}
       </select>
     </ModelSelectionWrapper>
   );
 }
 
-function ModelSelectionWrapper({ children, hint = null }) {
+function ModelSelectionWrapper({ htmlFor, children }) {
+  const { t } = useTranslation();
   return (
-    <div className="flex flex-col w-60">
-      <label className="text-white text-sm font-semibold block mb-3">
-        Model
+    <div className={FIELD_COL}>
+      <label htmlFor={htmlFor} className={FIELD_LABEL}>
+        {t("provider-fields.model")}
       </label>
       {children}
-      {hint && (
-        <p className="text-xs leading-[18px] font-base text-white text-opacity-60 mt-2">
-          {hint}
-        </p>
-      )}
     </div>
   );
 }
 
-function ModelOption({ model, settings }) {
+function ModelOption({ model }) {
   const name = model.name || model.id;
   const prefix = model.organization ? `${model.organization}:` : null;
   const label =
     prefix && name.startsWith(prefix) ? name.slice(prefix.length) : name;
-  return (
-    <option
-      value={model.id}
-      selected={settings?.ImageGenerationModelPref === model.id}
-    >
-      {label}
-    </option>
-  );
+  return <option value={model.id}>{label}</option>;
 }
 
 /**
@@ -153,12 +184,13 @@ function ModelOption({ model, settings }) {
  * one (eg: openai, ollama) return an empty object so the models are rendered as
  * a flat list.
  * @param {{id: string, name?: string, organization?: string}[]} models
+ * @param {string} fallbackLabel - group name for models without an organization
  * @returns {Record<string, object[]>}
  */
-function groupModelsByOrganization(models = []) {
+function groupModelsByOrganization(models = [], fallbackLabel = "Other") {
   if (!models.some((model) => !!model.organization)) return {};
   return models.reduce((acc, model) => {
-    const organization = model.organization || "Other";
+    const organization = model.organization || fallbackLabel;
     acc[organization] = acc[organization] || [];
     acc[organization].push(model);
     return acc;

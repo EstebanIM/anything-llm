@@ -1,43 +1,51 @@
+import { useId } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  FIELD_COL,
+  FIELD_LABEL,
+  FIELD_ROW,
+  FIELD_SELECT,
+  SECRET_MASK,
+  SecretInput,
+} from "@/components/ProviderFields";
+
 export default function OpenAiOptions({ settings }) {
+  const { t } = useTranslation();
+  const id = useId();
+
   return (
     <div className="w-full flex flex-col gap-y-4">
-      <div className="w-full flex items-center gap-[36px] mt-1.5">
-        <div className="flex flex-col w-60">
-          <label className="text-white text-sm font-semibold block mb-3">
-            API Key
+      <div className={`${FIELD_ROW} mt-1.5`}>
+        <div className={FIELD_COL}>
+          <label htmlFor={`${id}-api-key`} className={FIELD_LABEL}>
+            {t("provider-fields.api-key")}
           </label>
-          <input
-            type="password"
+          <SecretInput
+            id={`${id}-api-key`}
             name="OpenAiKey"
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-            placeholder="OpenAI API Key"
-            defaultValue={settings?.OpenAiKey ? "*".repeat(20) : ""}
+            defaultValue={settings?.OpenAiKey ? SECRET_MASK : ""}
             required={true}
-            autoComplete="off"
-            spellCheck={false}
           />
         </div>
-        <div className="flex flex-col w-60">
-          <label className="text-white text-sm font-semibold block mb-3">
-            Model Preference
+        <div className={FIELD_COL}>
+          <label htmlFor={`${id}-model`} className={FIELD_LABEL}>
+            {t("provider-fields.embedding-model")}
           </label>
           <select
+            id={`${id}-model`}
             name="EmbeddingModelPref"
             required={true}
-            className="border-none bg-theme-settings-input-bg border-gray-500 text-white text-sm rounded-lg block w-full p-2.5"
+            defaultValue={settings?.EmbeddingModelPref}
+            className={FIELD_SELECT}
           >
-            <optgroup label="Available embedding models">
+            <optgroup label={t("provider-forms.embedding.models-available")}>
               {[
                 "text-embedding-ada-002",
                 "text-embedding-3-small",
                 "text-embedding-3-large",
               ].map((model) => {
                 return (
-                  <option
-                    key={model}
-                    value={model}
-                    selected={settings?.EmbeddingModelPref === model}
-                  >
+                  <option key={model} value={model}>
                     {model}
                   </option>
                 );

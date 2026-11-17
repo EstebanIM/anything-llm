@@ -1,31 +1,73 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import Sidebar from "@/components/SettingsSidebar";
-import { isMobile } from "react-device-detect";
+import { Bell, BellOff } from "lucide-react";
 import ScheduledJobs from "@/models/scheduledJobs";
-import { subscribeToPushNotifications } from "@/hooks/useWebPushNotifications";
-import useWebPushNotifications from "@/hooks/useWebPushNotifications";
+import useWebPushNotifications, {
+  subscribeToPushNotifications,
+} from "@/hooks/useWebPushNotifications";
 import usePolling from "@/hooks/usePolling";
-import JobFormModal from "./JobFormModal";
-import Modal from "@/components/lib/Modal";
 import { useModal } from "@/hooks/useModal";
+import Modal from "@/components/lib/Modal";
+import ConfirmModal from "@/components/lib/ConfirmModal";
+import TableState from "@/components/lib/TableState";
 import showToast from "@/utils/toast";
+import JobFormModal from "./JobFormModal";
 import JobRow from "./components/JobRow";
-import { Bell } from "lucide-react";
-import { Tooltip } from "react-tooltip";
+import PageLayout, {
+  HEADER_BUTTON,
+  PAGE_DESCRIPTION,
+  PAGE_TITLE,
+  StatusRegion,
+  useStatusAnnouncer,
+} from "./components/PageLayout";
+import { isInFlight, translateJobError } from "./utils/format";
+
+const COLUMNS = ["name", "schedule", "status", "lastRun", "nextRun"];
+const TH =
+  "px-4 pb-[18px] text-xs font-semibold uppercase tracking-[1.4px] text-zinc-400 light:text-slate-600 whitespace-nowrap";
 
 export default function ScheduledJobsPage() {
   const { t } = useTranslation();
   useWebPushNotifications(false);
   const { isOpen, openModal, closeModal } = useModal();
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [jobs, setJobs] = useState([]);
   const [editingJob, setEditingJob] = useState(null);
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [triggeringId, setTriggeringId] = useState(null);
+  const [togglingId, setTogglingId] = useState(null);
+  // Job id whose row link takes focus after the next render ("heading" for the h1).
+  const [focusTarget, setFocusTarget] = useState(null);
+  const headingId = useId();
+  const headingRef = useRef(null);
+  const rowLinks = useRef(new Map());
+  const loaded = useRef(false);
+
+  useEffect(() => {
+    if (focusTarget === null) return;
+    (rowLinks.current.get(focusTarget) || headingRef.current)?.focus();
+    setFocusTarget(null);
+  }, [focusTarget, jobs]);
 
   const fetchJobs = async () => {
-    const { jobs: foundJobs } = await ScheduledJobs.list();
-    setJobs(foundJobs || []);
+    const { jobs: foundJobs, error } = await ScheduledJobs.list();
+    if (error || !Array.isArray(foundJobs)) {
+      // A failed background refresh keeps the rows already on screen.
+      if (!loaded.current) setLoadError(true);
+    } else {
+      loaded.current = true;
+      setLoadError(false);
+      setJobs(foundJobs);
+    }
     setLoading(false);
+  };
+
+  const retry = () => {
+    setLoading(true);
+    setLoadError(false);
+    fetchJobs();
   };
 
   useEffect(() => {
@@ -35,34 +77,79 @@ export default function ScheduledJobsPage() {
   // Poll every 5s while tab is visible so status badges and run timestamps stay in sync.
   usePolling(fetchJobs, 5000);
 
-  const handleDelete = async (id) => {
-    if (!window.confirm(t("scheduledJobs.confirmDelete"))) return;
-    await ScheduledJobs.delete(id);
-    showToast(t("scheduledJobs.toast.deleted"), "success", { clear: true });
-    fetchJobs();
-  };
+  const statusMessage = useStatusAnnouncer(
+    jobs.map((job) => ({
+      key: job.id,
+      status: job.latestRun?.status ?? "none",
+      describe: () =>
+        t("scheduledJobs.announce.jobStatus", {
+          name: job.name,
+          status: t(`scheduledJobs.status.${job.latestRun?.status}`),
+        }),
+    }))
+  );
 
-  const handleToggle = async (id) => {
-    const result = await ScheduledJobs.toggle(id);
-    if (result?.error) showToast(result.error, "error", { clear: true });
-    fetchJobs();
-  };
-
-  const handleTrigger = async (id) => {
-    const { success, skipped, error } = await ScheduledJobs.trigger(id);
+  const confirmDelete = async () => {
+    const job = pendingDelete;
+    if (!job || deleting) return;
+    setDeleting(true);
+    const { success } = await ScheduledJobs.delete(job.id);
+    setDeleting(false);
+    setPendingDelete(null);
     if (!success) {
-      showToast(error || t("scheduledJobs.toast.triggerFailed"), "error", {
+      showToast(t("scheduledJobs.toast.deleteFailed"), "error", {
         clear: true,
       });
-    } else if (skipped) {
+      return;
+    }
+    const index = jobs.findIndex((j) => j.id === job.id);
+    const remaining = jobs.filter((j) => j.id !== job.id);
+    setJobs(remaining);
+    showToast(t("scheduledJobs.toast.deleted"), "success", { clear: true });
+    // The row and its delete button are gone: land on the next row or the heading.
+    const next = remaining[index] ?? remaining[index - 1];
+    setFocusTarget(next?.id ?? "heading");
+  };
+
+  const handleToggle = async (job) => {
+    if (togglingId) return;
+    setTogglingId(job.id);
+    const result = await ScheduledJobs.toggle(job.id);
+    setTogglingId(null);
+    if (!result?.job) {
       showToast(
-        t(
-          "scheduledJobs.toast.triggerSkipped",
-          "A run is already in progress for this job"
-        ),
-        "info",
+        translateJobError(t, result?.error, "scheduledJobs.toast.toggleFailed"),
+        "error",
         { clear: true }
       );
+      return;
+    }
+    setJobs((prev) =>
+      prev.map((j) => (j.id === job.id ? { ...j, ...result.job } : j))
+    );
+  };
+
+  const handleTrigger = async (job) => {
+    if (triggeringId) return;
+    if (isInFlight(job.latestRun?.status)) {
+      showToast(t("scheduledJobs.toast.triggerSkipped"), "info", {
+        clear: true,
+      });
+      return;
+    }
+    setTriggeringId(job.id);
+    const { success, skipped, error } = await ScheduledJobs.trigger(job.id);
+    setTriggeringId(null);
+    if (!success) {
+      showToast(
+        translateJobError(t, error, "scheduledJobs.toast.triggerFailed"),
+        "error",
+        { clear: true }
+      );
+    } else if (skipped) {
+      showToast(t("scheduledJobs.toast.triggerSkipped"), "info", {
+        clear: true,
+      });
     } else {
       showToast(t("scheduledJobs.toast.triggered"), "success", { clear: true });
     }
@@ -79,164 +166,199 @@ export default function ScheduledJobsPage() {
     openModal();
   };
 
-  if (loading) {
-    return (
-      <BaseLayout showNewJobButton={false} handleCreate={handleCreate}>
-        <div className="w-full flex items-center justify-center text-zinc-400 light:text-slate-600 text-sm pt-8">
-          {t("scheduledJobs.loading")}
-        </div>
-      </BaseLayout>
-    );
-  }
+  const handleSaved = async (savedJob) => {
+    const created = !editingJob;
+    closeModal();
+    await fetchJobs();
+    // The empty-state button that opened the form is gone after the first job.
+    if (created && savedJob?.id) setFocusTarget(savedJob.id);
+  };
+
+  const newJobButton = (
+    <button type="button" onClick={handleCreate} className={HEADER_BUTTON}>
+      {t("scheduledJobs.newJob")}
+    </button>
+  );
 
   return (
-    <BaseLayout
-      showNewJobButton={jobs.length !== 0}
-      handleCreate={handleCreate}
-    >
-      <div className="pt-8">
-        <div className="flex items-center justify-between px-4 pb-[18px] text-xs font-semibold uppercase tracking-[1.4px] text-zinc-400 light:text-slate-600">
-          <span className="w-[150px]">{t("scheduledJobs.table.name")}</span>
-          <span className="w-[180px]">{t("scheduledJobs.table.schedule")}</span>
-          <span className="w-[120px]">{t("scheduledJobs.table.status")}</span>
-          <span className="w-[180px]">{t("scheduledJobs.table.lastRun")}</span>
-          <span className="w-[180px]">{t("scheduledJobs.table.nextRun")}</span>
-          <span className="w-[140px] text-right">
-            {t("scheduledJobs.table.actions")}
-          </span>
-        </div>
-        <div className="h-px w-full bg-white/10 light:bg-slate-300" />
+    <PageLayout>
+      <Header
+        headingId={headingId}
+        headingRef={headingRef}
+        action={!loading && jobs.length > 0 ? newJobButton : null}
+      />
 
-        {jobs.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-8 py-24 text-center">
-            <div className="flex flex-col gap-1.5">
-              <p className="text-base font-semibold text-zinc-50 light:text-slate-950">
-                {t("scheduledJobs.emptyTitle")}
-              </p>
-              <p className="text-sm font-medium text-zinc-400 light:text-slate-600">
-                {t("scheduledJobs.emptySubtitle")}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={handleCreate}
-              className="border-none h-9 px-5 rounded-lg bg-zinc-50 text-zinc-950 light:bg-slate-900 light:text-white text-sm font-medium hover:bg-zinc-200 light:hover:bg-slate-800 transition-colors"
-            >
-              {t("scheduledJobs.newJob")}
-            </button>
-          </div>
-        ) : (
-          <div className="flex flex-col divide-y divide-white/5 light:divide-slate-300">
-            {jobs.map((job) => (
-              <JobRow
-                key={job.id}
-                job={job}
-                onTrigger={handleTrigger}
-                onToggle={handleToggle}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
+      <div className="pt-8">
+        <table
+          aria-labelledby={headingId}
+          className="block md:table w-full text-left"
+        >
+          <thead className="hidden md:table-header-group">
+            <tr className="border-b border-white/10 light:border-slate-300">
+              {COLUMNS.map((column) => (
+                <th key={column} scope="col" className={TH}>
+                  {t(`scheduledJobs.table.${column}`)}
+                </th>
+              ))}
+              <th scope="col" className={TH}>
+                <span className="sr-only">
+                  {t("scheduledJobs.table.actions")}
+                </span>
+              </th>
+            </tr>
+          </thead>
+          <tbody className="block md:table-row-group">
+            {loading ? (
+              <TableState state="loading" colSpan={COLUMNS.length + 1} />
+            ) : loadError ? (
+              <TableState
+                state="error"
+                colSpan={COLUMNS.length + 1}
+                message={t("scheduledJobs.loadFailed")}
+                onRetry={retry}
               />
-            ))}
-          </div>
-        )}
+            ) : jobs.length === 0 ? (
+              <TableState
+                state="empty"
+                colSpan={COLUMNS.length + 1}
+                message={
+                  <span className="flex flex-col gap-1.5 py-12">
+                    <span className="text-base font-semibold text-zinc-50 light:text-slate-950">
+                      {t("scheduledJobs.emptyTitle")}
+                    </span>
+                    <span>{t("scheduledJobs.emptySubtitle")}</span>
+                  </span>
+                }
+                action={newJobButton}
+              />
+            ) : (
+              jobs.map((job) => (
+                <JobRow
+                  key={job.id}
+                  job={job}
+                  linkRef={(el) =>
+                    el
+                      ? rowLinks.current.set(job.id, el)
+                      : rowLinks.current.delete(job.id)
+                  }
+                  triggering={triggeringId === job.id}
+                  toggling={togglingId === job.id}
+                  onTrigger={handleTrigger}
+                  onToggle={handleToggle}
+                  onEdit={handleEdit}
+                  onDelete={setPendingDelete}
+                />
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
+
+      <StatusRegion message={statusMessage} />
 
       <Modal isOpen={isOpen} onClose={closeModal} size="md">
         <JobFormModal
           job={editingJob}
           onClose={closeModal}
-          onSaved={() => {
-            closeModal();
-            fetchJobs();
-          }}
+          onSaved={handleSaved}
         />
       </Modal>
-    </BaseLayout>
+
+      <ConfirmModal
+        isOpen={!!pendingDelete}
+        title={t("scheduledJobs.deleteTitle", { name: pendingDelete?.name })}
+        confirmLabel={t("settings-pages.delete")}
+        busy={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      >
+        <p>{t("scheduledJobs.confirmDelete")}</p>
+      </ConfirmModal>
+    </PageLayout>
   );
 }
 
-function BaseLayout({
-  showNewJobButton = false,
-  handleCreate = () => {},
-  children,
-}) {
+function Header({ headingId, headingRef, action }) {
   const { t } = useTranslation();
+  const notifications = useNotificationPermission(headingRef);
 
   return (
-    <div className="w-screen h-screen overflow-hidden bg-zinc-950 light:bg-slate-50 flex">
-      <Sidebar />
-      <div
-        style={{ height: isMobile ? "100%" : "calc(100% - 32px)" }}
-        className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full overflow-y-scroll p-4 md:p-0"
-      >
-        <div className="flex flex-col w-full px-1 md:pl-6 md:pr-[50px] md:py-6 py-16">
-          <div className="w-full flex items-end justify-between gap-x-4 pb-6 border-white/10 light:border-slate-300 border-b-2">
-            <div className="flex flex-col gap-y-2">
-              <p className="text-lg leading-7 font-semibold text-zinc-50 light:text-slate-950">
-                {t("scheduledJobs.title")}
-              </p>
-              <p className="text-xs leading-4 text-zinc-400 light:text-slate-600 max-w-[700px]">
-                {t("scheduledJobs.description")}
-              </p>
-            </div>
-            <div className="flex items-center gap-x-2 shrink-0">
-              <NotificationBellButton />
-              {showNewJobButton && (
-                <button
-                  type="button"
-                  onClick={handleCreate}
-                  className="border-none h-9 px-5 rounded-lg bg-zinc-50 text-zinc-950 light:bg-slate-900 light:text-white text-sm font-medium hover:bg-zinc-200 light:hover:bg-slate-800 transition-colors"
-                >
-                  {t("scheduledJobs.newJob")}
-                </button>
-              )}
-            </div>
-          </div>
-          {children}
-        </div>
+    <div className="w-full flex flex-col gap-4 md:flex-row md:items-end md:justify-between pb-6 border-white/10 light:border-slate-300 border-b-2">
+      <div className="flex flex-col gap-y-2">
+        <h1
+          id={headingId}
+          ref={headingRef}
+          tabIndex={-1}
+          className={PAGE_TITLE}
+        >
+          {t("scheduledJobs.title")}
+        </h1>
+        <p className={PAGE_DESCRIPTION}>{t("scheduledJobs.description")}</p>
+        {notifications.permission === "denied" && (
+          <p
+            role="status"
+            className="flex items-start gap-1.5 text-xs leading-4 text-zinc-400 light:text-slate-600 max-w-[700px]"
+          >
+            <BellOff
+              strokeWidth={1.5}
+              size={14}
+              aria-hidden="true"
+              className="shrink-0 mt-px"
+            />
+            {t("scheduledJobs.notificationsBlocked")}
+          </p>
+        )}
+      </div>
+      <div className="flex items-center gap-x-2 shrink-0">
+        {notifications.permission === "default" && (
+          <button
+            type="button"
+            onClick={notifications.request}
+            aria-label={t("scheduledJobs.enableNotifications")}
+            title={t("scheduledJobs.enableNotifications")}
+            className="border-none flex items-center justify-center w-11 h-11 md:w-9 md:h-9 rounded-lg text-orange-400 light:text-orange-700 hover:bg-white/10 light:hover:bg-slate-200 transition-colors duration-quick ease-smooth"
+          >
+            <Bell strokeWidth={1.5} size={20} aria-hidden="true" />
+          </button>
+        )}
+        {action}
       </div>
     </div>
   );
 }
 
-function NotificationBellButton() {
+/**
+ * Browser notification permission for job results. "default" shows the bell,
+ * "denied" explains how to unblock it, "granted" and "unsupported" hide both.
+ */
+function useNotificationPermission(headingRef) {
   const { t } = useTranslation();
-  const [permissionState, setPermissionState] = useState(
-    typeof Notification !== "undefined" ? Notification.permission : "denied"
+  const supported =
+    "serviceWorker" in navigator &&
+    "PushManager" in window &&
+    typeof Notification !== "undefined";
+  const [permission, setPermission] = useState(
+    supported ? Notification.permission : "unsupported"
   );
 
-  if (
-    !("serviceWorker" in navigator) ||
-    !("PushManager" in window) ||
-    permissionState === "granted"
-  ) {
-    return null;
-  }
-
-  const handleClick = async () => {
-    await subscribeToPushNotifications();
-    setPermissionState(Notification.permission);
+  const request = async () => {
+    const subscribed = await subscribeToPushNotifications();
+    const next = Notification.permission;
+    setPermission(next);
+    if (next === "default") return;
+    if (next === "granted") {
+      // Permission alone is not enough: the subscription can still fail
+      // (no server key, service worker or network error).
+      if (subscribed)
+        showToast(t("scheduledJobs.notificationsEnabled"), "success", {
+          clear: true,
+        });
+      else
+        showToast(t("notices.notifications-failed"), "error", { clear: true });
+    }
+    // The bell disappears once the browser answers: keep focus on the page.
+    setTimeout(() => headingRef.current?.focus(), 0);
   };
 
-  return (
-    <>
-      <button
-        type="button"
-        onClick={handleClick}
-        data-tooltip-id="notification-bell-tooltip"
-        data-tooltip-content={t(
-          "scheduledJobs.enableNotifications",
-          "Enable browser notifications for job results"
-        )}
-        className="border-none flex items-center justify-center w-9 h-9 rounded-lg hover:bg-white/10 light:hover:bg-slate-200 transition-colors"
-      >
-        <Bell strokeWidth={1.5} size={20} className="text-orange-400" />
-      </button>
-      <Tooltip
-        id="notification-bell-tooltip"
-        place="bottom"
-        className="tooltip !text-xs"
-      />
-    </>
-  );
+  return { permission, request };
 }

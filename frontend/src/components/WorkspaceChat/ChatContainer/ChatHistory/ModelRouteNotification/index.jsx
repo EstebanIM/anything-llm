@@ -14,7 +14,7 @@ export default function ModelRouteNotification({ routedTo, isStreaming }) {
 
   return (
     <div className="flex w-full my-2">
-      <div className="rounded-[20px] border border-zinc-700 light:border-slate-300 px-4 py-2 flex items-center gap-2">
+      <div className="rounded-full border border-zinc-700 light:border-slate-300 px-4 py-2 flex items-center gap-2">
         <RouterIcon isStreaming={isStreaming} />
         <span className="text-sm text-zinc-400 light:text-slate-600 whitespace-nowrap">
           {routedTo.ruleTitle ? (
@@ -47,10 +47,15 @@ export default function ModelRouteNotification({ routedTo, isStreaming }) {
 }
 
 function RouterIcon({ isStreaming }) {
-  if (!isStreaming)
+  // Decorative: the text next to it says where the request was routed. The
+  // CSS motion guard cannot stop an autoplaying video, so check here.
+  const reduceMotion = !!window.matchMedia?.("(prefers-reduced-motion: reduce)")
+    .matches;
+  if (!isStreaming || reduceMotion)
     return (
       <Shuffle
         strokeWidth={1.5}
+        aria-hidden="true"
         className="w-4 h-4 text-zinc-50 light:text-slate-950 flex-shrink-0"
       />
     );
@@ -60,8 +65,8 @@ function RouterIcon({ isStreaming }) {
       autoPlay
       muted
       playsInline
+      aria-hidden="true"
       className="w-4 h-4 flex-shrink-0 scale-[134%] invert light:invert-0"
-      aria-label="Routing to model..."
     >
       <source src={RouterAnimation} type="video/webm" />
     </video>

@@ -1,147 +1,104 @@
-import { useState } from "react";
+import { useId, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { History, SquareCode } from "lucide-react";
 import Sidebar from "@/components/SettingsSidebar";
-import { isMobile } from "react-device-detect";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import EmbedConfigsView from "./EmbedConfigs";
 import EmbedChatsView from "./EmbedChats";
+
+const VIEWS = {
+  widgets: { icon: SquareCode, Component: EmbedConfigsView },
+  history: { icon: History, Component: EmbedChatsView },
+};
+const VIEW_KEYS = Object.keys(VIEWS);
+
 export default function ChatEmbedWidgets() {
-  const [selectedView, setSelectedView] = useState("configs");
-  const [showViewModal, setShowViewModal] = useState(false);
+  const { t } = useTranslation();
+  const baseId = useId();
+  const tabRefs = useRef({});
+  const [searchParams, setSearchParams] = useSearchParams();
+  const view = VIEWS[searchParams.get("view")]
+    ? searchParams.get("view")
+    : "widgets";
+  const { Component } = VIEWS[view];
+  const tabId = (key) => `${baseId}-tab-${key}`;
+  const panelId = `${baseId}-panel`;
 
-  if (isMobile) {
-    return (
-      <WidgetLayout>
-        <div className="flex flex-col w-full p-4 mt-10">
-          <div
-            hidden={showViewModal}
-            className="flex flex-col gap-y-[18px] overflow-y-scroll no-scroll"
-          >
-            <div className="text-theme-text-primary flex items-center gap-x-2">
-              <p className="text-lg font-medium">Chat Embed</p>
-            </div>
-            <WidgetList
-              selectedView={selectedView}
-              handleClick={(view) => {
-                setSelectedView(view);
-                setShowViewModal(true);
-              }}
-            />
-          </div>
-          {showViewModal && (
-            <div className="fixed top-0 left-0 w-full h-full bg-sidebar z-30">
-              <div className="flex flex-col h-full">
-                <div className="flex items-center p-4">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowViewModal(false);
-                      setSelectedView("");
-                    }}
-                    className="text-white/60 hover:text-white transition-colors duration-200"
-                  >
-                    <div className="flex items-center text-sky-400">
-                      <ChevronLeft strokeWidth={1.5} size={24} />
-                      <div>Back</div>
-                    </div>
-                  </button>
-                </div>
-                <div className="flex-1 overflow-y-auto p-4">
-                  <div className="bg-theme-bg-secondary text-white rounded-xl p-4 overflow-y-scroll no-scroll">
-                    {selectedView === "configs" ? (
-                      <EmbedConfigsView />
-                    ) : (
-                      <EmbedChatsView />
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </WidgetLayout>
-    );
-  }
+  // Switching views drops the history page (?offset) on purpose.
+  const selectView = (key) =>
+    setSearchParams(key === "widgets" ? {} : { view: key }, { replace: true });
 
-  return (
-    <WidgetLayout>
-      <div className="flex-1 flex gap-x-6 p-4 mt-10 min-w-0">
-        <div className="flex flex-col min-w-[360px] h-[calc(100vh-90px)]">
-          <div className="flex-none mb-4">
-            <div className="text-theme-text-primary flex items-center gap-x-2">
-              <p className="text-lg font-medium">Chat Embed</p>
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-y-auto pr-2 pb-4">
-            <div className="space-y-4">
-              <WidgetList
-                selectedView={selectedView}
-                handleClick={setSelectedView}
-              />
-            </div>
-          </div>
-        </div>
-        <div className="flex-[2] min-w-0 flex flex-col gap-y-[18px] mt-10">
-          <div className="bg-theme-bg-secondary text-theme-text-primary rounded-xl flex-1 min-w-0 p-4 overflow-y-scroll no-scroll">
-            {selectedView === "configs" ? (
-              <EmbedConfigsView />
-            ) : (
-              <EmbedChatsView />
-            )}
-          </div>
-        </div>
-      </div>
-    </WidgetLayout>
-  );
-}
-
-function WidgetLayout({ children }) {
-  return (
-    <div
-      id="workspace-widget-settings-container"
-      className="w-screen h-screen overflow-hidden bg-zinc-950 light:bg-slate-50 flex md:mt-0 mt-6"
-    >
-      <Sidebar />
-      <div
-        style={{
-          height: isMobile ? "100%" : "calc(100% - 32px)",
-        }}
-        className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] flex-1 min-w-0 h-full flex"
-      >
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function WidgetList({ selectedView, handleClick }) {
-  const views = {
-    configs: {
-      title: "Widgets",
-    },
-    chats: {
-      title: "History",
-    },
+  // Tabs follow the APG pattern: one Tab stop, arrows and Home/End move and select.
+  const handleTabKeyDown = (e) => {
+    const current = VIEW_KEYS.indexOf(view);
+    const next = {
+      ArrowRight: current + 1,
+      ArrowLeft: current - 1,
+      Home: 0,
+      End: VIEW_KEYS.length - 1,
+    }[e.key];
+    if (next === undefined) return;
+    e.preventDefault();
+    const key = VIEW_KEYS[(next + VIEW_KEYS.length) % VIEW_KEYS.length];
+    selectView(key);
+    tabRefs.current[key]?.focus();
   };
 
   return (
-    <div
-      className={`bg-theme-bg-secondary text-white rounded-xl ${isMobile ? "w-full" : "min-w-[360px] w-fit"}`}
-    >
-      {Object.entries(views).map(([view, settings], index) => (
-        <div
-          key={view}
-          className={`py-3 px-4 flex items-center justify-between ${index === 0 ? "rounded-t-xl" : ""} ${index === Object.keys(views).length - 1 ? "rounded-b-xl" : "border-b border-white/10"} cursor-pointer transition-all duration-300 hover:bg-theme-bg-primary ${selectedView === view ? "bg-white/10 light:bg-theme-bg-sidebar" : ""}`}
-          onClick={() => handleClick?.(view)}
-        >
-          <div className="text-sm font-light">{settings.title}</div>
-          <ChevronRight
-            strokeWidth={1.5}
-            size={14}
-            className="text-theme-text-secondary"
-          />
+    <div className="w-screen h-screen overflow-hidden bg-zinc-950 light:bg-slate-50 flex">
+      <Sidebar />
+      <main className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full md:h-[calc(100%-32px)] overflow-y-auto p-4 md:p-0">
+        <div className="flex flex-col w-full px-1 md:pl-6 md:pr-[50px] md:py-6 py-16">
+          <div className="w-full flex flex-col gap-y-1 pb-6">
+            <h1 className="text-lg leading-6 font-bold text-white">
+              {t("settings.embeds")}
+            </h1>
+          </div>
+          <div
+            role="tablist"
+            aria-label={t("settings.embeds")}
+            onKeyDown={handleTabKeyDown}
+            className="flex gap-x-8 border-b-2 border-white/10 light:border-theme-sidebar-border overflow-x-auto overflow-y-hidden no-scroll"
+          >
+            {VIEW_KEYS.map((key) => {
+              const Icon = VIEWS[key].icon;
+              const selected = view === key;
+              return (
+                <button
+                  key={key}
+                  ref={(el) => {
+                    tabRefs.current[key] = el;
+                  }}
+                  id={tabId(key)}
+                  type="button"
+                  role="tab"
+                  aria-selected={selected}
+                  aria-controls={selected ? panelId : undefined}
+                  tabIndex={selected ? 0 : -1}
+                  onClick={() => selectView(key)}
+                  className={`flex gap-x-2 items-center min-h-[44px] md:min-h-0 pb-3 -mb-[2px] border-b-2 text-sm font-medium whitespace-nowrap transition-colors duration-quick ease-smooth ${selected ? "text-sky-400 border-sky-400 light:text-sky-700 light:border-sky-700" : "text-white/60 border-transparent hover:text-sky-400 light:hover:text-sky-700"}`}
+                >
+                  <Icon
+                    strokeWidth={1.5}
+                    className="h-5 w-5"
+                    aria-hidden="true"
+                  />
+                  {t(`embed-pages.tabs.${key}`)}
+                </button>
+              );
+            })}
+          </div>
+          <div
+            role="tabpanel"
+            id={panelId}
+            aria-labelledby={tabId(view)}
+            tabIndex={0}
+            className="pt-6 rounded-sm"
+          >
+            <Component />
+          </div>
         </div>
-      ))}
+      </main>
     </div>
   );
 }

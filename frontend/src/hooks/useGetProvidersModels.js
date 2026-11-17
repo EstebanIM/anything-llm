@@ -54,6 +54,9 @@ export default function useGetProviderModels(provider = null) {
   const [defaultModels, setDefaultModels] = useState([]);
   const [customModels, setCustomModels] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  // Bumped by refetch() to load the list again after an error.
+  const [attempt, setAttempt] = useState(0);
   const downloadedModels = [];
 
   if (Array.isArray(customModels)) {
@@ -71,7 +74,10 @@ export default function useGetProviderModels(provider = null) {
     async function fetchProviderModels() {
       if (!provider) return;
       setLoading(true);
-      const { models = [] } = await System.customModels(provider);
+      setError(null);
+      const { models = [], error: fetchError = null } =
+        await System.customModels(provider);
+      setError(fetchError);
       if (
         PROVIDER_DEFAULT_MODELS.hasOwnProperty(provider) &&
         !groupedProviders.includes(provider)
@@ -87,7 +93,15 @@ export default function useGetProviderModels(provider = null) {
       setLoading(false);
     }
     fetchProviderModels();
-  }, [provider]);
+  }, [provider, attempt]);
 
-  return { defaultModels, customModels, loading, downloadedModels };
+  const refetch = () => setAttempt((n) => n + 1);
+  return {
+    defaultModels,
+    customModels,
+    loading,
+    downloadedModels,
+    error,
+    refetch,
+  };
 }

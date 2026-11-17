@@ -1,3 +1,11 @@
+import { useId } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  FIELD_COL,
+  FIELD_LABEL,
+  FIELD_SELECT,
+} from "@/components/ProviderFields";
+
 const PROVIDER_DIMENSIONS = {
   "openai-imggen": ["auto", "1024x1024", "1024x1536", "1536x1024"],
   "lemonade-imggen": ["256x256", "512x512", "768x768", "1024x1024"],
@@ -19,9 +27,6 @@ const PROVIDER_DIMENSIONS = {
 const ASPECT_RATIO_PROVIDERS = ["gemini-imggen", "minimax-imggen"];
 const DEFAULT_DIMENSIONS = ["512x512", "1024x1024"];
 
-const INPUT_CLASSES =
-  "border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5";
-
 /**
  * The dimension the selector starts on: the saved setting when the provider
  * supports it, otherwise the provider's first option.
@@ -42,25 +47,28 @@ export default function ImageDimensionSelection({
   settings,
   onChange = null,
 }) {
+  const { t } = useTranslation();
+  const id = useId();
   const dimensions = PROVIDER_DIMENSIONS[provider] || DEFAULT_DIMENSIONS;
   const defaultValue = initialDimension(provider, settings);
 
   return (
-    <div className="flex flex-col w-60">
-      <label className="text-white text-sm font-semibold block mb-3">
+    <div className={FIELD_COL}>
+      <label htmlFor={`${id}-dimensions`} className={FIELD_LABEL}>
         {ASPECT_RATIO_PROVIDERS.includes(provider)
-          ? "Aspect Ratio"
-          : "Image Dimensions"}
+          ? t("provider-forms.image-generation.aspect-ratio")
+          : t("provider-forms.image-generation.dimensions")}
       </label>
       <select
+        id={`${id}-dimensions`}
         name="ImageGenerationDimensions"
-        className={INPUT_CLASSES}
+        className={FIELD_SELECT}
         defaultValue={defaultValue}
         onChange={(e) => onChange?.(e.target.value)}
       >
         {dimensions.map((dim) => (
           <option key={dim} value={dim}>
-            {dim}
+            {dim === "auto" ? t("provider-forms.image-generation.auto") : dim}
           </option>
         ))}
       </select>

@@ -1,23 +1,35 @@
+import { useState, useEffect, useId } from "react";
+import { useTranslation } from "react-i18next";
 import System from "@/models/system";
-import { useState, useEffect } from "react";
+import {
+  FIELD_COL,
+  FIELD_ROW,
+  SECRET_MASK,
+  SecretInput,
+} from "@/components/ProviderFields";
+import {
+  FieldLabel,
+  ModelSelectField,
+  modelStatus,
+} from "@/components/LLMSelection/FormParts";
 
 export default function ApiPieLLMOptions({ settings }) {
+  const { t } = useTranslation();
+  const id = useId();
+
   return (
     <div className="flex flex-col gap-y-4 mt-1.5">
-      <div className="flex gap-[36px]">
-        <div className="flex flex-col w-60">
-          <label className="text-white text-sm font-semibold block mb-3">
-            APIpie API Key
-          </label>
-          <input
-            type="password"
+      <div className={FIELD_ROW}>
+        <div className={FIELD_COL}>
+          <FieldLabel
+            htmlFor={`${id}-key`}
+            label={t("provider-fields.api-key")}
+          />
+          <SecretInput
+            id={`${id}-key`}
             name="ApipieLLMApiKey"
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-            placeholder="APIpie API Key"
-            defaultValue={settings?.ApipieLLMApiKey ? "*".repeat(20) : ""}
+            defaultValue={settings?.ApipieLLMApiKey ? SECRET_MASK : ""}
             required={true}
-            autoComplete="off"
-            spellCheck={false}
           />
         </div>
         {!settings?.credentialsOnly && (
@@ -29,13 +41,16 @@ export default function ApiPieLLMOptions({ settings }) {
 }
 
 function APIPieModelSelection({ settings }) {
+  const { t } = useTranslation();
   const [groupedModels, setGroupedModels] = useState({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     async function findCustomModels() {
       setLoading(true);
-      const { models } = await System.customModels("apipie");
+      const { models, error } = await System.customModels("apipie");
       if (models?.length > 0) {
         const modelsByOrganization = models.reduce((acc, model) => {
           acc[model.organization] = acc[model.organization] || [];
@@ -46,56 +61,36 @@ function APIPieModelSelection({ settings }) {
         setGroupedModels(modelsByOrganization);
       }
 
+      setError(error || null);
       setLoading(false);
     }
     findCustomModels();
-  }, []);
-
-  if (loading || Object.keys(groupedModels).length === 0) {
-    return (
-      <div className="flex flex-col w-60">
-        <label className="text-white text-sm font-semibold block mb-3">
-          Chat Model Selection
-        </label>
-        <select
-          name="ApipieLLMModelPref"
-          disabled={true}
-          className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-        >
-          <option disabled={true} selected={true}>
-            -- loading available models --
-          </option>
-        </select>
-      </div>
-    );
-  }
+  }, [attempt]);
 
   return (
-    <div className="flex flex-col w-60">
-      <label className="text-white text-sm font-semibold block mb-3">
-        Chat Model Selection
-      </label>
-      <select
-        name="ApipieLLMModelPref"
-        required={true}
-        className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-      >
-        {Object.keys(groupedModels)
-          .sort()
-          .map((organization) => (
-            <optgroup key={organization} label={organization}>
-              {groupedModels[organization].map((model) => (
-                <option
-                  key={model.id}
-                  value={model.id}
-                  selected={settings?.ApipieLLMModelPref === model.id}
-                >
-                  {model.name}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-      </select>
-    </div>
+    <ModelSelectField
+      name="ApipieLLMModelPref"
+      label={t("provider-fields.chat-model")}
+      status={modelStatus({
+        loading,
+        error,
+        count: Object.keys(groupedModels).length,
+      })}
+      error={error}
+      onRetry={() => setAttempt((n) => n + 1)}
+      defaultValue={settings?.ApipieLLMModelPref}
+    >
+      {Object.keys(groupedModels)
+        .sort()
+        .map((organization) => (
+          <optgroup key={organization} label={organization}>
+            {groupedModels[organization].map((model) => (
+              <option key={model.id} value={model.id}>
+                {model.name}
+              </option>
+            ))}
+          </optgroup>
+        ))}
+    </ModelSelectField>
   );
 }

@@ -2,8 +2,11 @@ import { useEffect, useState, useRef } from "react";
 import { Volume2, CirclePause, LoaderCircle } from "lucide-react";
 import PiperTTSClient from "@/utils/piperTTS";
 import messageToSpeech from "@/utils/chat/messageToSpeech";
+import { useTranslation } from "react-i18next";
+import { ACTION_BUTTON_CLASS } from "../constants";
 
 export default function PiperTTS({ chatId, voiceId = null, message }) {
+  const { t } = useTranslation();
   const playerRef = useRef(null);
   // Ordered queue of chunk blob URLs - filled as the worker streams audio in.
   const queueRef = useRef([]);
@@ -46,13 +49,12 @@ export default function PiperTTS({ chatId, voiceId = null, message }) {
     setSpeaking(false);
   }
 
-  function stopAndReset() {
+  function stopAndReset(player = playerRef.current) {
     // Stop generating remaining chunks and hard-stop the audio element - a
     // detached or reused <audio> keeps playing otherwise, which is how TTS
     // carried over between threads.
     abortStreamRef.current?.();
     abortStreamRef.current = null;
-    const player = playerRef.current;
     if (player) {
       player.pause();
       player.removeAttribute("src");
@@ -151,40 +153,42 @@ export default function PiperTTS({ chatId, voiceId = null, message }) {
   // cleanup must fire whenever this button starts representing a different
   // message - as well as on real unmount.
   useEffect(() => {
-    return () => stopAndReset();
+    // Captured now: React clears the ref before this cleanup runs on unmount.
+    const player = playerRef.current;
+    return () => stopAndReset(player);
   }, [chatId]);
 
+  const label = speaking
+    ? t("chat-history.tts.pause")
+    : t("chat_window.tts_speak_message");
   return (
-    <div className="mt-3 relative">
-      <button
-        type="button"
-        onClick={speakMessage}
-        disabled={loading}
-        data-auto-play-chat-id={chatId}
-        data-tooltip-id="message-to-speech"
-        data-tooltip-content={
-          speaking ? "Pause TTS speech of message" : "TTS Speak message"
-        }
-        className="border-none text-[var(--theme-sidebar-footer-icon-fill)]"
-        aria-label={speaking ? "Pause speech" : "Speak message"}
-      >
-        {speaking ? (
-          <CirclePause strokeWidth={1.5} size={18} className="mb-1" />
-        ) : (
-          <>
-            {loading ? (
-              <LoaderCircle
-                strokeWidth={1.5}
-                size={18}
-                className="mb-1 animate-spin"
-              />
-            ) : (
-              <Volume2 strokeWidth={1.5} size={18} className="mb-1" />
-            )}
-          </>
-        )}
-        <audio ref={playerRef} hidden={true} controls={false} />
-      </button>
-    </div>
+    <button
+      type="button"
+      onClick={speakMessage}
+      disabled={loading}
+      data-auto-play-chat-id={chatId}
+      data-tooltip-id="message-to-speech"
+      data-tooltip-content={label}
+      className={ACTION_BUTTON_CLASS}
+      aria-label={label}
+    >
+      {speaking ? (
+        <CirclePause strokeWidth={1.5} size={18} aria-hidden="true" />
+      ) : (
+        <>
+          {loading ? (
+            <LoaderCircle
+              strokeWidth={1.5}
+              size={18}
+              aria-hidden="true"
+              className="animate-spin"
+            />
+          ) : (
+            <Volume2 strokeWidth={1.5} size={18} aria-hidden="true" />
+          )}
+        </>
+      )}
+      <audio ref={playerRef} hidden={true} controls={false} />
+    </button>
   );
 }

@@ -19,9 +19,9 @@ function SkipButton({ isSingle, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="border-none text-white light:text-slate-900 text-sm font-medium px-3 py-2 rounded-lg hover:bg-white/5 light:hover:bg-slate-300 flex items-center gap-1"
+      className="border-none text-white light:text-slate-900 text-sm font-medium px-3 min-h-[44px] md:min-h-0 md:py-2 rounded-lg hover:bg-white/5 light:hover:bg-slate-300 flex items-center gap-1"
     >
-      <SkipForward strokeWidth={1.5} size={14} />
+      <SkipForward strokeWidth={1.5} size={14} aria-hidden="true" />
       {isSingle
         ? t("chat_window.agent_invocation.clarifying_skip")
         : t("chat_window.agent_invocation.batch_skip_this")}
@@ -35,9 +35,9 @@ function SubmitButton({ isSingle, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="border-none transition-all duration-300 bg-white text-black hover:opacity-60 px-4 py-2 rounded-lg text-sm flex items-center gap-1"
+      className="border-none transition-opacity duration-quick bg-white text-black hover:opacity-80 px-4 min-h-[44px] md:min-h-0 md:py-2 rounded-lg text-sm flex items-center gap-1"
     >
-      <Check strokeWidth={1.5} size={14} />
+      <Check strokeWidth={1.5} size={14} aria-hidden="true" />
       {isSingle
         ? t("chat_window.agent_invocation.clarifying_submit")
         : t("chat_window.agent_invocation.batch_submit_all")}
@@ -51,10 +51,10 @@ function NextButton({ onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="border-none transition-all duration-300 bg-white text-black hover:opacity-60 px-4 py-2 rounded-lg text-sm flex items-center gap-1"
+      className="border-none transition-opacity duration-quick bg-white text-black hover:opacity-80 px-4 min-h-[44px] md:min-h-0 md:py-2 rounded-lg text-sm flex items-center gap-1"
     >
       {t("chat_window.agent_invocation.batch_next")}
-      <ArrowRight strokeWidth={1.5} size={14} />
+      <ArrowRight strokeWidth={1.5} size={14} aria-hidden="true" />
     </button>
   );
 }

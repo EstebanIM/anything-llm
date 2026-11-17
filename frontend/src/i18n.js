@@ -57,4 +57,15 @@ i18next
     postProcess: ["brand"],
   });
 
+// Keep <html lang> in step with the UI language so screen readers pick the
+// right voice and browsers hyphenate and spell-check correctly (WCAG 3.1.1).
+// setBrandName() also emits languageChanged without an argument.
+function syncDocumentLanguage() {
+  const lang = i18next.resolvedLanguage || i18next.language;
+  if (lang && typeof document !== "undefined")
+    document.documentElement.lang = lang;
+}
+syncDocumentLanguage();
+i18next.on("languageChanged", syncDocumentLanguage);
+
 export default i18next;

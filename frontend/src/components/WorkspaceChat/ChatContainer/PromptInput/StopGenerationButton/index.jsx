@@ -15,15 +15,18 @@ export default function StopGenerationButton() {
         onClick={emitHaltEvent}
         data-tooltip-id="stop-generation-button"
         data-tooltip-content={t("chat_window.stop_generating")}
-        className="border-none inline-flex justify-center items-center rounded-full cursor-pointer w-8 h-8 bg-white light:bg-slate-800 hover:opacity-80 transition-opacity"
-        aria-label="Stop generating"
+        className="border-none inline-flex justify-center items-center rounded-full cursor-pointer w-11 h-11 md:w-8 md:h-8 bg-white light:bg-slate-800 hover:opacity-80 transition-opacity duration-quick"
+        aria-label={t("chat_window.stop_generating")}
       >
-        <div className="w-3.5 h-3.5 rounded-[4px] bg-zinc-800 light:bg-white" />
+        <div
+          aria-hidden="true"
+          className="w-3.5 h-3.5 rounded-[4px] bg-zinc-800 light:bg-white"
+        />
       </button>
       <Tooltip
         id="stop-generation-button"
         place="bottom"
-        delayShow={300}
+        delayShow={100}
         className="tooltip !text-xs z-99"
       />
     </>

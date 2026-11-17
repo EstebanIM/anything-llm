@@ -3,9 +3,10 @@ import "regenerator-runtime"; //required polyfill for speech recognition;
 import SpeechRecognition, {
   useSpeechRecognition,
 } from "react-speech-recognition";
+import { useTranslation } from "react-i18next";
 import Appearance from "@/models/appearance";
+import showToast from "@/utils/toast";
 import MicButton from "../MicButton";
-import useCustomAppName from "@/hooks/useCustomAppName";
 
 let timeout;
 const SILENCE_INTERVAL = 3_200; // wait in seconds of silence before closing.
@@ -17,8 +18,9 @@ const SILENCE_INTERVAL = 3_200; // wait in seconds of silence before closing.
  * @returns {React.ReactElement} The SpeechToText component
  */
 export default function BrowserNativeSTT({ sendCommand }) {
-  const { brandName } = useCustomAppName();
+  const { t } = useTranslation();
   const previousTranscriptRef = useRef("");
+  const listeningRef = useRef(false);
   const {
     transcript,
     listening,
@@ -30,11 +32,21 @@ export default function BrowserNativeSTT({ sendCommand }) {
     clearTranscriptOnListen: true,
   });
 
+  useEffect(() => {
+    listeningRef.current = listening;
+  }, [listening]);
+
+  // Leaving the chat (or switching threads) must release the microphone.
+  useEffect(() => {
+    return () => {
+      clearTimeout(timeout);
+      if (listeningRef.current) SpeechRecognition.abortListening();
+    };
+  }, []);
+
   function startSTTSession() {
     if (!isMicrophoneAvailable) {
-      alert(
-        `${brandName} does not have access to microphone. Please enable for this site to use this feature.`
-      );
+      showToast(t("chat_window.stt_mic_denied"), "error", { clear: true });
       return;
     }
 

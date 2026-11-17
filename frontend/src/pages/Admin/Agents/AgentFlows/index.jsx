@@ -1,51 +1,48 @@
-import React from "react";
-import { ChevronRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
+import paths from "@/utils/paths";
+import { RowList, RowButton, SectionEmpty } from "../components/SkillRows";
 
 export default function AgentFlowsList({
   flows = [],
-  selectedFlow,
+  labelledBy,
+  isSelected = () => false,
   handleClick,
   activeFlowIds = [],
 }) {
+  const { t } = useTranslation();
   if (flows.length === 0) {
     return (
-      <div className="text-theme-text-secondary text-center text-xs flex flex-col gap-y-2">
-        <p>No agent flows found</p>
-      </div>
+      <SectionEmpty>
+        <p>{t("agent-pages.flows.empty")}</p>
+        <p>
+          <Link
+            to={paths.agents.builder()}
+            className="inline-flex items-center min-h-[44px] md:min-h-0 underline text-theme-text-primary"
+          >
+            {t("agent-pages.flows.empty-action")}
+          </Link>
+        </p>
+      </SectionEmpty>
     );
   }
 
   return (
-    <div className="bg-theme-bg-secondary text-white rounded-xl w-full md:min-w-[360px]">
-      {flows.map((flow, index) => (
-        <div
+    <RowList labelledBy={labelledBy}>
+      {flows.map((flow) => (
+        <RowButton
           key={flow.uuid}
-          className={`py-3 px-4 flex items-center justify-between ${
-            index === 0 ? "rounded-t-xl" : ""
-          } ${
-            index === flows.length - 1
-              ? "rounded-b-xl"
-              : "border-b border-white/10"
-          } cursor-pointer transition-all duration-300 hover:bg-theme-bg-primary ${
-            selectedFlow?.uuid === flow.uuid
-              ? "bg-white/10 light:bg-theme-bg-sidebar"
-              : ""
-          }`}
+          rowKey={`flow:${flow.uuid}`}
+          selected={isSelected(flow.uuid)}
           onClick={() => handleClick?.(flow)}
-        >
-          <div className="text-sm font-light">{flow.name}</div>
-          <div className="flex items-center gap-x-2">
-            <div className="text-sm text-theme-text-secondary font-medium">
-              {activeFlowIds.includes(flow.uuid) ? "On" : "Off"}
-            </div>
-            <ChevronRight
-              strokeWidth={1.5}
-              size={14}
-              className="text-theme-text-secondary"
-            />
-          </div>
-        </div>
+          title={flow.name}
+          status={
+            activeFlowIds.includes(flow.uuid)
+              ? t("agent-pages.flow-on")
+              : t("agent-pages.flow-off")
+          }
+        />
       ))}
-    </div>
+    </RowList>
   );
 }

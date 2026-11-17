@@ -1,8 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import Sidebar from "@/components/SettingsSidebar";
-import { isMobile } from "react-device-detect";
-import * as Skeleton from "react-loading-skeleton";
-import "react-loading-skeleton/dist/skeleton.css";
 import { CirclePlus } from "lucide-react";
 import Admin from "@/models/admin";
 import ApiKeyRow from "./ApiKeyRow";
@@ -13,116 +10,149 @@ import System from "@/models/system";
 import Modal from "@/components/lib/Modal";
 import { useModal } from "@/hooks/useModal";
 import CTAButton from "@/components/lib/CTAButton";
+import TableState from "@/components/lib/TableState";
+import { ExternalLink } from "@/components/ProviderFields";
 import { useTranslation } from "react-i18next";
+import useFocusAfterRemoval from "@/hooks/useFocusAfterRemoval";
+
+const COLUMNS = 5;
 
 export default function AdminApiKeys() {
   const { isOpen, openModal, closeModal } = useModal();
   const { t } = useTranslation();
-  const [loading, setLoading] = useState(true);
+  const titleId = useId();
+  const rowIdPrefix = useId();
+  const headingRef = useRef(null);
+  const [status, setStatus] = useState("loading");
   const [apiKeys, setApiKeys] = useState([]);
+  const tbodyRef = useRef(null);
+
+  const deleteButtonId = (id) => `${rowIdPrefix}-delete-${id}`;
 
   const fetchExistingKeys = async () => {
     const user = userFromStorage();
     const Model = !!user ? Admin : System;
-    const { apiKeys: foundKeys } = await Model.getApiKeys();
+    const { apiKeys: foundKeys, error } = await Model.getApiKeys();
+    if (error || !Array.isArray(foundKeys)) return setStatus("error");
     setApiKeys(foundKeys);
-    setLoading(false);
+    setStatus("ready");
+  };
+
+  const retry = () => {
+    setStatus("loading");
+    fetchExistingKeys();
   };
 
   useEffect(() => {
     fetchExistingKeys();
   }, []);
 
+  // After a delete, focus moves to the next row's delete button (or the
+  // previous one), and to the page title when the list is empty.
+  const focusAfterRemoval = useFocusAfterRemoval(
+    tbodyRef,
+    headingRef,
+    `[id^="${rowIdPrefix}-delete-"]`
+  );
   const removeApiKey = (id) => {
+    focusAfterRemoval(apiKeys.findIndex((apiKey) => apiKey.id === id));
     setApiKeys((prevKeys) => prevKeys.filter((apiKey) => apiKey.id !== id));
   };
 
   return (
     <div className="w-screen h-screen overflow-hidden bg-zinc-950 light:bg-slate-50 flex">
       <Sidebar />
-      <div
-        style={{ height: isMobile ? "100%" : "calc(100% - 32px)" }}
-        className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full overflow-y-scroll p-4 md:p-0"
-      >
+      <main className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full md:h-[calc(100%-32px)] overflow-y-auto p-4 md:p-0">
         <div className="flex flex-col w-full px-1 md:pl-6 md:pr-[50px] md:py-6 py-16">
-          <div className="w-full flex flex-col gap-y-1 pb-6 border-white/10 border-b-2">
-            <div className="items-center flex gap-x-4">
-              <p className="text-lg leading-6 font-bold text-theme-text-primary">
-                {t("api.title")}
-              </p>
-            </div>
+          <div className="w-full flex flex-col gap-y-1 pb-6 border-white/10 light:border-slate-200 border-b-2">
+            <h1
+              id={titleId}
+              ref={headingRef}
+              tabIndex={-1}
+              className="text-lg leading-6 font-bold text-theme-text-primary"
+            >
+              {t("api.title")}
+            </h1>
             <p className="text-xs leading-[18px] font-base text-theme-text-secondary mt-2">
               {t("api.description")}
             </p>
-            <a
+            <ExternalLink
               href={paths.apiDocs()}
-              target="_blank"
-              rel="noreferrer"
-              className="text-xs leading-[18px] font-base text-blue-300 light:text-blue-500 hover:underline mt-1"
+              className="w-fit text-xs leading-[18px] text-sky-300 light:text-sky-700 underline hover:no-underline mt-1"
             >
-              {t("api.link")} &rarr;
-            </a>
+              {t("api.link")} <span aria-hidden="true">&rarr;</span>
+            </ExternalLink>
           </div>
           <div className="w-full justify-end flex">
             <CTAButton
+              type="button"
               onClick={openModal}
               className="mt-3 mr-0 mb-4 md:-mb-14 z-10"
             >
-              <CirclePlus strokeWidth={1.5} className="h-4 w-4" />{" "}
+              <CirclePlus
+                strokeWidth={1.5}
+                className="h-4 w-4"
+                aria-hidden="true"
+              />{" "}
               {t("api.generate")}
             </CTAButton>
           </div>
-          <div className="overflow-x-auto mt-6">
-            {loading ? (
-              <Skeleton.default
-                height="80vh"
-                width="100%"
-                highlightColor="var(--theme-bg-primary)"
-                baseColor="var(--theme-bg-secondary)"
-                count={1}
-                className="w-full p-4 rounded-b-2xl rounded-tr-2xl rounded-tl-sm"
-                containerClassName="flex w-full"
-              />
-            ) : (
-              <table className="w-full text-xs text-left rounded-lg min-w-[720px] border-spacing-0 md:mt-6 mt-0">
-                <thead className="text-theme-text-secondary text-xs leading-[18px] font-bold uppercase border-white/10 border-b">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 rounded-tl-lg">
-                      {t("api.table.name")}
-                    </th>
-                    <th scope="col" className="px-6 py-3">
-                      {t("api.table.key")}
-                    </th>
-                    <th scope="col" className="px-6 py-3">
-                      {t("api.table.by")}
-                    </th>
-                    <th scope="col" className="px-6 py-3">
-                      {t("api.table.created")}
-                    </th>
-                    <th scope="col" className="px-6 py-3 rounded-tr-lg">
-                      {t("api.actions")}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {apiKeys.length === 0 ? (
-                    <tr className="bg-transparent text-theme-text-secondary text-sm font-medium">
-                      <td colSpan="5" className="px-6 py-4 text-center">
-                        {t("api.empty")}
-                      </td>
-                    </tr>
-                  ) : (
-                    apiKeys.map((apiKey) => (
-                      <ApiKeyRow
-                        key={apiKey.id}
-                        apiKey={apiKey}
-                        removeApiKey={removeApiKey}
-                      />
-                    ))
-                  )}
-                </tbody>
-              </table>
-            )}
+          {/* Below md the table scrolls sideways; actions come first so they
+              never end up out of view. */}
+          <div
+            role="region"
+            aria-labelledby={titleId}
+            tabIndex={0}
+            className="overflow-x-auto mt-6 rounded-lg"
+          >
+            <table className="w-full text-xs text-left border-spacing-0 md:mt-6 mt-0">
+              <thead className="text-theme-text-secondary text-xs leading-[18px] font-bold uppercase border-white/10 light:border-slate-200 border-b">
+                <tr>
+                  <th scope="col" className="px-4 md:px-6 py-3">
+                    <span className="sr-only">{t("api.actions")}</span>
+                  </th>
+                  <th scope="col" className="px-4 md:px-6 py-3">
+                    {t("api.table.name")}
+                  </th>
+                  <th scope="col" className="px-4 md:px-6 py-3">
+                    {t("api.table.key")}
+                  </th>
+                  <th scope="col" className="px-4 md:px-6 py-3">
+                    {t("api.table.by")}
+                  </th>
+                  <th scope="col" className="px-4 md:px-6 py-3">
+                    {t("api.table.created")}
+                  </th>
+                </tr>
+              </thead>
+              <tbody ref={tbodyRef}>
+                {status === "loading" ? (
+                  <TableState state="loading" colSpan={COLUMNS} />
+                ) : status === "error" ? (
+                  <TableState
+                    state="error"
+                    colSpan={COLUMNS}
+                    message={t("tools-pages.api-keys.load-error")}
+                    onRetry={retry}
+                  />
+                ) : apiKeys.length === 0 ? (
+                  <TableState
+                    state="empty"
+                    colSpan={COLUMNS}
+                    message={t("api.empty")}
+                  />
+                ) : (
+                  apiKeys.map((apiKey) => (
+                    <ApiKeyRow
+                      key={apiKey.id}
+                      apiKey={apiKey}
+                      deleteButtonId={deleteButtonId(apiKey.id)}
+                      onRemoved={removeApiKey}
+                    />
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
         <Modal isOpen={isOpen} onClose={closeModal}>
@@ -131,7 +161,7 @@ export default function AdminApiKeys() {
             onSuccess={fetchExistingKeys}
           />
         </Modal>
-      </div>
+      </main>
     </div>
   );
 }

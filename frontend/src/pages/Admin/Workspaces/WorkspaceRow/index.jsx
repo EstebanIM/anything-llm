@@ -1,67 +1,114 @@
-import moment from "moment";
-import { useRef } from "react";
+import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { ExternalLink, Trash2 } from "lucide-react";
 import Admin from "@/models/admin";
 import paths from "@/utils/paths";
-import { Link, Trash2 } from "lucide-react";
-import useCustomAppName from "@/hooks/useCustomAppName";
+import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
+import { formatDateTime } from "@/utils/dates";
+import { InlineConfirmButton } from "@/components/lib/InlineConfirm";
+import {
+  CELL,
+  MOBILE_LABEL,
+  ROW,
+  ROW_ACTION_DANGER,
+  ROW_ACTIONS,
+  ROW_HEADER,
+} from "@/pages/Admin/Users/AdminTable";
+
+const LINK =
+  "inline-flex items-center gap-x-1.5 min-h-[44px] md:min-h-0 underline text-sky-400 light:text-sky-700 hover:text-sky-300 light:hover:text-sky-800 transition-colors duration-quick ease-smooth";
 
 export default function WorkspaceRow({
   workspace,
-  users: _users,
   deletionProtected = false,
+  onDeleted,
 }) {
-  const { brandName } = useCustomAppName();
-  const rowRef = useRef(null);
+  const { t } = useTranslation();
+  const name = workspace.name;
+  const memberCount = workspace.userIds?.length ?? 0;
+
   const handleDelete = async () => {
-    if (
-      !window.confirm(
-        `Are you sure you want to delete ${workspace.name}?\nAfter you do this it will be unavailable in this instance of ${brandName}.\n\nThis action is irreversible.`
-      )
-    )
+    const { success, error } = await Admin.deleteWorkspace(workspace.id);
+    if (!success) {
+      showToast(
+        serverErrorMessage(error, t, "admin-pages.workspaces.delete-failed", {
+          values: { name },
+        }),
+        "error",
+        { clear: true }
+      );
       return false;
-    rowRef?.current?.remove();
-    await Admin.deleteWorkspace(workspace.id);
+    }
+    showToast(t("admin-pages.workspaces.deleted", { name }), "success", {
+      clear: true,
+    });
+    onDeleted();
+    return true;
   };
 
   return (
-    <>
-      <tr
-        ref={rowRef}
-        className="bg-transparent text-white text-opacity-80 text-xs font-medium border-b border-white/10 h-10"
-      >
-        <th scope="row" className="px-6 whitespace-nowrap">
-          {workspace.name}
-        </th>
-        <td className="px-6">
-          <a
-            href={paths.workspace.chat(workspace.slug)}
-            target="_blank"
-            rel="noreferrer"
-            className="text-white flex items-center hover:underline"
-          >
-            <Link strokeWidth={1.5} className="mr-2 w-4 h-4" /> {workspace.slug}
-          </a>
-        </td>
-        <td className="px-6">
-          <a
-            href={paths.workspace.settings.members(workspace.slug)}
-            className="text-white flex items-center underline"
-          >
-            {workspace.userIds?.length}
-          </a>
-        </td>
-        <td className="px-6">{moment(workspace.createdAt).format("lll")}</td>
-        <td className="px-6">
-          {!deletionProtected && (
-            <button
-              onClick={handleDelete}
-              className="text-xs font-medium text-white/80 light:text-black/80 hover:light:text-red-500 hover:text-red-300 rounded-lg px-2 py-1 hover:bg-white hover:light:bg-red-50 hover:bg-opacity-10"
-            >
-              <Trash2 strokeWidth={1.5} className="h-5 w-5" />
-            </button>
-          )}
-        </td>
-      </tr>
-    </>
+    <tr data-row="" className={ROW}>
+      {/* Focus lands here when the previous row is deleted. */}
+      <th scope="row" tabIndex={-1} data-row-focus="" className={ROW_HEADER}>
+        {name}
+      </th>
+      <td className={CELL}>
+        <span aria-hidden="true" className={MOBILE_LABEL}>
+          {t("admin-pages.workspaces.link")}:{" "}
+        </span>
+        <Link
+          to={paths.workspace.chat(workspace.slug)}
+          target="_blank"
+          rel="noreferrer"
+          className={LINK}
+        >
+          {workspace.slug}
+          <ExternalLink
+            strokeWidth={1.5}
+            className="h-3.5 w-3.5 shrink-0"
+            aria-hidden="true"
+          />
+          <span className="sr-only">{t("provider-fields.opens-new-tab")}</span>
+        </Link>
+      </td>
+      <td className={CELL}>
+        <span aria-hidden="true" className={MOBILE_LABEL}>
+          {t("admin-pages.workspaces.members")}:{" "}
+        </span>
+        <Link
+          to={paths.workspace.settings.members(workspace.slug)}
+          aria-label={t("admin-pages.workspaces.members-link", {
+            count: memberCount,
+            name,
+          })}
+          className={LINK}
+        >
+          {memberCount}
+        </Link>
+      </td>
+      <td className={CELL}>
+        <span aria-hidden="true" className={MOBILE_LABEL}>
+          {t("admin-pages.workspaces.created")}:{" "}
+        </span>
+        {formatDateTime(workspace.createdAt)}
+      </td>
+      <td className={`${CELL} pt-2`}>
+        {!deletionProtected && (
+          <div className={ROW_ACTIONS}>
+            <InlineConfirmButton
+              label={t("admin-pages.workspaces.delete", { name })}
+              icon={Trash2}
+              triggerClassName={ROW_ACTION_DANGER}
+              question={t("admin-pages.workspaces.delete-question", { name })}
+              consequences={t("admin-pages.workspaces.delete-consequences")}
+              confirmLabel={t("settings-pages.delete")}
+              align="end"
+              onConfirm={handleDelete}
+            />
+          </div>
+        )}
+      </td>
+    </tr>
   );
 }

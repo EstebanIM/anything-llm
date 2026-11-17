@@ -22,8 +22,7 @@ export default function ShowScrollbar() {
 
   useEffect(() => {
     function fetchSettings() {
-      const settings = Appearance.getSettings();
-      setShowScrollbar(settings.showScrollbar);
+      setShowScrollbar(Appearance.get("showScrollbar") ?? false);
     }
     fetchSettings();
   }, []);

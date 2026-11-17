@@ -6,6 +6,15 @@ import {
   useMessageActionsContext,
   EDIT_EVENT,
 } from "@/components/WorkspaceChat/ChatContainer/ChatHistory/MessageActionsContext";
+import { ACTION_BUTTON_CLASS } from "../constants";
+
+// The edit button unmounts while its message is being edited. When the edit
+// ends (cancel or save) the button that remounts for that message takes the
+// focus back, so keyboard users do not land on <body>. The request expires
+// quickly so a resent prompt cannot steal focus later.
+const REFOCUS_WINDOW_MS = 1000;
+let refocusEditButton = null;
+const editKey = (chatId, role) => `${role}-${chatId}`;
 
 export function useEditMessage({ chatId, role }) {
   const context = useMessageActionsContext();
@@ -15,6 +24,20 @@ export function useEditMessage({ chatId, role }) {
 
 export function EditMessageAction({ chatId = null, role, isEditing }) {
   const { t } = useTranslation();
+  const buttonRef = useRef(null);
+  const label =
+    role === "user"
+      ? t("chat_window.edit_prompt")
+      : t("chat_window.edit_response");
+
+  useEffect(() => {
+    if (!chatId || isEditing || !refocusEditButton) return;
+    const { key, at } = refocusEditButton;
+    if (key !== editKey(chatId, role)) return;
+    refocusEditButton = null;
+    if (Date.now() - at < REFOCUS_WINDOW_MS) buttonRef.current?.focus();
+  }, [chatId, role, isEditing]);
+
   function handleEditClick() {
     window.dispatchEvent(
       new CustomEvent(EDIT_EVENT, { detail: { chatId, role } })
@@ -23,25 +46,17 @@ export function EditMessageAction({ chatId = null, role, isEditing }) {
 
   if (!chatId || isEditing) return null;
   return (
-    <div
-      className={`mt-3 relative ${
-        role === "user" && !isEditing ? "" : "!opacity-100"
-      }`}
+    <button
+      ref={buttonRef}
+      type="button"
+      onClick={handleEditClick}
+      data-tooltip-id="edit-input-text"
+      data-tooltip-content={label}
+      className={ACTION_BUTTON_CLASS}
+      aria-label={label}
     >
-      <button
-        onClick={handleEditClick}
-        data-tooltip-id="edit-input-text"
-        data-tooltip-content={`${
-          role === "user"
-            ? t("chat_window.edit_prompt")
-            : t("chat_window.edit_response")
-        } `}
-        className="border-none text-zinc-300 light:text-slate-500 px-0"
-        aria-label={`Edit ${role === "user" ? t("chat_window.edit_prompt") : t("chat_window.edit_response")}`}
-      >
-        <Pencil strokeWidth={1.5} size={21} className="mb-1" />
-      </button>
-    </div>
+      <Pencil strokeWidth={1.5} size={20} aria-hidden="true" />
+    </button>
   );
 }
 
@@ -53,15 +68,21 @@ export function EditMessageForm({
   adjustTextArea,
   saveChanges,
 }) {
+  const { t } = useTranslation();
   const formRef = useRef(null);
+
+  function endEditing() {
+    refocusEditButton = { key: editKey(chatId, role), at: Date.now() };
+    window.dispatchEvent(
+      new CustomEvent(EDIT_EVENT, { detail: { chatId, role, attachments } })
+    );
+  }
 
   function handleSubmit(e) {
     e.preventDefault();
     const editedMessage = formRef.current.value;
     saveChanges({ editedMessage, chatId, role, attachments });
-    window.dispatchEvent(
-      new CustomEvent(EDIT_EVENT, { detail: { chatId, role, attachments } })
-    );
+    endEditing();
   }
 
   function handleSave() {
@@ -73,16 +94,19 @@ export function EditMessageForm({
       attachments,
       saveOnly: true,
     });
-    window.dispatchEvent(
-      new CustomEvent(EDIT_EVENT, { detail: { chatId, role, attachments } })
-    );
+    endEditing();
   }
 
   function cancelEdits() {
-    window.dispatchEvent(
-      new CustomEvent(EDIT_EVENT, { detail: { chatId, role, attachments } })
-    );
+    endEditing();
     return false;
+  }
+
+  function handleKeyDown(e) {
+    if (e.key !== "Escape") return;
+    // Handled here so an outer layer (drawer, modal) does not close as well.
+    e.preventDefault();
+    cancelEdits();
   }
 
   useEffect(() => {
@@ -91,43 +115,37 @@ export function EditMessageForm({
     adjustTextArea({ target: formRef.current });
   }, []);
 
-  if (role === "user") {
-    return (
-      <form
-        onSubmit={handleSubmit}
-        className="flex flex-col w-full max-w-[650px]"
-      >
-        <textarea
-          ref={formRef}
-          name="editedMessage"
-          spellCheck={Appearance.get("enableSpellCheck")}
-          className="text-white light:text-slate-900 w-full rounded-2xl bg-zinc-800 light:bg-slate-100 border border-sky-300 focus:border-sky-300 active:outline-none focus:outline-none focus:ring-0 px-4 py-3 resize-none overflow-hidden"
-          defaultValue={message}
-          onChange={adjustTextArea}
-        />
-        <EditActionBar
-          onCancel={cancelEdits}
-          onSave={handleSave}
-          isUserMessage
-        />
-      </form>
-    );
-  }
+  const textareaClass =
+    "text-white light:text-slate-900 w-full rounded-2xl bg-zinc-800 light:bg-slate-100 border border-sky-300 light:border-sky-700 focus:ring-0 px-4 py-3 resize-none overflow-hidden";
+  const label =
+    role === "user"
+      ? t("chat_window.edit_prompt")
+      : t("chat_window.edit_response");
 
   return (
     <form
       onSubmit={handleSubmit}
+      onKeyDown={handleKeyDown}
       className="flex flex-col w-full max-w-[650px]"
     >
       <textarea
         ref={formRef}
         name="editedMessage"
+        aria-label={label}
         spellCheck={Appearance.get("enableSpellCheck")}
-        className="text-white light:text-slate-900 w-full rounded-2xl bg-zinc-800 light:bg-slate-100 border border-sky-300 focus:border-sky-300 active:outline-none focus:outline-none focus:ring-0 px-4 py-3 resize-none overflow-hidden"
+        className={textareaClass}
         defaultValue={message}
         onChange={adjustTextArea}
       />
-      <EditActionBar onCancel={cancelEdits} />
+      {role === "user" ? (
+        <EditActionBar
+          onCancel={cancelEdits}
+          onSave={handleSave}
+          isUserMessage
+        />
+      ) : (
+        <EditActionBar onCancel={cancelEdits} />
+      )}
     </form>
   );
 }
@@ -140,6 +158,7 @@ function EditActionBar({ onCancel, onSave, isUserMessage = false }) {
         <Info
           strokeWidth={1.5}
           size={12}
+          aria-hidden="true"
           className="shrink-0 mt-0.5 text-zinc-200 light:text-slate-800"
         />
         <span className="text-zinc-200 light:text-slate-800 text-xs leading-4">
@@ -152,22 +171,22 @@ function EditActionBar({ onCancel, onSave, isUserMessage = false }) {
         <button
           type="button"
           onClick={onCancel}
-          className="border-none text-white light:text-slate-900 text-sm font-medium w-[70px] h-9 rounded-lg hover:bg-white/5 light:hover:bg-slate-300"
+          className="border-none text-white light:text-slate-900 text-sm font-medium px-3 min-w-[70px] h-11 md:h-9 rounded-lg hover:bg-white/5 light:hover:bg-slate-300"
         >
-          {t("chat_window.cancel")}
+          {t("settings-pages.cancel")}
         </button>
         {isUserMessage && (
           <button
             type="button"
             onClick={onSave}
-            className="border border-zinc-600 light:border-slate-600 text-white light:text-slate-900 text-sm font-medium w-[70px] h-9 rounded-lg hover:bg-white/5 light:hover:bg-slate-300"
+            className="border border-zinc-600 light:border-slate-600 text-white light:text-slate-900 text-sm font-medium px-3 min-w-[70px] h-11 md:h-9 rounded-lg hover:bg-white/5 light:hover:bg-slate-300"
           >
             {t("chat_window.save")}
           </button>
         )}
         <button
           type="submit"
-          className="border-none bg-zinc-50 light:bg-slate-800 text-zinc-800 light:text-white text-sm font-medium w-[70px] h-9 rounded-lg hover:bg-zinc-200 light:hover:bg-slate-800"
+          className="border-none bg-zinc-50 light:bg-slate-800 text-zinc-800 light:text-white text-sm font-medium px-3 min-w-[70px] h-11 md:h-9 rounded-lg hover:bg-zinc-200 light:hover:bg-slate-700"
         >
           {isUserMessage ? t("chat_window.submit") : t("chat_window.save")}
         </button>

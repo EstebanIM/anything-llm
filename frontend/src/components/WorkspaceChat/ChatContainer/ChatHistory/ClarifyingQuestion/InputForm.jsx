@@ -1,10 +1,11 @@
 const SHARED_CLASS =
-  "w-full border border-solid border-zinc-700 light:border-slate-500 bg-zinc-800 light:bg-white text-white light:text-slate-900 placeholder:text-zinc-500 light:placeholder:text-slate-500 text-sm leading-5 rounded-lg focus:outline-white light:focus:outline-slate-400 outline-none px-[14px] py-[10px]";
+  "w-full border border-solid border-zinc-700 light:border-slate-500 bg-zinc-800 light:bg-white text-white light:text-slate-900 placeholder:text-zinc-400 light:placeholder:text-slate-600 text-base md:text-sm leading-5 rounded-lg px-[14px] py-[10px]";
 
-function TextareaInput({ value, placeholder, onChange }) {
+function TextareaInput({ label, value, placeholder, onChange }) {
   return (
     <textarea
       autoFocus
+      aria-label={label}
       value={value}
       placeholder={placeholder}
       onChange={(e) => onChange(e.target.value)}
@@ -13,7 +14,7 @@ function TextareaInput({ value, placeholder, onChange }) {
   );
 }
 
-function TextInput({ type, value, placeholder, onChange, onSubmit }) {
+function TextInput({ label, type, value, placeholder, onChange, onSubmit }) {
   function handleKeyDown(e) {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -24,6 +25,7 @@ function TextInput({ type, value, placeholder, onChange, onSubmit }) {
   return (
     <input
       autoFocus
+      aria-label={label}
       type={type}
       value={value}
       placeholder={placeholder}
@@ -47,6 +49,7 @@ export default function InputForm({ question, draft, onChange, onSubmit }) {
   if (inputType === "textarea") {
     return (
       <TextareaInput
+        label={question.question}
         value={value}
         placeholder={placeholder}
         onChange={onChange}
@@ -56,6 +59,7 @@ export default function InputForm({ question, draft, onChange, onSubmit }) {
 
   return (
     <TextInput
+      label={question.question}
       type={inputType}
       value={value}
       placeholder={placeholder}

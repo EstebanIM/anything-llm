@@ -1,8 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import Sidebar from "@/components/SettingsSidebar";
-import { isMobile } from "react-device-detect";
-import * as Skeleton from "react-loading-skeleton";
-import "react-loading-skeleton/dist/skeleton.css";
 import { Mail } from "lucide-react";
 import Admin from "@/models/admin";
 import InviteRow from "./InviteRow";
@@ -10,15 +8,27 @@ import NewInviteModal from "./NewInviteModal";
 import { useModal } from "@/hooks/useModal";
 import Modal from "@/components/lib/Modal";
 import CTAButton from "@/components/lib/CTAButton";
+import TableState from "@/components/lib/TableState";
+import { TABLE, TBODY, TH, THEAD } from "@/pages/Admin/Users/AdminTable";
+import useFocusAfterRemoval from "@/hooks/useFocusAfterRemoval";
+
+const COLUMNS = 5;
 
 export default function AdminInvites() {
+  const { t } = useTranslation();
   const { isOpen, openModal, closeModal } = useModal();
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [invites, setInvites] = useState([]);
+  const headingId = useId();
+  const headingRef = useRef(null);
+  const tbodyRef = useRef(null);
+  const focusAfterRemoval = useFocusAfterRemoval(tbodyRef, headingRef);
 
   const fetchInvites = async () => {
     const _invites = await Admin.invites();
     setInvites(_invites);
+    setLoadFailed(!!_invites?.failed);
     setLoading(false);
   };
 
@@ -26,86 +36,106 @@ export default function AdminInvites() {
     fetchInvites();
   }, []);
 
+  const updateInvite = (id, patch) =>
+    setInvites((prev) =>
+      prev.map((invite) =>
+        invite.id === id ? { ...invite, ...patch } : invite
+      )
+    );
+
+  // The revoked row stays (now "Disabled") but loses its buttons: move on to
+  // the next row's actions, or to the heading.
+  const focusAfterRevoke = (id) => {
+    focusAfterRemoval(invites.findIndex((invite) => invite.id === id) + 1);
+  };
+
   return (
     <div className="w-screen h-screen overflow-hidden bg-zinc-950 light:bg-slate-50 flex">
       <Sidebar />
-      <div
-        style={{ height: isMobile ? "100%" : "calc(100% - 32px)" }}
-        className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full overflow-y-scroll p-4 md:p-0"
-      >
+      <main className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full md:h-[calc(100%-32px)] overflow-y-auto p-4 md:p-0">
         <div className="flex flex-col w-full px-1 md:pl-6 md:pr-[50px] md:py-6 py-16">
           <div className="w-full flex flex-col gap-y-1 pb-6 border-white/10 border-b-2">
-            <div className="items-center flex gap-x-4">
-              <p className="text-lg leading-6 font-bold text-theme-text-primary">
-                Invitations
-              </p>
-            </div>
-            <p className="text-xs leading-[18px] font-base text-theme-text-secondary mt-2">
-              Create invitation links for people in your organization to accept
-              and sign up with. Invitations can only be used by a single user.
+            <h1
+              id={headingId}
+              ref={headingRef}
+              tabIndex={-1}
+              className="text-lg leading-6 font-bold text-theme-text-primary"
+            >
+              {t("admin-pages.invites.title")}
+            </h1>
+            <p className="text-xs leading-[18px] text-theme-text-secondary mt-2">
+              {t("admin-pages.invites.description")}
             </p>
           </div>
           <div className="w-full justify-end flex">
             <CTAButton
+              type="button"
               onClick={openModal}
-              className="mt-3 mr-0 mb-4 md:-mb-12 z-10"
+              className="mt-3 mr-0 mb-4 md:-mb-6 z-10"
             >
-              <Mail strokeWidth={1.5} className="h-4 w-4" /> Create Invite Link
+              <Mail strokeWidth={1.5} className="h-4 w-4" aria-hidden="true" />
+              {t("admin-pages.invites.create")}
             </CTAButton>
           </div>
-          <div className="overflow-x-auto mt-6">
-            {loading ? (
-              <Skeleton.default
-                height="80vh"
-                width="100%"
-                highlightColor="var(--theme-bg-primary)"
-                baseColor="var(--theme-bg-secondary)"
-                count={1}
-                className="w-full p-4 rounded-b-2xl rounded-tr-2xl rounded-tl-sm"
-                containerClassName="flex w-full"
-              />
-            ) : (
-              <table className="w-full text-xs text-left rounded-lg min-w-[640px] border-spacing-0">
-                <thead className="text-theme-text-secondary text-xs leading-[18px] font-bold uppercase border-white/10 border-b">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 rounded-tl-lg">
-                      Status
-                    </th>
-                    <th scope="col" className="px-6 py-3">
-                      Accepted By
-                    </th>
-                    <th scope="col" className="px-6 py-3">
-                      Created By
-                    </th>
-                    <th scope="col" className="px-6 py-3">
-                      Created
-                    </th>
-                    <th scope="col" className="px-6 py-3 rounded-tr-lg">
-                      {" "}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {invites.length === 0 ? (
-                    <tr className="bg-transparent text-theme-text-secondary text-sm font-medium">
-                      <td colSpan="5" className="px-6 py-4 text-center">
-                        No invitations found
-                      </td>
-                    </tr>
-                  ) : (
-                    invites.map((invite) => (
-                      <InviteRow key={invite.id} invite={invite} />
-                    ))
-                  )}
-                </tbody>
-              </table>
-            )}
-          </div>
+          <table
+            aria-labelledby={headingId}
+            aria-busy={loading || undefined}
+            className={TABLE}
+          >
+            <thead className={THEAD}>
+              <tr>
+                <th scope="col" className={TH}>
+                  {t("admin-pages.invites.status")}
+                </th>
+                <th scope="col" className={TH}>
+                  {t("admin-pages.invites.accepted-by")}
+                </th>
+                <th scope="col" className={TH}>
+                  {t("admin-pages.invites.created-by")}
+                </th>
+                <th scope="col" className={TH}>
+                  {t("admin-pages.invites.created")}
+                </th>
+                <th scope="col" className={TH}>
+                  <span className="sr-only">{t("api.actions")}</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody ref={tbodyRef} className={TBODY}>
+              {loading ? (
+                <TableState state="loading" colSpan={COLUMNS} />
+              ) : loadFailed ? (
+                <TableState
+                  state="error"
+                  colSpan={COLUMNS}
+                  onRetry={() => {
+                    setLoading(true);
+                    fetchInvites();
+                  }}
+                />
+              ) : invites.length === 0 ? (
+                <TableState
+                  state="empty"
+                  colSpan={COLUMNS}
+                  message={t("admin-pages.invites.empty")}
+                />
+              ) : (
+                invites.map((invite) => (
+                  <InviteRow
+                    key={invite.id}
+                    invite={invite}
+                    onUpdated={(patch) => updateInvite(invite.id, patch)}
+                    onRevoked={() => focusAfterRevoke(invite.id)}
+                  />
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
         <Modal isOpen={isOpen} onClose={closeModal}>
           <NewInviteModal closeModal={closeModal} onSuccess={fetchInvites} />
         </Modal>
-      </div>
+      </main>
     </div>
   );
 }

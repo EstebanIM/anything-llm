@@ -1,17 +1,21 @@
-import { useState, useEffect } from "react";
+import { useId, useState } from "react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 import Modal, {
   ModalHeader,
-  ModalLabel,
+  ModalHint,
   ModalInput,
   ModalPrimaryButton,
   ModalSecondaryButton,
 } from "@/components/lib/Modal";
-import { OctagonAlert } from "lucide-react";
-import { DB_LOGOS } from "./DBConnection";
-import System from "@/models/system";
-import showToast from "@/utils/toast";
+import SegmentedControl from "@/components/lib/SegmentedControl";
+import StatusNote from "@/components/lib/StatusNote";
 import Toggle from "@/components/lib/Toggle";
+import System from "@/models/system";
+import { DEFAULT_PORTS, ENGINE_LABELS, ENGINES } from "./engines";
+
+const DEFAULT_ENGINE = "postgresql";
+const PASSWORD_MASK = "••••••";
 
 /**
  * Converts a string to a URL-friendly slug format.
@@ -30,6 +34,7 @@ function slugify(str) {
 
 /**
  * Assembles a database connection string based on the engine type and configuration.
+ * An empty port falls back to the engine's default port.
  * @param {Object} params - Connection parameters
  * @param {string} params.engine - The database engine ('postgresql', 'mysql', or 'sql-server')
  * @param {string} [params.username=""] - Database username
@@ -39,7 +44,7 @@ function slugify(str) {
  * @param {string} [params.database=""] - Database name
  * @param {boolean} [params.encrypt=false] - Enable encryption (SQL Server only)
  * @param {boolean} [params.ssl=false] - Connect over SSL/TLS without certificate verification
- * @returns {string|null} - The assembled connection string, error message if fields missing, or null if engine invalid
+ * @returns {string|null} - The connection string, or null while a required field is empty or the engine is unknown
  */
 function assembleConnectionString({
   engine,
@@ -51,434 +56,425 @@ function assembleConnectionString({
   encrypt = false,
   ssl = false,
 }) {
-  if ([username, password, host, database].every((i) => !!i) === false)
-    return `Please fill out all the fields above.`;
-  username = encodeURIComponent(username);
-  password = encodeURIComponent(password);
-  database = encodeURIComponent(database);
+  if (![username, password, host, database].every((i) => !!i)) return null;
+  const user = encodeURIComponent(username);
+  const pass = encodeURIComponent(password);
+  const db = encodeURIComponent(database);
+  const finalPort = port || DEFAULT_PORTS[engine];
   // SSL is encrypt-without-verification to allow self-signed
   const pgSsl = ssl ? "?sslmode=no-verify" : "";
   switch (engine) {
     case "postgresql":
-      return `postgres://${username}:${password}@${host}:${port}/${database}${pgSsl}`;
+      return `postgres://${user}:${pass}@${host}:${finalPort}/${db}${pgSsl}`;
     case "mysql":
-      return `mysql://${username}:${password}@${host}:${port}/${database}`;
+      return `mysql://${user}:${pass}@${host}:${finalPort}/${db}`;
     case "sql-server":
-      return `mssql://${username}:${password}@${host}:${port}/${database}?encrypt=${encrypt}`;
+      return `mssql://${user}:${pass}@${host}:${finalPort}/${db}?encrypt=${encrypt}`;
     default:
       return null;
   }
 }
 
-const DEFAULT_ENGINE = "postgresql";
-const DEFAULT_CONFIG = {
-  name: "",
-  username: null,
-  password: null,
-  host: null,
-  port: null,
-  database: null,
-  schema: null,
-  encrypt: false,
-  ssl: false,
-};
+/**
+ * Hides the password of a connection string for display. The user and the
+ * password are URI-encoded, so neither contains a raw ":" or "@".
+ * @param {string} connectionString
+ * @returns {string}
+ */
+function maskConnectionString(connectionString) {
+  return connectionString.replace(
+    /^([a-z]+:\/\/[^:@/]*):[^@]*@/i,
+    `$1:${PASSWORD_MASK}@`
+  );
+}
+
+function initialConfig(existing) {
+  if (!existing)
+    return {
+      name: "",
+      username: "",
+      password: "",
+      host: "",
+      port: "",
+      database: "",
+      schema: null,
+      encrypt: false,
+      ssl: false,
+    };
+  const connectionString = existing.connectionString || "";
+  return {
+    name: existing.database_id ?? "",
+    username: existing.username ?? "",
+    password: existing.password ?? "",
+    host: existing.host ?? "",
+    port: existing.port ? String(existing.port) : "",
+    database: existing.database ?? "",
+    schema: existing.schema ?? null,
+    encrypt: existing.encrypt ?? /[?&]encrypt=true\b/.test(connectionString),
+    ssl: existing.ssl ?? /[?&]sslmode=no-verify\b/.test(connectionString),
+  };
+}
 
 /**
- * Modal component for creating or editing SQL database connections.
- * Supports PostgreSQL, MySQL, and SQL Server with connection validation.
- * Handles duplicate connection name detection and connection string assembly.
+ * Modal for creating or editing a SQL connection. It is portaled next to the
+ * page form (nested forms are invalid) and only mounts while open, so every
+ * opening starts from the connection being edited.
  *
- * @param {Object} props - Component props
- * @param {boolean} props.isOpen - Whether the modal is currently open
- * @param {Function} props.closeModal - Callback to close the modal
- * @param {Function} props.onSubmit - Callback when connection is successfully validated and saved
- * @param {Function} props.setHasChanges - Callback to mark that changes have been made
- * @param {Object|null} [props.existingConnection=null] - Existing connection data for edit mode (contains database_id, engine, username, password, host, port, database, schema, encrypt)
- * @param {Array} [props.connections=[]] - List of all existing connections for duplicate detection
- * @returns {React.ReactPortal|null} - Portal containing the modal UI, or null if not open
+ * @param {Object} props
+ * @param {boolean} props.isOpen
+ * @param {Function} props.closeModal
+ * @param {Function} props.onSubmit - Receives the validated connection ("add" or "update" action)
+ * @param {Function} props.setHasChanges
+ * @param {Object|null} [props.existingConnection=null] - Connection being edited
+ * @param {Array} [props.connections=[]] - All connections, for duplicate names
  */
-export default function SQLConnectionModal({
-  isOpen,
+export default function SQLConnectionModal({ isOpen, ...props }) {
+  if (!isOpen) return null;
+  const target =
+    document.getElementById("workspace-agent-settings-container") ??
+    document.body;
+  return createPortal(<SQLConnectionDialog {...props} />, target);
+}
+
+function SQLConnectionDialog({
   closeModal,
   onSubmit,
   setHasChanges,
-  existingConnection = null, // { database_id, engine } for edit mode
-  connections = [], // List of all existing connections for duplicate detection
+  existingConnection = null,
+  connections = [],
 }) {
+  const { t } = useTranslation();
+  const id = useId();
+  const formId = `${id}-form`;
+  const nameFieldId = `${id}-name`;
+  const engineLabelId = `${id}-engine`;
+  const previewLabelId = `${id}-preview`;
   const isEditMode = !!existingConnection;
-  const [engine, setEngine] = useState(DEFAULT_ENGINE);
-  const [config, setConfig] = useState(DEFAULT_CONFIG);
+  const [engine, setEngine] = useState(
+    existingConnection?.engine ?? DEFAULT_ENGINE
+  );
+  const [config, setConfig] = useState(() => initialConfig(existingConnection));
   const [isValidating, setIsValidating] = useState(false);
+  const [nameError, setNameError] = useState(null);
+  const [connectionError, setConnectionError] = useState(null);
 
-  // Sync state when modal opens - useState initial values only run once on mount,
-  // so we need this effect to update state when the modal is reopened
-  useEffect(() => {
-    if (!isOpen) return;
-
-    if (existingConnection) {
-      setEngine(existingConnection.engine);
-      setConfig({
-        name: existingConnection.database_id,
-        username: existingConnection.username,
-        password: existingConnection.password,
-        host: existingConnection.host,
-        port: existingConnection.port,
-        database: existingConnection.database,
-        schema: existingConnection.schema,
-        encrypt: existingConnection?.encrypt,
-        ssl: existingConnection?.ssl,
-      });
-    } else {
-      setEngine(DEFAULT_ENGINE);
-      setConfig(DEFAULT_CONFIG);
-    }
-  }, [isOpen, existingConnection]);
-
-  // Track original database ID to send to server for updating if in edit mode
-  const originalDatabaseId = isEditMode ? existingConnection.database_id : null;
-
-  if (!isOpen) return null;
-
-  function handleClose() {
-    setEngine(DEFAULT_ENGINE);
-    setConfig(DEFAULT_CONFIG);
-    closeModal();
-  }
+  const close = isValidating ? undefined : closeModal;
 
   function onFormChange(e) {
-    const form = new FormData(e.target.form);
+    // Typing here must not mark the agents page as modified.
+    e.stopPropagation();
+    const form = new FormData(e.currentTarget);
     setConfig({
-      name: form.get("name").trim(),
-      username: form.get("username").trim(),
-      password: form.get("password"),
-      host: form.get("host").trim(),
-      port: form.get("port").trim(),
-      database: form.get("database").trim(),
+      name: (form.get("name") ?? "").trim(),
+      username: (form.get("username") ?? "").trim(),
+      password: form.get("password") ?? "",
+      host: (form.get("host") ?? "").trim(),
+      port: (form.get("port") ?? "").trim(),
+      database: (form.get("database") ?? "").trim(),
       schema: form.get("schema")?.trim() || null,
       encrypt: form.get("encrypt") === "true",
       ssl: form.get("ssl") === "true",
     });
+    if (e.target.name === "name" && nameError) setNameError(null);
   }
 
-  /**
-   * Checks if a connection name (slugified) already exists in the connections list.
-   * For edit mode, excludes the original connection being edited.
-   * @param {string} slugifiedName - The slugified name to check
-   * @returns {boolean} - True if duplicate exists, false otherwise
-   */
+  /** Same name as another connection still in the list (not the one being edited). */
   function isDuplicateConnectionName(slugifiedName) {
-    // Get active connections (not marked for removal)
-    const activeConnections = connections.filter(
-      (conn) => conn.action !== "remove"
+    return connections.some(
+      (conn) =>
+        conn.action !== "remove" &&
+        conn._uid !== existingConnection?._uid &&
+        conn.database_id === slugifiedName
     );
-
-    // Check for duplicates, excluding the original connection in edit mode
-    return activeConnections.some((conn) => {
-      // In edit mode, skip the original connection being edited
-      if (isEditMode && conn.database_id === originalDatabaseId) {
-        return false;
-      }
-      return conn.database_id === slugifiedName;
-    });
   }
 
   /**
-   * Handles form submission for both creating new connections and updating existing ones.
-   * Process:
-   * 1. Slugify the connection name to match backend behavior
-   * 2. Check for duplicate names (prevents frontend from sending invalid updates)
-   * 3. Validate the connection string by attempting to connect to the database
-   * 4. If valid, submit with appropriate action ("add" or "update")
-   *
-   * For updates: Includes originalDatabaseId so backend can find and replace the old connection
-   * For new connections: Just includes the new connection data
+   * Validates the name, tests the connection on the server and, if it works,
+   * hands the connection to the panel ("add" or "update"). Nothing is stored
+   * until the page is saved.
    */
-  async function handleUpdate(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     e.stopPropagation();
-    const form = new FormData(e.target);
-    const connectionString = assembleConnectionString({ engine, ...config });
+    if (isValidating) return;
+    const form = new FormData(e.currentTarget);
+    const slugifiedDatabaseId = slugify(form.get("name") ?? "");
 
-    // Slugify the database_id immediately to match backend behavior
-    const slugifiedDatabaseId = slugify(form.get("name"));
-
-    // Check for duplicate connection names before validation
-    if (isDuplicateConnectionName(slugifiedDatabaseId)) {
-      showToast(
-        `A connection with the name "${slugifiedDatabaseId}" already exists. Please choose a different name.`,
-        "error",
-        { clear: true }
+    if (
+      !slugifiedDatabaseId ||
+      isDuplicateConnectionName(slugifiedDatabaseId)
+    ) {
+      setNameError(
+        slugifiedDatabaseId
+          ? t("agent-integrations.sql.duplicate-name", {
+              name: slugifiedDatabaseId,
+            })
+          : t("agent-integrations.sql.invalid-name")
       );
+      document.getElementById(nameFieldId)?.focus();
       return;
     }
 
+    const connectionString = assembleConnectionString({ engine, ...config });
+    if (!connectionString) return;
+
+    setNameError(null);
+    setConnectionError(null);
     setIsValidating(true);
-    try {
-      // Validate that we can actually connect to this database
-      const { success, error } = await System.validateSQLConnection(
-        engine,
-        connectionString
-      );
-      if (!success) {
-        showToast(
-          error ||
-            "Failed to establish database connection. Please check your connection details.",
-          "error",
-          { clear: true }
-        );
-        setIsValidating(false);
-        return;
-      }
-
-      const connectionData = {
-        engine,
-        database_id: slugifiedDatabaseId,
-        connectionString,
-        schema: engine === "postgresql" ? config.schema : null,
-      };
-
-      if (isEditMode) {
-        // EDIT MODE: Send update action with originalDatabaseId
-        // This tells the backend to find the connection with originalDatabaseId
-        // and replace it with the new connection data
-        onSubmit({
-          ...connectionData,
-          action: "update",
-          originalDatabaseId: originalDatabaseId,
-        });
-      } else {
-        // CREATE MODE: Send add action
-        // Backend will check for duplicates and add if unique
-        onSubmit({
-          ...connectionData,
-          action: "add",
-        });
-      }
-
-      setHasChanges(true);
-      handleClose();
-    } catch (error) {
-      console.error("Error validating connection:", error);
-      showToast(
-        error?.message ||
-          "Failed to validate connection. Please check your connection details.",
-        "error",
-        { clear: true }
-      );
-    } finally {
+    const { success, error } = await System.validateSQLConnection(
+      engine,
+      connectionString
+    );
+    if (!success) {
       setIsValidating(false);
+      setConnectionError(error || t("agent-integrations.sql.unknown-error"));
+      return;
     }
-    return false;
+
+    const connectionData = {
+      engine,
+      database_id: slugifiedDatabaseId,
+      connectionString,
+      schema: engine === "postgresql" ? config.schema : null,
+      // Kept in memory only, to prefill a later edit before the page is saved.
+      username: config.username,
+      password: config.password,
+      host: config.host,
+      port: config.port,
+      database: config.database,
+      encrypt: config.encrypt,
+      ssl: config.ssl,
+    };
+
+    if (isEditMode) {
+      onSubmit({
+        ...connectionData,
+        action: "update",
+        originalDatabaseId:
+          existingConnection.originalDatabaseId ??
+          existingConnection.database_id,
+        _uid: existingConnection._uid,
+      });
+    } else {
+      onSubmit({ ...connectionData, action: "add" });
+    }
+    setHasChanges(true);
+    setIsValidating(false);
+    closeModal();
   }
 
-  // Cannot do nested forms, it will cause all sorts of issues, so we portal this out
-  // to the parent container form so we don't have nested forms.
-  return createPortal(
+  const preview = assembleConnectionString({ engine, ...config });
+  const defaultPort = DEFAULT_PORTS[engine];
+
+  return (
     <Modal
-      isOpen={isOpen}
-      onClose={handleClose}
+      isOpen={true}
+      onClose={close}
       size="lg"
       noPortal
       className="!z-[1000]"
     >
       <ModalHeader
-        title={isEditMode ? "Edit SQL Connection" : "New SQL Connection"}
-        onClose={handleClose}
+        title={
+          isEditMode
+            ? t("agent-integrations.sql.edit-title")
+            : t("agent-integrations.sql.new-title")
+        }
+        subtitle={
+          isEditMode
+            ? t("agent-integrations.sql.edit-description")
+            : t("agent-integrations.sql.new-description")
+        }
+        onClose={close}
       />
       <form
-        id="sql-connection-form"
+        id={formId}
         onChange={onFormChange}
-        onSubmit={handleUpdate}
+        onSubmit={handleSubmit}
         className="flex flex-col gap-y-5 w-full"
       >
-        <div className="space-y-6">
-          <p className="text-sm text-zinc-400 light:text-slate-600">
-            {isEditMode
-              ? "Update the connection information for your database below."
-              : "Add the connection information for your database below and it will be available for future SQL agent calls."}
+        <StatusNote
+          tone="warning"
+          title={t("agent-integrations.sql.read-only-title")}
+        >
+          {t("agent-integrations.sql.read-only-body")}
+        </StatusNote>
+
+        <div className="flex flex-col gap-y-1.5">
+          <p
+            id={engineLabelId}
+            className="text-sm font-medium text-zinc-50 light:text-slate-700"
+          >
+            {t("agent-integrations.sql.engine")}
           </p>
-          <div className="flex flex-col w-full">
-            <div className="border border-red-800 bg-zinc-800 light:bg-red-200/50 p-4 rounded-lg flex items-center gap-x-2 text-sm text-red-400 light:text-red-500">
-              <OctagonAlert strokeWidth={1.5} size={28} className="shrink-0" />
-              <p>
-                <b>WARNING:</b> The SQL agent has been <i>instructed</i> to only
-                perform non-modifying queries. This <b>does not</b> prevent a
-                hallucination from still deleting data. Only connect with a user
-                who has <b>READ_ONLY</b> permissions.
-              </p>
-            </div>
-
-            <ModalLabel className="mt-4 mb-2">
-              Select your SQL engine
-            </ModalLabel>
-            <div className="grid md:grid-cols-4 gap-4 grid-cols-2">
-              <DBEngine
-                provider="postgresql"
-                active={engine === "postgresql"}
-                onClick={() => setEngine("postgresql")}
-              />
-              <DBEngine
-                provider="mysql"
-                active={engine === "mysql"}
-                onClick={() => setEngine("mysql")}
-              />
-              <DBEngine
-                provider="sql-server"
-                active={engine === "sql-server"}
-                onClick={() => setEngine("sql-server")}
-              />
-            </div>
-          </div>
-
-          <ModalInput
-            label="Connection name"
-            type="text"
-            name="name"
-            placeholder="a unique name to identify this SQL connection"
-            required={true}
-            autoComplete="off"
-            spellCheck={false}
-            defaultValue={config.name || ""}
+          <SegmentedControl
+            value={engine}
+            onChange={setEngine}
+            labelledBy={engineLabelId}
+            options={ENGINES.map((value) => ({
+              value,
+              label: ENGINE_LABELS[value],
+            }))}
           />
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <ModalInput
-              label="Database user"
-              type="text"
-              name="username"
-              placeholder="root"
-              required={true}
-              autoComplete="off"
-              spellCheck={false}
-              defaultValue={config.username || ""}
-            />
-            <ModalInput
-              label="Database user password"
-              type="password"
-              name="password"
-              placeholder="password123"
-              required={true}
-              autoComplete="off"
-              spellCheck={false}
-              defaultValue={config.password || ""}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="sm:col-span-2">
-              <ModalInput
-                label="Server endpoint"
-                type="text"
-                name="host"
-                placeholder="the hostname or endpoint for your database"
-                required={true}
-                autoComplete="off"
-                spellCheck={false}
-                defaultValue={config.host || ""}
-              />
-            </div>
-            <ModalInput
-              label="Port"
-              type="text"
-              name="port"
-              placeholder="3306"
-              required={false}
-              autoComplete="off"
-              spellCheck={false}
-              defaultValue={config.port || ""}
-            />
-          </div>
-
-          <ModalInput
-            label="Database"
-            type="text"
-            name="database"
-            placeholder="the database the agent will interact with"
-            required={true}
-            autoComplete="off"
-            spellCheck={false}
-            defaultValue={config.database || ""}
-          />
-
-          {engine === "postgresql" && (
-            <ModalInput
-              label="Schema (optional)"
-              type="text"
-              name="schema"
-              placeholder="public (default schema if not specified)"
-              required={false}
-              autoComplete="off"
-              spellCheck={false}
-              defaultValue={config.schema || ""}
-            />
-          )}
-
-          {engine === "sql-server" && (
-            <Toggle
-              name="encrypt"
-              value="true"
-              size="md"
-              label="Enable Encryption"
-              enabled={config.encrypt}
-            />
-          )}
-
-          {engine === "postgresql" && (
-            <Toggle
-              name="ssl"
-              value="true"
-              size="md"
-              label="Use SSL"
-              enabled={config.ssl}
-            />
-          )}
-
-          <p className="text-zinc-400 light:text-slate-500 text-sm">
-            {assembleConnectionString({ engine, ...config })}
-          </p>
         </div>
-        <div className="flex justify-between items-center w-full">
-          <ModalSecondaryButton type="button" onClick={handleClose}>
-            Cancel
-          </ModalSecondaryButton>
-          <ModalPrimaryButton
-            type="submit"
-            form="sql-connection-form"
+
+        <ModalInput
+          id={nameFieldId}
+          label={t("agent-integrations.sql.name")}
+          type="text"
+          name="name"
+          placeholder={t("agent-integrations.sql.name-placeholder")}
+          hint={t("agent-integrations.sql.name-hint")}
+          error={nameError}
+          required={true}
+          autoComplete="off"
+          spellCheck={false}
+          defaultValue={config.name}
+        />
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <ModalInput
+            label={t("agent-integrations.sql.username")}
+            type="text"
+            name="username"
+            required={true}
+            autoComplete="off"
+            spellCheck={false}
+            defaultValue={config.username}
+          />
+          <ModalInput
+            label={t("agent-integrations.sql.password")}
+            type="password"
+            name="password"
+            required={true}
+            autoComplete="new-password"
+            spellCheck={false}
+            data-1p-ignore=""
+            data-lpignore="true"
+            data-bwignore=""
+            defaultValue={config.password}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="sm:col-span-2">
+            <ModalInput
+              label={t("agent-integrations.sql.host")}
+              type="text"
+              name="host"
+              placeholder={t("agent-integrations.sql.host-placeholder")}
+              required={true}
+              autoComplete="off"
+              spellCheck={false}
+              defaultValue={config.host}
+            />
+          </div>
+          <ModalInput
+            label={t("agent-integrations.sql.port")}
+            optional={true}
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            name="port"
+            placeholder={defaultPort}
+            hint={t("agent-integrations.sql.port-hint", { port: defaultPort })}
+            autoComplete="off"
+            spellCheck={false}
+            defaultValue={config.port}
+          />
+        </div>
+
+        <ModalInput
+          label={t("agent-integrations.sql.database")}
+          type="text"
+          name="database"
+          placeholder={t("agent-integrations.sql.database-placeholder")}
+          required={true}
+          autoComplete="off"
+          spellCheck={false}
+          defaultValue={config.database}
+        />
+
+        {engine === "postgresql" && (
+          <ModalInput
+            label={t("agent-integrations.sql.schema")}
+            optional={true}
+            type="text"
+            name="schema"
+            placeholder="public"
+            hint={t("agent-integrations.sql.schema-hint")}
+            autoComplete="off"
+            spellCheck={false}
+            defaultValue={config.schema || ""}
+          />
+        )}
+
+        {engine === "sql-server" && (
+          <Toggle
+            name="encrypt"
+            value="true"
+            size="md"
+            label={t("agent-integrations.sql.encrypt")}
+            description={t("agent-integrations.sql.encrypt-help")}
+            enabled={!!config.encrypt}
+          />
+        )}
+
+        {engine === "postgresql" && (
+          <Toggle
+            name="ssl"
+            value="true"
+            size="md"
+            label={t("agent-integrations.sql.ssl")}
+            description={t("agent-integrations.sql.ssl-help")}
+            enabled={!!config.ssl}
+          />
+        )}
+
+        <div className="flex flex-col gap-y-1.5">
+          <p
+            id={previewLabelId}
+            className="text-sm font-medium text-zinc-50 light:text-slate-700"
+          >
+            {t("agent-integrations.sql.preview")}
+          </p>
+          <code
+            aria-labelledby={previewLabelId}
+            className="block break-all rounded-lg bg-zinc-800 light:bg-slate-100 px-3 py-2 text-xs text-zinc-300 light:text-slate-700"
+          >
+            {preview
+              ? maskConnectionString(preview)
+              : t("agent-integrations.sql.preview-incomplete")}
+          </code>
+        </div>
+
+        {connectionError && (
+          <StatusNote
+            tone="error"
+            announce
+            title={t("agent-integrations.sql.connection-failed")}
+          >
+            {connectionError}
+          </StatusNote>
+        )}
+
+        <ModalHint>{t("agent-integrations.sql.save-page-hint")}</ModalHint>
+
+        <div className="flex justify-between items-center gap-x-2 w-full">
+          <ModalSecondaryButton
+            type="button"
+            onClick={closeModal}
             disabled={isValidating}
           >
-            {isValidating ? "Validating..." : "Save connection"}
+            {t("settings-pages.cancel")}
+          </ModalSecondaryButton>
+          <ModalPrimaryButton type="submit" busy={isValidating}>
+            {isValidating
+              ? t("agent-integrations.sql.testing")
+              : t("agent-integrations.sql.save-connection")}
           </ModalPrimaryButton>
         </div>
       </form>
-    </Modal>,
-    document.getElementById("workspace-agent-settings-container")
-  );
-}
-
-/**
- * Database engine selection button component.
- * Displays a database logo and handles selection state.
- *
- * @param {Object} props - Component props
- * @param {string} props.provider - The database provider identifier ('postgresql', 'mysql', 'sql-server')
- * @param {boolean} props.active - Whether this engine is currently selected
- * @param {Function} props.onClick - Callback when the engine is clicked
- * @returns {JSX.Element} - Button element with database logo
- */
-function DBEngine({ provider, active, onClick }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex flex-col p-4 border border-white/40 bg-zinc-800 light:bg-theme-settings-input-bg rounded-lg w-fit hover:bg-zinc-700 ${
-        active ? "!bg-blue-500/50" : ""
-      }`}
-    >
-      <img
-        src={DB_LOGOS[provider]}
-        className="h-[100px] rounded-md"
-        alt={provider}
-      />
-    </button>
+    </Modal>
   );
 }

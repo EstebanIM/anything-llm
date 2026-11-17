@@ -40,6 +40,10 @@ const LABEL_STYLES = {
  * @param {string} [props.labelClassName] - Additional CSS classes for label
  * @param {string} [props.descriptionClassName] - Additional CSS classes for description
  * @param {string} [props.gapClassName] - Additional CSS classes for gap
+ * @param {string} [props.describedBy] - id of a help or warning text tied to the switch
+ * @param {string} [props.ariaLabel] - accessible name when there is no `label`
+ * @param {string} [props.ariaLabelledBy] - id of a visible heading that names the switch
+ * @param {string} [props.id] - id of the underlying checkbox
  */
 export default function Toggle({
   className,
@@ -56,11 +60,20 @@ export default function Toggle({
   labelClassName,
   descriptionClassName,
   gapClassName,
+  describedBy,
+  ariaLabel,
+  ariaLabelledBy,
+  id,
 }) {
-  const inputProps =
-    enabled !== undefined
+  const inputProps = {
+    ...(id ? { id } : {}),
+    ...(ariaLabel ? { "aria-label": ariaLabel } : {}),
+    ...(ariaLabelledBy ? { "aria-labelledby": ariaLabelledBy } : {}),
+    ...(enabled !== undefined
       ? { checked: enabled, onChange: (e) => onChange?.(e.target.checked) }
-      : { defaultChecked: false };
+      : { defaultChecked: false }),
+    ...(describedBy ? { "aria-describedby": describedBy } : {}),
+  };
 
   const labelStyles = LABEL_STYLES[size] || LABEL_STYLES.sm;
 
@@ -120,8 +133,10 @@ export default function Toggle({
 }
 
 function ToggleSwitch({ name, disabled, size, inputProps, value }) {
+  // The span gives the switch a 44px touch area on phones (the label around it
+  // takes the tap); input and track stay siblings so `peer-*` keeps working.
   return (
-    <>
+    <span className="relative inline-flex shrink-0 items-center justify-center min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0">
       <input
         type="checkbox"
         name={name}
@@ -135,13 +150,14 @@ function ToggleSwitch({ name, disabled, size, inputProps, value }) {
           relative shrink-0 peer pointer-events-none rounded-full
           ${TOGGLE_STYLES[size] || TOGGLE_STYLES.sm}
           after:absolute after:rounded-full after:bg-white
-          after:transition-all after:content-['']
-          peer-focus:ring-2
-          bg-zinc-500 light:bg-zinc-300 peer-focus:ring-zinc-700 light:peer-focus:bg-green-100 light:peer-focus:ring-green-200
-          peer-checked:bg-green-400 peer-checked:peer-focus:bg-green-300 peer-checked:peer-focus:ring-green-900 light:peer-checked:peer-focus:bg-green-300 light:peer-checked:peer-focus:ring-green-200
+          after:transition-transform after:duration-quick after:ease-smooth after:content-['']
+          transition-colors duration-quick ease-smooth
+          peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--theme-focus-ring)]
+          bg-zinc-500 light:bg-slate-500
+          peer-checked:bg-green-400 light:peer-checked:bg-green-600
         `}
       />
-    </>
+    </span>
   );
 }
 
@@ -192,29 +208,39 @@ export function SimpleToggleSwitch({
   onChange,
   disabled = false,
   size = "sm",
+  ariaLabel,
+  ariaLabelledBy,
 }) {
+  const toggle = () => {
+    if (disabled) return;
+    onChange(!enabled);
+  };
   return (
     <div
       role="switch"
       aria-checked={enabled}
+      aria-disabled={disabled || undefined}
+      aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledBy}
       tabIndex={0}
       onClick={(e) => {
         e.stopPropagation();
-        onChange(!enabled);
+        toggle();
       }}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           e.stopPropagation();
-          onChange(!enabled);
+          toggle();
         }
       }}
       className={`
         relative shrink-0 cursor-pointer rounded-full ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"}
+        before:absolute before:content-[''] before:-inset-x-2 before:-inset-y-3.5 md:before:hidden
         ${size === "sm" ? "h-[12px] w-[20px]" : size === "md" ? "h-[16px] w-[28px]" : "h-[19px] w-[36px]"}
-        transition-colors duration-200
-        ${enabled ? "bg-green-400" : "bg-zinc-500"}
-        ${className}
+        transition-colors duration-quick
+        ${enabled ? "bg-green-400 light:bg-green-600" : "bg-zinc-500"}
+        ${className ?? ""}
       `}
     >
       <div
@@ -222,7 +248,7 @@ export function SimpleToggleSwitch({
           absolute top-[2px] left-[2px]
           ${size === "sm" ? "h-[8px] w-[8px]" : size === "md" ? "h-[12px] w-[12px]" : "h-[15px] w-[15px]"}
           rounded-full bg-white
-          transition-transform duration-200
+          transition-transform duration-quick ease-smooth
           ${enabled ? "translate-x-full" : "translate-x-0"}
         `}
       />

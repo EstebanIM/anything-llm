@@ -1,66 +1,101 @@
-/* eslint-disable react-hooks/refs */
-import React, { forwardRef } from "react";
+import { useId } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  FIELD_ERROR,
+  FIELD_HELP,
+  FIELD_INPUT,
+  FIELD_LABEL,
+} from "@/components/ProviderFields";
 
-const FlowInfoNode = forwardRef(({ config, onConfigChange }, refs) => {
+/** Visual "required" mark; the field itself carries aria-required. */
+export function RequiredMark() {
+  return (
+    <span aria-hidden="true" className="text-red-400 light:text-red-700">
+      {" *"}
+    </span>
+  );
+}
+
+/**
+ * Name and description of the flow (both required: the LLM picks the flow by
+ * them). Errors show after the first save attempt.
+ */
+export default function FlowInfoNode({ config, onConfigChange, showErrors }) {
+  const { t } = useTranslation();
+  const nameId = useId();
+  const nameHelpId = useId();
+  const nameErrorId = useId();
+  const descriptionId = useId();
+  const descriptionHelpId = useId();
+  const descriptionErrorId = useId();
+
+  const nameMissing = showErrors && !config?.name?.trim();
+  const descriptionMissing = showErrors && !config?.description?.trim();
+
   return (
     <div className="space-y-4">
+      <p className="text-xs text-theme-text-secondary">
+        {t("agent-builder.required-note")}
+      </p>
       <div>
-        <label className="block text-sm font-medium text-theme-text-primary mb-2">
-          Flow Name
+        <label htmlFor={nameId} className={FIELD_LABEL}>
+          {t("agent-builder.flow-info.name")}
+          <RequiredMark />
         </label>
-        <div className="flex flex-col text-xs text-theme-text-secondary mt-2 mb-3">
-          <p className="">
-            It is important to give your flow a name that an LLM can easily
-            understand.
-          </p>
-          <p>"SendMessageToDiscord", "CheckStockPrice", "CheckWeather"</p>
-        </div>
         <input
-          id="agent-flow-name-input"
-          ref={refs?.nameRef}
+          id={nameId}
           type="text"
-          placeholder="Enter flow name"
           value={config?.name || ""}
-          onChange={(e) =>
-            onConfigChange({
-              ...config,
-              name: e.target.value,
-            })
+          onChange={(e) => onConfigChange({ ...config, name: e.target.value })}
+          aria-required="true"
+          aria-invalid={nameMissing || undefined}
+          aria-describedby={
+            nameMissing ? `${nameErrorId} ${nameHelpId}` : nameHelpId
           }
-          className="w-full border-none bg-theme-settings-input-bg text-theme-text-primary placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none p-2.5"
+          className={FIELD_INPUT}
           autoComplete="off"
           spellCheck={false}
         />
+        {nameMissing && (
+          <p id={nameErrorId} role="alert" className={FIELD_ERROR}>
+            {t("agent-builder.flow-info.name-required")}
+          </p>
+        )}
+        <p id={nameHelpId} className={FIELD_HELP}>
+          {t("agent-builder.flow-info.name-help")}
+        </p>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-theme-text-primary mb-2">
-          Description
+        <label htmlFor={descriptionId} className={FIELD_LABEL}>
+          {t("agent-builder.flow-info.description")}
+          <RequiredMark />
         </label>
-        <div className="flex flex-col text-xs text-theme-text-secondary mt-2 mb-3">
-          <p className="">
-            It is equally important to give your flow a description that an LLM
-            can easily understand. Be sure to include the purpose of the flow,
-            the context it will be used in, and any other relevant information.
-          </p>
-        </div>
         <textarea
-          ref={refs?.descriptionRef}
+          id={descriptionId}
           value={config?.description || ""}
           onChange={(e) =>
-            onConfigChange({
-              ...config,
-              description: e.target.value,
-            })
+            onConfigChange({ ...config, description: e.target.value })
           }
-          className="w-full border-none bg-theme-settings-input-bg text-theme-text-primary placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none p-2.5"
+          aria-required="true"
+          aria-invalid={descriptionMissing || undefined}
+          aria-describedby={
+            descriptionMissing
+              ? `${descriptionErrorId} ${descriptionHelpId}`
+              : descriptionHelpId
+          }
+          className={FIELD_INPUT}
           rows={3}
-          placeholder="Enter flow description"
         />
+        {descriptionMissing && (
+          <p id={descriptionErrorId} role="alert" className={FIELD_ERROR}>
+            {t("agent-builder.flow-info.description-required")}
+          </p>
+        )}
+        <p id={descriptionHelpId} className={FIELD_HELP}>
+          {t("agent-builder.flow-info.description-help")}
+        </p>
       </div>
     </div>
   );
-});
-
-FlowInfoNode.displayName = "FlowInfoNode";
-export default FlowInfoNode;
+}

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { isMac } from "@/utils/keyboardShortcuts";
+import { isShortcutBlocked, matchesShortcut } from "@/utils/keyboardShortcuts";
 
 /**
  * Hook for scrolling the chat container using keyboard shortcuts.
@@ -20,26 +20,11 @@ export default function useChatContainerQuickScroll() {
 
   useEffect(() => {
     function handleScrollShortcuts(event) {
-      const modifierPressed = isMac ? event.metaKey : event.ctrlKey;
-      if (!modifierPressed || !chatHistoryRef.current) return;
-      if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
-
-      // Don't hijack cursor movement when a text input is focused
-      const tag = document.activeElement?.tagName;
-      if (tag === "TEXTAREA" || tag === "INPUT") return;
-
-      switch (event.key) {
-        case "ArrowUp":
-          event.preventDefault();
-          scrollToTop(event);
-          break;
-        case "ArrowDown":
-          event.preventDefault();
-          scrollToBottom(event);
-          break;
-        default:
-          break;
-      }
+      if (!chatHistoryRef.current) return;
+      // Not in text fields (cursor movement), over dialogs or on repeats.
+      if (isShortcutBlocked(event)) return;
+      if (matchesShortcut(event, "scrollTop")) scrollToTop(event);
+      else if (matchesShortcut(event, "scrollBottom")) scrollToBottom(event);
     }
 
     window.addEventListener("keydown", handleScrollShortcuts);

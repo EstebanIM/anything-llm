@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useId } from "react";
 import { useParams } from "react-router-dom";
 import PreLoader from "@/components/Preloader";
 import ChatModelSelection from "./ChatModelSelection";
@@ -14,6 +14,7 @@ import {
 import LLMSelectorSidePanel from "./LLMSelector";
 import { NoSetupWarning } from "./SetupProvider";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import Workspace from "@/models/workspace";
 import System from "@/models/system";
 import { withEmbeddedLemonade } from "@/components/LLMSelection/EmbeddedLemonadeOptions";
@@ -36,6 +37,7 @@ export default function LLMSelectorModal({
   const [hasChanges, setHasChanges] = useState(false);
   const [saving, setSaving] = useState(false);
   const [missingCredentials, setMissingCredentials] = useState(false);
+  const modelLabelId = useId();
 
   useEffect(() => {
     if (!slug) return;
@@ -90,8 +92,6 @@ export default function LLMSelectorModal({
   async function handleSave() {
     setSaving(true);
     try {
-      setHasChanges(false);
-
       const isRouter = selectedLLMProvider === "anythingllm-router";
       if (isRouter && !selectedRouterId)
         throw new Error(t("model-router.chat.select-router-error"));
@@ -108,7 +108,12 @@ export default function LLMSelectorModal({
 
       const { message } = await Workspace.update(slug, updateData);
 
-      if (!!message) throw new Error(message);
+      if (!!message)
+        throw new Error(
+          serverErrorMessage(message, t, "notices.workspace-model-save-failed")
+        );
+      // Only hide "save" once it worked, so a failed save can be retried.
+      setHasChanges(false);
       window.dispatchEvent(new Event(SAVE_LLM_SELECTOR_EVENT));
     } catch (error) {
       console.error(error);
@@ -126,10 +131,11 @@ export default function LLMSelectorModal({
     return (
       <div
         id="llm-selector-modal"
+        role="status"
         className="w-full h-[388px] flex flex-col items-center justify-center gap-2"
       >
         <PreLoader size={12} />
-        <p className="text-zinc-400 light:text-slate-500 text-sm">
+        <p className="text-zinc-400 light:text-slate-600 text-sm">
           {t("chat_window.workspace_llm_manager.loading_workspace_settings")}
         </p>
       </div>
@@ -147,12 +153,15 @@ export default function LLMSelectorModal({
       <div className="w-[60%] h-full p-[18px] flex flex-col gap-2.5">
         <div className="flex flex-col gap-[15px]">
           <div className="flex flex-col gap-1.5">
-            <p className="text-sm font-medium text-white light:text-slate-800">
+            <p
+              id={modelLabelId}
+              className="text-sm font-medium text-white light:text-slate-800"
+            >
               {t("chat_window.workspace_llm_manager.available_models", {
                 provider: providerName,
               })}
             </p>
-            <p className="text-xs font-medium text-zinc-400 light:text-slate-500">
+            <p className="text-xs font-medium text-zinc-400 light:text-slate-600">
               {t(
                 "chat_window.workspace_llm_manager.available_models_description"
               )}
@@ -161,12 +170,14 @@ export default function LLMSelectorModal({
           {!missingCredentials &&
             (selectedLLMProvider === "anythingllm-router" ? (
               <RouterPickerSelection
+                labelledBy={modelLabelId}
                 selectedRouterId={selectedRouterId}
                 setSelectedRouterId={setSelectedRouterId}
                 setHasChanges={setHasChanges}
               />
             ) : (
               <ChatModelSelection
+                labelledBy={modelLabelId}
                 provider={selectedLLMProvider}
                 setHasChanges={setHasChanges}
                 selectedLLMModel={selectedLLMModel}
@@ -194,7 +205,7 @@ export default function LLMSelectorModal({
             type="button"
             disabled={saving}
             onClick={handleSave}
-            className="border-none text-xs px-4 py-1.5 font-semibold rounded-lg bg-white text-zinc-900 hover:bg-zinc-200 light:bg-slate-800 light:text-white light:hover:bg-slate-700 h-8 w-full cursor-pointer transition-colors mt-auto"
+            className="border-none text-xs px-4 py-1.5 font-semibold rounded-lg bg-white text-zinc-900 hover:bg-zinc-200 light:bg-slate-800 light:text-white light:hover:bg-slate-700 h-8 w-full cursor-pointer transition-colors duration-quick mt-auto disabled:cursor-wait disabled:opacity-70"
           >
             {saving
               ? t("chat_window.workspace_llm_manager.saving")

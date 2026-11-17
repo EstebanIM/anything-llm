@@ -1,15 +1,30 @@
-import { LoaderCircle, Info } from "lucide-react";
-import { Tooltip } from "react-tooltip";
-import { Link } from "react-router-dom";
+import { useId } from "react";
+import { useTranslation } from "react-i18next";
+import { LoaderCircle } from "lucide-react";
 import useProviderEndpointAutoDiscovery from "@/hooks/useProviderEndpointAutoDiscovery";
 import { LEMONADE_COMMON_URLS } from "@/utils/constants";
 import { originOnly } from "@/utils/url";
 import ImageModelSelection from "../ImageModelSelection";
 import ImageDimensionSelection from "../ImageDimensionSelection";
+import {
+  FIELD_COL,
+  FIELD_HELP,
+  FIELD_INPUT,
+  FIELD_LABEL,
+  FIELD_ROW,
+  SECRET_MASK,
+  SecretInput,
+} from "@/components/ProviderFields";
+
+const PROVIDER_NAME = "Lemonade";
 
 export default function LemonadeImageOptions({ settings }) {
+  const { t } = useTranslation();
+  const id = useId();
   const {
     autoDetecting: loading,
+    autoDetectStatus,
+    detectedEndpoint,
     basePath,
     basePathValue,
     authToken,
@@ -19,75 +34,61 @@ export default function LemonadeImageOptions({ settings }) {
     provider: "lemonade-imggen",
     initialBasePath: settings?.ImageGenerationLemonadeBasePath,
     initialAuthToken: settings?.ImageGenerationLemonadeApiKey
-      ? "*".repeat(20)
+      ? SECRET_MASK
       : "",
     ENDPOINTS: LEMONADE_COMMON_URLS,
     normalizeBasePath: originOnly,
   });
 
+  const detectMessage =
+    autoDetectStatus === "found"
+      ? t("provider-fields.detect-success", {
+          provider: PROVIDER_NAME,
+          url: detectedEndpoint,
+        })
+      : autoDetectStatus === "not-found"
+        ? t("provider-fields.detect-failed", { provider: PROVIDER_NAME })
+        : "";
+
   return (
     <div className="w-full flex flex-col gap-y-4">
-      <div className="w-full flex items-start gap-[36px] mt-1.5 flex-wrap">
-        <div className="flex flex-col w-60">
-          <div className="flex justify-between items-center mb-3">
-            <div className="flex items-center gap-1">
-              <label className="text-white text-sm font-semibold">
-                Lemonade Base URL
-              </label>
-              <Info
-                strokeWidth={1.5}
-                size={18}
-                className="text-theme-text-secondary cursor-pointer"
-                data-tooltip-id="image-gen-lemonade-base-url"
-              />
-              <Tooltip
-                id="image-gen-lemonade-base-url"
-                place="top"
-                delayShow={300}
-                delayHide={800}
-                clickable={true}
-                className="tooltip !text-xs !opacity-100 z-99"
-                style={{
-                  maxWidth: "250px",
-                  whiteSpace: "normal",
-                  wordWrap: "break-word",
-                }}
-              >
-                Enter the URL where Lemonade is running.
-                <br />
-                <br />
-                <Link
-                  to="https://lemonade-server.ai/docs"
-                  target="_blank"
-                  className="text-blue-500 hover:underline"
-                >
-                  Learn more &rarr;
-                </Link>
-              </Tooltip>
-            </div>
-            {loading ? (
-              <LoaderCircle
-                strokeWidth={1.5}
-                size={16}
-                className="text-theme-text-secondary animate-spin"
-              />
-            ) : (
-              <>
-                {!basePathValue.value && (
-                  <button
-                    onClick={handleAutoDetectClick}
-                    className="border-none bg-primary-button text-xs font-medium px-2 py-1 rounded-lg hover:bg-secondary hover:text-white shadow-[0_4px_14px_rgba(0,0,0,0.25)]"
-                  >
-                    Auto-Detect
-                  </button>
-                )}
-              </>
-            )}
+      <div className={`${FIELD_ROW} mt-1.5`}>
+        <div className={FIELD_COL}>
+          <div className="flex items-center justify-between gap-x-2 mb-3">
+            <label
+              htmlFor={`${id}-base-url`}
+              className="text-white text-sm font-semibold"
+            >
+              {t("provider-fields.base-url")}
+            </label>
+            <button
+              type="button"
+              onClick={(e) => {
+                if (loading) return;
+                handleAutoDetectClick(e);
+              }}
+              aria-disabled={loading}
+              aria-busy={loading}
+              className="inline-flex items-center justify-center gap-x-1 shrink-0 rounded-lg border-none bg-primary-button text-theme-button-primary-text hover:bg-primary-button-hover text-xs font-medium px-3 md:px-2 min-h-[44px] md:min-h-[28px] transition-colors duration-quick ease-smooth aria-disabled:cursor-wait aria-disabled:opacity-70"
+            >
+              {loading && (
+                <LoaderCircle
+                  strokeWidth={1.5}
+                  size={14}
+                  aria-hidden="true"
+                  className="animate-spin"
+                />
+              )}
+              {loading
+                ? t("provider-fields.detecting")
+                : t("provider-fields.auto-detect")}
+            </button>
           </div>
           <input
+            id={`${id}-base-url`}
             type="url"
             name="ImageGenerationLemonadeBasePath"
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
+            className={FIELD_INPUT}
             placeholder="http://localhost:13305"
             value={basePathValue.value || ""}
             required={true}
@@ -95,22 +96,43 @@ export default function LemonadeImageOptions({ settings }) {
             spellCheck={false}
             onChange={basePath.onChange}
             onBlur={basePath.onBlur}
+            aria-describedby={`${id}-base-url-help`}
           />
+          <p id={`${id}-base-url-help`} className={FIELD_HELP}>
+            {t("provider-forms.shared.url-help", { provider: PROVIDER_NAME })}{" "}
+            <a
+              href="https://lemonade-server.ai/docs"
+              target="_blank"
+              rel="noreferrer"
+              className="underline hover:text-white"
+            >
+              {t("provider-forms.shared.learn-more")}
+              <span className="sr-only">
+                {" "}
+                {t("provider-fields.opens-new-tab")}
+              </span>
+            </a>
+          </p>
+          <p
+            aria-live="polite"
+            className={detectMessage ? FIELD_HELP : "sr-only"}
+          >
+            {detectMessage}
+          </p>
         </div>
-        <div className="flex flex-col w-60">
-          <label className="text-white text-sm font-semibold block mb-3">
-            API Key <span className="text-white/40">(optional)</span>
+        <div className={FIELD_COL}>
+          <label htmlFor={`${id}-api-key`} className={FIELD_LABEL}>
+            {t("provider-fields.api-key")}{" "}
+            <span className="font-normal text-theme-text-secondary">
+              ({t("provider-fields.optional")})
+            </span>
           </label>
-          <input
-            type="password"
+          <SecretInput
+            id={`${id}-api-key`}
             name="ImageGenerationLemonadeApiKey"
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-            placeholder="Lemonade API Key"
             value={authTokenValue.value || ""}
             onChange={authToken.onChange}
             onBlur={authToken.onBlur}
-            autoComplete="off"
-            spellCheck={false}
           />
         </div>
         <ImageModelSelection

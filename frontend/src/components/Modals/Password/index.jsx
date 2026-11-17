@@ -28,8 +28,10 @@ export function usePasswordModal(notry = false) {
     async function checkAuthReq() {
       if (!window) return;
 
-      // If the last validity check is still valid
-      // we can skip the loading.
+      // If the last validity check is still valid we can skip the loading.
+      // `notry` (?nt=1, set by PrivateRoute after a failed check) only skips
+      // this cache: the stored token is still verified below, so opening an
+      // old /login?nt=1 link never signs a valid session out silently.
       if (!System.needsAuthCheck() && notry === false) {
         setAuth({
           loading: false,
@@ -43,7 +45,12 @@ export function usePasswordModal(notry = false) {
       if (settings?.MultiUserMode) {
         const currentToken = window.localStorage.getItem(AUTH_TOKEN);
         if (!!currentToken) {
-          const valid = notry ? false : await System.checkAuth(currentToken);
+          const valid = await System.checkAuth(currentToken);
+          if (valid === null) {
+            // Server unreachable: show the form but keep the stored session.
+            setAuth({ loading: false, requiresAuth: true, mode: "multi" });
+            return;
+          }
           if (!valid) {
             setAuth({
               loading: false,
@@ -85,7 +92,11 @@ export function usePasswordModal(notry = false) {
 
         const currentToken = window.localStorage.getItem(AUTH_TOKEN);
         if (!!currentToken) {
-          const valid = notry ? false : await System.checkAuth(currentToken);
+          const valid = await System.checkAuth(currentToken);
+          if (valid === null) {
+            setAuth({ loading: false, requiresAuth: true, mode: "single" });
+            return;
+          }
           if (!valid) {
             setAuth({
               loading: false,

@@ -1,6 +1,5 @@
-import React, { useEffect, useState, useRef } from "react";
-import Toggle, { SimpleToggleSwitch } from "@/components/lib/Toggle";
-import { Link } from "react-router-dom";
+import { useId } from "react";
+import Toggle from "@/components/lib/Toggle";
 import { useTranslation, Trans } from "react-i18next";
 import {
   TriangleAlert,
@@ -13,11 +12,18 @@ import {
   ArrowLeftRight,
   Search,
   Info,
-  LoaderCircle,
   Copy,
 } from "lucide-react";
-import Admin from "@/models/admin";
+import StatusNote from "@/components/lib/StatusNote";
+import { ExternalLink } from "@/components/ProviderFields";
 import paths from "@/utils/paths";
+import PanelHeader, { panelIcon } from "../components/PanelHeader";
+import {
+  SubSkillRow,
+  SubSkillsLoading,
+  LoadError,
+} from "../components/SubSkills";
+import useDisabledSubSkills from "../components/useDisabledSubSkills";
 
 export const getFileSystemSubSkills = (t) => {
   return [
@@ -116,31 +122,17 @@ export default function FileSystemSkillPanel({
   hasChanges = false,
 }) {
   const { t } = useTranslation();
-  const [disabledSubSkills, setDisabledSubSkills] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const prevHasChanges = useRef(hasChanges);
+  const titleId = useId();
+  const configId = useId();
+  const readId = useId();
+  const writeId = useId();
+  const {
+    disabled: disabledSubSkills,
+    setDisabled: setDisabledSubSkills,
+    status,
+    reload,
+  } = useDisabledSubSkills("disabled_filesystem_skills", hasChanges);
   const FILESYSTEM_SUB_SKILLS = getFileSystemSubSkills(t);
-
-  useEffect(() => {
-    setLoading(true);
-    Admin.systemPreferencesByFields(["disabled_filesystem_skills"])
-      .then((res) =>
-        setDisabledSubSkills(res?.settings?.disabled_filesystem_skills ?? [])
-      )
-      .catch(() => setDisabledSubSkills([]))
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => {
-    if (prevHasChanges.current === true && hasChanges === false) {
-      Admin.systemPreferencesByFields(["disabled_filesystem_skills"])
-        .then((res) =>
-          setDisabledSubSkills(res?.settings?.disabled_filesystem_skills ?? [])
-        )
-        .catch(() => {});
-    }
-    prevHasChanges.current = hasChanges;
-  }, [hasChanges]);
 
   function toggleSubSkill(subSkillName) {
     setHasChanges(true);
@@ -156,182 +148,120 @@ export default function FileSystemSkillPanel({
     (s) => s.category === "write"
   );
 
+  const renderRows = (list, tone) =>
+    list.map((subSkill) => (
+      <SubSkillRow
+        key={subSkill.name}
+        title={subSkill.title}
+        description={subSkill.description}
+        icon={subSkill.icon}
+        tone={tone}
+        enabled={!disabledSubSkills.includes(subSkill.name)}
+        onToggle={() => toggleSubSkill(subSkill.name)}
+      />
+    ));
+
   return (
     <div className="p-2">
       <div className="flex flex-col gap-y-[18px] max-w-[500px]">
-        <div className="flex w-full justify-between items-center">
-          <div className="flex items-center gap-x-2">
-            {icon &&
-              React.createElement(icon, {
-                size: 24,
-                color: "var(--theme-text-primary)",
-                weight: "bold",
-              })}
-            <label
-              htmlFor="name"
-              className="text-theme-text-primary text-md font-bold"
-            >
-              {title}
-            </label>
-          </div>
+        <PanelHeader titleId={titleId} title={title} icon={panelIcon(icon)}>
           <Toggle
             size="lg"
             enabled={enabled}
             disabled={disabled}
+            ariaLabelledBy={titleId}
             onChange={() => toggleSkill(skill)}
           />
-        </div>
+        </PanelHeader>
 
-        <img src={image} alt={title} className="w-full rounded-md" />
-        <WarningBanner />
+        {image && <img src={image} alt="" className="w-full rounded-md" />}
+        <StatusNote tone="warning">
+          <Trans
+            i18nKey="agent.skill.filesystem.warning"
+            components={{
+              a: (
+                <ExternalLink
+                  href={paths.docs("/agent/usage/file-system-agent")}
+                  className="underline"
+                />
+              ),
+            }}
+          />
+        </StatusNote>
         <div className="flex flex-col gap-y-1">
-          <p className="text-theme-text-secondary text-opacity-60 text-xs font-medium">
+          <p className="text-theme-text-secondary text-xs font-medium">
             {t("agent.skill.filesystem.description")}
           </p>
-          <Link
-            to={paths.docs("/agent/usage/file-system-agent")}
-            target="_blank"
-            className="text-sky-400 hover:text-sky-500 text-xs font-medium underline"
+          <ExternalLink
+            href={paths.docs("/agent/usage/file-system-agent")}
+            className="w-fit inline-flex items-center min-h-[44px] md:min-h-0 text-xs font-medium underline text-sky-300 hover:text-sky-200 light:text-sky-800 light:hover:text-sky-900"
           >
-            {t("agent.skill.filesystem.learnMore")} &rarr;
-          </Link>
+            {t("agent.skill.filesystem.learnMore")}
+          </ExternalLink>
         </div>
 
         {enabled && (
-          <>
-            <input
-              name="system::disabled_filesystem_skills"
-              type="hidden"
-              value={disabledSubSkills.join(",")}
-            />
-            <div className="flex flex-col mt-2 gap-y-4">
-              <div className="flex justify-between items-center">
-                <p className="text-theme-text-primary font-semibold text-sm">
-                  {t("agent.skill.filesystem.configuration")}
-                </p>
-              </div>
-              {loading ? (
-                <div className="flex items-center justify-center py-4">
-                  <LoaderCircle
-                    strokeWidth={1.5}
-                    size={24}
-                    className="animate-spin text-theme-text-primary"
-                  />
+          <div className="flex flex-col mt-2 gap-y-4">
+            <h3
+              id={configId}
+              className="text-theme-text-primary font-semibold text-sm"
+            >
+              {t("agent.skill.filesystem.configuration")}
+            </h3>
+            {status === "loading" && <SubSkillsLoading />}
+            {status === "error" && (
+              <LoadError
+                message={t("agent-pages.subskills-load-error")}
+                onRetry={reload}
+              />
+            )}
+            {status === "ready" && (
+              <>
+                <input
+                  name="system::disabled_filesystem_skills"
+                  type="hidden"
+                  value={disabledSubSkills.join(",")}
+                />
+                <div className="flex flex-col gap-y-2">
+                  <h4
+                    id={readId}
+                    className="text-theme-text-secondary text-xs font-medium uppercase tracking-wide"
+                  >
+                    {t("agent.skill.filesystem.readActions")}
+                  </h4>
+                  <ul
+                    aria-labelledby={readId}
+                    className="flex flex-col gap-y-1"
+                  >
+                    {renderRows(readSkills, "default")}
+                  </ul>
                 </div>
-              ) : (
-                <>
-                  <div className="flex flex-col gap-y-2">
-                    <p className="text-theme-text-secondary text-xs font-medium uppercase tracking-wide">
-                      {t("agent.skill.filesystem.readActions")}
-                    </p>
-                    <div className="flex flex-col gap-y-1">
-                      {readSkills.map((subSkill) => (
-                        <SubSkillRow
-                          key={subSkill.name}
-                          subSkill={subSkill}
-                          disabled={disabledSubSkills.includes(subSkill.name)}
-                          onToggle={() => toggleSubSkill(subSkill.name)}
-                        />
-                      ))}
-                    </div>
-                  </div>
 
-                  <div className="flex flex-col gap-y-2">
-                    <p className="text-theme-text-secondary text-xs font-medium uppercase tracking-wide flex items-center gap-x-1">
-                      <TriangleAlert
-                        strokeWidth={1.5}
-                        size={12}
-                        className="text-orange-400"
-                      />
-                      {t("agent.skill.filesystem.writeActions")}
-                    </p>
-                    <div className="flex flex-col gap-y-1">
-                      {writeSkills.map((subSkill) => (
-                        <SubSkillRow
-                          key={subSkill.name}
-                          subSkill={subSkill}
-                          disabled={disabledSubSkills.includes(subSkill.name)}
-                          onToggle={() => toggleSubSkill(subSkill.name)}
-                          isWriteOperation
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          </>
+                <div className="flex flex-col gap-y-2">
+                  <h4
+                    id={writeId}
+                    className="text-theme-text-secondary text-xs font-medium uppercase tracking-wide flex items-center gap-x-1"
+                  >
+                    <TriangleAlert
+                      strokeWidth={1.5}
+                      size={12}
+                      aria-hidden="true"
+                      className="text-orange-400 light:text-orange-700"
+                    />
+                    {t("agent.skill.filesystem.writeActions")}
+                  </h4>
+                  <ul
+                    aria-labelledby={writeId}
+                    className="flex flex-col gap-y-1"
+                  >
+                    {renderRows(writeSkills, "write")}
+                  </ul>
+                </div>
+              </>
+            )}
+          </div>
         )}
       </div>
-    </div>
-  );
-}
-
-function WarningBanner() {
-  return (
-    <div className="flex items-start gap-x-2.5 p-2.5 bg-orange-800/20 light:bg-orange-800/10 text-orange-400 light:text-orange-600 border border-orange-400/30 rounded-lg items-center">
-      <TriangleAlert
-        strokeWidth={1.5}
-        size={20}
-        className="flex-shrink-0 mt-0.5"
-      />
-      <p className="text-xs font-medium">
-        <Trans
-          i18nKey="agent.skill.filesystem.warning"
-          components={{
-            a: (
-              <Link
-                to={paths.docs("/agent/usage/file-system-agent")}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline hover:text-orange-300 light:hover:text-orange-700"
-              />
-            ),
-          }}
-        />
-      </p>
-    </div>
-  );
-}
-
-function SubSkillRow({ subSkill, disabled, onToggle, isWriteOperation }) {
-  const Icon = subSkill.icon;
-  return (
-    <div
-      className={`flex items-center justify-between p-2 rounded-lg border ${
-        disabled
-          ? "bg-theme-bg-secondary/30 border-theme-sidebar-border/30"
-          : isWriteOperation
-            ? "bg-orange-900/10 border-orange-400/20 light:bg-orange-800/10 text-orange-400 light:text-orange-600"
-            : "bg-theme-bg-secondary/50 border-theme-sidebar-border/50"
-      }`}
-    >
-      <div className="flex items-center gap-x-2">
-        <Icon
-          strokeWidth={1.5}
-          size={16}
-          className={
-            disabled
-              ? "text-theme-text-secondary/50"
-              : isWriteOperation
-                ? "text-orange-400"
-                : "text-theme-text-primary"
-          }
-        />
-        <div className="flex flex-col">
-          <span
-            className={`text-sm font-medium ${disabled ? "text-theme-text-secondary/50" : "text-theme-text-primary"}`}
-          >
-            {subSkill.title}
-          </span>
-          <span
-            className={`text-xs ${disabled ? "text-theme-text-secondary/40" : "text-theme-text-secondary"}`}
-          >
-            {subSkill.description}
-          </span>
-        </div>
-      </div>
-      <SimpleToggleSwitch enabled={!disabled} onChange={onToggle} size="md" />
     </div>
   );
 }

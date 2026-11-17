@@ -1,4 +1,5 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useId } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ChevronDown,
   ChevronRight,
@@ -7,11 +8,37 @@ import {
   EllipsisVertical,
   CloudDownload,
   LoaderCircle,
+  Trash2,
 } from "lucide-react";
-import pluralize from "pluralize";
 import { titleCase } from "text-case";
 import { humanFileSize } from "@/utils/numbers";
+import useMenu from "@/hooks/useMenu";
+import ConfirmModal from "@/components/lib/ConfirmModal";
 import MonoProviderIcon from "../MonoProviderIcon";
+
+/**
+ * Group key for the models already downloaded. ModelTable shows it with a
+ * translated heading and the provider icon on each row; any other group name
+ * (an organization or family from the server) is shown as-is.
+ */
+export const DOWNLOADED_GROUP = "model-table:downloaded";
+
+// The Lemonade providers send this literal when the server reports no size.
+const SERVER_UNKNOWN_SIZE = "Unknown size";
+
+/**
+ * Human-readable model size, or null when it is unknown.
+ * @param {number|string|null|undefined} size - megabytes, or an already formatted size
+ * @returns {string|null}
+ */
+export function knownModelSize(size) {
+  if (typeof size === "number") return humanFileSize(size * 1e6, true, 2);
+  if (!size || size === SERVER_UNKNOWN_SIZE) return null;
+  return size;
+}
+
+const MENU_ITEM =
+  "border-none w-full flex items-center gap-x-2 rounded-md px-2 min-h-[44px] md:min-h-0 md:py-1.5 text-sm text-left text-white hover:bg-theme-action-menu-item-hover transition-colors duration-quick ease-smooth";
 
 /**
  * @typedef {Object} ModelDefinition
@@ -22,11 +49,13 @@ import MonoProviderIcon from "../MonoProviderIcon";
  */
 
 /**
+ * Downloads and uninstalls are confirmed here, so the callbacks run only
+ * after the user accepts.
  * @param {object} props - The props of the component.
- * @param {string} props.alias - The alias of the model.
+ * @param {string} props.alias - The group name, or DOWNLOADED_GROUP.
  * @param {Array<ModelDefinition>} props.models - The models to display.
- * @param {(model: string, progressCallback: (percentage: number) => void) => void} props.downloadModel - The function to download the model.
- * @param {(model: string) => void} props.uninstallModel - The function to uninstall the model.
+ * @param {(model: string, fileSize: string, progressCallback: (percentage: number) => void) => Promise<void>} props.downloadModel - The function to download the model.
+ * @param {(model: string) => Promise<void>} props.uninstallModel - The function to uninstall the model.
  * @param {(model: string) => void} props.setActiveModel - The function to set the active model.
  * @param {string} props.selectedModelId - The ID of the selected model.
  * @param {object} props.ui - The UI configuration.
@@ -47,61 +76,77 @@ export default function ModelTable({
     showRuntime: true,
   },
 }) {
+  const { t } = useTranslation();
+  const listId = useId();
   const [showAll, setShowAll] = useState(
     models.some((model) => model.downloaded)
   );
   const totalModels = models.length;
+  const title =
+    alias === DOWNLOADED_GROUP
+      ? t("provider-forms.shared.models-downloaded")
+      : ui.rawTitle
+        ? alias
+        : titleCase(alias);
 
   return (
     <div className="flex flex-col w-full border-b border-theme-modal-border py-[18px]">
       <button
         type="button"
+        aria-expanded={showAll}
+        aria-controls={listId}
         onClick={() => setShowAll(!showAll)}
-        className="border-none text-theme-text-secondary text-sm font-medium hover:underline flex items-center gap-x-[8px]"
+        className="border-none w-full min-h-[44px] md:min-h-0 text-left text-theme-text-secondary text-sm font-medium hover:underline flex items-center gap-x-[8px]"
       >
         {showAll ? (
           <ChevronDown
             strokeWidth={1.5}
             size={16}
-            className="text-theme-text-secondary"
+            aria-hidden="true"
+            className="shrink-0 text-theme-text-secondary"
           />
         ) : (
           <ChevronRight
             strokeWidth={1.5}
             size={16}
-            className="text-theme-text-secondary"
+            aria-hidden="true"
+            className="shrink-0 text-theme-text-secondary"
           />
         )}
-        <div className="flex items-center gap-x-[4px]">
-          <MonoProviderIcon
-            provider={alias}
-            match="pattern"
-            size={16}
-            className="text-theme-text-primary"
-          />
-          <p className="flex items-center gap-x-1 text-theme-text-primary text-base font-bold my-0">
-            {ui.rawTitle ? alias : titleCase(alias)}
-            <span className="text-theme-text-secondary font-normal text-sm">
-              ({totalModels} {pluralize("Model", totalModels)})
-            </span>
-          </p>
-        </div>
-      </button>
-      <div hidden={!showAll} className="mt-[16px]">
-        <div className="w-full flex flex-col gap-y-[8px]">
-          {models.map((model) => (
-            <ModelRow
-              key={model.id}
-              alias={alias}
-              model={model}
-              downloadModel={downloadModel}
-              uninstallModel={uninstallModel}
-              setActiveModel={setActiveModel}
-              selectedModelId={selectedModelId}
-              ui={ui}
+        <span className="flex items-center gap-x-[4px]">
+          {/* Brand icons carry an SVG <title> that would join the button name. */}
+          <span aria-hidden="true" className="flex">
+            <MonoProviderIcon
+              provider={alias}
+              match="pattern"
+              size={16}
+              className="text-theme-text-primary"
             />
+          </span>
+          <span className="flex flex-wrap items-center gap-x-1 text-theme-text-primary text-base font-bold">
+            {title}
+            <span className="text-theme-text-secondary font-normal text-sm">
+              ({t("model-table.model-count", { count: totalModels })})
+            </span>
+          </span>
+        </span>
+      </button>
+      <div id={listId} hidden={!showAll} className="mt-[16px]">
+        <ul className="w-full flex flex-col gap-y-[8px]">
+          {models.map((model) => (
+            <li key={model.id}>
+              <ModelRow
+                alias={alias}
+                model={model}
+                downloadModel={downloadModel}
+                uninstallModel={uninstallModel}
+                setActiveModel={setActiveModel}
+                selectedModelId={selectedModelId}
+                ui={ui}
+              />
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
     </div>
   );
@@ -109,14 +154,19 @@ export default function ModelTable({
 
 function DeviceTypeTagWrapper({ text, bgClass, textClass }) {
   return (
-    <div
+    <span
       className={
         bgClass + " px-1.5 py-1 rounded-full flex items-center gap-x-1 w-fit"
       }
     >
-      <Cpu strokeWidth={1.5} size={14} className={textClass} />
-      <p className={textClass + " text-xs"}>{text}</p>
-    </div>
+      <Cpu
+        strokeWidth={1.5}
+        size={14}
+        aria-hidden="true"
+        className={textClass}
+      />
+      <span className={textClass + " text-xs"}>{text}</span>
+    </span>
   );
 }
 
@@ -159,9 +209,35 @@ function DeviceTypeTag({ deviceType, runtime = null }) {
 }
 
 /**
+ * Asks before downloading a model. Shared with the cards that download a
+ * model outside the table.
+ * @param {{name: string, size: number|string|null, onConfirm: () => void, onCancel: () => void}} props
+ */
+export function ModelDownloadConfirm({ name, size, onConfirm, onCancel }) {
+  const { t } = useTranslation();
+  const known = knownModelSize(size);
+  return (
+    <ConfirmModal
+      isOpen={true}
+      title={t("model-table.download-title", { name })}
+      confirmLabel={t("model-table.download")}
+      danger={false}
+      onConfirm={onConfirm}
+      onCancel={onCancel}
+    >
+      <p>
+        {known
+          ? t("model-table.download-body", { size: known })
+          : t("model-table.download-body-unknown")}
+      </p>
+    </ConfirmModal>
+  );
+}
+
+/**
  * @param {object} props - The props of the component.
  * @param {ModelDefinition} props.model - The model to display.
- * @param {(model: string, progressCallback: (percentage: number) => void) => Promise<void>} props.downloadModel - The function to download the model.
+ * @param {(model: string, fileSize: string, progressCallback: (percentage: number) => void) => Promise<void>} props.downloadModel - The function to download the model.
  * @param {(model: string) => Promise<void>} props.uninstallModel - The function to uninstall the model.
  * @param {(model: string) => void} props.setActiveModel - The function to set the active model.
  * @param {string} props.selectedModelId - The ID of the selected model.
@@ -180,122 +256,183 @@ function ModelRow({
     showRuntime: true,
   },
 }) {
+  const { t } = useTranslation();
+  const id = useId();
   const modelRowRef = useRef(null);
+  const rowButtonRef = useRef(null);
+  const menuTriggerRef = useRef(null);
+  const menuRef = useRef(null);
+  const rescueFocus = useRef(false);
   const [showOptions, setShowOptions] = useState(false);
+  // "download" | "uninstall" | null
+  const [confirm, setConfirm] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [downloadPercentage, setDownloadPercentage] = useState(0);
-  const fileSize =
-    typeof model.size === "number"
-      ? humanFileSize(model.size * 1e6, true, 2)
-      : (model.size ?? "Unknown size");
-  const [isActiveModel, setIsActiveModel] = useState(
-    selectedModelId === model.id
-  );
+  const size = knownModelSize(model.size);
+  const fileSize = size ?? t("model-table.unknown-size");
+  const isActiveModel = selectedModelId === model.id;
+  const canAct = model.downloaded || !!downloadModel;
+  const statusId = `${id}-status`;
 
-  async function handleSetActiveModel() {
-    setDownloadPercentage(0);
-    if (model.downloaded) setActiveModel(model.id);
-    else {
-      try {
-        if (!downloadModel) return;
-        setProcessing(true);
-        await downloadModel(model.id, fileSize, (percentage) => {
-          setDownloadPercentage(percentage);
-        });
-      } catch {
-      } finally {
-        setProcessing(false);
-      }
-    }
+  useMenu({
+    open: showOptions,
+    onClose: () => setShowOptions(false),
+    menuRef,
+    triggerRef: menuTriggerRef,
+  });
+
+  function closeConfirm() {
+    rescueFocus.current = true;
+    setConfirm(null);
   }
 
-  async function handleUninstallModel() {
-    if (!uninstallModel) return;
+  // The dialog returns focus to whatever opened it, but the download and
+  // uninstall controls leave the row once the action starts or ends.
+  useEffect(() => {
+    if (confirm || !rescueFocus.current) return;
+    rescueFocus.current = false;
+    const active = document.activeElement;
+    if (!active || active === document.body) rowButtonRef.current?.focus();
+  }, [confirm]);
+
+  function handleSelect() {
+    if (processing) return;
+    if (model.downloaded) return setActiveModel(model.id);
+    if (downloadModel) setConfirm("download");
+  }
+
+  async function startDownload() {
+    closeConfirm();
+    setDownloadPercentage(0);
+    setProcessing(true);
     try {
-      setProcessing(true);
-      await uninstallModel(model.id);
+      await downloadModel(model.id, fileSize, (percentage) => {
+        setDownloadPercentage(percentage);
+      });
     } catch {
     } finally {
       setProcessing(false);
     }
   }
 
-  useEffect(() => {
-    if (selectedModelId === model.id) {
-      setIsActiveModel(true);
-      modelRowRef.current.classList.add("!bg-gray-200/10");
-      setTimeout(
-        () => modelRowRef.current.classList.remove("!bg-gray-200/10"),
-        800
-      );
-    } else {
-      setIsActiveModel(false);
+  async function handleUninstallModel() {
+    if (!uninstallModel || processing) return;
+    setProcessing(true);
+    try {
+      await uninstallModel(model.id);
+    } catch {
+    } finally {
+      setProcessing(false);
+      closeConfirm();
     }
+  }
+
+  useEffect(() => {
+    const row = modelRowRef.current;
+    if (selectedModelId !== model.id || !row) return;
+    row.classList.add("!bg-gray-200/10");
+    const timer = setTimeout(
+      () => row.classList.remove("!bg-gray-200/10"),
+      800
+    );
+    return () => {
+      clearTimeout(timer);
+      row.classList.remove("!bg-gray-200/10");
+    };
   }, [selectedModelId]);
 
-  return (
-    <div
-      ref={modelRowRef}
-      className="w-full grid grid-cols-[1fr_auto_1fr] items-center gap-x-4 transition-all duration-300 rounded-lg"
-    >
-      <button
-        type="button"
-        className="border-none flex items-center gap-x-[8px] whitespace-nowrap py-[8px] px-0"
-        disabled={processing}
-        onClick={handleSetActiveModel}
-      >
-        {ui.badges?.(model)}
-        {!ui.badges && ui.showRuntime && (
-          <DeviceTypeTag
-            deviceType={model.deviceType}
-            runtime={model.runtime}
-          />
-        )}
-        {!ui.badges &&
-          !ui.showRuntime &&
-          model.downloaded &&
-          alias === "Downloaded Models" && (
+  const rowContent = (
+    <>
+      {ui.badges?.(model)}
+      {!ui.badges && ui.showRuntime && (
+        <DeviceTypeTag deviceType={model.deviceType} runtime={model.runtime} />
+      )}
+      {!ui.badges &&
+        !ui.showRuntime &&
+        model.downloaded &&
+        alias === DOWNLOADED_GROUP && (
+          <span aria-hidden="true" className="flex">
             <MonoProviderIcon
               provider={model.organization}
               match="pattern"
               size={16}
               className="text-theme-text-primary"
             />
-          )}
-        <p className="text-theme-text-primary text-base">{model.name}</p>
-        <p className="text-theme-text-secondary opacity-70 text-base">
-          {fileSize}
-        </p>
-      </button>
+          </span>
+        )}
+      <span className="text-theme-text-primary text-base">{model.name}</span>
+      <span className="text-theme-text-secondary text-base">{fileSize}</span>
+    </>
+  );
+  const rowClass =
+    "border-none flex items-center gap-x-[8px] whitespace-nowrap py-[8px] px-0 text-left";
+
+  return (
+    <div
+      ref={modelRowRef}
+      className="w-full grid grid-cols-[1fr_auto_1fr] items-center gap-x-4 transition-colors duration-base ease-smooth rounded-lg"
+    >
+      {canAct ? (
+        <button
+          ref={rowButtonRef}
+          type="button"
+          className={`${rowClass} min-h-[44px] md:min-h-0 aria-disabled:cursor-not-allowed`}
+          aria-pressed={model.downloaded ? isActiveModel : undefined}
+          aria-describedby={statusId}
+          aria-disabled={processing || undefined}
+          onClick={handleSelect}
+        >
+          {rowContent}
+        </button>
+      ) : (
+        <div className={rowClass}>{rowContent}</div>
+      )}
 
       <div className="justify-self-start">
-        <RenderStatus model={model} isActiveModel={isActiveModel} />
+        <RenderStatus
+          id={statusId}
+          model={model}
+          isActiveModel={isActiveModel}
+        />
       </div>
 
       <div className="relative justify-self-end">
         {uninstallModel && model.downloaded ? (
           <>
             <button
+              ref={menuTriggerRef}
               type="button"
-              className="border-none hover:bg-white/20 rounded-lg p-1"
+              aria-label={t("model-table.actions", { name: model.name })}
+              aria-haspopup="menu"
+              aria-expanded={showOptions}
+              className="border-none flex items-center justify-center w-11 h-11 md:w-auto md:h-auto md:p-1 rounded-lg hover:bg-white/20 light:hover:bg-black/5 transition-colors duration-quick ease-smooth"
               onClick={() => setShowOptions(!showOptions)}
             >
               <EllipsisVertical
                 strokeWidth={1.5}
                 size={22}
-                className="text-theme-text-primary cursor-pointer"
+                aria-hidden="true"
+                className="text-theme-text-primary"
               />
             </button>
             {showOptions && (
-              <div className="absolute top-[20px] right-[20px] bg-theme-action-menu-bg border border-theme-modal-border rounded-lg py-2 px-4 shadow-lg">
+              <div
+                ref={menuRef}
+                role="menu"
+                aria-label={t("model-table.actions", { name: model.name })}
+                className="absolute top-full right-0 mt-1 z-10 w-max p-1 rounded-lg border border-white/20 light:border-slate-300 bg-theme-action-menu-bg shadow-lg flex flex-col"
+              >
                 <button
                   type="button"
-                  className="border-none font-medium group"
-                  onClick={handleUninstallModel}
+                  role="menuitem"
+                  className={MENU_ITEM}
+                  onClick={() => {
+                    setShowOptions(false);
+                    setConfirm("uninstall");
+                  }}
                 >
-                  <p className="text-sm text-theme-text-primary group-hover:underline group-hover:text-theme-text-secondary">
-                    Uninstall
-                  </p>
+                  <Trash2 strokeWidth={1.5} size={16} aria-hidden="true" />
+                  {t("model-table.uninstall")}
                 </button>
               </div>
             )}
@@ -306,26 +443,38 @@ function ModelRow({
         {!model.downloaded && !processing && !!downloadModel && (
           <button
             type="button"
+            aria-label={t("model-table.download-model", { name: model.name })}
             data-tooltip-id="install-model-tooltip"
             data-tooltip-place="top"
             data-tooltip-delay-show={300}
-            data-tooltip-content={`Install ${model.organization}:${model.name}`}
-            className="border-none hover:bg-white/20 light:hover:bg-black/5 rounded-lg p-2 flex items-center gap-x-1 cursor-pointer"
-            onClick={handleSetActiveModel}
+            data-tooltip-content={t("model-table.download-model", {
+              name: model.name,
+            })}
+            className="border-none hover:bg-white/20 light:hover:bg-black/5 rounded-lg w-11 h-11 md:w-auto md:h-auto md:p-2 flex items-center justify-center cursor-pointer transition-colors duration-quick ease-smooth"
+            onClick={handleSelect}
           >
             <CloudDownload
               strokeWidth={1.5}
               size={20}
+              aria-hidden="true"
               className="text-theme-text-primary"
             />
           </button>
         )}
         {!model.downloaded && processing && (
-          <div className="flex items-center justify-center gap-x-[10px] whitespace-nowrap">
+          <div
+            role="progressbar"
+            aria-label={t("model-table.downloading", { name: model.name })}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={downloadPercentage}
+            className="flex items-center justify-center gap-x-[10px] whitespace-nowrap"
+          >
             {!downloadPercentage && (
               <LoaderCircle
                 strokeWidth={1.5}
                 size={16}
+                aria-hidden="true"
                 className="text-theme-text-primary animate-spin"
               />
             )}
@@ -335,11 +484,41 @@ function ModelRow({
           </div>
         )}
       </div>
+
+      {confirm === "download" && (
+        <ModelDownloadConfirm
+          name={model.name}
+          size={model.size}
+          onConfirm={startDownload}
+          onCancel={closeConfirm}
+        />
+      )}
+      {confirm === "uninstall" && (
+        <ConfirmModal
+          isOpen={true}
+          title={t("model-table.uninstall-title", { name: model.name })}
+          confirmLabel={
+            processing
+              ? t("model-table.uninstalling")
+              : t("model-table.uninstall")
+          }
+          busy={processing}
+          onConfirm={handleUninstallModel}
+          onCancel={closeConfirm}
+        >
+          <p>
+            {size
+              ? t("model-table.uninstall-body", { size })
+              : t("model-table.uninstall-body-unknown")}
+          </p>
+        </ConfirmModal>
+      )}
     </div>
   );
 }
 
-function RenderStatus({ model, isActiveModel }) {
+function RenderStatus({ id, model, isActiveModel }) {
+  const { t } = useTranslation();
   if (isActiveModel) {
     return (
       <div className="flex items-center justify-center gap-x-[10px] whitespace-nowrap">
@@ -347,27 +526,33 @@ function RenderStatus({ model, isActiveModel }) {
           strokeWidth={1.5}
           fill="currentColor"
           size={8}
-          className="text-green-500"
+          aria-hidden="true"
+          className="text-green-500 light:text-green-700"
         />
-        <p className="text-theme-text-primary text-sm">Active</p>
+        <p id={id} className="text-theme-text-primary text-sm">
+          {t("model-table.active")}
+        </p>
       </div>
     );
   }
 
-  if (!isActiveModel && model.downloaded) {
+  if (model.downloaded) {
     return (
-      <p className="text-theme-text-secondary text-sm italic whitespace-nowrap">
-        Installed
+      <p
+        id={id}
+        className="text-theme-text-secondary text-sm italic whitespace-nowrap"
+      >
+        {t("model-table.installed")}
       </p>
     );
   }
 
-  if (!model.downloaded) {
-    return (
-      <p className="text-theme-text-secondary text-sm italic whitespace-nowrap">
-        Not Installed
-      </p>
-    );
-  }
-  return null;
+  return (
+    <p
+      id={id}
+      className="text-theme-text-secondary text-sm italic whitespace-nowrap"
+    >
+      {t("model-table.not-installed")}
+    </p>
+  );
 }

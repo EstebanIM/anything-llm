@@ -1,6 +1,12 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { openImageLightbox } from "@/components/ImageLightbox";
+import { useTranslation } from "react-i18next";
+
+const scrollBehavior = () =>
+  window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+    ? "auto"
+    : "smooth";
 
 const THUMB_W = 128;
 const THUMB_H = 72;
@@ -16,6 +22,7 @@ const THUMB_H = 72;
  * @param {{content: {slides: (string|undefined)[], done: boolean}}} props - slides are image data URLs, by position in the deck
  */
 function SlidePreviewCard({ props }) {
+  const { t } = useTranslation();
   const { slides = [], done = false } = props.content || {};
   const rowRef = useRef(null);
   // The row follows new slides until the user scrolls, clicks or uses the
@@ -43,7 +50,7 @@ function SlidePreviewCard({ props }) {
     const row = rowRef.current;
     if (!row) return;
     if (!done && followRef.current)
-      row.scrollTo({ left: row.scrollWidth, behavior: "smooth" });
+      row.scrollTo({ left: row.scrollWidth, behavior: scrollBehavior() });
     updateEdges();
   }, [ready.length, done, updateEdges]);
 
@@ -58,7 +65,7 @@ function SlidePreviewCard({ props }) {
     if (!row) return;
     row.scrollBy({
       left: direction * row.clientWidth * 0.8,
-      behavior: "smooth",
+      behavior: scrollBehavior(),
     });
   };
 
@@ -66,7 +73,7 @@ function SlidePreviewCard({ props }) {
     openImageLightbox(
       ready.map(({ image, index }) => ({
         contentString: image,
-        name: `Slide ${index + 1}`,
+        name: t("chat-history.slides.slide", { number: index + 1 }),
       })),
       position
     );
@@ -79,6 +86,9 @@ function SlidePreviewCard({ props }) {
       <div className="relative w-full max-w-[750px] mr-4">
         <div
           ref={rowRef}
+          role="group"
+          aria-label={t("chat-history.slides.label")}
+          aria-busy={!done}
           onScroll={updateEdges}
           onWheel={stopFollowing}
           onPointerDown={stopFollowing}
@@ -93,7 +103,7 @@ function SlidePreviewCard({ props }) {
             >
               <img
                 src={image}
-                alt={`Slide ${index + 1}`}
+                alt={t("chat-history.slides.slide", { number: index + 1 })}
                 width={THUMB_W}
                 height={THUMB_H}
                 draggable={false}
@@ -121,17 +131,22 @@ function SlidePreviewCard({ props }) {
 }
 
 function ScrollButton({ direction, onClick }) {
+  const { t } = useTranslation();
   const Icon = direction < 0 ? ChevronLeft : ChevronRight;
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label={direction < 0 ? "Scroll left" : "Scroll right"}
+      aria-label={
+        direction < 0
+          ? t("chat-history.slides.previous")
+          : t("chat-history.slides.next")
+      }
       className={`absolute top-1/2 -translate-y-1/2 ${
         direction < 0 ? "left-3" : "right-3"
-      } flex items-center justify-center w-8 h-8 rounded-full border-none cursor-pointer shadow-md bg-zinc-900/80 hover:bg-zinc-900 text-white light:bg-white/90 light:hover:bg-white light:text-slate-800 light:ring-1 light:ring-slate-300 transition-colors`}
+      } flex items-center justify-center w-11 h-11 md:w-8 md:h-8 rounded-full border-none cursor-pointer shadow-md bg-zinc-900/80 hover:bg-zinc-900 text-white light:bg-white/90 light:hover:bg-white light:text-slate-800 light:ring-1 light:ring-slate-300 transition-colors`}
     >
-      <Icon strokeWidth={1.5} size={16} />
+      <Icon strokeWidth={1.5} size={16} aria-hidden="true" />
     </button>
   );
 }

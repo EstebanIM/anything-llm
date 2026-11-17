@@ -1,87 +1,81 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import System from "@/models/system";
 import showToast from "@/utils/toast";
+import { serverErrorParts } from "@/utils/serverErrors";
+import ServerErrorDetail from "@/components/lib/ServerErrorDetail";
 import {
   ModalHeader,
   ModalBody,
   ModalFooter,
   ModalPrimaryButton,
   ModalSecondaryButton,
-  ModalInput,
 } from "@/components/lib/Modal";
+import VariableFields, {
+  focusFirstError,
+  readVariableForm,
+} from "../VariableFields";
 
 export default function AddVariableModal({ closeModal, onRefresh }) {
+  const { t } = useTranslation();
   const [error, setError] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [busy, setBusy] = useState(false);
 
   const handleCreate = async (e) => {
     e.preventDefault();
+    if (busy) return;
     setError(null);
-    const formData = new FormData(e.target);
-    const newVariable = {};
-    for (const [key, value] of formData.entries())
-      newVariable[key] = value.trim();
-
-    if (!newVariable.key || !newVariable.value) {
-      setError("Key and value are required");
+    const form = e.currentTarget;
+    const { data, errors } = readVariableForm(form, t);
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      focusFirstError(form, errors);
       return;
     }
 
-    try {
-      const { success, error } =
-        await System.promptVariables.create(newVariable);
-      if (!success) throw new Error(error);
-      showToast("Variable created successfully", "success", { clear: true });
-      if (onRefresh) onRefresh();
-      closeModal();
-    } catch (error) {
-      console.error("Error creating variable:", error);
-      setError("Failed to create variable");
+    setBusy(true);
+    const { success, error } = await System.promptVariables.create(data);
+    setBusy(false);
+    if (!success) {
+      setError(
+        serverErrorParts(error, t, "admin-pages.variables.create-failed")
+      );
+      return;
     }
+    showToast(
+      t("admin-pages.variables.created", { key: data.key }),
+      "success",
+      {
+        clear: true,
+      }
+    );
+    onRefresh?.();
+    closeModal();
   };
 
   return (
     <form onSubmit={handleCreate} className="flex flex-col gap-y-5">
-      <ModalHeader title="Add New Variable" onClose={closeModal} />
+      <ModalHeader
+        title={t("admin-pages.variables.new-title")}
+        onClose={closeModal}
+      />
       <ModalBody>
-        <ModalInput
-          label="Key"
-          name="key"
-          type="text"
-          minLength={3}
-          maxLength={255}
-          placeholder="e.g., company_name"
-          required={true}
-          autoComplete="off"
-          pattern="^[a-zA-Z0-9_]+$"
-          hint={
-            <>
-              Key must be unique and will be used in prompts as {"{key}"}. Only
-              letters, numbers and underscores are allowed.
-            </>
-          }
-        />
-        <ModalInput
-          label="Value"
-          name="value"
-          type="text"
-          placeholder="e.g., Acme Corp"
-          required={true}
-          autoComplete="off"
-        />
-        <ModalInput
-          label="Description"
-          name="description"
-          type="text"
-          placeholder="Optional description"
-          autoComplete="off"
-        />
-        {error && <p className="text-red-400 text-sm">Error: {error}</p>}
+        <VariableFields errors={fieldErrors} />
+        {error && (
+          <p role="alert" className="text-sm text-red-400 light:text-red-700">
+            {error.message}
+            <ServerErrorDetail detail={error.detail} />
+          </p>
+        )}
       </ModalBody>
       <ModalFooter>
         <ModalSecondaryButton onClick={closeModal} type="button">
-          Cancel
+          {t("settings-pages.cancel")}
         </ModalSecondaryButton>
-        <ModalPrimaryButton type="submit">Create variable</ModalPrimaryButton>
+        <ModalPrimaryButton type="submit" busy={busy}>
+          {t("admin-pages.variables.create")}
+        </ModalPrimaryButton>
       </ModalFooter>
     </form>
   );

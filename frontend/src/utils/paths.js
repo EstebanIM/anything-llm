@@ -23,8 +23,16 @@ export default {
   home: () => {
     return "/";
   },
-  login: (noTry = false) => {
-    return `/login${noTry ? "?nt=1" : ""}`;
+  /**
+   * @param {boolean} [noTry] - the session was already found invalid: skip re-checking it
+   * @param {string|null} [redirectTo] - same-site path to return to after signing in
+   */
+  login: (noTry = false, redirectTo = null) => {
+    const params = new URLSearchParams();
+    if (noTry) params.set("nt", "1");
+    if (redirectTo) params.set("redirectTo", redirectTo);
+    const query = params.toString();
+    return `/login${query ? `?${query}` : ""}`;
   },
   sso: {
     login: () => {
@@ -35,17 +43,8 @@ export default {
     home: () => {
       return "/onboarding";
     },
-    survey: () => {
-      return "/onboarding/survey";
-    },
     llmPreference: () => {
       return "/onboarding/llm-preference";
-    },
-    embeddingPreference: () => {
-      return "/onboarding/embedding-preference";
-    },
-    vectorDatabase: () => {
-      return "/onboarding/vector-database";
     },
     userSetup: () => {
       return "/onboarding/user-setup";

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { isMobile } from "react-device-detect";
-import { SidebarMobileHeader } from "@/components/Sidebar";
+import i18next from "i18next";
 import PromptInput, {
   PROMPT_INPUT_EVENT,
   PROMPT_INPUT_ID,
@@ -57,7 +57,8 @@ async function createDefaultWorkspace(workspaceName = "My Workspace") {
     name: workspaceName,
   });
   if (!workspace) {
-    showToast(errorMsg || "Failed to create workspace", "error");
+    if (errorMsg) console.error(errorMsg);
+    showToast(i18next.t("chat-panels.home.create-workspace-failed"), "error");
     return null;
   }
   return workspace;
@@ -163,10 +164,13 @@ export default function Home() {
 
   if (workspaceLoading) {
     return (
-      <div
+      <main
+        aria-busy="true"
         style={{ height: isMobile ? "100%" : "calc(100% - 32px)" }}
-        className="transition-all duration-500 relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full overflow-hidden"
-      />
+        className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full overflow-hidden"
+      >
+        <h1 className="sr-only">{t("chat-panels.heading.home")}</h1>
+      </main>
     );
   }
 
@@ -282,7 +286,7 @@ function HomeContent({ workspace, setWorkspace, threadSlug, setThreadSlug }) {
       }
     } catch (error) {
       console.error("Error submitting message:", error);
-      showToast("Failed to send message", "error");
+      showToast(t("chat-panels.home.send-failed"), "error");
       setLoading(false);
     }
   }
@@ -337,15 +341,15 @@ function HomeContent({ workspace, setWorkspace, threadSlug, setThreadSlug }) {
         className="relative flex md:ml-[2px] md:mr-[16px] md:my-[16px] w-full h-full z-[2]"
       >
         <ChatSettingsMenu />
-        <div className="flex-1 min-w-0 transition-all duration-500 relative md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full overflow-hidden border-none light:border-solid light:border light:border-theme-modal-border">
-          {isMobile && <SidebarMobileHeader />}
+        <main className="flex-1 min-w-0 relative md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full overflow-hidden border-none light:border-solid light:border light:border-theme-modal-border">
+          <h1 className="sr-only">{t("chat-panels.heading.home")}</h1>
           <WorkspaceModelPicker workspaceSlug={workspace?.slug} />
           <DnDFileUploaderWrapper>
             <div className="flex flex-col h-full w-full items-center justify-center">
               <div className="flex flex-col items-center w-full max-w-[750px]">
-                <h1 className="text-white text-2xl md:text-[32px] md:leading-10 mb-11 text-center">
+                <p className="text-white text-2xl md:text-[32px] md:leading-10 mb-11 text-center">
                   {greeting}
-                </h1>
+                </p>
                 <PromptInput
                   workspace={workspace}
                   submit={handleSubmit}
@@ -373,7 +377,7 @@ function HomeContent({ workspace, setWorkspace, threadSlug, setThreadSlug }) {
             </div>
           </DnDFileUploaderWrapper>
           <ChatTooltips />
-        </div>
+        </main>
         <MemoriesSidebar workspace={workspace} />
       </div>
     </ChatSidebarProvider>
@@ -383,15 +387,16 @@ function HomeContent({ workspace, setWorkspace, threadSlug, setThreadSlug }) {
 function NoWorkspacesAssigned() {
   const { t } = useTranslation();
   return (
-    <div
+    <main
       style={{ height: isMobile ? "100%" : "calc(100% - 32px)" }}
-      className="transition-all duration-500 relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full overflow-hidden"
+      className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full overflow-hidden"
     >
+      <h1 className="sr-only">{t("chat-panels.heading.home")}</h1>
       <div className="flex flex-col h-full w-full items-center justify-center">
         <p className="text-white/60 text-sm text-center whitespace-pre-line">
           {t("home.notAssigned")}
         </p>
       </div>
-    </div>
+    </main>
   );
 }

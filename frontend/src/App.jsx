@@ -2,7 +2,6 @@ import React, { Suspense } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { I18nextProvider } from "react-i18next";
 import { AuthProvider } from "@/AuthContext";
-import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import i18n from "./i18n";
 
@@ -15,6 +14,8 @@ import KeyboardShortcutsHelp from "@/components/KeyboardShortcutsHelp";
 import ImageLightbox from "@/components/ImageLightbox";
 import { ErrorBoundary } from "react-error-boundary";
 import ErrorBoundaryFallback from "./components/ErrorBoundaryFallback";
+import NewVersionDialog from "./components/ErrorBoundaryFallback/NewVersionDialog";
+import Toasts from "@/components/Toasts";
 import useCustomBrowserAppearance from "@/hooks/useCustomBrowserAppearance";
 
 export default function App() {
@@ -34,8 +35,9 @@ export default function App() {
                 <PfpProvider>
                   <I18nextProvider i18n={i18n}>
                     <Outlet />
-                    <ToastContainer />
+                    <Toasts />
                     <KeyboardShortcutsHelp />
+                    <NewVersionDialog />
                     <ImageLightbox />
                   </I18nextProvider>
                 </PfpProvider>

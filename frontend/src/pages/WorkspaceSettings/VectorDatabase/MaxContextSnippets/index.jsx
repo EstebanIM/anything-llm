@@ -1,34 +1,38 @@
 import { useTranslation } from "react-i18next";
-import { SavedIndicator } from "@/components/AutosaveForm";
+import { FIELD_INPUT, blurOnWheel } from "@/components/ProviderFields";
+import SettingsField from "../../components/SettingsField";
 
 export default function MaxContextSnippets({ workspace }) {
   const { t } = useTranslation();
   return (
-    <div className="flex flex-col">
-      <div className="flex flex-col gap-y-[8px]">
-        <label htmlFor="name" className="block input-label">
-          {t("vector-workspace.snippets.title")}
-          <SavedIndicator name="topN" />
-        </label>
-        <p className="text-white text-opacity-60 text-xs font-medium">
+    <SettingsField
+      name="topN"
+      label={t("vector-workspace.snippets.title")}
+      help={
+        <>
           {t("vector-workspace.snippets.description")}
           <br />
           <i>{t("vector-workspace.snippets.recommend")}</i>
-        </p>
-      </div>
-      <input
-        name="topN"
-        type="number"
-        min={1}
-        max={200}
-        step={1}
-        onWheel={(e) => e.target.blur()}
-        defaultValue={workspace?.topN ?? 4}
-        className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5 mt-2"
-        placeholder="4"
-        required={true}
-        autoComplete="off"
-      />
-    </div>
+        </>
+      }
+    >
+      {(control) => (
+        <input
+          {...control}
+          name="topN"
+          type="number"
+          inputMode="numeric"
+          min={1}
+          max={200}
+          step={1}
+          onWheel={blurOnWheel}
+          defaultValue={workspace?.topN ?? 4}
+          className={FIELD_INPUT}
+          placeholder="4"
+          required={true}
+          autoComplete="off"
+        />
+      )}
+    </SettingsField>
   );
 }

@@ -1,28 +1,33 @@
-import { NavLink } from "react-router-dom";
+import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { House, Search } from "lucide-react";
+import usePageTitle from "@/hooks/usePageTitle";
+import paths from "@/utils/paths";
 
 export default function NotFound() {
+  const { t } = useTranslation();
+  usePageTitle(t("auth-pages.not-found.page-title"));
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-theme-bg-primary text-theme-text-primary gap-4 p-4 md:p-8 w-full">
+    <main className="flex min-h-dvh w-full flex-col items-center justify-center gap-4 bg-theme-bg-primary p-4 text-theme-text-primary md:p-8">
       <Search
         strokeWidth={1.5}
-        className="w-16 h-16 text-theme-text-secondary"
+        aria-hidden="true"
+        className="h-16 w-16 text-theme-text-secondary"
       />
-      <h1 className="text-xl md:text-2xl font-bold text-center">
-        404 - Page Not Found
+      <h1 className="text-center text-xl font-bold md:text-2xl">
+        {t("auth-pages.not-found.title")}
       </h1>
-      <p className="text-theme-text-secondary text-center px-4">
-        The page you're looking for doesn't exist or has been moved.
+      <p className="max-w-md px-4 text-center text-theme-text-secondary">
+        {t("auth-pages.not-found.description")}
       </p>
-      <div className="flex flex-col md:flex-row gap-3 md:gap-4 mt-4 w-full md:w-auto">
-        <NavLink
-          to="/"
-          className="flex items-center justify-center gap-2 px-4 py-2 bg-theme-bg-secondary text-theme-text-primary rounded-lg hover:bg-theme-sidebar-item-hover transition-all duration-300 w-full md:w-auto"
-        >
-          <House strokeWidth={1.5} className="w-4 h-4" />
-          Go Home
-        </NavLink>
-      </div>
-    </div>
+      <Link
+        to={paths.home()}
+        className="mt-4 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg border border-zinc-500 px-4 text-theme-text-primary transition-colors duration-quick ease-smooth hover:bg-zinc-800 light:border-slate-500 light:hover:bg-slate-100 md:w-auto"
+      >
+        <House strokeWidth={1.5} aria-hidden="true" className="h-4 w-4" />
+        {t("auth-pages.not-found.home")}
+      </Link>
+    </main>
   );
 }

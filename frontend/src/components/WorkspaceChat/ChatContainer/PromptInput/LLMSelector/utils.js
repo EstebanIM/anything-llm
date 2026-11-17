@@ -10,7 +10,13 @@ export function autoScrollToSelectedLLMProvider(
       `[data-llm-value="${selectedLLMProvider}"]`
     );
     if (!selectedButton) return;
-    selectedButton.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    const reduceMotion = window.matchMedia?.(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+    selectedButton.scrollIntoView({
+      behavior: reduceMotion ? "auto" : "smooth",
+      block: "nearest",
+    });
   }, timeout);
 }
 

@@ -1,17 +1,19 @@
-import { useId, useRef, useState } from "react";
+import { forwardRef, useId, useRef, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { Tooltip } from "react-tooltip";
+import { useTranslation } from "react-i18next";
 
 /**
- * A password input with a hold-to-reveal eye icon pinned to the right edge.
+ * A password input with a show / hide toggle pinned to the right edge.
  * Accepts all standard input props. Sizing/positioning of the input should be
  * passed via `containerClassName` when the input is not full-width.
+ * Forwards `ref` to the <input> (to focus it after a validation error).
  */
-export default function PasswordInput({
-  className = "",
-  containerClassName = "w-full",
-  ...props
-}) {
+const PasswordInput = forwardRef(function PasswordInput(
+  { className = "", containerClassName = "w-full", ...props },
+  forwardedRef
+) {
+  const { t } = useTranslation();
   const tooltipId = useId();
   const inputRef = useRef(null);
   const [revealed, setRevealed] = useState(false);
@@ -25,39 +27,35 @@ export default function PasswordInput({
     const start = input?.selectionStart;
     const end = input?.selectionEnd;
     setRevealed(value);
-    requestAnimationFrame(() => {
+    setTimeout(() => {
       if (!input || start == null || document.activeElement !== input) return;
       input.setSelectionRange(start, end);
-    });
+    }, 0);
   };
-  const show = () => setRevealedKeepCursor(true);
-  const hide = () => setRevealedKeepCursor(false);
+  const label = t("provider-fields.show-password");
 
   return (
     <div className={`relative ${containerClassName}`}>
       <input
         {...props}
-        ref={inputRef}
+        ref={(node) => {
+          inputRef.current = node;
+          if (typeof forwardedRef === "function") forwardedRef(node);
+          else if (forwardedRef) forwardedRef.current = node;
+        }}
         type={revealed ? "text" : "password"}
-        className={`${className} pr-10`}
+        className={`${className} pr-11`}
       />
       <button
         type="button"
-        tabIndex={-1}
-        aria-label="Hold to show password"
+        aria-pressed={revealed}
+        aria-label={label}
         data-tooltip-id={tooltipId}
-        data-tooltip-content="Hold to show password"
-        onMouseDown={(e) => {
-          e.preventDefault();
-          show();
-        }}
-        onMouseUp={hide}
-        onMouseLeave={hide}
-        onTouchStart={show}
-        onTouchEnd={hide}
-        className="absolute right-0 top-0 h-full px-2.5 flex items-center border-none bg-transparent text-white text-opacity-60 light:text-theme-text-secondary hover:text-opacity-100 cursor-pointer"
+        data-tooltip-content={label}
+        onClick={() => setRevealedKeepCursor(!revealed)}
+        className="absolute right-0 top-1/2 -translate-y-1/2 h-11 md:h-full w-11 flex items-center justify-center rounded-r-lg border-none bg-transparent text-white text-opacity-60 light:text-theme-text-secondary hover:text-opacity-100 cursor-pointer transition-colors duration-quick"
       >
-        <Icon strokeWidth={1.5} className="h-4 w-4" />
+        <Icon strokeWidth={1.5} className="h-4 w-4" aria-hidden="true" />
       </button>
       <Tooltip
         id={tooltipId}
@@ -67,4 +65,6 @@ export default function PasswordInput({
       />
     </div>
   );
-}
+});
+
+export default PasswordInput;

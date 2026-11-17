@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useId, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { useTranslation } from "react-i18next";
 import Sidebar from "@/components/SettingsSidebar";
-import { isMobile } from "react-device-detect";
 import System from "@/models/system";
 import showToast from "@/utils/toast";
-import AnythingLLMIcon from "@/media/logo/anything-llm-icon.png";
+import { serverErrorMessage } from "@/utils/serverErrors";
+import { MODEL_ROUTER_LOGO } from "@/utils/builtInLogos";
+import i18n from "@/i18n";
 import OpenAiLogo from "@/media/llmprovider/openai.png";
 import GenericOpenAiLogo from "@/media/llmprovider/generic-openai.png";
 import AzureOpenAiLogo from "@/media/llmprovider/azure.png";
@@ -85,15 +87,19 @@ import { withEmbeddedLemonade } from "@/components/LLMSelection/EmbeddedLemonade
 import MinimaxOptions from "@/components/LLMSelection/MinimaxOptions";
 import CerebrasLLMOptions from "@/components/LLMSelection/CerebrasLLMOptions";
 
-import LLMItem from "@/components/LLMSelection/LLMItem";
 import CTAButton from "@/components/lib/CTAButton";
 import OMLXOptions from "@/components/LLMSelection/OMLXOptions";
 import ProviderSearchMenu from "@/components/lib/ProviderSearchMenu";
+import ProviderOption from "@/components/lib/ProviderSearchMenu/ProviderOption";
 
 export const MODEL_ROUTER_PROVIDER = {
-  name: "Model Router",
+  // Getter so the name follows the UI language at render time.
+  get name() {
+    return i18n.t("settings.model-router");
+  },
   value: "anythingllm-router",
-  logo: AnythingLLMIcon,
+  descriptionKey: "provider-pages.descriptions.llm.anythingllm-router",
+  logo: MODEL_ROUTER_LOGO,
   options: (settings) => <ModelRouterOptions settings={settings} />,
   description:
     "Route messages to different LLM providers based on rules you define.",
@@ -108,6 +114,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "OpenAI",
     value: "openai",
+    descriptionKey: "provider-pages.descriptions.llm.openai",
     logo: OpenAiLogo,
     options: (settings) => <OpenAiOptions settings={settings} />,
     description: "The standard option for most non-commercial use.",
@@ -116,6 +123,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "Azure OpenAI",
     value: "azure",
+    descriptionKey: "provider-pages.descriptions.llm.azure",
     logo: AzureOpenAiLogo,
     options: (settings) => <AzureAiOptions settings={settings} />,
     description: "The enterprise option of OpenAI hosted on Azure services.",
@@ -124,6 +132,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "Anthropic",
     value: "anthropic",
+    descriptionKey: "provider-pages.descriptions.llm.anthropic",
     logo: AnthropicLogo,
     options: (settings) => <AnthropicAiOptions settings={settings} />,
     description: "A friendly AI Assistant hosted by Anthropic.",
@@ -132,6 +141,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "Gemini",
     value: "gemini",
+    descriptionKey: "provider-pages.descriptions.llm.gemini",
     logo: GeminiLogo,
     options: (settings) => <GeminiLLMOptions settings={settings} />,
     description: "Google's largest and most capable AI model",
@@ -140,6 +150,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "NVIDIA NIM",
     value: "nvidia-nim",
+    descriptionKey: "provider-pages.descriptions.llm.nvidia-nim",
     logo: NvidiaNimLogo,
     options: (settings) => <NvidiaNimOptions settings={settings} />,
     description:
@@ -149,6 +160,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "Ollama",
     value: "ollama",
+    descriptionKey: "provider-pages.descriptions.llm.ollama",
     logo: OllamaLogo,
     options: (settings) => <OllamaLLMOptions settings={settings} />,
     description: "Run LLMs locally on your own machine.",
@@ -157,6 +169,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "LM Studio",
     value: "lmstudio",
+    descriptionKey: "provider-pages.descriptions.llm.lmstudio",
     logo: LMStudioLogo,
     options: (settings) => <LMStudioOptions settings={settings} />,
     description:
@@ -166,6 +179,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "llmman",
     value: "llmman",
+    descriptionKey: "provider-pages.descriptions.llm.llmman",
     logo: LlmmanLogo,
     options: (settings) => <LlmmanOptions settings={settings} />,
     description: "Run LLMs locally using llmman.",
@@ -174,6 +188,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "Lemonade",
     value: "lemonade",
+    descriptionKey: "provider-pages.descriptions.llm.lemonade",
     logo: LemonadeLogo,
     options: (settings) => <LemonadeOptions settings={settings} />,
     description:
@@ -183,6 +198,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "SambaNova",
     value: "sambanova",
+    descriptionKey: "provider-pages.descriptions.llm.sambanova",
     logo: SambaNovaLogo,
     options: (settings) => <SambaNovaOptions settings={settings} />,
     description: "Run open source models from SambaNova.",
@@ -191,6 +207,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "Local AI",
     value: "localai",
+    descriptionKey: "provider-pages.descriptions.llm.localai",
     logo: LocalAiLogo,
     options: (settings) => <LocalAiOptions settings={settings} />,
     description: "Run LLMs locally on your own machine.",
@@ -199,6 +216,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "Together AI",
     value: "togetherai",
+    descriptionKey: "provider-pages.descriptions.llm.togetherai",
     logo: TogetherAILogo,
     options: (settings) => <TogetherAiOptions settings={settings} />,
     description: "Run open source models from Together AI.",
@@ -208,6 +226,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "Fireworks AI",
     value: "fireworksai",
+    descriptionKey: "provider-pages.descriptions.llm.fireworksai",
     logo: FireworksAILogo,
     options: (settings) => <FireworksAiOptions settings={settings} />,
     description:
@@ -217,6 +236,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "Mistral",
     value: "mistral",
+    descriptionKey: "provider-pages.descriptions.llm.mistral",
     logo: MistralLogo,
     options: (settings) => <MistralOptions settings={settings} />,
     description: "Run open source models from Mistral AI.",
@@ -225,6 +245,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "Perplexity AI",
     value: "perplexity",
+    descriptionKey: "provider-pages.descriptions.llm.perplexity",
     logo: PerplexityLogo,
     options: (settings) => <PerplexityOptions settings={settings} />,
     description:
@@ -234,6 +255,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "OpenRouter",
     value: "openrouter",
+    descriptionKey: "provider-pages.descriptions.llm.openrouter",
     logo: OpenRouterLogo,
     options: (settings) => <OpenRouterOptions settings={settings} />,
     description: "A unified interface for LLMs.",
@@ -242,6 +264,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "Groq",
     value: "groq",
+    descriptionKey: "provider-pages.descriptions.llm.groq",
     logo: GroqLogo,
     options: (settings) => <GroqAiOptions settings={settings} />,
     description:
@@ -251,6 +274,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "KoboldCPP",
     value: "koboldcpp",
+    descriptionKey: "provider-pages.descriptions.llm.koboldcpp",
     logo: KoboldCPPLogo,
     options: (settings) => <KoboldCPPOptions settings={settings} />,
     description: "Run local LLMs using koboldcpp.",
@@ -259,6 +283,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "Oobabooga Web UI",
     value: "textgenwebui",
+    descriptionKey: "provider-pages.descriptions.llm.textgenwebui",
     logo: TextGenWebUILogo,
     options: (settings) => <TextGenWebUIOptions settings={settings} />,
     description: "Run local LLMs using Oobabooga's Text Generation Web UI.",
@@ -267,6 +292,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "Cohere",
     value: "cohere",
+    descriptionKey: "provider-pages.descriptions.llm.cohere",
     logo: CohereLogo,
     options: (settings) => <CohereAiOptions settings={settings} />,
     description: "Run Cohere's powerful Command models.",
@@ -275,6 +301,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "LiteLLM",
     value: "litellm",
+    descriptionKey: "provider-pages.descriptions.llm.litellm",
     logo: LiteLLMLogo,
     options: (settings) => <LiteLLMOptions settings={settings} />,
     description: "Run LiteLLM's OpenAI compatible proxy for various LLMs.",
@@ -283,6 +310,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "DeepSeek",
     value: "deepseek",
+    descriptionKey: "provider-pages.descriptions.llm.deepseek",
     logo: DeepSeekLogo,
     options: (settings) => <DeepSeekOptions settings={settings} />,
     description: "Run DeepSeek's powerful LLMs.",
@@ -291,6 +319,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "PPIO",
     value: "ppio",
+    descriptionKey: "provider-pages.descriptions.llm.ppio",
     logo: PPIOLogo,
     options: (settings) => <PPIOLLMOptions settings={settings} />,
     description:
@@ -300,6 +329,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "AWS Bedrock",
     value: "bedrock",
+    descriptionKey: "provider-pages.descriptions.llm.bedrock",
     logo: AWSBedrockLogo,
     options: (settings) => <AWSBedrockLLMOptions settings={settings} />,
     description: "Run powerful foundation models privately with AWS Bedrock.",
@@ -312,6 +342,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "Google Vertex AI",
     value: "vertex",
+    descriptionKey: "provider-pages.descriptions.llm.vertex",
     logo: VertexLogo,
     options: (settings) => <VertexLLMOptions settings={settings} />,
     description: "Run Gemini models through your Google Cloud project.",
@@ -325,6 +356,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "APIpie",
     value: "apipie",
+    descriptionKey: "provider-pages.descriptions.llm.apipie",
     logo: APIPieLogo,
     options: (settings) => <ApiPieLLMOptions settings={settings} />,
     description: "A unified API of AI services from leading providers",
@@ -333,6 +365,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "Moonshot AI",
     value: "moonshotai",
+    descriptionKey: "provider-pages.descriptions.llm.moonshotai",
     logo: MoonshotAiLogo,
     options: (settings) => <MoonshotAiOptions settings={settings} />,
     description: "Run Moonshot AI's powerful LLMs.",
@@ -341,6 +374,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "Privatemode",
     value: "privatemode",
+    descriptionKey: "provider-pages.descriptions.llm.privatemode",
     logo: PrivateModeLogo,
     options: (settings) => <PrivateModeOptions settings={settings} />,
     description: "Run LLMs with end-to-end encryption.",
@@ -349,6 +383,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "Novita AI",
     value: "novita",
+    descriptionKey: "provider-pages.descriptions.llm.novita",
     logo: NovitaLogo,
     options: (settings) => <NovitaLLMOptions settings={settings} />,
     description:
@@ -358,6 +393,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "CometAPI",
     value: "cometapi",
+    descriptionKey: "provider-pages.descriptions.llm.cometapi",
     logo: CometApiLogo,
     options: (settings) => <CometApiLLMOptions settings={settings} />,
     description: "500+ AI Models all in one API.",
@@ -366,6 +402,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "Microsoft Foundry Local",
     value: "foundry",
+    descriptionKey: "provider-pages.descriptions.llm.foundry",
     logo: FoundryLogo,
     options: (settings) => <FoundryOptions settings={settings} />,
     description: "Run Microsoft's Foundry models locally.",
@@ -378,6 +415,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "xAI",
     value: "xai",
+    descriptionKey: "provider-pages.descriptions.llm.xai",
     logo: XAILogo,
     options: (settings) => <XAILLMOptions settings={settings} />,
     description: "Run xAI's powerful LLMs like Grok-2 and more.",
@@ -386,6 +424,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "Z.AI",
     value: "zai",
+    descriptionKey: "provider-pages.descriptions.llm.zai",
     logo: ZAiLogo,
     options: (settings) => <ZAiLLMOptions settings={settings} />,
     description: "Run Z.AI's powerful GLM models.",
@@ -394,6 +433,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "GiteeAI",
     value: "giteeai",
+    descriptionKey: "provider-pages.descriptions.llm.giteeai",
     logo: GiteeAILogo,
     options: (settings) => <GiteeAIOptions settings={settings} />,
     description: "Run GiteeAI's powerful LLMs.",
@@ -402,6 +442,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "Minimax",
     value: "minimax",
+    descriptionKey: "provider-pages.descriptions.llm.minimax",
     logo: MinimaxLogo,
     options: (settings) => <MinimaxOptions settings={settings} />,
     description: "Run Minimax's powerful M2 LLMs.",
@@ -410,6 +451,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "Cerebras",
     value: "cerebras",
+    descriptionKey: "provider-pages.descriptions.llm.cerebras",
     logo: CerebrasLogo,
     options: (settings) => <CerebrasLLMOptions settings={settings} />,
     description: "Run models at instant speed on Cerebras inference.",
@@ -418,6 +460,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "oMLX",
     value: "omlx",
+    descriptionKey: "provider-pages.descriptions.llm.omlx",
     logo: OMLXLogo,
     options: (settings) => <OMLXOptions settings={settings} />,
     description: "Run MLX models on Apple Silicon with smart caching.",
@@ -426,6 +469,7 @@ export const AVAILABLE_LLM_PROVIDERS = [
   {
     name: "Generic OpenAI",
     value: "generic-openai",
+    descriptionKey: "provider-pages.descriptions.llm.generic-openai",
     logo: GenericOpenAiLogo,
     options: (settings) => <GenericOpenAiOptions settings={settings} />,
     description:
@@ -451,39 +495,63 @@ export default function GeneralLLMPreference() {
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedLLM, setSelectedLLM] = useState(null);
+  const headingRef = useRef(null);
+  const providerHeadingId = useId();
+  const saveButtonId = useId();
   const { t } = useTranslation();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const form = e.target;
-    const data = { LLMProvider: selectedLLM };
-    const formData = new FormData(form);
-
-    for (var [key, value] of formData.entries()) data[key] = value;
-    const { error } = await System.updateSystem(data);
+    if (saving) return;
     setSaving(true);
+    const data = { LLMProvider: selectedLLM };
+    const formData = new FormData(e.target);
+    for (const [key, value] of formData.entries()) data[key] = value;
 
+    const { error } = await System.updateSystem(data);
     if (error) {
-      showToast(`Failed to save LLM settings: ${error}`, "error");
-    } else {
-      showToast("LLM preferences saved successfully.", "success");
+      showToast(
+        serverErrorMessage(error, t, "provider-pages.toast.failed"),
+        "error"
+      );
+      flushSync(() => setSaving(false));
+      restoreFocusAfterSave(false);
+      return;
     }
-    setSaving(false);
-    setHasChanges(!!error);
+
+    showToast(t("provider-pages.toast.saved.llm"), "success");
+    const freshSettings = await System.keys();
+    flushSync(() => {
+      if (freshSettings) setSettings(freshSettings);
+      setHasChanges(false);
+      setSaving(false);
+    });
+    restoreFocusAfterSave(true);
   };
 
+  // Saving disables the button and success removes it, which drops focus on <body>.
+  function restoreFocusAfterSave(saved) {
+    if (document.activeElement && document.activeElement !== document.body)
+      return;
+    if (saved) headingRef.current?.focus();
+    else document.getElementById(saveButtonId)?.focus();
+  }
+
   const updateLLMChoice = (selection) => {
+    if (selection === selectedLLM) return;
     setSelectedLLM(selection);
     setHasChanges(true);
   };
 
+  async function fetchKeys() {
+    setLoading(true);
+    const _settings = await System.keys();
+    setSettings(_settings);
+    setSelectedLLM(_settings?.LLMProvider);
+    setLoading(false);
+  }
+
   useEffect(() => {
-    async function fetchKeys() {
-      const _settings = await System.keys();
-      setSettings(_settings);
-      setSelectedLLM(_settings?.LLMProvider);
-      setLoading(false);
-    }
     fetchKeys();
   }, []);
 
@@ -507,62 +575,70 @@ export default function GeneralLLMPreference() {
   return (
     <div className="w-screen h-screen overflow-hidden bg-zinc-950 light:bg-slate-50 flex">
       <Sidebar />
-      {loading ? (
-        <div
-          style={{ height: isMobile ? "100%" : "calc(100% - 32px)" }}
-          className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full overflow-y-scroll p-4 md:p-0"
-        >
-          <div className="w-full h-full flex justify-center items-center">
-            <PreLoader />
+      <main className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full md:h-[calc(100%-32px)] overflow-y-auto p-4 md:p-0">
+        <div className="flex flex-col w-full px-1 md:pl-6 md:pr-[50px] md:py-6 py-16">
+          <div className="w-full flex flex-col gap-y-1 pb-6 border-white light:border-theme-sidebar-border border-b-2 border-opacity-10">
+            <h1
+              ref={headingRef}
+              tabIndex={-1}
+              className="text-lg leading-6 font-bold text-white"
+            >
+              {t("llm.title")}
+            </h1>
+            <p className="text-xs leading-[18px] text-white text-opacity-60">
+              {t("llm.description")}
+            </p>
           </div>
-        </div>
-      ) : (
-        <div
-          style={{ height: isMobile ? "100%" : "calc(100% - 32px)" }}
-          className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full overflow-y-scroll p-4 md:p-0"
-        >
-          <form onSubmit={handleSubmit} className="flex w-full">
-            <div className="flex flex-col w-full px-1 md:pl-6 md:pr-[50px] md:py-6 py-16">
-              <div className="w-full flex flex-col gap-y-1 pb-6 border-white light:border-theme-sidebar-border border-b-2 border-opacity-10">
-                <div className="flex gap-x-4 items-center">
-                  <p className="text-lg leading-6 font-bold text-white">
-                    {t("llm.title")}
-                  </p>
-                </div>
-                <p className="text-xs leading-[18px] font-base text-white text-opacity-60">
-                  {t("llm.description")}
-                </p>
-              </div>
+          {loading ? (
+            <div className="w-full flex justify-center py-16">
+              <PreLoader />
+            </div>
+          ) : !settings ? (
+            <div className="flex flex-col items-start gap-y-4 py-10">
+              <p role="alert" className="text-sm text-white">
+                {t("provider-pages.load-error")}
+              </p>
+              <CTAButton type="button" onClick={fetchKeys} className="mr-0">
+                {t("provider-fields.retry")}
+              </CTAButton>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="flex flex-col w-full">
               <div className="w-full justify-end flex">
                 {hasChanges && (
                   <CTAButton
-                    onClick={() => handleSubmit()}
+                    id={saveButtonId}
+                    busy={saving}
                     className="mt-3 mr-0 -mb-14 z-10"
                   >
-                    {saving ? "Saving..." : "Save changes"}
+                    {saving ? t("common.saving") : t("common.save")}
                   </CTAButton>
                 )}
               </div>
-              <div className="text-base font-bold text-white mt-6 mb-4">
+              <h2
+                id={providerHeadingId}
+                className="text-base font-bold text-white mt-6 mb-4"
+              >
                 {t("llm.provider")}
-              </div>
+              </h2>
               <div className="relative">
                 <ProviderSearchMenu
                   items={providers}
+                  labelledBy={providerHeadingId}
                   selected={
                     selectedLLMObject ?? {
-                      name: "None selected",
-                      logo: AnythingLLMIcon,
-                      description: "You need to select an LLM",
+                      name: t("provider-pages.menu.none-selected"),
+                      description: t("provider-pages.none.llm"),
                     }
                   }
-                  placeholder="Search all LLM providers"
+                  placeholder={t("chat.llm.search")}
                   renderItem={(llm, close) => (
-                    <LLMItem
+                    <ProviderOption
                       name={llm.name}
                       value={llm.value}
                       image={llm.logo}
                       description={llm.description}
+                      descriptionKey={llm.descriptionKey}
                       checked={selectedLLM === llm.value}
                       onClick={() => {
                         updateLLMChoice(llm.value);
@@ -576,15 +652,12 @@ export default function GeneralLLMPreference() {
                 onChange={() => setHasChanges(true)}
                 className="mt-4 flex flex-col gap-y-1"
               >
-                {selectedLLM &&
-                  providers
-                    .find((llm) => llm.value === selectedLLM)
-                    ?.options?.(settings)}
+                {selectedLLMObject?.options?.(settings)}
               </div>
-            </div>
-          </form>
+            </form>
+          )}
         </div>
-      )}
+      </main>
     </div>
   );
 }

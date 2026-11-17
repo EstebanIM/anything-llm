@@ -1,58 +1,87 @@
 import { toast } from "react-toastify";
-import { isMobileOnly } from "react-device-detect";
+
+// At most this many toasts on screen; a new one dismisses the oldest instead of
+// queueing behind errors that stay until they are closed.
+const MAX_VISIBLE = 3;
+const active = [];
+const errorIds = new Set();
+
+toast.onChange(({ id, status }) => {
+  if (status !== "removed") return;
+  const index = active.indexOf(id);
+  if (index !== -1) active.splice(index, 1);
+  errorIds.delete(id);
+});
 
 /**
- * Resolves the effective theme (light or dark) using the same logic as useTheme,
- * but without React hooks so it can be called from plain utility functions.
- * @returns {"light" | "dark"}
+ * Errors stay until they are closed (they often carry details worth reading
+ * twice); the rest stay long enough to read them: 5-10 s by length.
  */
-function resolveTheme() {
-  const stored = localStorage?.getItem("theme") || "system";
-  if (stored === "default" || stored === "dark") return "dark";
-  if (stored === "light") return "light";
-  return window.matchMedia?.("(prefers-color-scheme: light)").matches
+function autoCloseFor(type, message) {
+  if (type === "error") return false;
+  const length = typeof message === "string" ? message.length : 80;
+  return Math.min(10000, Math.max(5000, 4000 + length * 60));
+}
+
+function currentTheme() {
+  return document.documentElement.getAttribute("data-theme") === "light"
     ? "light"
     : "dark";
 }
 
+function isTouch() {
+  return !!window.matchMedia?.("(pointer: coarse)").matches;
+}
+
 /**
  * Shows a toast notification with the given message and type.
+ * Errors are announced as alerts and stay until closed; the rest are polite
+ * status messages. `clear: true` removes the previous non-error toasts (an
+ * unread error is never wiped by a later success).
+ *
  * @param {string} message - The message to display in the toast.
  * @param {'success' | 'error' | 'info' | 'warning' | 'default'} type - The type of toast to display.
- * @param {Object} opts - Additional options for the toast.
- * @returns {void}
+ * @param {Object} opts - Additional react-toastify options, plus `clear`.
+ * @returns {import("react-toastify").Id}
  */
 const showToast = (message, type = "default", opts = {}) => {
-  const resolved = resolveTheme();
+  const { clear, ...rest } = opts || {};
   const options = {
-    position: isMobileOnly ? "top-center" : "bottom-center",
-    autoClose: 5000,
-    hideProgressBar: false,
-    closeOnClick: true,
+    autoClose: autoCloseFor(type, message),
+    hideProgressBar: true,
+    closeOnClick: false,
     pauseOnHover: true,
-    draggable: true,
-    theme: resolved === "light" ? "light" : "dark",
-    ...opts,
+    pauseOnFocusLoss: true,
+    draggable: isTouch(),
+    role: type === "error" ? "alert" : "status",
+    theme: currentTheme(),
+    ...rest,
   };
 
-  if (opts?.clear === true) toast.dismiss();
+  if (clear === true)
+    active.filter((id) => !errorIds.has(id)).forEach((id) => toast.dismiss(id));
+  while (active.length >= MAX_VISIBLE) toast.dismiss(active.shift());
 
+  let id;
   switch (type) {
     case "success":
-      toast.success(message, options);
+      id = toast.success(message, options);
       break;
     case "error":
-      toast.error(message, options);
+      id = toast.error(message, options);
+      errorIds.add(id);
       break;
     case "info":
-      toast.info(message, options);
+      id = toast.info(message, options);
       break;
     case "warning":
-      toast.warn(message, options);
+      id = toast.warn(message, options);
       break;
     default:
-      toast(message, options);
+      id = toast(message, options);
   }
+  active.push(id);
+  return id;
 };
 
 export default showToast;

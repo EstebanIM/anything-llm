@@ -1,9 +1,15 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { useAutosaveForm, SavedIndicator } from "@/components/AutosaveForm";
+import SegmentedControl from "@/components/lib/SegmentedControl";
+import { SECTION_HEADING } from "../../components/SettingsField";
+
+const CHAT_MODES = ["automatic", "chat", "query"];
 
 export default function ChatModeSelection({ workspace }) {
   const { t } = useTranslation();
+  const titleId = useId();
+  const explanationId = useId();
   const [chatMode, setChatMode] = useState(workspace?.chatMode || "chat");
   const { markDirty, save } = useAutosaveForm();
   const selectMode = (mode) => {
@@ -13,43 +19,27 @@ export default function ChatModeSelection({ workspace }) {
   };
 
   return (
-    <div className="flex flex-col gap-y-[8px]">
-      <div className="flex flex-col gap-y-[8px]">
-        <label htmlFor="chatMode" className="block input-label">
+    <div className="flex flex-col gap-y-2">
+      <div className="flex flex-wrap items-center">
+        <h2 id={titleId} className={SECTION_HEADING}>
           {t("chat.mode.title")}
-          <SavedIndicator name="chatMode" />
-        </label>
+        </h2>
+        <SavedIndicator name="chatMode" />
       </div>
-
-      <div className="flex flex-col gap-y-1 mt-2">
-        <div className="w-full sm:w-fit flex gap-x-1 items-center p-1 rounded-lg bg-theme-settings-input-bg ">
-          <input type="hidden" name="chatMode" value={chatMode} />
-          <button
-            type="button"
-            disabled={chatMode === "automatic"}
-            onClick={() => selectMode("automatic")}
-            className="border-none transition-bg duration-200 flex-1 sm:flex-none px-3 sm:px-6 py-2 sm:py-1 text-sm sm:text-base text-white/60 disabled:text-white bg-transparent disabled:bg-[#687280] rounded-md hover:bg-white/10 whitespace-nowrap"
-          >
-            {t("chat.mode.automatic.title")}
-          </button>
-          <button
-            type="button"
-            disabled={chatMode === "chat"}
-            onClick={() => selectMode("chat")}
-            className="border-none transition-bg duration-200 flex-1 sm:flex-none px-3 sm:px-6 py-2 sm:py-1 text-sm sm:text-base text-white/60 disabled:text-white bg-transparent disabled:bg-[#687280] rounded-md hover:bg-white/10 light:hover:bg-black/10 whitespace-nowrap"
-          >
-            {t("chat.mode.chat.title")}
-          </button>
-          <button
-            type="button"
-            disabled={chatMode === "query"}
-            onClick={() => selectMode("query")}
-            className="border-none transition-bg duration-200 flex-1 sm:flex-none px-3 sm:px-6 py-2 sm:py-1 text-sm sm:text-base text-white/60 disabled:text-white bg-transparent disabled:bg-[#687280] rounded-md hover:bg-white/10 light:hover:bg-black/10 whitespace-nowrap"
-          >
-            {t("chat.mode.query.title")}
-          </button>
-        </div>
-        <ChatModeExplanation chatMode={chatMode} />
+      <div className="flex flex-col gap-y-2 mt-2">
+        <SegmentedControl
+          value={chatMode}
+          onChange={selectMode}
+          options={CHAT_MODES.map((mode) => ({
+            value: mode,
+            label: t(`chat.mode.${mode}.title`),
+          }))}
+          labelledBy={titleId}
+          describedBy={explanationId}
+          name="chatMode"
+          className="w-fit"
+        />
+        <ChatModeExplanation id={explanationId} chatMode={chatMode} />
       </div>
     </div>
   );
@@ -60,10 +50,10 @@ export default function ChatModeSelection({ workspace }) {
  * @param {'automatic' | 'chat' | 'query'} chatMode - The chat mode to display the explanation for.
  * @returns {JSX.Element} The component to display the explanation for the given chat mode.
  */
-function ChatModeExplanation({ chatMode = "chat" }) {
+function ChatModeExplanation({ id, chatMode = "chat" }) {
   const { t } = useTranslation();
   return (
-    <p className="text-sm text-white/60">
+    <p id={id} className="text-sm text-theme-text-secondary">
       <b>{t(`chat.mode.${chatMode}.title`)}</b>{" "}
       <Trans
         i18nKey={`chat.mode.${chatMode}.description`}

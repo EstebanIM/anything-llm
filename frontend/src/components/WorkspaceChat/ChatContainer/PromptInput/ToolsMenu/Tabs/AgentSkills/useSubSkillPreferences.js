@@ -1,5 +1,7 @@
 import { useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import Admin from "@/models/admin";
+import showToast from "@/utils/toast";
 import { SUB_SKILL_REGISTRY, getPreferenceKeyForSkill } from "./skillRegistry";
 import { toggleAgentSessionTool } from "@/utils/chat/agent";
 
@@ -12,6 +14,7 @@ import { toggleAgentSessionTool } from "@/utils/chat/agent";
  * skillRegistry.js file.
  */
 export default function useSubSkillPreferences() {
+  const { t } = useTranslation();
   // Single state object holding disabled sub-skills for all skills
   // Key: preferenceKey, Value: array of disabled sub-skill names
   const [disabledSubSkills, setDisabledSubSkills] = useState({});
@@ -63,12 +66,19 @@ export default function useSubSkillPreferences() {
         [prefKey]: updated,
       }));
 
-      await Admin.updateSystemPreferences({
+      const res = await Admin.updateSystemPreferences({
         [prefKey]: updated.join(","),
       });
+      if (!res?.success) {
+        setDisabledSubSkills((prev) => ({ ...prev, [prefKey]: current }));
+        showToast(t("chat-input.skill-toggle-failed"), "error", {
+          clear: true,
+        });
+        return;
+      }
       toggleAgentSessionTool(subSkillName, !updated.includes(subSkillName));
     },
-    [disabledSubSkills]
+    [disabledSubSkills, t]
   );
 
   return {

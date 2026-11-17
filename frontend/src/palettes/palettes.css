@@ -19,7 +19,7 @@ left alone, the regenerated scales keep their contrast.
   --theme-bg-chat: rgb(var(--palette-zinc-900));
   --theme-bg-chat-input: rgb(var(--palette-zinc-800));
   --theme-popup-menu-bg: rgb(var(--palette-zinc-950));
-  --theme-placeholder: rgb(var(--palette-zinc-600));
+  --theme-placeholder: rgb(var(--palette-zinc-400));
   --theme-sidebar-item-hover: rgb(var(--palette-zinc-700));
   --theme-chat-input-border: rgb(var(--palette-zinc-600));
   --theme-action-menu-bg: rgb(var(--palette-zinc-800));
@@ -36,7 +36,8 @@ left alone, the regenerated scales keep their contrast.
   --theme-attachment-success-bg: rgb(var(--palette-zinc-900));
   --theme-attachment-icon-spinner-bg: rgb(var(--palette-zinc-800));
 
-  --theme-button-primary: rgb(var(--palette-sky-400));
+  /* Deep accent so the white button text reaches 6:1. */
+  --theme-button-primary: rgb(var(--palette-sky-700));
   --theme-button-cta: rgb(var(--palette-sky-300));
   --theme-button-code-hover-text: rgb(var(--palette-sky-300));
   --theme-file-row-selected-even: rgb(var(--palette-sky-500) / 0.2);
@@ -62,7 +63,7 @@ left alone, the regenerated scales keep their contrast.
   --theme-bg-chat: #ffffff;
   --theme-bg-chat-input: rgb(var(--palette-slate-200));
   --theme-popup-menu-bg: rgb(var(--palette-sky-100));
-  --theme-placeholder: rgb(var(--palette-slate-400));
+  --theme-placeholder: rgb(var(--palette-slate-600));
   --theme-sidebar-item-hover: rgb(var(--palette-sky-100));
   --theme-sidebar-subitem-selected: rgb(var(--palette-slate-200));
   --theme-sidebar-subitem-hover: rgb(var(--palette-slate-200));

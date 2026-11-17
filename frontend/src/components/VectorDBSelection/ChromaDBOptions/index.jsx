@@ -1,15 +1,35 @@
+import { useId } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  FIELD_COL,
+  FIELD_INPUT,
+  FIELD_LABEL,
+  FIELD_ROW,
+  SECRET_MASK,
+  SecretInput,
+} from "@/components/ProviderFields";
+
 export default function ChromaDBOptions({ settings }) {
+  const { t } = useTranslation();
+  const id = useId();
+  const optional = (
+    <span className="font-normal text-theme-text-secondary">
+      ({t("provider-fields.optional")})
+    </span>
+  );
+
   return (
     <div className="w-full flex flex-col gap-y-7">
-      <div className="w-full flex items-center gap-[36px] mt-1.5">
-        <div className="flex flex-col w-60">
-          <label className="text-white text-sm font-semibold block mb-3">
-            Chroma Endpoint
+      <div className={`${FIELD_ROW} mt-1.5`}>
+        <div className={FIELD_COL}>
+          <label htmlFor={`${id}-endpoint`} className={FIELD_LABEL}>
+            {t("provider-forms.vector-db.chroma.endpoint")}
           </label>
           <input
+            id={`${id}-endpoint`}
             type="url"
             name="ChromaEndpoint"
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
+            className={FIELD_INPUT}
             placeholder="http://localhost:8000"
             defaultValue={settings?.ChromaEndpoint}
             required={true}
@@ -18,31 +38,31 @@ export default function ChromaDBOptions({ settings }) {
           />
         </div>
 
-        <div className="flex flex-col w-60">
-          <label className="text-white text-sm font-semibold block mb-3">
-            API Header
+        <div className={FIELD_COL}>
+          <label htmlFor={`${id}-header`} className={FIELD_LABEL}>
+            {t("provider-forms.vector-db.chroma.api-header")} {optional}
           </label>
           <input
+            id={`${id}-header`}
             name="ChromaApiHeader"
             autoComplete="off"
+            spellCheck={false}
             type="text"
             defaultValue={settings?.ChromaApiHeader}
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
+            className={FIELD_INPUT}
             placeholder="X-Api-Key"
           />
         </div>
 
-        <div className="flex flex-col w-60">
-          <label className="text-white text-sm font-semibold block mb-3">
-            API Key
+        <div className={FIELD_COL}>
+          <label htmlFor={`${id}-api-key`} className={FIELD_LABEL}>
+            {t("provider-fields.api-key")} {optional}
           </label>
-          <input
+          <SecretInput
+            id={`${id}-api-key`}
             name="ChromaApiKey"
-            autoComplete="off"
-            type="password"
-            defaultValue={settings?.ChromaApiKey ? "*".repeat(20) : ""}
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-            placeholder="sk-myApiKeyToAccessMyChromaInstance"
+            defaultValue={settings?.ChromaApiKey ? SECRET_MASK : ""}
+            placeholder="sk-..."
           />
         </div>
       </div>

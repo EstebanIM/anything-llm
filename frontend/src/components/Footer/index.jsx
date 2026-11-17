@@ -16,7 +16,7 @@ export default function Footer({ allowMobile = false }) {
       <Tooltip
         id="footer-item"
         place="top"
-        delayShow={300}
+        delayShow={120}
         className="tooltip !text-xs z-99"
       />
     </div>

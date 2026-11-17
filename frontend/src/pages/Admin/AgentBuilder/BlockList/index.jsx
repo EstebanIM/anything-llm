@@ -1,8 +1,11 @@
-import React from "react";
+import React, { useId, useRef, useState } from "react";
+import i18next from "i18next";
+import { useTranslation } from "react-i18next";
 import {
   X,
   ChevronUp,
   ChevronDown,
+  ArrowDown,
   Globe,
   AppWindow,
   Brain,
@@ -12,58 +15,63 @@ import {
 } from "lucide-react";
 import { Tooltip } from "react-tooltip";
 import Toggle from "@/components/lib/Toggle";
+import { FIELD_HELP } from "@/components/ProviderFields";
 import StartNode from "../nodes/StartNode";
 import ApiCallNode from "../nodes/ApiCallNode";
-import WebsiteNode from "../nodes/WebsiteNode";
-import FileNode from "../nodes/FileNode";
-import CodeNode from "../nodes/CodeNode";
 import LLMInstructionNode from "../nodes/LLMInstructionNode";
 import FinishNode from "../nodes/FinishNode";
 import WebScrapingNode from "../nodes/WebScrapingNode";
 import FlowInfoNode from "../nodes/FlowInfoNode";
+import InlineConfirm from "@/components/lib/InlineConfirm";
 
 const BLOCK_TYPES = {
   FLOW_INFO: "flowInfo",
   START: "start",
   API_CALL: "apiCall",
-  // WEBSITE: "website", // Temporarily disabled
-  // FILE: "file", // Temporarily disabled
-  // CODE: "code", // Temporarily disabled
   LLM_INSTRUCTION: "llmInstruction",
   WEB_SCRAPING: "webScraping",
   FINISH: "finish",
 };
 
+// `t` is optional so callers outside this page (the Community Hub publish
+// modal) keep working; it falls back to the global i18next instance.
+const translate = (t) => t || i18next.t.bind(i18next);
+
+/**
+ * Block catalog. Text comes from `labelKey` / `descriptionKey`; the `label`
+ * and `description` getters resolve them for callers that read plain strings.
+ */
 const BLOCK_INFO = {
   [BLOCK_TYPES.FLOW_INFO]: {
-    label: "Flow Information",
+    labelKey: "agent-builder.blocks.flow-info.label",
+    descriptionKey: "agent-builder.blocks.flow-info.description",
     icon: (
       <Info strokeWidth={1.5} className="w-5 h-5 text-theme-text-primary" />
     ),
-    description: "Basic flow information",
     defaultConfig: {
       name: "",
       description: "",
     },
-    getSummary: (config) => config.name || "Untitled Flow",
+    getSummary: (config, t) =>
+      config?.name || translate(t)("agent-builder.untitled"),
   },
   [BLOCK_TYPES.START]: {
-    label: "Flow Variables",
+    labelKey: "agent-builder.blocks.start.label",
+    descriptionKey: "agent-builder.blocks.start.description",
     icon: (
       <Braces strokeWidth={1.5} className="w-5 h-5 text-theme-text-primary" />
     ),
-    description: "Configure agent variables and settings",
-    getSummary: (config) => {
-      const varCount = config.variables?.filter((v) => v.name)?.length || 0;
-      return `${varCount} variable${varCount !== 1 ? "s" : ""} defined`;
-    },
+    getSummary: (config, t) =>
+      translate(t)("agent-builder.blocks.start.summary", {
+        count: config?.variables?.filter((v) => v.name)?.length || 0,
+      }),
   },
   [BLOCK_TYPES.API_CALL]: {
-    label: "API Call",
+    labelKey: "agent-builder.blocks.api-call.label",
+    descriptionKey: "agent-builder.blocks.api-call.description",
     icon: (
       <Globe strokeWidth={1.5} className="w-5 h-5 text-theme-text-primary" />
     ),
-    description: "Make an HTTP request",
     defaultConfig: {
       url: "",
       method: "GET",
@@ -74,71 +82,33 @@ const BLOCK_INFO = {
       responseVariable: "",
       directOutput: false,
     },
-    getSummary: (config) =>
-      `${config.method || "GET"} ${config.url || "(no URL)"}`,
+    getSummary: (config, t) =>
+      `${config?.method || "GET"} ${config?.url || translate(t)("agent-builder.blocks.api-call.no-url")}`,
   },
-  // TODO: Implement website, file, and code blocks
-  /* [BLOCK_TYPES.WEBSITE]: {
-    label: "Open Website",
-    icon: <Browser className="w-5 h-5 text-theme-text-primary" />,
-    description: "Navigate to a URL",
-    defaultConfig: {
-      url: "",
-      selector: "",
-      action: "read",
-      value: "",
-      resultVariable: "",
-    },
-    getSummary: (config) =>
-      `${config.action || "read"} from ${config.url || "(no URL)"}`,
-  },
-  [BLOCK_TYPES.FILE]: {
-    label: "Open File",
-    icon: <File className="w-5 h-5 text-theme-text-primary" />,
-    description: "Read or write to a file",
-    defaultConfig: {
-      path: "",
-      operation: "read",
-      content: "",
-      resultVariable: "",
-    },
-    getSummary: (config) =>
-      `${config.operation || "read"} ${config.path || "(no path)"}`,
-  },
-  [BLOCK_TYPES.CODE]: {
-    label: "Code Execution",
-    icon: <Code className="w-5 h-5 text-theme-text-primary" />,
-    description: "Execute code snippets",
-    defaultConfig: {
-      language: "javascript",
-      code: "",
-      resultVariable: "",
-    },
-    getSummary: (config) => `Run ${config.language || "javascript"} code`,
-  },
-  */
   [BLOCK_TYPES.LLM_INSTRUCTION]: {
-    label: "LLM Instruction",
+    labelKey: "agent-builder.blocks.llm-instruction.label",
+    descriptionKey: "agent-builder.blocks.llm-instruction.description",
     icon: (
       <Brain strokeWidth={1.5} className="w-5 h-5 text-theme-text-primary" />
     ),
-    description: "Process data using LLM instructions",
     defaultConfig: {
       instruction: "",
       resultVariable: "",
       directOutput: false,
     },
-    getSummary: (config) => config.instruction || "No instruction",
+    getSummary: (config, t) =>
+      config?.instruction ||
+      translate(t)("agent-builder.blocks.llm-instruction.empty"),
   },
   [BLOCK_TYPES.WEB_SCRAPING]: {
-    label: "Web Scraping",
+    labelKey: "agent-builder.blocks.web-scraping.label",
+    descriptionKey: "agent-builder.blocks.web-scraping.description",
     icon: (
       <AppWindow
         strokeWidth={1.5}
         className="w-5 h-5 text-theme-text-primary"
       />
     ),
-    description: "Scrape content from a webpage",
     defaultConfig: {
       url: "",
       captureAs: "text",
@@ -146,217 +116,308 @@ const BLOCK_INFO = {
       resultVariable: "",
       directOutput: false,
     },
-    getSummary: (config) => config.url || "No URL specified",
+    getSummary: (config, t) =>
+      config?.url || translate(t)("agent-builder.blocks.web-scraping.empty"),
   },
   [BLOCK_TYPES.FINISH]: {
-    label: "Flow Complete",
+    labelKey: "agent-builder.blocks.finish.label",
+    descriptionKey: "agent-builder.blocks.finish.description",
     icon: <Flag strokeWidth={1.5} className="w-4 h-4" />,
-    description: "End of agent flow",
-    getSummary: () => "Flow will end here",
+    getSummary: (_config, t) =>
+      translate(t)("agent-builder.blocks.finish.summary"),
     defaultConfig: {},
-    renderConfig: () => null,
   },
 };
 
+for (const info of Object.values(BLOCK_INFO)) {
+  Object.defineProperties(info, {
+    label: { get: () => i18next.t(info.labelKey) },
+    description: { get: () => i18next.t(info.descriptionKey) },
+  });
+}
+
+/** DOM ids shared with the page so it can move focus after a change. */
+const blockHeaderId = (prefix, blockId) => `${prefix}-block-${blockId}`;
+const blockPanelId = (prefix, blockId) => `${prefix}-block-${blockId}-panel`;
+const blockActionId = (prefix, blockId, action) =>
+  `${prefix}-block-${blockId}-${action}`;
+
+const ACTION_BUTTON =
+  "w-11 h-11 md:w-8 md:h-8 shrink-0 flex items-center justify-center rounded-lg border border-zinc-600 light:border-slate-400 bg-theme-bg-primary transition-colors duration-quick ease-smooth aria-disabled:opacity-40 aria-disabled:cursor-not-allowed";
+
+/** Blocks the user can reorder and delete (everything between Start and Finish). */
+const isMovable = (block) =>
+  block.type !== BLOCK_TYPES.START &&
+  block.type !== BLOCK_TYPES.FINISH &&
+  block.type !== BLOCK_TYPES.FLOW_INFO;
+
 export default function BlockList({
   blocks,
+  idPrefix,
+  showErrors,
   updateBlockConfig,
-  removeBlock,
-  toggleBlockExpansion,
-  renderVariableSelect,
+  onRemoveBlock,
+  onToggleBlock,
+  onMoveBlock,
   onDeleteVariable,
-  moveBlock,
-  refs,
 }) {
-  const renderBlockConfig = (block) => {
-    const isLastConfigurableBlock = blocks[blocks.length - 2]?.id === block.id;
-    const props = {
-      config: block.config,
-      onConfigChange: (config) => updateBlockConfig(block.id, config),
-      renderVariableSelect,
-      onDeleteVariable,
-    };
-
-    // Direct output switch to the last configurable block before finish
-    if (
-      isLastConfigurableBlock &&
-      block.type !== BLOCK_TYPES.START &&
-      block.type !== BLOCK_TYPES.FLOW_INFO
-    ) {
-      return (
-        <div className="space-y-4">
-          {renderBlockConfigContent(block, props)}
-          <div className="pt-4 border-t border-white/10">
-            <Toggle
-              size="md"
-              variant="horizontal"
-              label="Direct Output"
-              description="The output of this block will be returned directly to the chat. This will prevent any further tool calls from being executed."
-              enabled={props.config.directOutput || false}
-              onChange={(checked) =>
-                props.onConfigChange({
-                  ...props.config,
-                  directOutput: checked,
-                })
-              }
-            />
-          </div>
-        </div>
-      );
-    }
-
-    return renderBlockConfigContent(block, props);
-  };
-
-  const renderBlockConfigContent = (block, props) => {
-    switch (block.type) {
-      case BLOCK_TYPES.FLOW_INFO:
-        return <FlowInfoNode {...props} ref={refs} />;
-      case BLOCK_TYPES.START:
-        return <StartNode {...props} />;
-      case BLOCK_TYPES.API_CALL:
-        return <ApiCallNode {...props} />;
-      case BLOCK_TYPES.WEBSITE:
-        return <WebsiteNode {...props} />;
-      case BLOCK_TYPES.FILE:
-        return <FileNode {...props} />;
-      case BLOCK_TYPES.CODE:
-        return <CodeNode {...props} />;
-      case BLOCK_TYPES.LLM_INSTRUCTION:
-        return <LLMInstructionNode {...props} />;
-      case BLOCK_TYPES.WEB_SCRAPING:
-        return <WebScrapingNode {...props} />;
-      case BLOCK_TYPES.FINISH:
-        return <FinishNode />;
-      default:
-        return <div>Configuration options coming soon...</div>;
-    }
-  };
+  const { t } = useTranslation();
+  const tooltipId = `${idPrefix}-block-action`;
 
   return (
-    <div className="space-y-1">
-      {blocks.map((block, index) => (
-        <div key={block.id} className="flex flex-col">
-          <div
-            className={`bg-theme-action-menu-bg border border-white/10 rounded-lg overflow-hidden transition-all duration-300 ${
-              block.isExpanded ? "w-full" : "w-[280px] mx-auto"
-            }`}
-          >
-            <div
-              onClick={() => toggleBlockExpansion(block.id)}
-              className="w-full p-4 flex items-center justify-between hover:bg-theme-action-menu-item-hover transition-colors duration-300 group cursor-pointer"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-7 h-7 rounded-lg bg-white/10 light:bg-white flex items-center justify-center">
-                  {React.cloneElement(BLOCK_INFO[block.type].icon, {
-                    className: "w-4 h-4 text-white",
-                  })}
-                </div>
-                <div className="flex-1 text-left min-w-0 max-w-[115px]">
-                  <span className="text-sm font-medium text-white block">
-                    {BLOCK_INFO[block.type].label}
-                  </span>
-                  {!block.isExpanded && (
-                    <p className="text-xs text-white/60 truncate">
-                      {BLOCK_INFO[block.type].getSummary(block.config)}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center">
-                {block.id !== "start" &&
-                  block.type !== BLOCK_TYPES.FINISH &&
-                  block.type !== BLOCK_TYPES.FLOW_INFO && (
-                    <div className="flex items-center gap-1">
-                      {index > 2 && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            moveBlock(index, index - 1);
-                          }}
-                          className="w-7 h-7 flex items-center justify-center rounded-lg bg-theme-bg-primary border border-white/5 text-white hover:bg-theme-action-menu-item-hover transition-colors duration-300"
-                          data-tooltip-id="block-action"
-                          data-tooltip-content="Move block up"
-                        >
-                          <ChevronUp
-                            strokeWidth={1.5}
-                            className="w-3.5 h-3.5"
-                          />
-                        </button>
-                      )}
-                      {index < blocks.length - 2 && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            moveBlock(index, index + 1);
-                          }}
-                          className="w-7 h-7 flex items-center justify-center rounded-lg bg-theme-bg-primary border border-white/5 text-white hover:bg-theme-action-menu-item-hover transition-colors duration-300"
-                          data-tooltip-id="block-action"
-                          data-tooltip-content="Move block down"
-                        >
-                          <ChevronDown
-                            strokeWidth={1.5}
-                            className="w-3.5 h-3.5"
-                          />
-                        </button>
-                      )}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeBlock(block.id);
-                        }}
-                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-theme-bg-primary border border-white/5 text-red-400 hover:bg-red-500/10 hover:border-red-500/20 transition-colors duration-300"
-                        data-tooltip-id="block-action"
-                        data-tooltip-content="Delete block"
-                      >
-                        <X strokeWidth={1.5} className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  )}
-              </div>
-            </div>
-            <div
-              className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                block.isExpanded
-                  ? "max-h-[1000px] opacity-100"
-                  : "max-h-0 opacity-0"
-              }`}
-            >
-              <div className="border-t border-white/10 p-4 bg-theme-bg-secondary rounded-b-lg">
-                {renderBlockConfig(block)}
-              </div>
-            </div>
-          </div>
-          {index < blocks.length - 1 && (
-            <div className="flex justify-center my-1">
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="text-white/40 light:invert"
-              >
-                <path
-                  d="M12 4L12 20M12 20L6 14M12 20L18 14"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </div>
-          )}
-        </div>
-      ))}
+    <>
+      <ol aria-label={t("agent-builder.steps")} className="flex flex-col">
+        {blocks.map((block, index) => (
+          <BlockItem
+            key={block.id}
+            block={block}
+            index={index}
+            total={blocks.length}
+            idPrefix={idPrefix}
+            tooltipId={tooltipId}
+            showErrors={showErrors}
+            hasDirectOutputSwitch={
+              index === blocks.length - 2 && isMovable(block)
+            }
+            updateBlockConfig={updateBlockConfig}
+            onRemoveBlock={onRemoveBlock}
+            onToggleBlock={onToggleBlock}
+            onMoveBlock={onMoveBlock}
+            onDeleteVariable={onDeleteVariable}
+          />
+        ))}
+      </ol>
       <Tooltip
-        id="block-action"
+        id={tooltipId}
         place="bottom"
         delayShow={300}
         className="tooltip !text-xs"
       />
-    </div>
+    </>
   );
 }
 
-export { BLOCK_TYPES, BLOCK_INFO };
+function BlockItem({
+  block,
+  index,
+  total,
+  idPrefix,
+  tooltipId,
+  showErrors,
+  hasDirectOutputSwitch,
+  updateBlockConfig,
+  onRemoveBlock,
+  onToggleBlock,
+  onMoveBlock,
+  onDeleteVariable,
+}) {
+  const { t } = useTranslation();
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const deleteButtonRef = useRef(null);
+  const directOutputHelpId = useId();
+  const info = BLOCK_INFO[block.type];
+  if (!info) return null;
+
+  const name = t(info.labelKey);
+  const position = index + 1;
+  const headerId = blockHeaderId(idPrefix, block.id);
+  const panelId = blockPanelId(idPrefix, block.id);
+  const movable = isMovable(block);
+  const canMoveUp = movable && index > 2;
+  const canMoveDown = movable && index < total - 2;
+
+  const cancelDelete = () => {
+    setConfirmingDelete(false);
+    deleteButtonRef.current?.focus();
+  };
+
+  const props = {
+    config: block.config,
+    onConfigChange: (config) => updateBlockConfig(block.id, config),
+    onDeleteVariable,
+    showErrors,
+  };
+
+  return (
+    <li className="flex flex-col">
+      <div
+        className={`w-full mx-auto bg-theme-action-menu-bg border border-zinc-700 light:border-slate-300 rounded-lg ${
+          block.isExpanded ? "" : "sm:max-w-[320px]"
+        }`}
+      >
+        <div className="flex items-center gap-1 p-1.5">
+          <h2 className="flex-1 min-w-0">
+            <button
+              id={headerId}
+              type="button"
+              aria-expanded={!!block.isExpanded}
+              aria-controls={panelId}
+              onClick={() => onToggleBlock(block.id)}
+              className="w-full min-h-[44px] flex items-center gap-3 p-2 rounded-md text-left hover:bg-theme-action-menu-item-hover transition-colors duration-quick ease-smooth"
+            >
+              <span
+                aria-hidden="true"
+                className="w-7 h-7 shrink-0 rounded-lg bg-zinc-700 light:bg-slate-200 flex items-center justify-center"
+              >
+                {React.cloneElement(info.icon, {
+                  className: "w-4 h-4 text-white",
+                  "aria-hidden": true,
+                })}
+              </span>
+              <span className="flex-1 min-w-0">
+                <span className="block text-sm font-medium text-white truncate">
+                  {name}
+                </span>
+                {!block.isExpanded && (
+                  <span className="block text-xs text-theme-text-secondary truncate">
+                    {info.getSummary(block.config, t)}
+                  </span>
+                )}
+              </span>
+              <ChevronDown
+                strokeWidth={1.5}
+                aria-hidden="true"
+                className={`w-4 h-4 shrink-0 text-theme-text-secondary transition-transform duration-base ease-smooth ${
+                  block.isExpanded ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+          </h2>
+          {movable && (
+            <div className="flex items-center gap-1 pr-1">
+              <button
+                id={blockActionId(idPrefix, block.id, "up")}
+                type="button"
+                aria-disabled={!canMoveUp || undefined}
+                aria-label={t("agent-builder.block.move-up", {
+                  name,
+                  position,
+                })}
+                data-tooltip-id={tooltipId}
+                data-tooltip-content={t("agent-builder.block.move-up-short")}
+                onClick={() => canMoveUp && onMoveBlock(index, index - 1)}
+                className={`${ACTION_BUTTON} text-white hover:bg-theme-action-menu-item-hover`}
+              >
+                <ChevronUp
+                  strokeWidth={1.5}
+                  aria-hidden="true"
+                  className="w-4 h-4"
+                />
+              </button>
+              <button
+                id={blockActionId(idPrefix, block.id, "down")}
+                type="button"
+                aria-disabled={!canMoveDown || undefined}
+                aria-label={t("agent-builder.block.move-down", {
+                  name,
+                  position,
+                })}
+                data-tooltip-id={tooltipId}
+                data-tooltip-content={t("agent-builder.block.move-down-short")}
+                onClick={() => canMoveDown && onMoveBlock(index, index + 1)}
+                className={`${ACTION_BUTTON} text-white hover:bg-theme-action-menu-item-hover`}
+              >
+                <ChevronDown
+                  strokeWidth={1.5}
+                  aria-hidden="true"
+                  className="w-4 h-4"
+                />
+              </button>
+              <button
+                ref={deleteButtonRef}
+                type="button"
+                aria-label={t("agent-builder.block.delete", {
+                  name,
+                  position,
+                })}
+                data-tooltip-id={tooltipId}
+                data-tooltip-content={t("agent-builder.block.delete-short")}
+                onClick={() => setConfirmingDelete(true)}
+                className={`${ACTION_BUTTON} text-red-400 light:text-red-600 hover:bg-red-500/10`}
+              >
+                <X strokeWidth={1.5} aria-hidden="true" className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {confirmingDelete && (
+          <div className="px-3 pb-3">
+            <InlineConfirm
+              question={t("agent-builder.block.delete-confirm", { name })}
+              confirmLabel={t("settings-pages.delete")}
+              onConfirm={() => {
+                setConfirmingDelete(false);
+                onRemoveBlock(block.id);
+              }}
+              onCancel={cancelDelete}
+            />
+          </div>
+        )}
+
+        <div
+          id={panelId}
+          hidden={!block.isExpanded}
+          className="border-t border-zinc-700 light:border-slate-300 p-4 bg-theme-bg-secondary rounded-b-lg"
+        >
+          <div className="space-y-4">
+            <BlockConfig block={block} props={props} />
+            {hasDirectOutputSwitch && (
+              <div className="pt-4 border-t border-zinc-700 light:border-slate-300">
+                <Toggle
+                  size="md"
+                  variant="horizontal"
+                  label={t("agent-builder.block.direct-output")}
+                  describedBy={directOutputHelpId}
+                  enabled={block.config.directOutput || false}
+                  onChange={(checked) =>
+                    props.onConfigChange({ directOutput: checked })
+                  }
+                />
+                <p id={directOutputHelpId} className={FIELD_HELP}>
+                  {t("agent-builder.block.direct-output-help")}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+      {index < total - 1 && (
+        <div className="flex justify-center my-1" aria-hidden="true">
+          <ArrowDown
+            strokeWidth={1.5}
+            className="w-5 h-5 text-zinc-500 light:text-slate-400"
+          />
+        </div>
+      )}
+    </li>
+  );
+}
+
+function BlockConfig({ block, props }) {
+  switch (block.type) {
+    case BLOCK_TYPES.FLOW_INFO:
+      return <FlowInfoNode {...props} />;
+    case BLOCK_TYPES.START:
+      return <StartNode {...props} />;
+    case BLOCK_TYPES.API_CALL:
+      return <ApiCallNode {...props} />;
+    case BLOCK_TYPES.LLM_INSTRUCTION:
+      return <LLMInstructionNode {...props} />;
+    case BLOCK_TYPES.WEB_SCRAPING:
+      return <WebScrapingNode {...props} />;
+    case BLOCK_TYPES.FINISH:
+      return <FinishNode />;
+    default:
+      return null;
+  }
+}
+
+export {
+  BLOCK_TYPES,
+  BLOCK_INFO,
+  blockHeaderId,
+  blockPanelId,
+  blockActionId,
+  isMovable,
+};

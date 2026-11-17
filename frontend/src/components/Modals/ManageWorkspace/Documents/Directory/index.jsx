@@ -1,31 +1,50 @@
-import UploadFile from "../UploadFile";
-import PreLoader from "@/components/Preloader";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
-import FolderRow from "./FolderRow";
-import MobileDirectory from "./MobileDirectory";
+import {
+  ArrowRight,
+  FolderPlus,
+  LoaderCircle,
+  RotateCw,
+  Search,
+  Trash2,
+} from "lucide-react";
+import debounce from "lodash.debounce";
+import PreLoader from "@/components/Preloader";
+import Modal from "@/components/lib/Modal";
+import ConfirmModal from "@/components/lib/ConfirmModal";
+import { FIELD_INPUT } from "@/components/ProviderFields";
 import System from "@/models/system";
-import { LoaderCircle, Search, Plus, Trash2 } from "lucide-react";
 import Document from "@/models/document";
 import showToast from "@/utils/toast";
-import FolderSelectionPopup from "./FolderSelectionPopup";
-import MoveToFolderIcon from "./MoveToFolderIcon";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import { useModal } from "@/hooks/useModal";
-import Modal from "@/components/lib/Modal";
-import NewFolderModal from "./NewFolderModal";
-import debounce from "lodash.debounce";
-import ContextMenu from "./ContextMenu";
-import { Tooltip } from "react-tooltip";
-import { safeJsonParse } from "@/utils/request";
-import useUploadQueue from "../hooks/useUploadQueue";
 import { getFilesFromUploadEvent } from "@/utils/folderUpload";
 import {
   rowsBetween,
   isSelectAllShortcut,
   isClearSelectionKey,
 } from "@/utils/directories";
+import UploadFile from "../UploadFile";
+import useUploadQueue from "../hooks/useUploadQueue";
+import SelectionCheckbox from "../SelectionCheckbox";
+import InlineAlert from "../InlineAlert";
+import FolderRow from "./FolderRow";
+import MobileDirectory from "./MobileDirectory";
+import MoveToFolderMenu from "./MoveToFolderMenu";
+import NewFolderModal from "./NewFolderModal";
 
 const NO_FILES = [];
+const UPLOAD_FOLDER = "custom-documents";
+
+const ACTION_BUTTON =
+  "flex items-center gap-x-1.5 h-8 px-2.5 rounded-lg text-xs font-semibold transition-colors duration-quick ease-smooth disabled:opacity-50 disabled:cursor-not-allowed";
 
 /** Rows in rendered order, for shift-click ranges. */
 function flattenRows(rows) {
@@ -50,6 +69,9 @@ function flattenRows(rows) {
 }
 
 /**
+ * The "My Documents" picker: folders and files on disk that can be moved into
+ * the workspace, moved between folders or deleted, plus the uploader.
+ *
  * @param {Object} props
  * @param {"default"|"mobile"} [props.variant="default"] - `mobile` renders the
  * touch layout
@@ -64,12 +86,14 @@ export default function Directory({
   variant = "default",
 }) {
   const { t } = useTranslation();
-  const [showFolderSelection, setShowFolderSelection] = useState(false);
-  const [contextMenu, setContextMenu] = useState({
-    visible: false,
-    x: 0,
-    y: 0,
-  });
+  const headingId = useId();
+  const searchId = useId();
+  const listRef = useRef(null);
+  const [query, setQuery] = useState("");
+  const [pickerError, setPickerError] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [focusRequest, setFocusRequest] = useState(0);
   const {
     isOpen: isFolderModalOpen,
     openModal: openFolderModal,
@@ -78,6 +102,7 @@ export default function Directory({
 
   const {
     status,
+    loadError,
     busyMessage,
     folders,
     contents,
@@ -85,6 +110,7 @@ export default function Directory({
     searchResults,
     searching,
     hasSelection,
+    selectedCount,
     selectedFolderNames,
     isFileSelected,
     folderSelectionState,
@@ -94,6 +120,7 @@ export default function Directory({
     toggleExpanded,
     prefetchFolder,
     loadMore,
+    retryFolder,
     toggleFile,
     toggleFolder,
     selectAll,
@@ -105,6 +132,12 @@ export default function Directory({
     addFolder,
     setBusy,
   } = picker;
+
+  // Focus the list after the rows it pointed at are gone (move, delete).
+  useEffect(() => {
+    if (focusRequest) listRef.current?.focus();
+  }, [focusRequest]);
+  const focusList = () => setFocusRequest((n) => n + 1);
 
   /**
    * One flattened view model per visible folder. Search replaces the folder
@@ -125,6 +158,7 @@ export default function Directory({
           files,
           expanded: true,
           loading: false,
+          failed: false,
           hasMore: false,
           totalCount: files.length,
           // The badge counts matches, not the folder's size - showing "(200)"
@@ -145,6 +179,7 @@ export default function Directory({
         files,
         expanded: expanded.has(folder.name),
         loading: entry?.status === "loading",
+        failed: entry?.status === "error",
         hasMore,
         totalCount,
         // Once a folder is fully fetched we know exactly how many rows it can
@@ -187,7 +222,7 @@ export default function Directory({
       const rows = pickerRowsRef.current;
       const anchor = rangeAnchor.current;
       const range =
-        event.shiftKey && anchor ? rowsBetween(rows, anchor, id) : null;
+        event?.shiftKey && anchor ? rowsBetween(rows, anchor, id) : null;
       if (range) {
         selectRange(
           range,
@@ -227,11 +262,16 @@ export default function Directory({
     rows.every(
       (row) => folderSelectionState(row.item.name, row.files) === "all"
     );
+  const headerState = allSelected ? "all" : hasSelection ? "some" : "none";
+  const toggleAll = () => (allSelected ? clearSelection() : selectAllVisible());
 
   const handleKeyDown = (event) => {
+    // Menus and inline editors inside the list handle their own keys.
+    if (event.defaultPrevented || event.target.closest?.('[role="menu"]'))
+      return;
     if (isClearSelectionKey(event) && hasSelection) {
-      // Otherwise the modal's Escape handler closes the modal.
-      event.stopPropagation();
+      // Keeps the dialog's Escape handler from closing the whole manager.
+      event.preventDefault();
       return clearSelection();
     }
     if (!isSelectAllShortcut(event)) return;
@@ -239,79 +279,114 @@ export default function Directory({
     selectAllVisible();
   };
 
+  const selectionLabel =
+    selectedCount > 0
+      ? t("connectors.directory.selected-count", { count: selectedCount })
+      : t("workspace-docs.selected-folders", {
+          count: selectedFolderNames.length,
+        });
+
   /* --------------------------------- search -------------------------------- */
 
-  const handleSearch = useMemo(
-    () => debounce((event) => search(event.target.value), 400),
+  const runSearch = useMemo(
+    () => debounce((value) => search(value), 400),
     [search]
   );
-  useEffect(() => () => handleSearch.cancel(), [handleSearch]);
+  useEffect(() => () => runSearch.cancel(), [runSearch]);
+  const handleSearch = (event) => {
+    setQuery(event.target.value);
+    runSearch(event.target.value);
+  };
 
   /* -------------------------------- mutations ------------------------------ */
 
-  const deleteFiles = async (event) => {
-    event.stopPropagation();
-    if (!window.confirm(t("connectors.directory.delete-confirmation"))) return;
+  const foldersToDelete = selectedFolderNames.filter(
+    (name) => name !== UPLOAD_FOLDER
+  );
 
+  const deleteFiles = async () => {
+    setDeleting(true);
+    setPickerError(null);
     // A folder with any file opted out is kept; only its resolved files go.
     const partialFolders = new Set();
     const selected = await resolveSelection({ partialFolders });
     const toRemove = selected.map((file) => `${file.folderName}/${file.name}`);
-    const foldersToRemove = selectedFolderNames.filter(
-      (name) => name !== "custom-documents" && !partialFolders.has(name)
+    const foldersToRemove = foldersToDelete.filter(
+      (name) => !partialFolders.has(name)
     );
 
     setBusy(
-      t("connectors.directory.removing-message", {
-        count: toRemove.length,
-        folderCount: foldersToRemove.length,
+      t("workspace-docs.deleting", {
+        count: toRemove.length || foldersToRemove.length,
       })
     );
-    try {
-      if (toRemove.length > 0) await System.deleteDocuments(toRemove);
-      for (const folderName of foldersToRemove)
-        await System.deleteFolder(folderName);
+    let ok = true;
+    if (toRemove.length > 0) ok = await System.deleteDocuments(toRemove);
+    for (const folderName of foldersToRemove)
+      ok = (await System.deleteFolder(folderName)) && ok;
+
+    if (ok) {
       removeFiles(
         selected.map((file) => file.id),
         { deleted: true }
       );
       clearSelection();
-      await refresh();
-    } catch (error) {
-      console.error("Failed to delete files and folders:", error);
-      showToast(`Failed to delete: ${error.message}`, "error");
-    } finally {
-      setBusy(null);
+    } else {
+      setPickerError(t("workspace-docs.delete-error"));
     }
+    await refresh();
+    setBusy(null);
+    setDeleting(false);
+    setConfirmDelete(false);
+    focusList();
   };
 
   const moveToFolder = async (folder) => {
-    setShowFolderSelection(false);
+    setPickerError(null);
     const toMove = await resolveSelection();
     if (toMove.length === 0) return;
 
-    setBusy(`Moving ${toMove.length} documents. Please wait.`);
-    const { success, message } = await Document.moveToFolder(
+    setBusy(t("workspace-docs.moving", { count: toMove.length }));
+    const { success, message, error } = await Document.moveToFolder(
       toMove,
       folder.name
     );
     if (!success) {
-      showToast(`Error moving files: ${message}`, "error");
+      setPickerError(
+        serverErrorMessage(message || error, t, "workspace-docs.move-error")
+      );
       setBusy(null);
+      focusList();
       return;
     }
 
-    // A partial success returns a message explaining which files were skipped.
-    if (message) showToast(message, "info");
-    else
+    // A partial success returns "2/5 files not moved. Unembed them…": files
+    // embedded in a workspace stay where they were.
+    if (message) {
+      const [, notMoved, total] =
+        String(message).match(/^(\d+)\/(\d+)\b/) || [];
       showToast(
-        t("connectors.directory.move-success", { count: toMove.length }),
+        notMoved
+          ? t("notices.move-partial", {
+              count: Number(notMoved),
+              moved: Number(total) - Number(notMoved),
+              total: Number(total),
+            })
+          : t("notices.move-partial-generic"),
+        "warning",
+        // Says what to do next: it stays until it is closed.
+        { autoClose: false }
+      );
+    } else
+      showToast(
+        t("workspace-docs.move-success", { count: toMove.length }),
         "success"
       );
 
     clearSelection();
     await refresh();
     setBusy(null);
+    focusList();
   };
 
   /**
@@ -328,25 +403,36 @@ export default function Directory({
       const dropped = await getFilesFromUploadEvent(event.nativeEvent ?? event);
       const { queued, skipped } = enqueueIntoFolder(dropped, folderName);
 
+      // These say what to do instead, so they stay until they are closed.
       if (queued === 0)
         return showToast(
           skipped > 0
-            ? `Drop files onto ${folderName}, not folders - a folder can only be dropped on the uploader below.`
-            : "Nothing in that drop could be uploaded.",
-          "warning"
+            ? t("workspace-docs.drop-folder-only-files", {
+                folder: folderName,
+              })
+            : t("workspace-docs.drop-nothing"),
+          "warning",
+          skipped > 0 ? { autoClose: false } : {}
         );
 
       // The progress list lives in the uploader below the picker, which may be
       // scrolled out of view - confirm the drop landed so it does not look
       // like nothing happened.
-      showToast(`Uploading ${queued} file(s) to ${folderName}`, "info");
+      showToast(
+        t("workspace-docs.drop-uploading", {
+          count: queued,
+          folder: folderName,
+        }),
+        "info"
+      );
       if (skipped > 0)
         showToast(
-          `${skipped} file(s) inside folders were skipped - drop a folder on the uploader below to add it as its own folder.`,
-          "warning"
+          t("workspace-docs.drop-skipped", { count: skipped }),
+          "warning",
+          { autoClose: false }
         );
     },
-    [enqueueIntoFolder]
+    [enqueueIntoFolder, t]
   );
 
   const handleFolderCreated = useCallback(
@@ -357,13 +443,41 @@ export default function Directory({
     [addFolder, closeFolderModal]
   );
 
-  const handleContextMenu = (event) => {
-    event.preventDefault();
-    setContextMenu({ visible: true, x: event.clientX, y: event.clientY });
-  };
-  const closeContextMenu = useCallback(
-    () => setContextMenu({ visible: false, x: 0, y: 0 }),
-    []
+  const newFolderModal = (
+    <Modal isOpen={isFolderModalOpen} onClose={closeFolderModal}>
+      <NewFolderModal
+        closeModal={closeFolderModal}
+        onCreated={handleFolderCreated}
+      />
+    </Modal>
+  );
+
+  const deleteModal = (
+    <ConfirmModal
+      isOpen={confirmDelete}
+      title={
+        selectedCount > 0
+          ? t("workspace-docs.delete-docs-title", { count: selectedCount })
+          : t("workspace-docs.delete-folders-title", {
+              count: foldersToDelete.length,
+            })
+      }
+      confirmLabel={t("chat_window.delete")}
+      busy={deleting}
+      onConfirm={deleteFiles}
+      onCancel={() => setConfirmDelete(false)}
+    >
+      <p>{t("workspace-docs.delete-body")}</p>
+      {selectedCount > 0 && foldersToDelete.length > 0 && (
+        <p>
+          {t("workspace-docs.delete-folders-body", {
+            count: foldersToDelete.length,
+            names: foldersToDelete.join(", "),
+          })}
+        </p>
+      )}
+      <p className="font-medium">{t("workspace-docs.irreversible")}</p>
+    </ConfirmModal>
   );
 
   if (variant === "mobile")
@@ -373,246 +487,270 @@ export default function Directory({
           picker={picker}
           workspace={workspace}
           rows={rows}
+          query={query}
           embeddedCounts={embeddedCounts}
           documentCount={searchResults ? searchResultCount : totalDocCount}
+          searchResultCount={searchResultCount}
           allSelected={allSelected}
           uploadQueue={uploadQueue}
+          pickerError={pickerError}
+          onDismissError={() => setPickerError(null)}
           onSearch={handleSearch}
           onSelectAll={selectAllVisible}
           onMoveToWorkspace={moveToWorkspace}
           onMoveToFolder={moveToFolder}
-          onDelete={deleteFiles}
+          onDelete={() => setConfirmDelete(true)}
           onNewFolder={openFolderModal}
+          listRef={listRef}
         />
-        <Modal isOpen={isFolderModalOpen} onClose={closeFolderModal}>
-          <NewFolderModal
-            closeModal={closeFolderModal}
-            onCreated={handleFolderCreated}
-          />
-        </Modal>
+        {newFolderModal}
+        {deleteModal}
       </>
     );
 
+  const statusLine = hasSelection
+    ? selectionLabel
+    : searchResults
+      ? t("connectors.directory.search-results", { count: searchResultCount })
+      : totalDocCount > 0
+        ? t("connectors.directory.total-documents", { count: totalDocCount })
+        : "";
+
+  let content;
+  if (status === "initializing") {
+    content = (
+      <div className="h-full flex items-center justify-center">
+        <PreLoader />
+      </div>
+    );
+  } else if (loadError && folders.length === 0) {
+    content = (
+      <StateMessage>
+        <span role="alert">{t("workspace-docs.load-docs-error")}</span>
+        <RetryButton onClick={refresh} />
+      </StateMessage>
+    );
+  } else if (searchResults && searchResultCount === 0) {
+    content = (
+      <StateMessage>
+        {t("workspace-docs.no-results", { query: query.trim() })}
+      </StateMessage>
+    );
+  } else if (rows.length === 0) {
+    content = <StateMessage>{t("workspace-docs.empty")}</StateMessage>;
+  } else {
+    content = (
+      <ul role="list" aria-labelledby={headingId}>
+        {rows.map((row) => (
+          <FolderRow
+            key={row.item.name}
+            item={row.item}
+            files={row.files}
+            expanded={row.expanded}
+            loading={row.loading}
+            failed={row.failed}
+            hasMore={row.hasMore}
+            totalCount={row.totalCount}
+            displayCount={row.displayCount}
+            selectionState={folderSelectionState(row.item.name, row.files)}
+            isFileSelected={(id) => isFileSelected(row.item.name, id)}
+            onToggleExpanded={toggleExpanded}
+            onToggleFolder={(folder, event) =>
+              handleFolderToggle(folder, row.files, event)
+            }
+            onToggleFile={handleFileClick}
+            onPrefetch={prefetchFolder}
+            onLoadMore={loadMore}
+            onRetry={retryFolder}
+            acceptsDrops={uploadQueue.ready}
+            onDropFiles={handleFolderDrop}
+          />
+        ))}
+      </ul>
+    );
+  }
+
   return (
     <>
-      <div className="px-8 pb-8" onContextMenu={handleContextMenu}>
-        <div className="flex flex-col gap-y-6">
-          <div className="flex items-center justify-between w-[560px] px-5 relative">
-            <h3 className="text-white text-base font-bold">
-              {t("connectors.directory.my-documents")}
-            </h3>
-            <div className="relative">
-              <input
-                type="search"
-                placeholder={t("connectors.directory.search-document")}
-                onChange={handleSearch}
-                className="border-none search-input bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder focus:outline-primary-button active:outline-primary-button outline-none text-sm rounded-lg pl-9 pr-2.5 py-2 w-[250px] h-[32px] light:border-theme-modal-border light:border"
-              />
-              {searching ? (
-                <LoaderCircle
-                  strokeWidth={1.5}
-                  size={14}
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white animate-spin"
-                />
-              ) : (
-                <Search
-                  strokeWidth={1.5}
-                  size={14}
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white"
-                />
-              )}
-            </div>
-            <button
-              className="border-none flex items-center gap-x-2 cursor-pointer px-[14px] py-[7px] -mr-[14px] rounded-lg hover:bg-theme-sidebar-subitem-hover z-20 relative"
-              onClick={openFolderModal}
-            >
-              <Plus
-                strokeWidth={1.5}
-                size={18}
-                className="text-theme-text-primary light:text-[#0ba5ec]"
-              />
-              <div className="text-theme-text-primary light:text-[#0ba5ec] text-xs font-bold leading-[18px]">
-                {t("connectors.directory.new-folder")}
-              </div>
-            </button>
-          </div>
-
-          {/* Focusable so shortcuts apply to the last-clicked panel. */}
-          <div
-            className="relative w-[560px] h-[310px] bg-theme-settings-input-bg rounded-2xl overflow-hidden border border-theme-modal-border outline-none focus-within:border-cyan-300/80"
-            tabIndex={-1}
-            onKeyDown={handleKeyDown}
+      <section
+        aria-labelledby={headingId}
+        className="w-full max-w-[560px] flex flex-col gap-y-4"
+      >
+        <div className="flex items-center justify-between gap-x-3 min-h-[34px]">
+          <h3
+            id={headingId}
+            className="text-base font-semibold text-slate-50 light:text-slate-900"
           >
-            <div className="absolute top-0 left-0 right-0 z-10 rounded-t-2xl text-theme-text-primary text-xs grid grid-cols-12 py-2 px-8 border-b border-white/20 light:border-theme-modal-border bg-theme-settings-input-bg">
-              <p className="col-span-6">Name</p>
-              {searchResults ? (
-                <p className="col-span-6 text-right text-theme-text-secondary">
-                  {t(`connectors.directory.search-results`, {
-                    count: searchResultCount,
-                  })}
-                </p>
-              ) : (
-                totalDocCount > 0 && (
-                  <p className="col-span-6 text-right text-theme-text-secondary">
-                    {t(`connectors.directory.total-documents`, {
-                      count: totalDocCount,
-                    })}
-                  </p>
-                )
-              )}
-            </div>
-
-            <div className="overflow-y-auto h-full pt-8 select-none">
-              {status === "initializing" ? (
-                <div className="w-full h-full flex items-center justify-center flex-col gap-y-5">
-                  <PreLoader />
-                </div>
-              ) : rows.length > 0 ? (
-                rows.map((row) => (
-                  <FolderRow
-                    key={row.item.name}
-                    item={row.item}
-                    files={row.files}
-                    expanded={row.expanded}
-                    loading={row.loading}
-                    hasMore={row.hasMore}
-                    totalCount={row.totalCount}
-                    displayCount={row.displayCount}
-                    selectionState={folderSelectionState(
-                      row.item.name,
-                      row.files
-                    )}
-                    isFileSelected={(id) => isFileSelected(row.item.name, id)}
-                    onToggleExpanded={toggleExpanded}
-                    onToggleFolder={(folder, event) =>
-                      handleFolderToggle(folder, row.files, event)
-                    }
-                    onToggleFile={handleFileClick}
-                    onPrefetch={prefetchFolder}
-                    onLoadMore={loadMore}
-                    acceptsDrops={uploadQueue.ready}
-                    onDropFiles={handleFolderDrop}
-                  />
-                ))
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <p className="text-white text-opacity-40 text-sm font-medium">
-                    {t("connectors.directory.no-documents")}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Non-blocking status strip - mutations never blank the tree. */}
-            {!!busyMessage && (
-              <div className="absolute top-8 left-0 right-0 z-20 flex items-center justify-center gap-x-2 bg-theme-bg-secondary/95 border-b border-theme-modal-border py-1.5">
-                <LoaderCircle
-                  strokeWidth={1.5}
-                  size={12}
-                  className="animate-spin"
-                />
-                <p className="text-theme-text-primary text-xs font-medium">
-                  {busyMessage}
-                </p>
-              </div>
-            )}
-
-            {hasSelection && (
-              <div className="absolute bottom-[12px] left-0 right-0 flex justify-center pointer-events-none">
-                <div className="mx-auto bg-white/40 light:bg-white rounded-lg py-1 px-2 pointer-events-auto light:shadow-lg">
-                  <div className="flex flex-row items-center gap-x-2">
-                    <button
-                      onClick={moveToWorkspace}
-                      onMouseEnter={() => setHighlightWorkspace(true)}
-                      onMouseLeave={() => setHighlightWorkspace(false)}
-                      className="border-none text-sm font-semibold bg-white light:bg-[#E0F2FE] h-[30px] px-2.5 rounded-lg hover:bg-neutral-800/80 hover:text-white light:text-[#026AA2] light:hover:bg-[#026AA2] light:hover:text-white"
-                    >
-                      {t("connectors.directory.move-workspace")}
-                    </button>
-                    <div className="relative">
-                      <button
-                        onClick={() =>
-                          setShowFolderSelection(!showFolderSelection)
-                        }
-                        className="border-none text-sm font-semibold bg-white light:bg-[#E0F2FE] h-[32px] w-[32px] rounded-lg text-dark-text hover:bg-neutral-800/80 hover:text-white light:text-[#026AA2] light:hover:bg-[#026AA2] light:hover:text-white flex justify-center items-center group"
-                      >
-                        <MoveToFolderIcon className="text-dark-text light:text-[#026AA2] group-hover:text-white" />
-                      </button>
-                      {showFolderSelection && (
-                        <FolderSelectionPopup
-                          folders={folders}
-                          onSelect={moveToFolder}
-                          onClose={() => setShowFolderSelection(false)}
-                        />
-                      )}
-                    </div>
-                    <button
-                      onClick={deleteFiles}
-                      className="border-none text-sm font-semibold bg-white light:bg-[#E0F2FE] h-[32px] w-[32px] rounded-lg text-dark-text hover:bg-neutral-800/80 hover:text-white light:text-[#026AA2] light:hover:bg-[#026AA2] light:hover:text-white flex justify-center items-center"
-                    >
-                      <Trash2 strokeWidth={1.5} size={18} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-          <UploadFile
-            workspace={workspace}
-            queue={uploadQueue}
-            onUploadComplete={syncAfterUpload}
-            onLinkScraped={syncAfterUpload}
-          />
+            {t("connectors.directory.my-documents")}
+          </h3>
+          <button
+            type="button"
+            onClick={openFolderModal}
+            className="border-none bg-transparent flex items-center gap-x-1.5 h-8 px-2.5 -mr-2.5 rounded-lg text-xs font-semibold text-sky-400 light:text-sky-700 hover:bg-zinc-800 light:hover:bg-sky-50 transition-colors duration-quick ease-smooth"
+          >
+            <FolderPlus strokeWidth={1.5} size={16} aria-hidden="true" />
+            {t("connectors.directory.new-folder")}
+          </button>
         </div>
-        <Modal isOpen={isFolderModalOpen} onClose={closeFolderModal} noPortal>
-          <NewFolderModal
-            closeModal={closeFolderModal}
-            onCreated={handleFolderCreated}
+
+        <div className="relative">
+          <label htmlFor={searchId} className="sr-only">
+            {t("workspace-docs.search-label")}
+          </label>
+          <input
+            id={searchId}
+            type="search"
+            value={query}
+            onChange={handleSearch}
+            placeholder={t("connectors.directory.search-document")}
+            aria-busy={searching || undefined}
+            className={`${FIELD_INPUT} search-input pl-9`}
           />
-        </Modal>
-        <ContextMenu
-          contextMenu={contextMenu}
-          closeContextMenu={closeContextMenu}
-          allSelected={allSelected}
-          onSelectAll={selectAllVisible}
-          onClearSelection={clearSelection}
+          {searching ? (
+            <LoaderCircle
+              strokeWidth={1.5}
+              size={16}
+              aria-hidden="true"
+              className="absolute left-3 top-1/2 -translate-y-1/2 animate-spin text-zinc-400 light:text-slate-600"
+            />
+          ) : (
+            <Search
+              strokeWidth={1.5}
+              size={16}
+              aria-hidden="true"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 light:text-slate-600 pointer-events-none"
+            />
+          )}
+        </div>
+
+        {/* Focusable so shortcuts apply to the last-clicked panel and focus
+            has somewhere to land after a move or delete. */}
+        <div
+          ref={listRef}
+          tabIndex={-1}
+          onKeyDown={handleKeyDown}
+          aria-busy={!!busyMessage || undefined}
+          className="relative flex flex-col h-[340px] rounded-2xl border border-zinc-700 light:border-slate-300 bg-theme-settings-input-bg"
+        >
+          <div className="shrink-0 flex items-center gap-x-1 pl-1.5 pr-4 min-h-[36px] border-b border-zinc-700 light:border-slate-300 text-xs">
+            {status !== "initializing" && rows.length > 0 ? (
+              <SelectionCheckbox
+                state={headerState}
+                label={
+                  searchResults
+                    ? t("workspace-docs.select-all-results")
+                    : t("workspace-docs.select-all-docs")
+                }
+                onToggle={toggleAll}
+              />
+            ) : (
+              <span className="w-7 shrink-0" aria-hidden="true" />
+            )}
+            <span className="font-medium text-slate-100 light:text-slate-900">
+              {t("workspace-docs.column-name")}
+            </span>
+            <p
+              aria-live="polite"
+              className="ml-auto text-zinc-400 light:text-slate-600"
+            >
+              {statusLine}
+            </p>
+          </div>
+
+          <p
+            role="status"
+            className={
+              busyMessage
+                ? "shrink-0 flex items-center justify-center gap-x-2 px-3 py-1.5 text-xs font-medium border-b border-zinc-700 light:border-slate-300 text-slate-50 light:text-slate-900 bg-zinc-800 light:bg-slate-100"
+                : "sr-only"
+            }
+          >
+            {busyMessage && (
+              <LoaderCircle
+                strokeWidth={1.5}
+                size={12}
+                aria-hidden="true"
+                className="animate-spin"
+              />
+            )}
+            {busyMessage}
+          </p>
+          {pickerError && (
+            <InlineAlert onDismiss={() => setPickerError(null)}>
+              {pickerError}
+            </InlineAlert>
+          )}
+
+          <div className="flex-1 min-h-0 overflow-y-auto select-none">
+            {content}
+          </div>
+
+          {hasSelection && (
+            <div className="shrink-0 flex flex-wrap items-center gap-2 px-3 py-2 border-t border-zinc-700 light:border-slate-300">
+              <button
+                type="button"
+                onClick={() => {
+                  setHighlightWorkspace(false);
+                  moveToWorkspace();
+                }}
+                onMouseEnter={() => setHighlightWorkspace(true)}
+                onMouseLeave={() => setHighlightWorkspace(false)}
+                onFocus={() => setHighlightWorkspace(true)}
+                onBlur={() => setHighlightWorkspace(false)}
+                disabled={selectedCount === 0}
+                className={`${ACTION_BUTTON} border-none bg-zinc-50 text-zinc-950 hover:bg-zinc-200 light:bg-slate-900 light:text-white light:hover:bg-slate-700`}
+              >
+                <ArrowRight strokeWidth={1.5} size={16} aria-hidden="true" />
+                {t("connectors.directory.move-workspace")}
+              </button>
+              <MoveToFolderMenu
+                folders={folders}
+                onSelect={moveToFolder}
+                disabled={selectedCount === 0}
+                className={`${ACTION_BUTTON} bg-transparent border border-zinc-600 text-slate-50 hover:bg-zinc-800 light:border-slate-400 light:text-slate-900 light:hover:bg-slate-100`}
+              />
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(true)}
+                className={`${ACTION_BUTTON} ml-auto border-none bg-transparent text-red-400 hover:bg-red-500/15 light:text-red-700 light:hover:bg-red-50`}
+              >
+                <Trash2 strokeWidth={1.5} size={16} aria-hidden="true" />
+                {t("chat_window.delete")}
+              </button>
+            </div>
+          )}
+        </div>
+        <UploadFile
+          workspace={workspace}
+          queue={uploadQueue}
+          onUploadComplete={syncAfterUpload}
+          onLinkScraped={syncAfterUpload}
         />
-      </div>
-      <DirectoryTooltips />
+      </section>
+      {newFolderModal}
+      {deleteModal}
     </>
   );
 }
 
-/**
- * Tooltips for the directory components. Renders when the directory is shown
- * or updated so that tooltips are attached as the items are changed.
- */
-function DirectoryTooltips() {
+function StateMessage({ children }) {
   return (
-    <Tooltip
-      id="directory-item"
-      place="bottom"
-      delayShow={800}
-      className="tooltip invert light:invert-0 z-99 max-w-[300px]"
-      render={({ content }) => {
-        const data = safeJsonParse(content, null);
-        if (!data) return null;
-        return (
-          <div className="text-xs">
-            <p className="text-white light:invert font-medium break-all">
-              {data.title}
-            </p>
-            <div className="flex flex-col mt-1">
-              <p className="">
-                Date: <b>{data.date}</b>
-              </p>
-              <p className="">
-                Type: <b>{data.extension}</b>
-              </p>
-            </div>
-          </div>
-        );
-      }}
-    />
+    <div className="h-full flex flex-col items-center justify-center gap-y-2 px-8 text-center text-sm text-zinc-400 light:text-slate-600">
+      {children}
+    </div>
+  );
+}
+
+function RetryButton({ onClick }) {
+  const { t } = useTranslation();
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="border-none bg-transparent flex items-center gap-x-1.5 min-h-[44px] md:min-h-0 px-2 py-1 rounded-md text-sm font-medium underline text-slate-50 light:text-slate-900"
+    >
+      <RotateCw strokeWidth={1.5} size={14} aria-hidden="true" />
+      {t("provider-fields.retry")}
+    </button>
   );
 }

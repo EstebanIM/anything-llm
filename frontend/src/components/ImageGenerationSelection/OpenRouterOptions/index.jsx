@@ -1,7 +1,17 @@
-import { useState } from "react";
+import { useId, useState } from "react";
+import { useTranslation } from "react-i18next";
 import ImageModelSelection from "../ImageModelSelection";
+import {
+  FIELD_COL,
+  FIELD_LABEL,
+  FIELD_ROW,
+  SECRET_MASK,
+  SecretInput,
+} from "@/components/ProviderFields";
 
 export default function OpenRouterImageOptions({ settings }) {
+  const { t } = useTranslation();
+  const id = useId();
   const [inputValue, setInputValue] = useState(
     settings?.ImageGenerationOpenRouterApiKey
   );
@@ -11,22 +21,18 @@ export default function OpenRouterImageOptions({ settings }) {
 
   return (
     <div className="w-full flex flex-col gap-y-4">
-      <div className="w-full flex items-start gap-[36px] mt-1.5">
-        <div className="flex flex-col w-60">
-          <label className="text-white text-sm font-semibold block mb-3">
-            API Key
+      <div className={`${FIELD_ROW} mt-1.5`}>
+        <div className={FIELD_COL}>
+          <label htmlFor={`${id}-api-key`} className={FIELD_LABEL}>
+            {t("provider-fields.api-key")}
           </label>
-          <input
-            type="password"
+          <SecretInput
+            id={`${id}-api-key`}
             name="ImageGenerationOpenRouterApiKey"
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-            placeholder="OpenRouter API Key"
             defaultValue={
-              settings?.ImageGenerationOpenRouterApiKey ? "*".repeat(20) : ""
+              settings?.ImageGenerationOpenRouterApiKey ? SECRET_MASK : ""
             }
             required={true}
-            autoComplete="off"
-            spellCheck={false}
             onChange={(e) => setInputValue(e.target.value)}
             onBlur={() => setApiKey(inputValue)}
           />

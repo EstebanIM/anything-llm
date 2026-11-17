@@ -1,23 +1,15 @@
 import { useState } from "react";
-import { SavedIndicator } from "@/components/AutosaveForm";
+import { useTranslation } from "react-i18next";
+import { FIELD_SELECT } from "@/components/ProviderFields";
+import SettingsField from "../../components/SettingsField";
 
 // We dont support all vectorDBs yet for reranking due to complexities of how each provider
 // returns information. We need to normalize the response data so Reranker can be used for each provider.
 const supportedVectorDBs = ["lancedb"];
-const hint = {
-  default: {
-    title: "Default",
-    description:
-      "This is the fastest performance, but may not return the most relevant results leading to model hallucinations.",
-  },
-  rerank: {
-    title: "Accuracy Optimized",
-    description:
-      "LLM responses may take longer to generate, but your responses will be more accurate and relevant.",
-  },
-};
+const SEARCH_MODES = ["default", "rerank"];
 
 export default function VectorSearchMode({ workspace }) {
+  const { t } = useTranslation();
   const [selection, setSelection] = useState(
     workspace?.vectorSearchMode ?? "default"
   );
@@ -25,26 +17,27 @@ export default function VectorSearchMode({ workspace }) {
     return null;
 
   return (
-    <div className="flex flex-col">
-      <div className="flex flex-col gap-y-[8px]">
-        <label htmlFor="name" className="block input-label">
-          Search Preference
-          <SavedIndicator name="vectorSearchMode" />
-        </label>
-        <p className="text-white text-opacity-60 text-xs font-medium">
-          {hint[selection]?.description}
-        </p>
-      </div>
-      <select
-        name="vectorSearchMode"
-        value={selection}
-        className="border-none bg-theme-settings-input-bg text-white text-sm mt-2 rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-        onChange={(e) => setSelection(e.target.value)}
-        required={true}
-      >
-        <option value="default">Default</option>
-        <option value="rerank">Accuracy Optimized</option>
-      </select>
-    </div>
+    <SettingsField
+      name="vectorSearchMode"
+      label={t("workspace-settings.search-mode.title")}
+      help={t(`workspace-settings.search-mode.${selection}-description`)}
+    >
+      {(control) => (
+        <select
+          {...control}
+          name="vectorSearchMode"
+          value={selection}
+          className={FIELD_SELECT}
+          onChange={(e) => setSelection(e.target.value)}
+          required={true}
+        >
+          {SEARCH_MODES.map((mode) => (
+            <option key={mode} value={mode}>
+              {t(`workspace-settings.search-mode.${mode}`)}
+            </option>
+          ))}
+        </select>
+      )}
+    </SettingsField>
   );
 }

@@ -1,87 +1,102 @@
-import React from "react";
+import { useId } from "react";
+import { Trans, useTranslation } from "react-i18next";
+import {
+  FIELD_COL,
+  FIELD_HELP,
+  FIELD_INPUT,
+  FIELD_LABEL,
+  FIELD_ROW,
+  SECRET_MASK,
+  SecretInput,
+} from "@/components/ProviderFields";
 
 export default function OpenAiGenericTextToSpeechOptions({ settings }) {
+  const { t } = useTranslation();
+  const id = useId();
+
   return (
     <div className="w-full flex flex-col gap-y-7">
-      <div className="flex gap-x-4">
-        <div className="flex flex-col w-60">
-          <div className="flex justify-between items-start mb-2">
-            <label className="text-white text-sm font-semibold">Base URL</label>
-          </div>
+      <div className={FIELD_ROW}>
+        <div className={FIELD_COL}>
+          <label htmlFor={`${id}-base-url`} className={FIELD_LABEL}>
+            {t("provider-fields.base-url")}
+          </label>
           <input
+            id={`${id}-base-url`}
             type="url"
             name="TTSOpenAICompatibleEndpoint"
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
+            className={FIELD_INPUT}
             placeholder="http://localhost:7851/v1"
             defaultValue={settings?.TTSOpenAICompatibleEndpoint}
             required={false}
             autoComplete="off"
             spellCheck={false}
+            aria-describedby={`${id}-base-url-help`}
           />
-          <p className="text-xs leading-[18px] font-base text-white text-opacity-60 mt-2">
-            This should be the base URL of the OpenAI compatible TTS service you
-            will generate TTS responses from.
+          <p id={`${id}-base-url-help`} className={FIELD_HELP}>
+            {t("provider-forms.tts.generic.base-url-help")}
           </p>
         </div>
-        <div className="flex flex-col w-60">
-          <label className="text-white text-sm font-semibold block mb-2">
-            API Key
+        <div className={FIELD_COL}>
+          <label htmlFor={`${id}-api-key`} className={FIELD_LABEL}>
+            {t("provider-fields.api-key")}{" "}
+            <span className="font-normal text-theme-text-secondary">
+              ({t("provider-fields.optional")})
+            </span>
           </label>
-          <input
-            type="password"
+          <SecretInput
+            id={`${id}-api-key`}
             name="TTSOpenAICompatibleKey"
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-            placeholder="API Key"
-            defaultValue={
-              settings?.TTSOpenAICompatibleKey ? "*".repeat(20) : ""
-            }
-            autoComplete="off"
-            spellCheck={false}
+            defaultValue={settings?.TTSOpenAICompatibleKey ? SECRET_MASK : ""}
+            aria-describedby={`${id}-api-key-help`}
           />
-          <p className="text-xs leading-[18px] font-base text-white text-opacity-60 mt-2">
-            Some TTS services require an API key to generate TTS responses -
-            this is optional if your service does not require one.
+          <p id={`${id}-api-key-help`} className={FIELD_HELP}>
+            {t("provider-forms.shared.api-key-optional-help")}
           </p>
         </div>
       </div>
-      <div className="flex gap-x-4">
-        <div className="flex flex-col w-60">
-          <label className="text-white text-sm font-semibold block mb-3">
-            TTS Model
+      <div className={FIELD_ROW}>
+        <div className={FIELD_COL}>
+          <label htmlFor={`${id}-model`} className={FIELD_LABEL}>
+            {t("provider-forms.tts.generic.model")}
           </label>
           <input
+            id={`${id}-model`}
             type="text"
             name="TTSOpenAICompatibleModel"
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-            placeholder="Your TTS model identifier"
+            className={FIELD_INPUT}
+            placeholder={t("provider-forms.shared.model-id-placeholder")}
             defaultValue={settings?.TTSOpenAICompatibleModel}
             required={true}
             autoComplete="off"
             spellCheck={false}
+            aria-describedby={`${id}-model-help`}
           />
-          <p className="text-xs leading-[18px] font-base text-white text-opacity-60 mt-2">
-            Most TTS services will have several models available. This is the{" "}
-            <code>model</code> parameter you will use to select the model you
-            want to use. Note: This is not the same as the voice model.
+          <p id={`${id}-model-help`} className={FIELD_HELP}>
+            <Trans
+              i18nKey="provider-forms.tts.generic.model-help"
+              components={{ code: <code /> }}
+            />
           </p>
         </div>
-        <div className="flex flex-col w-60">
-          <label className="text-white text-sm font-semibold block mb-3">
-            Voice Model
+        <div className={FIELD_COL}>
+          <label htmlFor={`${id}-voice`} className={FIELD_LABEL}>
+            {t("provider-forms.tts.voice-model")}
           </label>
           <input
+            id={`${id}-voice`}
             type="text"
             name="TTSOpenAICompatibleVoiceModel"
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-            placeholder="Your voice model identifier"
+            className={FIELD_INPUT}
+            placeholder={t("provider-forms.tts.generic.voice-placeholder")}
             defaultValue={settings?.TTSOpenAICompatibleVoiceModel}
             required={true}
             autoComplete="off"
             spellCheck={false}
+            aria-describedby={`${id}-voice-help`}
           />
-          <p className="text-xs leading-[18px] font-base text-white text-opacity-60 mt-2">
-            Most TTS services will have several voice models available, this is
-            the identifier for the voice model you want to use.
+          <p id={`${id}-voice-help`} className={FIELD_HELP}>
+            {t("provider-forms.tts.generic.voice-help")}
           </p>
         </div>
       </div>

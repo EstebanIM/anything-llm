@@ -1,47 +1,36 @@
-import React, { useState } from "react";
-import AnythingLLMIcon from "@/media/logo/anything-llm-icon.png";
-import WorkspaceLLMItem from "./WorkspaceLLMItem";
-import { ALL_LLM_PROVIDERS } from "@/pages/GeneralSettings/LLMPreference";
-import ChatModelSelection from "./ChatModelSelection";
-import RouterSelection from "./RouterSelection";
+import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
-import paths from "@/utils/paths";
-import ProviderSearchMenu from "@/components/lib/ProviderSearchMenu";
+import { ALL_LLM_PROVIDERS } from "@/pages/GeneralSettings/LLMPreference";
 import { useAutosaveForm, SavedIndicator } from "@/components/AutosaveForm";
 import { withEmbeddedLemonade } from "@/components/LLMSelection/EmbeddedLemonadeOptions";
+import { FIELD_INPUT } from "@/components/ProviderFields";
+import ChatModelSelection from "./ChatModelSelection";
+import RouterSelection from "./RouterSelection";
+import ProviderPicker from "../../components/ProviderPicker";
+import SettingsField, {
+  HELP_TEXT,
+  SECTION_HEADING,
+} from "../../components/SettingsField";
+import { MODEL_ROUTER_LOGO, SYSTEM_DEFAULT_LOGO } from "@/utils/builtInLogos";
 
 // Some providers do not support model selection via /models.
 // In that case we allow the user to enter the model name manually and hope they
 // type it correctly.
 const FREE_FORM_LLM_SELECTION = ["azure"];
 
-// Some providers do not support model selection via /models
-// and only have a fixed single-model they can use.
-const NO_MODEL_SELECTION = ["default", "anythingllm-router"];
-
 // Some providers we just fully disable for ease of use.
 const DISABLED_PROVIDERS = [];
 
-const LLM_DEFAULT = {
-  name: "System default",
-  value: "default",
-  logo: AnythingLLMIcon,
-  options: () => <React.Fragment />,
-  description: "Use the system LLM preference for this workspace.",
-  requiredConfig: [],
-};
-
-const LLMS = [LLM_DEFAULT, ...ALL_LLM_PROVIDERS].filter(
-  (llm) => !DISABLED_PROVIDERS.includes(llm.value)
-);
-
 export default function WorkspaceLLMSelection({ settings, workspace }) {
+  const { t } = useTranslation();
+  const headingId = useId();
   const [selectedLLM, setSelectedLLM] = useState(
     workspace?.chatProvider ?? "default"
   );
+  // Bumped when the chosen provider's settings change, to reload its models.
+  const [settingsVersion, setSettingsVersion] = useState(0);
   const { markDirty, save } = useAutosaveForm();
-  const { t } = useTranslation();
+
   function updateLLMChoice(selection) {
     setSelectedLLM(selection);
     markDirty("chatProvider");
@@ -49,97 +38,89 @@ export default function WorkspaceLLMSelection({ settings, workspace }) {
     // Every other provider saves once its model/router picker is ready, see ModelSelector.
     if (selection === "default") save();
   }
-  const llms = withEmbeddedLemonade(LLMS, settings, {
+
+  const systemDefault = {
+    name: t("workspace-settings.llm.system-default"),
+    value: "default",
+    logo: SYSTEM_DEFAULT_LOGO,
+    description: t("workspace-settings.llm.system-default-description"),
+    requiredConfig: [],
+  };
+  const providers = ALL_LLM_PROVIDERS.filter(
+    (llm) => !DISABLED_PROVIDERS.includes(llm.value)
+  ).map((llm) =>
+    llm.value === "anythingllm-router"
+      ? { ...llm, name: t("settings.model-router"), logo: MODEL_ROUTER_LOGO }
+      : llm
+  );
+  const llms = withEmbeddedLemonade([systemDefault, ...providers], settings, {
     after: "default",
   });
-  const selectedLLMObject =
-    llms.find((llm) => llm.value === selectedLLM) ?? LLM_DEFAULT;
-  return (
-    <div className="border-b border-white/40 pb-8 min-w-0 flex flex-col gap-y-[8px]">
-      <div className="flex flex-col">
-        <label htmlFor="name" className="block input-label">
-          {t("chat.llm.title")}
-          <SavedIndicator name="chatProvider" />
-        </label>
-        <p className="text-white text-opacity-60 text-xs font-medium">
-          {t("chat.llm.description")}
-        </p>
-      </div>
 
-      <div className="relative">
-        <input type="hidden" name="chatProvider" value={selectedLLM} />
-        <ProviderSearchMenu
-          items={llms}
-          selected={selectedLLMObject}
-          placeholder={t("chat.llm.search")}
-          renderItem={(llm, close) => (
-            <WorkspaceLLMItem
-              llm={llm}
-              availableLLMs={llms}
-              settings={settings}
-              checked={selectedLLM === llm.value}
-              onClick={() => {
-                updateLLMChoice(llm.value);
-                close();
-              }}
-            />
-          )}
-        />
+  return (
+    <div className="border-b border-zinc-600 light:border-slate-300 pb-8 min-w-0 flex flex-col gap-y-2">
+      <div className="flex flex-wrap items-center">
+        <h2 id={headingId} className={SECTION_HEADING}>
+          {t("chat.llm.title")}
+        </h2>
+        <SavedIndicator name="chatProvider" />
       </div>
-      <ModelSelector selectedLLM={selectedLLM} workspace={workspace} />
+      <p id={`${headingId}-help`} className={HELP_TEXT}>
+        {t("chat.llm.description")}
+      </p>
+      <input type="hidden" name="chatProvider" value={selectedLLM} />
+      <ProviderPicker
+        labelledBy={headingId}
+        describedBy={`${headingId}-help`}
+        items={llms}
+        value={selectedLLM}
+        noSettings={["default"]}
+        settings={settings}
+        purpose="chat"
+        placeholder={t("chat.llm.search")}
+        onChange={updateLLMChoice}
+        onSettingsSaved={() => setSettingsVersion((v) => v + 1)}
+      />
+      {selectedLLM !== "default" && (
+        <div className="mt-4">
+          <ModelSelector
+            key={`${selectedLLM}-${settingsVersion}`}
+            selectedLLM={selectedLLM}
+            workspace={workspace}
+          />
+        </div>
+      )}
     </div>
   );
 }
 
-// TODO: Add this to agent selector as well as make generic component.
 function ModelSelector({ selectedLLM, workspace }) {
-  if (selectedLLM === "anythingllm-router") {
+  if (selectedLLM === "anythingllm-router")
     return <RouterSelection workspace={workspace} />;
-  }
-
-  if (NO_MODEL_SELECTION.includes(selectedLLM)) {
-    if (selectedLLM !== "default") {
-      return (
-        <div className="w-full h-10 justify-center items-center flex">
-          <p className="text-sm font-base text-white text-opacity-60 text-center">
-            Multi-model support is not supported for this provider yet.
-            <br />
-            This workspace will use{" "}
-            <Link to={paths.settings.llmPreference()} className="underline">
-              the model set for the system.
-            </Link>
-          </p>
-        </div>
-      );
-    }
-    return null;
-  }
-
-  if (FREE_FORM_LLM_SELECTION.includes(selectedLLM)) {
+  if (FREE_FORM_LLM_SELECTION.includes(selectedLLM))
     return <FreeFormLLMInput workspace={workspace} />;
-  }
-
   return <ChatModelSelection provider={selectedLLM} workspace={workspace} />;
 }
 
 function FreeFormLLMInput({ workspace }) {
   const { t } = useTranslation();
   return (
-    <div className="flex flex-col gap-y-[8px]">
-      <label className="block input-label">
-        {t("chat.model.title")}
-        <SavedIndicator name="chatModel" />
-      </label>
-      <p className="text-white text-opacity-60 text-xs font-medium">
-        {t("chat.model.description")}
-      </p>
-      <input
-        type="text"
-        name="chatModel"
-        defaultValue={workspace?.chatModel || ""}
-        className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-        placeholder="Enter model name exactly as referenced in the API (e.g., gpt-5.6-luna)"
-      />
-    </div>
+    <SettingsField
+      name="chatModel"
+      label={t("chat.model.title")}
+      help={t("chat.model.description")}
+    >
+      {(control) => (
+        <input
+          {...control}
+          type="text"
+          name="chatModel"
+          defaultValue={workspace?.chatModel || ""}
+          className={`${FIELD_INPUT} max-w-[640px]`}
+          placeholder={t("workspace-settings.llm.free-form-placeholder")}
+          autoComplete="off"
+        />
+      )}
+    </SettingsField>
   );
 }

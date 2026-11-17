@@ -1,80 +1,109 @@
-import moment from "moment";
-import { useEffect, useRef, useState } from "react";
-import { titleCase } from "text-case";
-import Admin from "@/models/admin";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Trash2 } from "lucide-react";
+import Admin from "@/models/admin";
+import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
+import { formatDateTime } from "@/utils/dates";
+import CopyButton from "@/components/lib/CopyButton";
+import { InlineConfirmButton } from "@/components/lib/InlineConfirm";
+import {
+  CELL,
+  MOBILE_LABEL,
+  ROW,
+  ROW_ACTION_DANGER,
+  ROW_ACTIONS,
+  ROW_HEADER,
+} from "@/pages/Admin/Users/AdminTable";
 
-export default function InviteRow({ invite }) {
-  const rowRef = useRef(null);
-  const [status, setStatus] = useState(invite.status);
-  const [copied, setCopied] = useState(false);
-  const handleDelete = async () => {
-    if (
-      !window.confirm(
-        `Are you sure you want to deactivate this invite?\nAfter you do this it will not longer be useable.\n\nThis action is irreversible.`
-      )
-    )
+const STATUS_STYLES = {
+  pending: "bg-sky-600/20 text-sky-300 light:text-sky-800",
+  claimed: "bg-green-600/20 text-green-300 light:text-green-800",
+  disabled: "bg-zinc-500/20 text-zinc-300 light:text-slate-700",
+};
+
+export function inviteLink(invite) {
+  return `${window.location.origin}/accept-invite/${invite.code}`;
+}
+
+export default function InviteRow({ invite, onUpdated, onRevoked }) {
+  const { t } = useTranslation();
+  const [revokeOpen, setRevokeOpen] = useState(false);
+  const created = formatDateTime(invite.createdAt);
+  const status = invite.status;
+
+  const handleRevoke = async () => {
+    const { success, error } = await Admin.disableInvite(invite.id);
+    if (!success) {
+      showToast(
+        serverErrorMessage(error, t, "admin-pages.invites.revoke-failed"),
+        "error",
+        { clear: true }
+      );
       return false;
-    if (rowRef?.current) {
-      rowRef.current.children[0].innerText = "Disabled";
     }
-    setStatus("disabled");
-    await Admin.disableInvite(invite.id);
+    showToast(t("admin-pages.invites.revoked"), "success", { clear: true });
+    // The row stays ("Disabled") without actions: focus moves on.
+    onRevoked?.();
+    onUpdated({ status: "disabled" });
+    return true;
   };
-  const copyInviteLink = () => {
-    if (!invite) return false;
-    window.navigator.clipboard.writeText(
-      `${window.location.origin}/accept-invite/${invite.code}`
-    );
-    setCopied(true);
-  };
-
-  useEffect(() => {
-    function resetStatus() {
-      if (!copied) return false;
-      setTimeout(() => {
-        setCopied(false);
-      }, 3000);
-    }
-    resetStatus();
-  }, [copied]);
 
   return (
-    <>
-      <tr
-        ref={rowRef}
-        className="bg-transparent text-white text-opacity-80 text-xs font-medium border-b border-white/10 h-10"
-      >
-        <td scope="row" className="px-6 whitespace-nowrap">
-          {titleCase(status)}
-        </td>
-        <td className="px-6">
-          {invite.claimedBy
-            ? invite.claimedBy?.username || "deleted user"
-            : "--"}
-        </td>
-        <td className="px-6">{invite.createdBy?.username || "deleted user"}</td>
-        <td className="px-6">{moment(invite.createdAt).format("lll")}</td>
-        <td className="px-6 flex items-center gap-x-6 h-full mt-1">
-          {status === "pending" && (
-            <>
-              <button
-                onClick={copyInviteLink}
-                disabled={copied}
-                className="text-xs font-medium text-blue-300 rounded-lg hover:text-blue-400 hover:underline"
-              >
-                {copied ? "Copied" : "Copy Invite Link"}
-              </button>
-              <button
-                onClick={handleDelete}
-                className="text-xs font-medium text-white/80 light:text-black/80 hover:light:text-red-500 hover:text-red-300 rounded-lg px-2 py-1 hover:bg-white hover:light:bg-red-50 hover:bg-opacity-10"
-              >
-                <Trash2 strokeWidth={1.5} className="h-5 w-5" />
-              </button>
-            </>
-          )}
-        </td>
-      </tr>
-    </>
+    <tr data-row="" className={ROW}>
+      {/* Focus lands here when the previous row is revoked. */}
+      <th scope="row" tabIndex={-1} data-row-focus="" className={ROW_HEADER}>
+        <span
+          className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
+            STATUS_STYLES[status] ?? STATUS_STYLES.disabled
+          }`}
+        >
+          {t(`admin-pages.invites.status-${status}`, { defaultValue: status })}
+        </span>
+      </th>
+      <td className={CELL}>
+        <span aria-hidden="true" className={MOBILE_LABEL}>
+          {t("admin-pages.invites.accepted-by")}:{" "}
+        </span>
+        {invite.claimedBy
+          ? invite.claimedBy?.username || t("admin-pages.invites.deleted-user")
+          : t("admin-pages.invites.not-claimed")}
+      </td>
+      <td className={CELL}>
+        <span aria-hidden="true" className={MOBILE_LABEL}>
+          {t("admin-pages.invites.created-by")}:{" "}
+        </span>
+        {invite.createdBy?.username || t("admin-pages.invites.deleted-user")}
+      </td>
+      <td className={CELL}>
+        <span aria-hidden="true" className={MOBILE_LABEL}>
+          {t("admin-pages.invites.created")}:{" "}
+        </span>
+        {created}
+      </td>
+      <td className={`${CELL} pt-2`}>
+        {status === "pending" && (
+          <div className={ROW_ACTIONS}>
+            {!revokeOpen && (
+              <CopyButton
+                text={inviteLink(invite)}
+                label={t("admin-pages.invites.copy-link", { date: created })}
+              />
+            )}
+            <InlineConfirmButton
+              label={t("admin-pages.invites.revoke-invite", { date: created })}
+              icon={Trash2}
+              triggerClassName={ROW_ACTION_DANGER}
+              question={t("admin-pages.invites.revoke-question")}
+              consequences={t("admin-pages.invites.revoke-consequences")}
+              confirmLabel={t("admin-pages.invites.revoke")}
+              align="end"
+              onConfirm={handleRevoke}
+              onOpenChange={setRevokeOpen}
+            />
+          </div>
+        )}
+      </td>
+    </tr>
   );
 }

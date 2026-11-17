@@ -1,24 +1,36 @@
+import { useState, useEffect, useId } from "react";
+import { useTranslation } from "react-i18next";
 import System from "@/models/system";
-import { ChevronDown, ChevronUp } from "lucide-react";
-import { useState, useEffect } from "react";
+import {
+  AdvancedSection,
+  FIELD_COL,
+  FIELD_ERROR,
+  FIELD_HELP,
+  FIELD_INPUT,
+  FIELD_ROW,
+  ModelsErrorText,
+  SECRET_MASK,
+  SecretInput,
+} from "@/components/ProviderFields";
+import { FieldLabel, blurOnWheel } from "@/components/LLMSelection/FormParts";
 
 export default function CometApiLLMOptions({ settings }) {
+  const { t } = useTranslation();
+  const id = useId();
+
   return (
     <div className="w-full flex flex-col gap-y-7">
-      <div className="w-full flex items-start gap-[36px] mt-1.5">
-        <div className="flex flex-col w-60">
-          <label className="text-theme-text-primary text-sm font-semibold block mb-3">
-            CometAPI API Key
-          </label>
-          <input
-            type="password"
+      <div className={`${FIELD_ROW} mt-1.5`}>
+        <div className={FIELD_COL}>
+          <FieldLabel
+            htmlFor={`${id}-key`}
+            label={t("provider-fields.api-key")}
+          />
+          <SecretInput
+            id={`${id}-key`}
             name="CometApiLLMApiKey"
-            className="border-none bg-theme-settings-input-bg text-theme-text-primary placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-            placeholder="CometAPI API Key"
-            defaultValue={settings?.CometApiLLMApiKey ? "*".repeat(20) : ""}
+            defaultValue={settings?.CometApiLLMApiKey ? SECRET_MASK : ""}
             required={true}
-            autoComplete="off"
-            spellCheck={false}
           />
         </div>
         {!settings?.credentialsOnly && (
@@ -31,59 +43,51 @@ export default function CometApiLLMOptions({ settings }) {
 }
 
 function AdvancedControls({ settings }) {
-  const [showAdvancedControls, setShowAdvancedControls] = useState(false);
+  const { t } = useTranslation();
+  const id = useId();
 
   return (
-    <div className="flex flex-col gap-y-4">
-      <div className="flex justify-start">
-        <button
-          type="button"
-          onClick={() => setShowAdvancedControls(!showAdvancedControls)}
-          className="border-none text-theme-text-primary hover:text-theme-text-secondary flex items-center text-sm"
-        >
-          {showAdvancedControls ? "Hide" : "Show"} advanced settings
-          {showAdvancedControls ? (
-            <ChevronUp strokeWidth={1.5} size={14} className="ml-1" />
-          ) : (
-            <ChevronDown strokeWidth={1.5} size={14} className="ml-1" />
-          )}
-        </button>
+    <AdvancedSection>
+      <div className={`${FIELD_COL} mt-4`}>
+        <FieldLabel
+          htmlFor={`${id}-timeout`}
+          label={t("provider-fields.timeout-ms")}
+        />
+        <input
+          id={`${id}-timeout`}
+          type="number"
+          name="CometApiLLMTimeout"
+          className={FIELD_INPUT}
+          aria-describedby={`${id}-timeout-help`}
+          defaultValue={settings?.CometApiLLMTimeout ?? 3_000}
+          autoComplete="off"
+          onWheel={blurOnWheel}
+          min={500}
+          max={600_000}
+          step={1}
+        />
+        <p id={`${id}-timeout-help`} className={FIELD_HELP}>
+          {t("llm-fields.common.stream-timeout-help")}
+        </p>
       </div>
-      <div hidden={!showAdvancedControls}>
-        <div className="flex flex-col w-60">
-          <label className="text-theme-text-primary text-sm font-semibold block mb-3">
-            Stream Timeout (ms)
-          </label>
-          <input
-            type="number"
-            name="CometApiLLMTimeout"
-            className="border-none bg-theme-settings-input-bg text-theme-text-primary placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-            placeholder="Timeout value between token responses to auto-timeout the stream"
-            defaultValue={settings?.CometApiLLMTimeout ?? 3_000}
-            autoComplete="off"
-            onScroll={(e) => e.target.blur()}
-            min={500}
-            step={1}
-          />
-          <p className="text-xs leading-[18px] font-base text-theme-text-primary text-opacity-60 mt-2">
-            Timeout value between token responses to auto-timeout the stream.
-          </p>
-        </div>
-      </div>
-    </div>
+    </AdvancedSection>
   );
 }
 
 function CometApiModelSelection({ settings }) {
   // TODO: For now, CometAPI models list is noisy; show a flat, deduped list without grouping.
   // Revisit after CometAPI model list API provides better categorization/metadata.
+  const { t } = useTranslation();
+  const id = useId();
   const [models, setModels] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     async function findCustomModels() {
       setLoading(true);
-      const { models: fetched = [] } = await System.customModels("cometapi");
+      const { models: fetched = [], error } =
+        await System.customModels("cometapi");
       if (fetched?.length > 0) {
         // De-duplicate by id (case-insensitive) and sort by name for readability
         const seen = new Set();
@@ -102,53 +106,53 @@ function CometApiModelSelection({ settings }) {
       } else {
         setModels([]);
       }
+      setError(error || null);
       setLoading(false);
     }
     findCustomModels();
   }, []);
 
-  if (loading || models.length === 0) {
-    return (
-      <div className="flex flex-col w-60">
-        <label className="text-theme-text-primary text-sm font-semibold block mb-3">
-          Chat Model Selection
-        </label>
-        <input
-          type="text"
-          name="CometApiLLMModelPref"
-          className="border-none bg-theme-settings-input-bg text-theme-text-primary placeholder:text-theme-settings-input-placeholder text-sm rounded-lg block w-full p-2.5"
-          placeholder="-- loading available models --"
-          disabled
-        />
-      </div>
-    );
-  }
-
+  // The field takes any model id, so it stays usable when the suggestion list
+  // is empty or failed to load; only the initial load disables it.
   return (
-    <div className="flex flex-col w-60">
-      <label className="text-theme-text-primary text-sm font-semibold block mb-3">
-        Chat Model Selection
-      </label>
+    <div className={FIELD_COL}>
+      <FieldLabel
+        htmlFor={`${id}-model`}
+        label={t("provider-fields.chat-model")}
+      />
       <input
+        id={`${id}-model`}
         type="text"
         name="CometApiLLMModelPref"
-        list="cometapi-models-list"
-        required
-        className="border-none bg-theme-settings-input-bg text-theme-text-primary placeholder:text-theme-settings-input-placeholder text-sm rounded-lg block w-full p-2.5"
-        placeholder="Type or select a model"
+        list={`${id}-models-list`}
+        required={true}
+        disabled={loading}
+        aria-busy={loading || undefined}
+        aria-describedby={`${error ? `${id}-model-error ` : ""}${id}-model-help`}
+        className={FIELD_INPUT}
+        placeholder={
+          loading
+            ? t("provider-fields.models-loading")
+            : t("llm-fields.cometapi.model-placeholder")
+        }
         defaultValue={settings?.CometApiLLMModelPref || ""}
         autoComplete="off"
         spellCheck={false}
       />
-      <datalist id="cometapi-models-list">
+      <datalist id={`${id}-models-list`}>
         {models.map((model) => (
           <option key={model.id} value={model.id}>
             {model.name}
           </option>
         ))}
       </datalist>
-      <p className="text-xs leading-[18px] font-base text-theme-text-primary text-opacity-60 mt-2">
-        You can type the model id directly or pick from suggestions.
+      {error && (
+        <p id={`${id}-model-error`} role="alert" className={FIELD_ERROR}>
+          <ModelsErrorText error={error} />
+        </p>
+      )}
+      <p id={`${id}-model-help`} className={FIELD_HELP}>
+        {t("llm-fields.cometapi.model-help")}
       </p>
     </div>
   );

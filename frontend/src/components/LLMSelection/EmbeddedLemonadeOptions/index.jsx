@@ -1,22 +1,35 @@
-import { useState, useEffect } from "react";
-import {
-  ChevronDown,
-  CircleCheck,
-  LoaderCircle,
-  Info,
-  Zap,
-  Plus,
-} from "lucide-react";
+import { useState, useEffect, useId } from "react";
+import { useTranslation } from "react-i18next";
+import { CircleCheck, LoaderCircle, Zap, Plus } from "lucide-react";
 import { Tooltip } from "react-tooltip";
 import strDistance from "js-levenshtein";
 import System from "@/models/system";
-import ModelTable from "@/components/lib/ModelTable";
+import ModelTable, {
+  DOWNLOADED_GROUP,
+  ModelDownloadConfirm,
+  knownModelSize,
+} from "@/components/lib/ModelTable";
 import MonoProviderIcon from "@/components/lib/MonoProviderIcon";
 import ModelTableLayout from "@/components/lib/ModelTable/layout";
 import ModelTableLoadingSkeleton from "@/components/lib/ModelTable/loading";
 import showToast from "@/utils/toast";
-import AnythingLLMIcon from "@/media/logo/anything-llm-icon.png";
+import { serverErrorMessage, serverErrorParts } from "@/utils/serverErrors";
+import ServerErrorDetail from "@/components/lib/ServerErrorDetail";
+import { BUILT_IN_LOGO } from "@/utils/builtInLogos";
 import { LLM_PREFERENCE_CHANGED_EVENT } from "@/pages/GeneralSettings/LLMPreference";
+import {
+  AdvancedSection,
+  FIELD_COL,
+  FIELD_ERROR,
+  FIELD_HELP,
+  FIELD_INPUT,
+  FIELD_ROW,
+} from "@/components/ProviderFields";
+import {
+  ExternalLink,
+  FieldLabel,
+  blurOnWheel,
+} from "@/components/LLMSelection/FormParts";
 import EmbeddedLemonadeUtils from "./utils";
 
 /**
@@ -28,12 +41,13 @@ function embeddedLemonadeLLM({ onboarding = false } = {}) {
   return {
     name: "Built-in",
     value: "embedded_lemonade",
-    logo: AnythingLLMIcon,
+    logo: BUILT_IN_LOGO,
     options: (settings) => (
       <EmbeddedLemonadeOptions settings={settings} onboarding={onboarding} />
     ),
     description:
       "Run local LLMs on this server's CPU or GPU with no extra setup.",
+    descriptionKey: "llm-fields.embedded-lemonade.description",
     requiredConfig: ["EmbeddedLemonadeEnabled"],
   };
 }
@@ -62,14 +76,18 @@ export function withEmbeddedLemonade(
 
 const DOWNLOAD_CANCELLED = "Download cancelled.";
 
+/** Text link styled button, readable in both themes. */
+const LINK_BUTTON =
+  "border-none w-fit min-h-[44px] md:min-h-0 text-sm text-sky-400 light:text-sky-700 hover:underline";
+
 export default function EmbeddedLemonadeOptions({
   settings,
   onboarding = false,
 }) {
+  const { t } = useTranslation();
   const [selectedModelId, setSelectedModelId] = useState(
     settings?.EmbeddedLemonadeModelPref
   );
-  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
   const [models, setModels] = useState([]);
   const [loading, setLoading] = useState(true);
   // The one download in flight: { label, percentage }. The server runs one download at a time.
@@ -103,11 +121,9 @@ export default function EmbeddedLemonadeOptions({
    */
   async function downloadModel(modelName, label, onProgress = () => {}) {
     if (download) {
-      showToast(
-        "Another model is downloading. Wait for it to finish or cancel it.",
-        "info",
-        { clear: true }
-      );
+      showToast(t("llm-fields.embedded-lemonade.download-busy"), "info", {
+        clear: true,
+      });
       return false;
     }
 
@@ -123,8 +139,13 @@ export default function EmbeddedLemonadeOptions({
       const cancelled = error === DOWNLOAD_CANCELLED;
       showToast(
         cancelled
-          ? `Download of ${label} cancelled.`
-          : error || `Could not download ${label}`,
+          ? t("llm-fields.embedded-lemonade.download-cancelled", { label })
+          : serverErrorMessage(
+              error,
+              t,
+              "llm-fields.embedded-lemonade.download-failed",
+              { values: { label } }
+            ),
         cancelled ? "info" : "error",
         { clear: true }
       );
@@ -135,21 +156,14 @@ export default function EmbeddedLemonadeOptions({
     return true;
   }
 
+  // ModelTable asks for confirmation before calling this.
   async function uninstallModel(modelId) {
-    if (
-      !window.confirm(
-        "Are you sure you want to uninstall this model? You will need to download it again to use it."
-      )
-    )
-      return;
     const { success, error } = await EmbeddedLemonadeUtils.removeModel(modelId);
     if (!success) {
       showToast(
-        error || "An error occurred while uninstalling the model",
+        serverErrorMessage(error, t, "llm-fields.common.uninstall-error"),
         "error",
-        {
-          clear: true,
-        }
+        { clear: true }
       );
       return;
     }
@@ -164,26 +178,9 @@ export default function EmbeddedLemonadeOptions({
         value={selectedModelId || ""}
       />
       <EngineStatus />
-      <div className="flex flex-col gap-y-[20px]">
-        <button
-          type="button"
-          className="border-none text-theme-text-primary hover:text-theme-text-secondary flex items-center text-sm w-fit h-[40px] hover:bg-theme-bg-sidebar rounded-lg transition-all duration-300"
-          onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
-        >
-          <div className="flex w-full gap-x-2 items-center">
-            {showAdvancedSettings ? "Hide" : "Show"} Advanced Settings
-          </div>
-          <ChevronDown
-            strokeWidth={1.5}
-            size={14}
-            className={`shrink-0 text-theme-text-secondary transition-transform ${showAdvancedSettings ? "rotate-180" : ""}`}
-          />
-        </button>
-        {/* Hidden instead of unmounted so the field still submits with the form. */}
-        <div hidden={!showAdvancedSettings}>
-          <AdvancedSettings settings={settings} />
-        </div>
-      </div>
+      <AdvancedSection>
+        <AdvancedSettings settings={settings} />
+      </AdvancedSection>
 
       {download ? (
         <DownloadStatus download={download} />
@@ -199,9 +196,9 @@ export default function EmbeddedLemonadeOptions({
             <button
               type="button"
               onClick={() => setShowAllModels(false)}
-              className="border-none w-fit text-sm text-sky-400 hover:underline"
+              className={LINK_BUTTON}
             >
-              Show recommended models
+              {t("llm-fields.embedded-lemonade.show-recommended")}
             </button>
           )}
           <ModelSelection
@@ -231,50 +228,31 @@ export default function EmbeddedLemonadeOptions({
 }
 
 function AdvancedSettings({ settings }) {
+  const { t } = useTranslation();
+  const id = useId();
   const [maxTokens, setMaxTokens] = useState(
     settings?.EmbeddedLemonadeTokenLimit ?? ""
   );
 
   return (
-    <div className="flex gap-[36px] flex-wrap">
-      <div className="flex flex-col w-60">
-        <div className="flex items-center gap-1 mb-3">
-          <label className="text-white text-sm font-semibold block">
-            Model context window
-          </label>
-          <Tooltip
-            id="embedded-lemonade-context-window"
-            place="top"
-            delayShow={300}
-            className="tooltip !text-xs !opacity-100 z-99"
-            style={{ maxWidth: "350px", whiteSpace: "normal" }}
-          >
-            Leave empty to use the model's context window, up to 16,384 tokens.
-            A set value is capped to what the model supports. Larger windows use
-            more memory.
-          </Tooltip>
-          <div
-            className="text-theme-text-secondary cursor-pointer hover:bg-theme-bg-primary flex items-center justify-center rounded-full"
-            data-tooltip-id="embedded-lemonade-context-window"
-          >
-            <Info
-              strokeWidth={1.5}
-              size={18}
-              className="text-theme-text-secondary"
-            />
-          </div>
-        </div>
+    <div className={`${FIELD_ROW} mt-4`}>
+      <div className={FIELD_COL}>
+        <FieldLabel
+          htmlFor={`${id}-context`}
+          label={t("provider-fields.context-window")}
+          tip={t("llm-fields.embedded-lemonade.context-window-tip")}
+        />
         <input
+          id={`${id}-context`}
           type="number"
           name="EmbeddedLemonadeTokenLimit"
-          className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-          placeholder="Auto"
-          // No native min/step: this field can be collapsed out of view, where the browser would block the save
-          // without being able to show why. The server validates it and the save shows the error.
+          className={FIELD_INPUT}
+          placeholder={t("provider-fields.context-window-auto")}
+          // No native min/step: the server validates it and the save shows the error.
           step="any"
           value={maxTokens}
           onChange={(e) => setMaxTokens(e.target.value)}
-          onScroll={(e) => e.target.blur()}
+          onWheel={blurOnWheel}
           required={false}
           autoComplete="off"
         />
@@ -285,6 +263,7 @@ function AdvancedSettings({ settings }) {
 
 /** Shows the engine download/startup while it is not ready yet. */
 function EngineStatus() {
+  const { t } = useTranslation();
   const [status, setStatus] = useState(null);
 
   useEffect(() => {
@@ -307,15 +286,26 @@ function EngineStatus() {
 
   if (!status || status.state === "ready" || status.state === "idle")
     return null;
-  if (status.state === "error")
+  if (status.state === "error") {
+    const { message, detail } = serverErrorParts(
+      status.message,
+      t,
+      "llm-fields.embedded-lemonade.engine-failed"
+    );
     return (
-      <p className="text-red-400 text-sm">
-        The local LLM engine failed to start: {status.message}
+      <p role="alert" className="text-red-400 light:text-red-700 text-sm">
+        {message}
+        <ServerErrorDetail detail={detail} />
       </p>
     );
+  }
   return (
     <div className="flex items-center gap-x-2 text-theme-text-secondary text-sm">
-      <LoaderCircle strokeWidth={1.5} className="w-4 h-4 animate-spin" />
+      <LoaderCircle
+        strokeWidth={1.5}
+        aria-hidden="true"
+        className="w-4 h-4 animate-spin"
+      />
       <p>
         {status.message}
         {status.progress !== null ? ` ${status.progress}%` : ""}
@@ -326,29 +316,36 @@ function EngineStatus() {
 
 /** The download in flight, with a way to cancel it. */
 function DownloadStatus({ download }) {
+  const { t } = useTranslation();
   return (
-    <div className="flex h-[40px] items-center gap-x-2">
+    <div className="flex min-h-[40px] items-center gap-x-2">
       <div className="border-none bg-theme-bg-secondary p-2 rounded-lg h-[24px] w-[24px] flex items-center justify-center">
         <LoaderCircle
           strokeWidth={1.5}
           size={14}
+          aria-hidden="true"
           className="shrink-0 animate-spin text-theme-text-secondary"
         />
       </div>
       <p className="text-left text-theme-text-secondary text-sm">
-        Downloading {download.label} {download.percentage}%
+        {t("llm-fields.embedded-lemonade.downloading", {
+          label: download.label,
+          percentage: download.percentage,
+        })}
       </p>
       <button
         type="button"
         onClick={async () => {
           if (!(await EmbeddedLemonadeUtils.cancelDownload()))
-            showToast("Could not cancel the download.", "error", {
-              clear: true,
-            });
+            showToast(
+              t("llm-fields.embedded-lemonade.cancel-failed"),
+              "error",
+              { clear: true }
+            );
         }}
-        className="border-none transition-all duration-300 px-2 py-1 rounded-lg text-white text-sm hover:bg-red-500"
+        className="border-none transition-colors duration-quick ease-smooth min-h-[44px] md:min-h-0 px-2 py-1 rounded-lg text-white text-sm hover:bg-red-500"
       >
-        Cancel
+        {t("settings-pages.cancel")}
       </button>
     </div>
   );
@@ -366,7 +363,10 @@ function RecommendedModels({
   downloadedIds,
   showAllModels,
 }) {
+  const { t } = useTranslation();
   const [result, setResult] = useState(null);
+  // The model waiting for the download confirmation.
+  const [pending, setPending] = useState(null);
 
   useEffect(() => {
     EmbeddedLemonadeUtils.recommendations().then(setResult);
@@ -374,36 +374,47 @@ function RecommendedModels({
 
   if (!result)
     return (
-      <div className="flex items-center gap-x-2 text-theme-text-secondary text-sm">
-        <LoaderCircle strokeWidth={1.5} className="w-4 h-4 animate-spin" />
-        <p>Finding models for your hardware...</p>
+      <div
+        role="status"
+        className="flex items-center gap-x-2 text-theme-text-secondary text-sm"
+      >
+        <LoaderCircle
+          strokeWidth={1.5}
+          aria-hidden="true"
+          className="w-4 h-4 animate-spin"
+        />
+        <p>{t("llm-fields.embedded-lemonade.finding-models")}</p>
       </div>
     );
 
   const hardware = result.vramGb
-    ? `${result.vramGb} GB GPU`
+    ? t("llm-fields.embedded-lemonade.hardware-gpu", { gb: result.vramGb })
     : result.ramGb
-      ? `${result.ramGb} GB of memory (no supported GPU)`
+      ? t("llm-fields.embedded-lemonade.hardware-ram", { gb: result.ramGb })
       : null;
 
-  async function choose(model) {
+  function choose(model) {
     if (downloadedIds.has(model.id)) return selectModel(model.id);
-    if (
-      !window.confirm(
-        `Download ${model.name}? It is ${model.size} and may take a while to download.`
-      )
-    )
-      return;
-    await downloadModel(model.id, model.name);
+    if (downloading) return;
+    setPending(model);
+  }
+
+  function confirmDownload() {
+    const model = pending;
+    setPending(null);
+    // The download shows its own progress, so the dialog closes right away.
+    downloadModel(model.id, model.name);
   }
 
   return (
     <div className="flex flex-col gap-y-3">
       <div className="flex flex-col gap-y-1">
-        <p className="text-white text-sm font-semibold">Recommended models</p>
+        <p className="text-white text-sm font-semibold">
+          {t("llm-fields.embedded-lemonade.recommended")}
+        </p>
         {hardware && (
           <p className="text-theme-text-secondary text-xs">
-            Picked to run comfortably on this server's {hardware}.
+            {t("llm-fields.embedded-lemonade.recommended-hint", { hardware })}
           </p>
         )}
       </div>
@@ -416,23 +427,27 @@ function RecommendedModels({
               <button
                 key={category}
                 type="button"
-                disabled={downloading && !downloaded}
+                aria-pressed={selected}
+                // aria-disabled, not disabled: the card that started the
+                // download keeps focus when the confirmation closes.
+                aria-disabled={(downloading && !downloaded) || undefined}
                 onClick={() => choose(model)}
-                className={`text-left flex flex-col gap-y-2 p-4 rounded-lg border transition-all duration-200 bg-theme-bg-secondary hover:bg-theme-bg-primary disabled:opacity-50 disabled:cursor-not-allowed ${selected ? "border-primary-button" : "border-theme-modal-border"}`}
+                className={`text-left flex flex-col gap-y-2 p-4 rounded-lg border transition-colors duration-quick ease-smooth bg-theme-bg-secondary hover:bg-theme-bg-primary aria-disabled:opacity-50 aria-disabled:cursor-not-allowed ${selected ? "border-primary-button" : "border-theme-modal-border"}`}
               >
-                <div className="flex items-center justify-between gap-x-2">
-                  <p className="text-xs uppercase font-semibold text-theme-text-secondary">
+                <span className="flex items-center justify-between gap-x-2">
+                  <span className="text-xs uppercase font-semibold text-theme-text-secondary">
                     {label}
-                  </p>
+                  </span>
                   {selected && (
                     <CircleCheck
                       strokeWidth={1.5}
                       size={18}
+                      aria-hidden="true"
                       className="text-primary-button shrink-0"
                     />
                   )}
-                </div>
-                <div className="flex items-center gap-x-2">
+                </span>
+                <span className="flex items-center gap-x-2">
                   <MonoProviderIcon
                     provider={model.name}
                     match="pattern"
@@ -440,41 +455,49 @@ function RecommendedModels({
                     size={20}
                     className="text-theme-text-primary shrink-0"
                   />
-                  <p className="text-white text-base font-semibold">
+                  <span className="text-white text-base font-semibold">
                     {model.name}
-                  </p>
-                </div>
-                <p className="text-theme-text-secondary text-xs">
+                  </span>
+                </span>
+                <span className="text-theme-text-secondary text-xs">
                   {description}
-                </p>
-                <p className="text-theme-text-secondary text-xs mt-auto">
+                </span>
+                <span className="text-theme-text-secondary text-xs mt-auto">
                   {[
-                    model.size,
-                    model.capabilities?.vision ? "Vision" : null,
-                    model.capabilities?.reasoning ? "Thinking" : null,
+                    knownModelSize(model.size),
+                    model.capabilities?.vision
+                      ? t("llm-fields.embedded-lemonade.vision")
+                      : null,
+                    model.capabilities?.reasoning
+                      ? t("llm-fields.embedded-lemonade.thinking")
+                      : null,
                   ]
                     .filter(Boolean)
                     .join(" · ")}
-                </p>
-                <p className="text-sm text-sky-400">
+                </span>
+                <span className="text-sm text-sky-400 light:text-sky-700">
                   {selected
-                    ? "Selected"
+                    ? t("llm-fields.embedded-lemonade.selected")
                     : downloaded
-                      ? "Use this model"
-                      : "Download"}
-                </p>
+                      ? t("llm-fields.embedded-lemonade.use-model")
+                      : t("llm-fields.embedded-lemonade.download")}
+                </span>
               </button>
             );
           }
         )}
       </div>
-      <button
-        type="button"
-        onClick={showAllModels}
-        className="border-none w-fit text-sm text-sky-400 hover:underline"
-      >
-        Show all models
+      <button type="button" onClick={showAllModels} className={LINK_BUTTON}>
+        {t("llm-fields.embedded-lemonade.show-all")}
       </button>
+      {pending && (
+        <ModelDownloadConfirm
+          name={pending.name}
+          size={pending.size}
+          onConfirm={confirmDownload}
+          onCancel={() => setPending(null)}
+        />
+      )}
     </div>
   );
 }
@@ -488,15 +511,11 @@ function ModelSelection({
   downloadModel,
   uninstallModel,
 }) {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
 
-  async function downloadFromTable(modelId, fileSize, progressCallback) {
-    if (
-      !window.confirm(
-        `Are you sure you want to download this model? It is ${fileSize} in size and may take a while to download.`
-      )
-    )
-      return;
+  // ModelTable asks for confirmation before calling this.
+  async function downloadFromTable(modelId, _fileSize, progressCallback) {
     const model = models.find((m) => m.id === modelId);
     if (await downloadModel(modelId, model?.name ?? modelId, progressCallback))
       progressCallback(100);
@@ -517,7 +536,7 @@ function ModelSelection({
   // Downloaded models first, then each family in registry order.
   const groups = new Map();
   const downloaded = filteredModels.filter((model) => model.downloaded);
-  if (downloaded.length) groups.set("Downloaded Models", downloaded);
+  if (downloaded.length) groups.set(DOWNLOADED_GROUP, downloaded);
   for (const model of filteredModels) {
     const family = model.family || model.organization || "Other";
     groups.set(family, [...(groups.get(family) || []), model]);
@@ -545,7 +564,7 @@ function ModelSelection({
       ) : filteredModels.length === 0 ? (
         <div className="flex flex-col w-full gap-y-2 mt-4">
           <p className="text-theme-text-secondary text-sm">
-            No models found! The local LLM engine may still be starting.
+            {t("llm-fields.embedded-lemonade.no-models")}
           </p>
         </div>
       ) : (
@@ -571,19 +590,22 @@ function ModelSelection({
  * owner/repo[:QUANT] or its URL.
  */
 function PullFromHuggingFace({ onPull }) {
+  const { t } = useTranslation();
+  const id = useId();
   const [showInput, setShowInput] = useState(false);
   const [repo, setRepo] = useState("");
+  const [invalid, setInvalid] = useState(false);
 
   function handlePull() {
     const checkpoint = normalizeCheckpoint(repo);
-    if (!checkpoint)
-      return showToast(
-        "Enter a repository like owner/model-GGUF or owner/model-GGUF:Q4_K_M",
-        "error",
-        { clear: true }
-      );
+    if (!checkpoint) {
+      setInvalid(true);
+      document.getElementById(`${id}-repo`)?.focus();
+      return;
+    }
     setShowInput(false);
     setRepo("");
+    setInvalid(false);
     onPull(checkpoint);
   }
 
@@ -592,69 +614,92 @@ function PullFromHuggingFace({ onPull }) {
       <button
         type="button"
         onClick={() => setShowInput(true)}
-        className="w-fit relative flex h-[40px] items-center border-none hover:bg-theme-bg-sidebar rounded-lg"
+        className="w-fit relative flex min-h-[44px] md:min-h-[40px] items-center border-none hover:bg-theme-bg-sidebar rounded-lg transition-colors duration-quick ease-smooth"
       >
-        <div className="flex w-full gap-x-2 items-center">
-          <div className="border-none bg-theme-bg-secondary p-2 rounded-lg h-[24px] w-[24px] flex items-center justify-center">
+        <span className="flex w-full gap-x-2 items-center">
+          <span className="border-none bg-theme-bg-secondary p-2 rounded-lg h-[24px] w-[24px] flex items-center justify-center">
             <Plus
               strokeWidth={1.5}
               size={14}
+              aria-hidden="true"
               className="shrink-0 text-theme-text-secondary"
             />
-          </div>
-          <p className="text-left text-theme-text-secondary text-sm">
-            Pull model from Hugging Face
-          </p>
-        </div>
+          </span>
+          <span className="text-left text-theme-text-secondary text-sm">
+            {t("llm-fields.embedded-lemonade.pull-title")}
+          </span>
+        </span>
       </button>
     );
 
   return (
     <div className="flex flex-col gap-y-2">
-      <div className="flex w-fit items-center gap-x-2">
+      <label htmlFor={`${id}-repo`} className="sr-only">
+        {t("llm-fields.embedded-lemonade.pull-label")}
+      </label>
+      <div className="flex flex-col md:flex-row w-full md:w-fit md:items-center gap-2">
         <input
+          id={`${id}-repo`}
           value={repo}
-          onChange={(e) => setRepo(e.target.value)}
+          onChange={(e) => {
+            setRepo(e.target.value);
+            setInvalid(false);
+          }}
           onKeyDown={(e) => {
             if (e.key !== "Enter") return;
             e.preventDefault();
             handlePull();
           }}
-          className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-[360px] p-2.5"
+          aria-describedby={
+            invalid ? `${id}-repo-error ${id}-repo-help` : `${id}-repo-help`
+          }
+          aria-invalid={invalid || undefined}
+          className={`${FIELD_INPUT} md:w-[360px]`}
           type="text"
           placeholder="unsloth/Qwen3-4B-GGUF:Q4_K_M"
+          autoComplete="off"
+          spellCheck={false}
           autoFocus
         />
-        <button
-          type="button"
-          onClick={handlePull}
-          className="transition-all duration-300 border border-slate-200 p-2 rounded-lg text-white text-sm items-center flex gap-x-2 hover:bg-slate-200 hover:text-slate-800"
-        >
-          Pull
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setShowInput(false);
-            setRepo("");
-          }}
-          className="border-none transition-all duration-300 p-2 rounded-lg text-white text-sm items-center flex gap-x-2 hover:bg-red-500"
-        >
-          Cancel
-        </button>
+        <div className="flex items-center gap-x-2">
+          <button
+            type="button"
+            onClick={handlePull}
+            className="transition-colors duration-quick ease-smooth min-h-[44px] md:min-h-0 border border-slate-200 light:border-slate-500 p-2 rounded-lg text-white text-sm items-center flex gap-x-2 hover:bg-slate-200 hover:text-slate-800"
+          >
+            {t("llm-fields.embedded-lemonade.pull")}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setShowInput(false);
+              setRepo("");
+              setInvalid(false);
+            }}
+            className="border-none transition-colors duration-quick ease-smooth min-h-[44px] md:min-h-0 p-2 rounded-lg text-white text-sm items-center flex gap-x-2 hover:bg-red-500"
+          >
+            {t("settings-pages.cancel")}
+          </button>
+        </div>
       </div>
-      <p className="text-theme-text-secondary text-xs max-w-[600px]">
-        Any GGUF model repository on{" "}
-        <a
+      {invalid && (
+        <p
+          id={`${id}-repo-error`}
+          role="alert"
+          className={`${FIELD_ERROR} !mt-0 max-w-[600px]`}
+        >
+          {t("llm-fields.embedded-lemonade.pull-invalid")}
+        </p>
+      )}
+      <p id={`${id}-repo-help`} className={`${FIELD_HELP} max-w-[600px]`}>
+        {t("llm-fields.embedded-lemonade.pull-help-before")}{" "}
+        <ExternalLink
           href="https://huggingface.co/models?library=gguf&sort=trending"
-          target="_blank"
-          rel="noreferrer"
-          className="text-sky-400 hover:underline"
+          className="text-sky-400 light:text-sky-700 hover:underline"
         >
           Hugging Face
-        </a>
-        , as owner/repository with an optional :quantization, or its URL. When
-        no quantization is given, Q4_K_M is used if the repository has it.
+        </ExternalLink>
+        {t("llm-fields.embedded-lemonade.pull-help-after")}
       </p>
     </div>
   );
@@ -680,17 +725,27 @@ function normalizeCheckpoint(input = "") {
 
 /** Badges shown before a model's name - the runtime is always llama.cpp, so only what sets a model apart. */
 function ModelBadges(model) {
+  return <MtpBadge model={model} />;
+}
+
+function MtpBadge({ model }) {
+  const { t } = useTranslation();
   const mtp = model.tags?.includes("mtp") || /\bmtp\b/i.test(model.name);
   if (!mtp) return null;
+  const label = t("llm-fields.embedded-lemonade.mtp-tip");
+  // Rendered inside the model row button, so it cannot be its own control:
+  // the text joins the button name and the tooltip is a pointer extra.
   return (
-    <div className="flex items-center gap-x-1">
+    <span className="flex items-center gap-x-1">
       <Zap
         strokeWidth={1.5}
         size={16}
+        role="img"
+        aria-label={label}
         className="text-amber-400 light:text-amber-600"
         data-tooltip-id="embedded-lemonade-model-badge"
-        data-tooltip-content="Multi-token prediction: usually faster on a GPU, uses a little more memory"
+        data-tooltip-content={label}
       />
-    </div>
+    </span>
   );
 }

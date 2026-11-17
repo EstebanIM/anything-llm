@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useId, useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { safeJsonParse } from "@/utils/request";
@@ -35,6 +35,7 @@ export default function MenuOption({
       location.pathname === href
     : isPathMatch(href, location.pathname);
 
+  const childrenId = useId();
   const { ref } = useScrollActiveItemIntoView({
     isActive,
     behavior: "instant",
@@ -68,56 +69,69 @@ export default function MenuOption({
     }
   };
 
+  const label = (
+    <>
+      {icon}
+      <span
+        className={`${
+          isChild ? "text-xs" : "text-sm"
+        } leading-loose whitespace-nowrap overflow-hidden ml-2 text-white light:text-black ${
+          isActive ? "font-semibold" : "font-medium"
+        } ${!icon ? "pl-5" : ""}`}
+      >
+        {btnText}
+      </span>
+    </>
+  );
+
   return (
     <div>
       <div
-        className={`
-          flex items-center justify-between w-full
-          transition-all duration-300
-          rounded-[6px]
-          ${
-            isActive
-              ? "bg-theme-sidebar-subitem-selected light:bg-slate-300 font-medium border-outline"
-              : "hover:bg-theme-sidebar-subitem-hover light:hover:bg-slate-300"
-          }
-        `}
+        className={`relative flex items-center w-full rounded-md transition-colors duration-quick ease-smooth ${
+          isActive
+            ? "bg-theme-sidebar-subitem-selected light:bg-slate-300"
+            : "hover:bg-theme-sidebar-subitem-hover light:hover:bg-slate-300"
+        }`}
       >
-        <Link
-          ref={ref}
-          to={href}
-          className={`flex flex-grow items-center px-[12px] h-[32px] font-medium ${
-            isChild ? "hover:text-white" : "text-white light:text-black"
-          }`}
-          onClick={hasChildren ? handleClick : undefined}
-        >
-          {icon}
-          <p
-            className={`${
-              isChild ? "text-xs" : "text-sm"
-            } leading-loose whitespace-nowrap overflow-hidden ml-2 ${
-              isActive
-                ? "text-white font-semibold"
-                : "text-white light:text-black"
-            } ${!icon && "pl-5"}`}
+        {isActive && (
+          <span
+            aria-hidden="true"
+            className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-[3px] rounded-full bg-[var(--theme-nav-active)]"
+          />
+        )}
+        {hasChildren ? (
+          // A group only opens and closes: it is a button, not a link.
+          <button
+            ref={ref}
+            type="button"
+            onClick={handleClick}
+            aria-expanded={isExpanded}
+            aria-controls={childrenId}
+            className="flex flex-grow items-center px-[12px] h-11 md:h-[32px] rounded-md text-left text-white light:text-black"
           >
-            {btnText}
-          </p>
-        </Link>
-        {hasChildren && (
-          <button onClick={handleClick} className="p-2 text-white">
+            {label}
             <ChevronRight
               strokeWidth={1.5}
               size={16}
-              // color={isExpanded ? "#000000" : "var(--theme-sidebar-subitem-icon)"}
-              className={`transition-transform text-white light:text-black ${
+              aria-hidden="true"
+              className={`ml-auto shrink-0 transition-transform duration-base ease-smooth text-white light:text-black ${
                 isExpanded ? "rotate-90" : ""
               }`}
             />
           </button>
+        ) : (
+          <Link
+            ref={ref}
+            to={href}
+            aria-current={isActive ? "page" : undefined}
+            className="flex flex-grow items-center px-[12px] h-11 md:h-[32px] rounded-md text-white light:text-black"
+          >
+            {label}
+          </Link>
         )}
       </div>
       {isExpanded && hasChildren && (
-        <div className="mt-1 rounded-r-lg w-full">
+        <div id={childrenId} className="mt-1 w-full">
           {childOptions.map((childOption, index) => (
             <MenuOption
               key={index}

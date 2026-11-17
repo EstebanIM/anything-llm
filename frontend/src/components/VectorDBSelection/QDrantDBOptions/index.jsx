@@ -1,15 +1,30 @@
+import { useId } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  FIELD_COL,
+  FIELD_INPUT,
+  FIELD_LABEL,
+  FIELD_ROW,
+  SECRET_MASK,
+  SecretInput,
+} from "@/components/ProviderFields";
+
 export default function QDrantDBOptions({ settings }) {
+  const { t } = useTranslation();
+  const id = useId();
+
   return (
     <div className="w-full flex flex-col gap-y-7">
-      <div className="w-full flex items-center gap-[36px] mt-1.5">
-        <div className="flex flex-col w-60">
-          <label className="text-white text-sm font-semibold block mb-3">
-            QDrant API Endpoint
+      <div className={`${FIELD_ROW} mt-1.5`}>
+        <div className={FIELD_COL}>
+          <label htmlFor={`${id}-endpoint`} className={FIELD_LABEL}>
+            {t("provider-forms.vector-db.qdrant.endpoint")}
           </label>
           <input
+            id={`${id}-endpoint`}
             type="url"
             name="QdrantEndpoint"
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
+            className={FIELD_INPUT}
             placeholder="http://localhost:6633"
             defaultValue={settings?.QdrantEndpoint}
             required={true}
@@ -18,18 +33,18 @@ export default function QDrantDBOptions({ settings }) {
           />
         </div>
 
-        <div className="flex flex-col w-60">
-          <label className="text-white text-sm font-semibold block mb-3">
-            API Key
+        <div className={FIELD_COL}>
+          <label htmlFor={`${id}-api-key`} className={FIELD_LABEL}>
+            {t("provider-fields.api-key")}{" "}
+            <span className="font-normal text-theme-text-secondary">
+              ({t("provider-fields.optional")})
+            </span>
           </label>
-          <input
-            type="password"
+          <SecretInput
+            id={`${id}-api-key`}
             name="QdrantApiKey"
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
             placeholder="wOeqxsYP4....1244sba"
-            defaultValue={settings?.QdrantApiKey ? "*".repeat(20) : ""}
-            autoComplete="off"
-            spellCheck={false}
+            defaultValue={settings?.QdrantApiKey ? SECRET_MASK : ""}
           />
         </div>
       </div>

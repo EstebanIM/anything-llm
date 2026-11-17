@@ -1,13 +1,20 @@
+import { useEffect, useId, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, X } from "lucide-react";
+import {
+  ROUTER_CONTROL,
+  ROUTER_HINT,
+  ROUTER_ICON_BUTTON,
+  ROUTER_LABEL,
+} from "../../../fieldClasses";
 
-const NUMERIC_PROPERTIES = [
+export const NUMERIC_PROPERTIES = [
   "conversationTokenCount",
   "conversationMessageCount",
   "currentHour",
 ];
 
-const BOOLEAN_PROPERTIES = ["hasImageAttachment"];
+export const BOOLEAN_PROPERTIES = ["hasImageAttachment"];
 
 function createProperties(t) {
   return [
@@ -32,6 +39,14 @@ function createProperties(t) {
       label: t("model-router.rule-form.prop-has-image"),
     },
   ];
+}
+
+/** Readable name of a condition property, used by the rule summary. */
+export function getPropertyLabel(t, property) {
+  return (
+    createProperties(t).find(({ value }) => value === property)?.label ??
+    property
+  );
 }
 
 function createStringComparators(t) {
@@ -98,6 +113,16 @@ export default function CalculatedFields({
   setConditions,
 }) {
   const { t } = useTranslation();
+  const baseId = useId();
+  const pendingFocus = useRef(null);
+  const propertyId = (index) => `${baseId}-c${index}-property`;
+
+  // Keep keyboard users in place after a condition is added or removed.
+  useEffect(() => {
+    if (pendingFocus.current === null) return;
+    document.getElementById(pendingFocus.current)?.focus();
+    pendingFocus.current = null;
+  }, [conditions.length]);
 
   const updateCondition = (index, changes) => {
     setConditions((prev) =>
@@ -106,6 +131,7 @@ export default function CalculatedFields({
   };
 
   const addCondition = () => {
+    pendingFocus.current = propertyId(conditions.length);
     setConditions((prev) => [
       ...prev,
       { property: "", comparator: "", value: "" },
@@ -113,67 +139,98 @@ export default function CalculatedFields({
   };
 
   const removeCondition = (index) => {
+    pendingFocus.current = propertyId(Math.max(0, index - 1));
     setConditions((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const toggleLogic = () => {
-    setConditionLogic((prev) => (prev === "AND" ? "OR" : "AND"));
-  };
-
   return (
-    <div className="flex flex-col gap-y-1.5 items-start">
-      <div className="flex flex-col gap-y-5 w-full">
+    <div className="flex flex-col gap-y-4 items-start w-full">
+      {conditions.length > 1 && (
+        <LogicChoice value={conditionLogic} onChange={setConditionLogic} />
+      )}
+
+      <ol className="flex flex-col gap-y-4 w-full list-none">
         {conditions.map((condition, index) => (
-          <ConditionRow
+          <li
             key={index}
-            condition={condition}
-            showLabels={index === 0}
-            logicBadge={
-              index === 0 ? null : (
-                <LogicBadge value={conditionLogic} onClick={toggleLogic} />
-              )
-            }
-            onChange={(changes) => updateCondition(index, changes)}
-            onRemove={
-              conditions.length > 1 ? () => removeCondition(index) : null
-            }
-          />
+            className="border-t border-white/10 light:border-slate-200 pt-4 first:border-t-0 first:pt-0 md:border-t-0 md:pt-0"
+          >
+            <ConditionRow
+              idPrefix={`${baseId}-c${index}`}
+              index={index}
+              condition={condition}
+              onChange={(changes) => updateCondition(index, changes)}
+              onRemove={
+                conditions.length > 1 ? () => removeCondition(index) : null
+              }
+            />
+          </li>
         ))}
-      </div>
+      </ol>
 
       <button
         type="button"
         onClick={addCondition}
-        aria-label={t("model-router.rule-form.add-condition")}
-        className="border-none mt-3 bg-zinc-800 light:bg-slate-900 text-white light:text-white rounded-md p-1 hover:opacity-90 transition-opacity"
+        className="border-none flex items-center gap-x-1.5 min-h-[44px] md:min-h-0 md:h-8 px-3 rounded-md bg-zinc-800 light:bg-slate-900 text-zinc-50 light:text-white text-sm font-medium hover:opacity-90 transition-opacity duration-quick ease-smooth"
       >
-        <Plus strokeWidth={1.5} size={16} />
+        <Plus strokeWidth={1.5} size={16} aria-hidden="true" />
+        {t("model-router.rule-form.add-condition")}
       </button>
     </div>
   );
 }
 
-function LogicBadge({ value, onClick }) {
+/** "All / Any" choice, shown once there is more than one condition. */
+function LogicChoice({ value, onChange }) {
+  const { t } = useTranslation();
+  const name = useId();
+  const options = [
+    { value: "AND", label: t("settings-pages.logic-all") },
+    { value: "OR", label: t("settings-pages.logic-any") },
+  ];
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="border-none shrink-0 self-start bg-zinc-700 light:bg-slate-200 text-white light:text-slate-950 text-xs font-medium leading-4 tracking-[1.2px] uppercase px-2.5 py-1.5 rounded-md hover:opacity-80 transition-opacity"
-    >
-      {value}
-    </button>
+    <fieldset className="min-w-0">
+      <legend className={`${ROUTER_LABEL} mb-1.5`}>
+        {t("settings-pages.logic-legend")}
+      </legend>
+      <div className="inline-flex flex-wrap gap-0.5 p-0.5 rounded-lg border border-zinc-500 light:border-slate-500">
+        {options.map((option) => (
+          <label key={option.value} className="relative cursor-pointer">
+            <input
+              type="radio"
+              name={name}
+              value={option.value}
+              checked={value === option.value}
+              onChange={() => onChange(option.value)}
+              className="peer sr-only"
+            />
+            <span className="flex items-center justify-center min-h-[40px] md:min-h-0 md:h-7 px-3 rounded-md text-sm font-medium text-zinc-300 light:text-slate-700 hover:bg-zinc-800 light:hover:bg-slate-100 peer-checked:bg-zinc-50 peer-checked:text-zinc-950 light:peer-checked:bg-slate-900 light:peer-checked:text-white peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--theme-focus-ring)] transition-colors duration-quick ease-smooth">
+              {option.label}
+            </span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
   );
 }
 
-function ConditionRow({
-  condition,
-  showLabels,
-  logicBadge,
-  onChange,
-  onRemove,
-}) {
+function ConditionRow({ idPrefix, index, condition, onChange, onRemove }) {
   const { t } = useTranslation();
   const isBoolean = BOOLEAN_PROPERTIES.includes(condition.property);
+  const number = index + 1;
+  // Below md every row stacks and shows its labels; from md only the first
+  // row shows them, the rest keep numbered labels for screen readers.
+  const labelClass = index === 0 ? ROUTER_LABEL : `${ROUTER_LABEL} md:sr-only`;
+  const fieldLabel = (key) => (
+    <>
+      {t(key)}
+      <span className="sr-only">
+        {" "}
+        {t("settings-pages.condition-number", { index: number })}
+      </span>
+    </>
+  );
 
   // Boolean properties (hasImageAttachment) have a fixed comparator (eq) and a
   // True/False value picker, so we short-circuit the normal comparator/value
@@ -200,18 +257,20 @@ function ConditionRow({
   const properties = createProperties(t);
 
   return (
-    <div className="flex items-end gap-x-5">
-      {logicBadge}
+    <div className="flex flex-col md:flex-row md:items-start gap-3 md:gap-x-5 w-full">
       <div
-        className={`grid flex-1 ${isBoolean ? "grid-cols-2" : "grid-cols-3"} gap-x-5`}
+        className={`grid flex-1 min-w-0 grid-cols-1 ${isBoolean ? "md:grid-cols-2" : "md:grid-cols-3"} gap-3 md:gap-x-5`}
       >
         <FieldColumn
-          label={showLabels ? t("model-router.rule-form.property-label") : null}
+          id={`${idPrefix}-property`}
+          labelClass={labelClass}
+          label={fieldLabel("model-router.rule-form.property-label")}
         >
           <select
+            id={`${idPrefix}-property`}
             value={condition.property}
             onChange={(e) => handlePropertyChange(e.target.value)}
-            className="bg-zinc-800 light:bg-white light:border light:border-slate-300 text-white light:text-slate-700 text-sm rounded-[8px] outline-none block w-full h-8 px-3.5"
+            className={ROUTER_CONTROL}
             required
           >
             <option value="">
@@ -227,18 +286,23 @@ function ConditionRow({
 
         {isBoolean ? (
           <FieldColumn
-            label={showLabels ? t("model-router.rule-form.value-label") : null}
+            id={`${idPrefix}-value`}
+            labelClass={labelClass}
+            label={fieldLabel("model-router.rule-form.value-label")}
           >
             <BooleanValueField
+              id={`${idPrefix}-value`}
               value={condition.value}
               onChange={(value) => onChange({ value })}
             />
           </FieldColumn>
         ) : (
           <ComparatorAndValueFields
+            idPrefix={idPrefix}
             condition={condition}
             onChange={onChange}
-            showLabels={showLabels}
+            labelClass={labelClass}
+            fieldLabel={fieldLabel}
           />
         )}
       </div>
@@ -247,36 +311,35 @@ function ConditionRow({
         <button
           type="button"
           onClick={onRemove}
-          aria-label={t("model-router.rule-form.remove-condition")}
-          className={`border-none shrink-0 self-start ${showLabels ? "mt-[34px]" : "mt-2"} text-zinc-400 light:text-slate-500 hover:text-red-400 light:hover:text-red-500 transition-colors`}
+          aria-label={t("settings-pages.condition-remove", { index: number })}
+          className={`${ROUTER_ICON_BUTTON} self-end md:self-start ${index === 0 ? "md:mt-[29px]" : "md:mt-[3px]"} hover:text-red-400 light:hover:text-red-600`}
         >
-          <X strokeWidth={1.5} size={16} />
+          <X strokeWidth={1.5} size={16} aria-hidden="true" />
         </button>
       )}
     </div>
   );
 }
 
-function FieldColumn({ label, children }) {
+function FieldColumn({ id, label, labelClass, children }) {
   return (
-    <div className="flex flex-col gap-y-1.5">
-      {label && (
-        <label className="text-sm font-medium leading-5 text-white light:text-slate-950">
-          {label}
-        </label>
-      )}
+    <div className="flex flex-col gap-y-1.5 min-w-0">
+      <label htmlFor={id} className={labelClass}>
+        {label}
+      </label>
       {children}
     </div>
   );
 }
 
-function BooleanValueField({ value, onChange }) {
+function BooleanValueField({ id, value, onChange }) {
   const { t } = useTranslation();
   return (
     <select
+      id={id}
       value={value || "true"}
       onChange={(e) => onChange(e.target.value)}
-      className="bg-zinc-800 light:bg-white light:border light:border-slate-300 text-white light:text-slate-700 text-sm rounded-[8px] outline-none block w-full h-8 px-3.5"
+      className={ROUTER_CONTROL}
       required
     >
       <option value="true">{t("model-router.rule-form.bool-true")}</option>
@@ -285,18 +348,29 @@ function BooleanValueField({ value, onChange }) {
   );
 }
 
-function ComparatorAndValueFields({ condition, onChange, showLabels }) {
+function ComparatorAndValueFields({
+  idPrefix,
+  condition,
+  onChange,
+  labelClass,
+  fieldLabel,
+}) {
   const { t } = useTranslation();
   const comparators = comparatorsFor(t, condition.property);
+  const help = valueHelp(t, condition.property, condition.comparator);
+  const helpId = `${idPrefix}-value-help`;
   return (
     <>
       <FieldColumn
-        label={showLabels ? t("model-router.rule-form.comparator-label") : null}
+        id={`${idPrefix}-comparator`}
+        labelClass={labelClass}
+        label={fieldLabel("model-router.rule-form.comparator-label")}
       >
         <select
+          id={`${idPrefix}-comparator`}
           value={condition.comparator}
           onChange={(e) => onChange({ comparator: e.target.value })}
-          className="bg-zinc-800 light:bg-white light:border light:border-slate-300 text-white light:text-slate-700 text-sm rounded-[8px] outline-none block w-full h-8 px-3.5"
+          className={ROUTER_CONTROL}
           required
         >
           <option value="">
@@ -311,9 +385,12 @@ function ComparatorAndValueFields({ condition, onChange, showLabels }) {
       </FieldColumn>
 
       <FieldColumn
-        label={showLabels ? t("model-router.rule-form.value-label") : null}
+        id={`${idPrefix}-value`}
+        labelClass={labelClass}
+        label={fieldLabel("model-router.rule-form.value-label")}
       >
         <input
+          id={`${idPrefix}-value`}
           type="text"
           value={condition.value}
           onChange={(e) => onChange({ value: e.target.value })}
@@ -322,14 +399,15 @@ function ComparatorAndValueFields({ condition, onChange, showLabels }) {
             condition.property,
             condition.comparator
           )}
-          className={`bg-zinc-800 light:bg-white light:border light:border-slate-300 text-white light:text-slate-700 placeholder:text-zinc-400 light:placeholder:text-slate-400 text-sm rounded-[8px] outline-none block w-full h-8 px-3.5 ${
+          aria-describedby={help ? helpId : undefined}
+          className={`${ROUTER_CONTROL} ${
             condition.comparator === "matches" ? "font-mono" : ""
           }`}
           required
         />
-        {valueHelp(t, condition.property, condition.comparator) && (
-          <p className="text-xs leading-4 text-zinc-400 light:text-slate-600">
-            {valueHelp(t, condition.property, condition.comparator)}
+        {help && (
+          <p id={helpId} className={ROUTER_HINT}>
+            {help}
           </p>
         )}
       </FieldColumn>

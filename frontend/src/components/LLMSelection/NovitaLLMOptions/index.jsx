@@ -1,24 +1,39 @@
+import { useState, useEffect, useId } from "react";
+import { useTranslation } from "react-i18next";
 import System from "@/models/system";
-import { ChevronDown, ChevronUp } from "lucide-react";
-import { useState, useEffect } from "react";
+import {
+  AdvancedSection,
+  FIELD_COL,
+  FIELD_HELP,
+  FIELD_INPUT,
+  FIELD_ROW,
+  SECRET_MASK,
+  SecretInput,
+} from "@/components/ProviderFields";
+import {
+  FieldLabel,
+  ModelSelectField,
+  blurOnWheel,
+  modelStatus,
+} from "@/components/LLMSelection/FormParts";
 
 export default function NovitaLLMOptions({ settings }) {
+  const { t } = useTranslation();
+  const id = useId();
+
   return (
     <div className="w-full flex flex-col gap-y-7">
-      <div className="w-full flex items-start gap-[36px] mt-1.5">
-        <div className="flex flex-col w-60">
-          <label className="text-theme-text-primary text-sm font-semibold block mb-3">
-            Novita API Key
-          </label>
-          <input
-            type="password"
+      <div className={`${FIELD_ROW} mt-1.5`}>
+        <div className={FIELD_COL}>
+          <FieldLabel
+            htmlFor={`${id}-key`}
+            label={t("provider-fields.api-key")}
+          />
+          <SecretInput
+            id={`${id}-key`}
             name="NovitaLLMApiKey"
-            className="border-none bg-theme-settings-input-bg text-theme-text-primary placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-            placeholder="Novita API Key"
-            defaultValue={settings?.NovitaLLMApiKey ? "*".repeat(20) : ""}
+            defaultValue={settings?.NovitaLLMApiKey ? SECRET_MASK : ""}
             required={true}
-            autoComplete="off"
-            spellCheck={false}
           />
         </div>
         {!settings?.credentialsOnly && (
@@ -31,57 +46,48 @@ export default function NovitaLLMOptions({ settings }) {
 }
 
 function AdvancedControls({ settings }) {
-  const [showAdvancedControls, setShowAdvancedControls] = useState(false);
+  const { t } = useTranslation();
+  const id = useId();
 
   return (
-    <div className="flex flex-col gap-y-4">
-      <div className="flex justify-start">
-        <button
-          type="button"
-          onClick={() => setShowAdvancedControls(!showAdvancedControls)}
-          className="border-none text-theme-text-primary hover:text-theme-text-secondary flex items-center text-sm"
-        >
-          {showAdvancedControls ? "Hide" : "Show"} advanced settings
-          {showAdvancedControls ? (
-            <ChevronUp strokeWidth={1.5} size={14} className="ml-1" />
-          ) : (
-            <ChevronDown strokeWidth={1.5} size={14} className="ml-1" />
-          )}
-        </button>
+    <AdvancedSection>
+      <div className={`${FIELD_COL} mt-4`}>
+        <FieldLabel
+          htmlFor={`${id}-timeout`}
+          label={t("provider-fields.timeout-ms")}
+        />
+        <input
+          id={`${id}-timeout`}
+          type="number"
+          name="NovitaLLMTimeout"
+          className={FIELD_INPUT}
+          aria-describedby={`${id}-timeout-help`}
+          defaultValue={settings?.NovitaLLMTimeout ?? 3_000}
+          autoComplete="off"
+          onWheel={blurOnWheel}
+          min={500}
+          max={600_000}
+          step={1}
+        />
+        <p id={`${id}-timeout-help`} className={FIELD_HELP}>
+          {t("llm-fields.common.stream-timeout-help")}
+        </p>
       </div>
-      <div hidden={!showAdvancedControls}>
-        <div className="flex flex-col w-60">
-          <label className="text-theme-text-primary text-sm font-semibold block mb-3">
-            Stream Timeout (ms)
-          </label>
-          <input
-            type="number"
-            name="NovitaLLMTimeout"
-            className="border-none bg-theme-settings-input-bg text-theme-text-primary placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-            placeholder="Timeout value between token responses to auto-timeout the stream"
-            defaultValue={settings?.NovitaLLMTimeout ?? 3_000}
-            autoComplete="off"
-            onScroll={(e) => e.target.blur()}
-            min={500}
-            step={1}
-          />
-          <p className="text-xs leading-[18px] font-base text-theme-text-primary text-opacity-60 mt-2">
-            Timeout value between token responses to auto-timeout the stream.
-          </p>
-        </div>
-      </div>
-    </div>
+    </AdvancedSection>
   );
 }
 
 function NovitaModelSelection({ settings }) {
+  const { t } = useTranslation();
   const [groupedModels, setGroupedModels] = useState({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     async function findCustomModels() {
       setLoading(true);
-      const { models } = await System.customModels("novita");
+      const { models, error } = await System.customModels("novita");
       if (models?.length > 0) {
         const modelsByOrganization = models.reduce((acc, model) => {
           acc[model.organization] = acc[model.organization] || [];
@@ -90,56 +96,36 @@ function NovitaModelSelection({ settings }) {
         }, {});
         setGroupedModels(modelsByOrganization);
       }
+      setError(error || null);
       setLoading(false);
     }
     findCustomModels();
-  }, []);
-
-  if (loading || Object.keys(groupedModels).length === 0) {
-    return (
-      <div className="flex flex-col w-60">
-        <label className="text-theme-text-primary text-sm font-semibold block mb-3">
-          Chat Model Selection
-        </label>
-        <select
-          name="NovitaLLMModelPref"
-          disabled={true}
-          className="border-none bg-theme-settings-input-bg text-theme-text-primary border-theme-border text-sm rounded-lg block w-full p-2.5"
-        >
-          <option disabled={true} selected={true}>
-            -- loading available models --
-          </option>
-        </select>
-      </div>
-    );
-  }
+  }, [attempt]);
 
   return (
-    <div className="flex flex-col w-60">
-      <label className="text-theme-text-primary text-sm font-semibold block mb-3">
-        Chat Model Selection
-      </label>
-      <select
-        name="NovitaLLMModelPref"
-        required={true}
-        className="border-none bg-theme-settings-input-bg text-theme-text-primary border-theme-border text-sm rounded-lg block w-full p-2.5"
-      >
-        {Object.keys(groupedModels)
-          .sort()
-          .map((organization) => (
-            <optgroup key={organization} label={organization}>
-              {groupedModels[organization].map((model) => (
-                <option
-                  key={model.id}
-                  value={model.id}
-                  selected={settings?.NovitaLLMModelPref === model.id}
-                >
-                  {model.name}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-      </select>
-    </div>
+    <ModelSelectField
+      name="NovitaLLMModelPref"
+      label={t("provider-fields.chat-model")}
+      status={modelStatus({
+        loading,
+        error,
+        count: Object.keys(groupedModels).length,
+      })}
+      error={error}
+      onRetry={() => setAttempt((n) => n + 1)}
+      defaultValue={settings?.NovitaLLMModelPref}
+    >
+      {Object.keys(groupedModels)
+        .sort()
+        .map((organization) => (
+          <optgroup key={organization} label={organization}>
+            {groupedModels[organization].map((model) => (
+              <option key={model.id} value={model.id}>
+                {model.name}
+              </option>
+            ))}
+          </optgroup>
+        ))}
+    </ModelSelectField>
   );
 }

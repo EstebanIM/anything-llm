@@ -2,10 +2,16 @@ import { useEffect, useState, useRef } from "react";
 import { Volume2, CirclePause, LoaderCircle } from "lucide-react";
 import Workspace from "@/models/workspace";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import { useTranslation } from "react-i18next";
+import { ACTION_BUTTON_CLASS } from "../constants";
 
 export default function AsyncTTSMessage({ slug, chatId }) {
   const playerRef = useRef(null);
+  // Object URL of the fetched audio, owned by this component until cleanup.
+  const audioUrlRef = useRef(null);
+  // Bumped on cleanup so a request that resolves late releases its URL.
+  const generationRef = useRef(0);
   const [speaking, setSpeaking] = useState(false);
   const [loading, setLoading] = useState(false);
   const [audioSrc, setAudioSrc] = useState(null);
@@ -20,13 +26,24 @@ export default function AsyncTTSMessage({ slug, chatId }) {
     try {
       if (!audioSrc) {
         setLoading(true);
+        const generation = generationRef.current;
         Workspace.ttsMessage(slug, chatId)
-          .then((audioBlob) => {
-            if (!audioBlob)
-              throw new Error("Failed to load or play TTS message response.");
-            setAudioSrc(audioBlob);
+          .then((audioUrl) => {
+            if (!audioUrl) throw new Error(t("chat-history.tts.failed"));
+            if (generation !== generationRef.current) {
+              URL.revokeObjectURL(audioUrl);
+              return;
+            }
+            audioUrlRef.current = audioUrl;
+            setAudioSrc(audioUrl);
           })
-          .catch((e) => showToast(e.message, "error", { clear: true }))
+          .catch((e) =>
+            showToast(
+              serverErrorMessage(e, t, "chat-history.tts.failed"),
+              "error",
+              { clear: true }
+            )
+          )
           .finally(() => setLoading(false));
       } else {
         playerRef.current.play();
@@ -39,58 +56,77 @@ export default function AsyncTTSMessage({ slug, chatId }) {
   }
 
   useEffect(() => {
-    function setupPlayer() {
-      if (!playerRef?.current) return;
-      playerRef.current.addEventListener("play", () => {
-        setSpeaking(true);
-      });
-
-      playerRef.current.addEventListener("pause", () => {
-        playerRef.current.currentTime = 0;
-        setSpeaking(false);
-      });
-    }
-    setupPlayer();
+    const player = playerRef.current;
+    if (!player) return;
+    const onPlay = () => setSpeaking(true);
+    const onPause = (e) => {
+      e.target.currentTime = 0;
+      setSpeaking(false);
+    };
+    player.addEventListener("play", onPlay);
+    player.addEventListener("pause", onPause);
+    return () => {
+      player.removeEventListener("play", onPlay);
+      player.removeEventListener("pause", onPause);
+    };
   }, []);
 
+  // Stop the audio and release its URL when the message changes (rows are
+  // reused across threads) or the button unmounts, so speech never carries
+  // over to another thread.
+  useEffect(() => {
+    // Captured now: React clears the ref before this cleanup runs on unmount,
+    // and a detached <audio> keeps playing.
+    const player = playerRef.current;
+    return () => {
+      generationRef.current += 1;
+      player?.pause();
+      player?.removeAttribute("src");
+      if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current);
+      audioUrlRef.current = null;
+      setAudioSrc(null);
+      setSpeaking(false);
+      setLoading(false);
+    };
+  }, [chatId]);
+
   if (!chatId) return null;
+  const label = speaking
+    ? t("chat-history.tts.pause")
+    : t("chat_window.tts_speak_message");
   return (
-    <div className="mt-3 relative">
-      <button
-        onClick={speakMessage}
-        data-auto-play-chat-id={chatId}
-        data-tooltip-id="message-to-speech"
-        data-tooltip-content={
-          speaking
-            ? t("pause_tts_speech_message")
-            : t("chat_window.tts_speak_message")
-        }
-        className="border-none text-zinc-300 light:text-slate-500"
-        aria-label={speaking ? "Pause speech" : "Speak message"}
-      >
-        {speaking ? (
-          <CirclePause strokeWidth={1.5} size={18} className="mb-1" />
-        ) : (
-          <>
-            {loading ? (
-              <LoaderCircle
-                strokeWidth={1.5}
-                size={18}
-                className="mb-1 animate-spin"
-              />
-            ) : (
-              <Volume2 strokeWidth={1.5} size={18} className="mb-1" />
-            )}
-          </>
-        )}
-        <audio
-          ref={playerRef}
-          hidden={true}
-          src={audioSrc}
-          autoPlay={true}
-          controls={false}
-        />
-      </button>
-    </div>
+    <button
+      type="button"
+      onClick={speakMessage}
+      data-auto-play-chat-id={chatId}
+      data-tooltip-id="message-to-speech"
+      data-tooltip-content={label}
+      className={ACTION_BUTTON_CLASS}
+      aria-label={label}
+    >
+      {speaking ? (
+        <CirclePause strokeWidth={1.5} size={18} aria-hidden="true" />
+      ) : (
+        <>
+          {loading ? (
+            <LoaderCircle
+              strokeWidth={1.5}
+              size={18}
+              aria-hidden="true"
+              className="animate-spin"
+            />
+          ) : (
+            <Volume2 strokeWidth={1.5} size={18} aria-hidden="true" />
+          )}
+        </>
+      )}
+      <audio
+        ref={playerRef}
+        hidden={true}
+        src={audioSrc ?? undefined}
+        autoPlay={true}
+        controls={false}
+      />
+    </button>
   );
 }

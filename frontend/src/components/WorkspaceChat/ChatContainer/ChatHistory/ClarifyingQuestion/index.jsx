@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import useTimeoutProgress from "@/hooks/useTimeoutProgress";
 import Header from "./Header";
 import InputForm from "./InputForm";
@@ -9,7 +10,10 @@ import { answerForDraft, emptyDraftFor } from "./utils";
 
 function TimeoutProgressBar({ percent }) {
   return (
-    <div className="absolute bottom-0 left-0 right-0 h-1 bg-zinc-700 light:bg-slate-300">
+    <div
+      aria-hidden="true"
+      className="absolute bottom-0 left-0 right-0 h-1 bg-zinc-700 light:bg-slate-300"
+    >
       <div
         className="h-full bg-sky-500 light:bg-sky-600 transition-none"
         style={{ width: `${percent}%` }}
@@ -18,13 +22,16 @@ function TimeoutProgressBar({ percent }) {
   );
 }
 
-function CardWrapper({ children, onInteract }) {
+function CardWrapper({ children, onInteract, cardRef, label }) {
   return (
     <div className="flex justify-center w-full my-1 pr-4">
       <div className="w-full flex flex-col">
         <div
-          style={{ borderRadius: "20px" }}
-          className="relative border border-solid border-zinc-700 light:border-zinc-300 bg-transparent p-[18px] flex flex-col gap-[18px] overflow-hidden"
+          ref={cardRef}
+          role="group"
+          aria-label={label}
+          tabIndex={-1}
+          className="relative rounded-xl border border-solid border-zinc-700 light:border-zinc-300 bg-transparent p-[18px] flex flex-col gap-[18px] overflow-hidden"
           onPointerEnter={onInteract}
           onPointerDownCapture={onInteract}
           onKeyDownCapture={onInteract}
@@ -140,6 +147,15 @@ export default function ClarifyingQuestionCard({
   const [drafts, setDrafts] = useState(() =>
     questions.map((q) => emptyDraftFor(q))
   );
+  const { t } = useTranslation();
+  const cardRef = useRef(null);
+  const answeredByUser = responded && !submittedResult?.timedOut;
+
+  // Submitting or skipping replaces the controls the user was on; keep
+  // focus on the card, which now shows the answers.
+  useEffect(() => {
+    if (answeredByUser) cardRef.current?.focus();
+  }, [answeredByUser]);
 
   const progressPercent = useTimeoutProgress(timeoutMs, {
     active: !responded && !engaged,
@@ -231,9 +247,16 @@ export default function ClarifyingQuestionCard({
   }
 
   return (
-    <CardWrapper onInteract={handleInteract}>
+    <CardWrapper
+      onInteract={handleInteract}
+      cardRef={cardRef}
+      label={t("chat-history.clarifying.label")}
+    >
       {!responded && (
         <>
+          <span className="sr-only" role="status">
+            {t("chat-history.clarifying.announce")}
+          </span>
           <Header
             question={currentQuestion?.question}
             index={index}

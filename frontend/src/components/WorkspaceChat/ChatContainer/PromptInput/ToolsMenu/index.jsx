@@ -37,12 +37,16 @@ function getTabs(t, user) {
 }
 
 /**
+ * Popup of the prompt combobox. Focus stays in the prompt textarea: arrow keys
+ * arrive through TOOLS_MENU_KEYBOARD_EVENT and the highlighted option is
+ * exposed on the textarea with aria-activedescendant.
  * @param {Workspace} props.workspace - the workspace object
  * @param {boolean} props.showing
  * @param {function} props.setShowing
  * @param {function} props.sendCommand
  * @param {object} props.promptRef
  * @param {boolean} [props.centered] - when true, popup opens below the input
+ * @param {string} props.idBase - prefix for the listbox, tab and option ids
  */
 export default function ToolsMenu({
   workspace,
@@ -52,6 +56,7 @@ export default function ToolsMenu({
   promptRef,
   centered = false,
   highlightedIndexRef,
+  idBase = "tools-menu",
 }) {
   const { t } = useTranslation();
   const { user } = useUser();
@@ -61,6 +66,15 @@ export default function ToolsMenu({
   const [maxHeight, setMaxHeight] = useState(360);
   const itemCountRef = useRef(0);
   const popoverRef = useRef(null);
+  const tabRefs = useRef({});
+
+  const listboxId = `${idBase}-listbox`;
+  const panelId = `${idBase}-panel`;
+  const tabId = (key) => `${idBase}-tab-${key}`;
+  const getOptionId = useCallback(
+    (index) => `${idBase}-opt-${index}`,
+    [idBase]
+  );
 
   // Always open to the slash commands
   useEffect(() => {
@@ -95,9 +109,36 @@ export default function ToolsMenu({
     if (highlightedIndexRef) highlightedIndexRef.current = highlightedIndex;
   }, [highlightedIndex]);
 
+  // The textarea is the combobox: point it at the highlighted option.
+  useEffect(() => {
+    const textarea = promptRef?.current;
+    if (!textarea) return;
+    if (showing && highlightedIndex >= 0) {
+      textarea.setAttribute(
+        "aria-activedescendant",
+        getOptionId(highlightedIndex)
+      );
+    } else {
+      textarea.removeAttribute("aria-activedescendant");
+    }
+  }, [showing, highlightedIndex, activeTab, getOptionId]);
+
+  useEffect(() => {
+    const textarea = promptRef?.current;
+    return () => textarea?.removeAttribute("aria-activedescendant");
+  }, []);
+
   const registerItemCount = useCallback((count) => {
     itemCountRef.current = count;
   }, []);
+
+  function switchTab(direction, { focus = false } = {}) {
+    const currentIdx = TABS.findIndex((tab) => tab.key === activeTab);
+    const nextIdx = (currentIdx + direction + TABS.length) % TABS.length;
+    const nextKey = TABS[nextIdx].key;
+    setActiveTab(nextKey);
+    if (focus) tabRefs.current[nextKey]?.focus();
+  }
 
   useEffect(() => {
     if (!showing) return;
@@ -106,12 +147,7 @@ export default function ToolsMenu({
       const { key } = e.detail;
 
       if (key === "ArrowLeft" || key === "ArrowRight") {
-        const currentIdx = TABS.findIndex((tab) => tab.key === activeTab);
-        const nextIdx =
-          key === "ArrowLeft"
-            ? (currentIdx - 1 + TABS.length) % TABS.length
-            : (currentIdx + 1) % TABS.length;
-        setActiveTab(TABS[nextIdx].key);
+        switchTab(key === "ArrowLeft" ? -1 : 1);
         return;
       }
 
@@ -139,6 +175,13 @@ export default function ToolsMenu({
 
   const { component: ActiveTab } = TABS.find((tab) => tab.key === activeTab);
 
+  function handleTabListKeyDown(e) {
+    if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+      e.preventDefault();
+      switchTab(e.key === "ArrowLeft" ? -1 : 1, { focus: true });
+    }
+  }
+
   return (
     <>
       <div
@@ -153,15 +196,34 @@ export default function ToolsMenu({
           // Skip for portaled modals so their inputs can still receive focus.
           if (e.currentTarget.contains(e.target)) e.preventDefault();
         }}
+        onKeyDown={(e) => {
+          // Escape from a tab or a row button inside the popup (the textarea
+          // handles its own). Portaled menus and modals handle theirs.
+          if (e.key !== "Escape" || e.defaultPrevented) return;
+          if (!e.currentTarget.contains(e.target)) return;
+          e.preventDefault();
+          setShowing(false);
+          promptRef?.current?.focus();
+        }}
         style={{ maxHeight }}
-        className={`absolute left-2 right-2 md:left-14 md:right-auto md:w-[400px] z-50 bg-zinc-800 light:bg-white border border-zinc-700 light:border-slate-300 rounded-lg p-3 flex flex-col gap-2.5 shadow-lg overflow-hidden ${
-          centered ? "top-full mt-2" : "bottom-full mb-2"
+        className={`absolute left-2 right-2 md:left-14 md:right-auto md:w-[400px] z-50 bg-zinc-800 light:bg-white border border-zinc-700 light:border-slate-300 rounded-lg p-3 flex flex-col gap-2.5 shadow-lg overflow-hidden animate-in fade-in-0 [animation-duration:var(--dur-base)] [animation-timing-function:var(--ease-smooth)] ${
+          centered
+            ? "top-full mt-2 [--tw-enter-translate-y:-4px]"
+            : "bottom-full mb-2 [--tw-enter-translate-y:4px]"
         }`}
       >
-        <div className="flex shrink-0 gap-2.5 items-center">
+        <div
+          role="tablist"
+          aria-label={t("chat_window.tools")}
+          onKeyDown={handleTabListKeyDown}
+          className="flex shrink-0 gap-2.5 items-center"
+        >
           {TABS.map((tab) => (
             <TabButton
               key={tab.key}
+              buttonRef={(el) => (tabRefs.current[tab.key] = el)}
+              id={tabId(tab.key)}
+              controls={panelId}
               active={activeTab === tab.key}
               onClick={() => setActiveTab(tab.key)}
             >
@@ -170,7 +232,12 @@ export default function ToolsMenu({
           ))}
         </div>
 
-        <div className="flex flex-col gap-1 overflow-y-auto no-scroll min-h-0">
+        <div
+          role="tabpanel"
+          id={panelId}
+          aria-labelledby={tabId(activeTab)}
+          className="flex flex-col gap-1 overflow-y-auto no-scroll min-h-0"
+        >
           <ActiveTab
             sendCommand={sendCommand}
             setShowing={setShowing}
@@ -178,6 +245,9 @@ export default function ToolsMenu({
             highlightedIndex={highlightedIndex}
             registerItemCount={registerItemCount}
             workspace={workspace}
+            listboxId={listboxId}
+            listboxLabelledBy={tabId(activeTab)}
+            getOptionId={getOptionId}
           />
         </div>
       </div>
@@ -185,18 +255,22 @@ export default function ToolsMenu({
   );
 }
 
-function TabButton({ active, onClick, children }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`border-none cursor-pointer hover:bg-zinc-700/50 light:hover:bg-slate-100 px-1.5 py-0.5 rounded text-[10px] font-medium text-center whitespace-nowrap ${
-        active
-          ? "bg-zinc-700 text-white light:bg-slate-200 light:text-slate-800"
-          : "text-zinc-400 light:text-slate-800"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
+const TabButton = ({ buttonRef, id, controls, active, onClick, children }) => (
+  <button
+    ref={buttonRef}
+    id={id}
+    type="button"
+    role="tab"
+    aria-selected={active}
+    aria-controls={controls}
+    tabIndex={active ? 0 : -1}
+    onClick={onClick}
+    className={`border-none cursor-pointer hover:bg-zinc-700/50 light:hover:bg-slate-100 px-1.5 py-0.5 min-h-11 md:min-h-0 rounded text-xs font-medium text-center whitespace-nowrap transition-colors duration-quick ${
+      active
+        ? "bg-zinc-700 text-white light:bg-slate-200 light:text-slate-800"
+        : "text-zinc-400 light:text-slate-600"
+    }`}
+  >
+    {children}
+  </button>
+);

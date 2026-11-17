@@ -56,7 +56,7 @@ export default function SearchBox({ user, showNewWsModal }) {
   }, []);
 
   return (
-    <div className="flex gap-x-[5px] w-full items-center h-[32px]">
+    <div className="flex gap-x-[5px] w-full items-center h-11 md:h-[32px]">
       <div className="relative h-full w-full flex">
         <input
           ref={searchRef}
@@ -65,7 +65,7 @@ export default function SearchBox({ user, showNewWsModal }) {
           onChange={handleSearch}
           onReset={handleReset}
           onFocus={(e) => e.target.select()}
-          className="border-none w-full h-full rounded-lg bg-theme-sidebar-item-default pl-9 focus:pl-4 pr-1 placeholder:text-white/50 light:placeholder:text-slate-500 placeholder:font-semibold outline-none text-theme-text-primary search-input peer text-sm"
+          className="border-none w-full h-full rounded-lg bg-theme-sidebar-item-default pl-9 focus:pl-4 pr-1 placeholder:text-white/50 light:placeholder:text-slate-500 placeholder:font-semibold text-theme-text-primary search-input peer text-base md:text-sm"
         />
         <Search
           strokeWidth={1.5}
@@ -198,21 +198,24 @@ function ShortWidthNewWorkspaceButton({ user, showNewWsModal }) {
   return (
     <>
       <button
+        type="button"
+        aria-label={t("new-workspace.title")}
         data-tooltip-id="new-workspace-tooltip"
         data-tooltip-content={t("new-workspace.title")}
         onClick={showNewWsModal}
-        className="border-none flex items-center justify-center bg-white  rounded-lg p-[8px] hover:bg-white/80 light:hover:bg-slate-300 transition-all duration-300"
+        className="border-none flex items-center justify-center h-full aspect-square bg-white rounded-lg hover:bg-white/80 light:hover:bg-slate-300 transition-colors duration-quick"
       >
         <Plus
           strokeWidth={1.5}
           size={16}
+          aria-hidden="true"
           className="text-black light:text-slate-500"
         />
       </button>
       <Tooltip
         id="new-workspace-tooltip"
         place="top"
-        delayShow={300}
+        delayShow={120}
         className="tooltip !text-xs"
       />
     </>

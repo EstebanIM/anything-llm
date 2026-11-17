@@ -6,12 +6,7 @@ import {
   resolvePalette,
 } from "@/palettes";
 import { useState, useEffect, useSyncExternalStore } from "react";
-
-const availableThemes = {
-  system: "System",
-  light: "Light",
-  dark: "Dark",
-};
+import { useTranslation } from "react-i18next";
 
 /**
  * @typedef {'system' | 'light' | 'dark'} ThemeOption
@@ -36,6 +31,12 @@ const availableThemes = {
  * @returns {UseThemeResult}
  */
 export function useTheme() {
+  const { t } = useTranslation();
+  const availableThemes = {
+    system: t("settings-pages.theme-system"),
+    light: t("settings-pages.theme-light"),
+    dark: t("settings-pages.theme-dark"),
+  };
   const [theme, _setTheme] = useState(() => {
     const stored = localStorage.getItem("theme");
     if (stored === "default") return "dark"; // migrate legacy value

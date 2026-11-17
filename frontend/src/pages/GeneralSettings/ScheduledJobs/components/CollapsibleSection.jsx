@@ -1,76 +1,62 @@
-import { useState } from "react";
-import { ChevronDown, ChevronRight, CircleCheck, Copy } from "lucide-react";
-import { copyMarkdownAsRichText } from "@/utils/clipboard";
+import { useId, useState } from "react";
+import { ChevronRight } from "lucide-react";
+import CopyButton from "@/components/lib/CopyButton";
+
+export const SECTION =
+  "border border-zinc-700 light:border-slate-400 rounded-lg overflow-hidden";
+export const SECTION_TITLE =
+  "text-sm font-medium text-zinc-50 light:text-slate-950 uppercase tracking-[1.4px]";
 
 // Generic expand/collapse panel used by the run-detail page to wrap each
-// trace section (thinking, tool calls, response, files).
+// trace section (thinking, tool calls, response, files). The toggle lives in
+// an <h2> so the sections show up in the page outline.
 export default function CollapsibleSection({
   title,
   icon: Icon,
   children,
   defaultOpen = false,
-  copyableContent = null,
+  copyText = null,
+  copyLabel,
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  const contentId = useId();
   return (
-    <div className="border border-zinc-700 light:border-slate-400 rounded-lg overflow-hidden">
-      <div className="flex items-center justify-between">
-        <button
-          type="button"
-          onClick={() => setOpen(!open)}
-          className="border-none flex-1 h-12 flex items-center gap-2 px-[18px] hover:bg-white/5 light:hover:bg-slate-100 transition-colors text-left"
-        >
-          {open ? (
-            <ChevronDown
-              strokeWidth={1.5}
-              className="h-4 w-4 text-zinc-50 light:text-slate-950"
-            />
-          ) : (
+    <section className={SECTION}>
+      <div className="flex items-center justify-between gap-2 pr-2">
+        <h2 className="flex-1 min-w-0">
+          <button
+            type="button"
+            onClick={() => setOpen(!open)}
+            aria-expanded={open}
+            aria-controls={contentId}
+            className="border-none w-full min-h-[48px] flex items-center gap-2 px-[18px] text-left text-sm font-medium text-zinc-50 light:text-slate-950 hover:bg-white/5 light:hover:bg-slate-100 transition-colors duration-quick ease-smooth"
+          >
             <ChevronRight
               strokeWidth={1.5}
-              className="h-4 w-4 text-zinc-50 light:text-slate-950"
+              aria-hidden="true"
+              className={`h-4 w-4 shrink-0 transition-transform duration-quick ease-smooth ${
+                open ? "rotate-90" : ""
+              }`}
             />
-          )}
-          <Icon className="h-4 w-4 text-zinc-50 light:text-slate-950" />
-          <span className="text-sm font-medium text-zinc-50 light:text-slate-950">
-            {title}
-          </span>
-        </button>
-        {copyableContent && <CopyButton content={copyableContent} />}
+            {Icon && (
+              <Icon
+                strokeWidth={1.5}
+                aria-hidden="true"
+                className="h-4 w-4 shrink-0"
+              />
+            )}
+            <span>{title}</span>
+          </button>
+        </h2>
+        {copyText && <CopyButton text={copyText} label={copyLabel} />}
       </div>
-      {open && (
-        <div className="px-[18px] py-3 border-t border-zinc-700 light:border-slate-400">
-          {children}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function CopyButton({ content }) {
-  const [copied, setCopied] = useState(false);
-  const copyToClipboard = async () => {
-    await copyMarkdownAsRichText(content);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  return (
-    <button
-      type="button"
-      onClick={copyToClipboard}
-      disabled={copied}
-      className="h-12 px-4 flex items-center hover:bg-white/5 light:hover:bg-slate-100 transition-colors"
-    >
-      {copied ? (
-        <CircleCheck strokeWidth={1.5} size={20} className="text-green-500" />
-      ) : (
-        <Copy
-          strokeWidth={1.5}
-          size={20}
-          className="text-zinc-50 light:text-slate-950"
-        />
-      )}
-    </button>
+      <div
+        id={contentId}
+        hidden={!open}
+        className="px-[18px] py-3 border-t border-zinc-700 light:border-slate-400"
+      >
+        {children}
+      </div>
+    </section>
   );
 }

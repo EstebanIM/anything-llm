@@ -1,151 +1,227 @@
-import React, { useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Search } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import Admin from "@/models/admin";
-import showToast from "@/utils/toast";
+import StatusNote from "@/components/lib/StatusNote";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import {
   ModalHeader,
   ModalBody,
   ModalFooter,
   ModalPrimaryButton,
+  ModalSecondaryButton,
 } from "@/components/lib/Modal";
+import { FIELD_INPUT } from "@/components/ProviderFields";
 
-export default function AddMemberModal({ closeModal, workspace, users }) {
+// Admins and managers already reach every workspace, so they are not listed.
+const UNLISTED_ROLES = ["superadmin", "admin", "manager"];
+
+const CHECKBOX =
+  "h-4 w-4 shrink-0 cursor-pointer accent-sky-500 light:accent-sky-700";
+const OPTION_ROW =
+  "flex items-center gap-x-3 min-h-[44px] md:min-h-[32px] px-2 rounded-md cursor-pointer text-sm font-medium text-zinc-100 light:text-slate-900 hover:bg-zinc-800 light:hover:bg-slate-100 transition-colors duration-quick ease-smooth";
+
+export default function AddMemberModal({
+  closeModal,
+  workspace,
+  users,
+  onSaved,
+  onBusyChange,
+}) {
+  const { t } = useTranslation();
+  const searchId = useId();
+  const helpId = useId();
+  const selectAllRef = useRef(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedUsers, setSelectedUsers] = useState(workspace?.userIds || []);
+  const [initialUsers] = useState(() => workspace?.userIds || []);
+  const [selectedUsers, setSelectedUsers] = useState(initialUsers);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
+
+  const listedUsers = users.filter(
+    (user) => !UNLISTED_ROLES.includes(user.role)
+  );
+  const filteredUsers = listedUsers.filter((user) =>
+    user.username.toLowerCase().includes(searchTerm.trim().toLowerCase())
+  );
+  const shownSelected = filteredUsers.filter((user) =>
+    selectedUsers.includes(user.id)
+  ).length;
+  const allShownSelected =
+    filteredUsers.length > 0 && shownSelected === filteredUsers.length;
+  const someShownSelected = shownSelected > 0 && !allShownSelected;
+  const removedCount = listedUsers.filter(
+    (user) => initialUsers.includes(user.id) && !selectedUsers.includes(user.id)
+  ).length;
+
+  useEffect(() => {
+    if (selectAllRef.current)
+      selectAllRef.current.indeterminate = someShownSelected;
+  }, [someShownSelected]);
 
   const handleUpdate = async (e) => {
     e.preventDefault();
+    e.stopPropagation();
+    if (saving || !workspace) return;
+    setSaveError(null);
+    setSaving(true);
+    onBusyChange?.(true);
     const { success, error } = await Admin.updateUsersInWorkspace(
       workspace.id,
       selectedUsers
     );
-    if (success) {
-      showToast("Users updated successfully.", "success");
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+    setSaving(false);
+    onBusyChange?.(false);
+    if (!success) {
+      // The dialog stays open: the error goes above its buttons.
+      setSaveError(
+        serverErrorMessage(
+          error,
+          t,
+          "workspace-settings.members.save-failed-generic"
+        )
+      );
+      return;
     }
-    showToast(error, "error");
+    onSaved?.();
   };
 
-  const handleUserSelect = (userId) => {
-    setSelectedUsers((prevSelectedUsers) => {
-      if (prevSelectedUsers.includes(userId)) {
-        return prevSelectedUsers.filter((id) => id !== userId);
-      } else {
-        return [...prevSelectedUsers, userId];
-      }
-    });
+  const toggleUser = (userId) => {
+    setSelectedUsers((current) =>
+      current.includes(userId)
+        ? current.filter((id) => id !== userId)
+        : [...current, userId]
+    );
   };
 
-  const handleSelectAll = () => {
-    if (selectedUsers.length === filteredUsers.length) {
-      setSelectedUsers([]);
-    } else {
-      setSelectedUsers(filteredUsers.map((user) => user.id));
-    }
+  // Acts on the users shown by the search; hidden selections are kept.
+  const toggleShown = () => {
+    const shownIds = filteredUsers.map((user) => user.id);
+    setSelectedUsers((current) =>
+      allShownSelected
+        ? current.filter((id) => !shownIds.includes(id))
+        : [...new Set([...current, ...shownIds])]
+    );
   };
 
-  const handleUnselect = () => {
-    setSelectedUsers([]);
-  };
-
-  const isUserSelected = (userId) => {
-    return selectedUsers.includes(userId);
-  };
-
-  const handleSearch = (event) => {
-    setSearchTerm(event.target.value);
-  };
-
-  const filteredUsers = users
-    .filter((user) =>
-      user.username.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .filter((user) => !["admin", "superadmin"].includes(user.role))
-    .filter((user) => user.role !== "manager");
-
+  const close = saving ? undefined : closeModal;
   return (
     <form onSubmit={handleUpdate} className="flex flex-col gap-y-5">
-      <ModalHeader title="Users" onClose={closeModal}>
-        <div className="relative mt-2 w-full">
-          <input
-            onChange={handleSearch}
-            className="w-full h-[34px] bg-zinc-800 light:bg-white border border-zinc-800 light:border-slate-300 rounded-[100px] text-zinc-100 light:text-slate-900 placeholder:text-zinc-400 light:placeholder:text-slate-400 text-sm px-10 pl-10 outline-none focus:border-sky-500 light:focus:border-sky-500"
-            placeholder="Search for a user"
-          />
-          <Search
-            strokeWidth={1.5}
-            size={16}
-            className="text-zinc-400 light:text-slate-500 absolute left-3 top-1/2 transform -translate-y-1/2"
-          />
-        </div>
-      </ModalHeader>
+      <ModalHeader
+        title={t("workspace-settings.members.manage")}
+        subtitle={
+          workspace?.name
+            ? t("workspace-settings.members.manage-subtitle", {
+                name: workspace.name,
+              })
+            : null
+        }
+        onClose={close}
+      />
       <ModalBody>
-        <table className="gap-y-[8px] flex flex-col max-h-[385px] overflow-y-auto no-scroll">
+        <div className="flex flex-col gap-y-1.5">
+          <label htmlFor={searchId} className="sr-only">
+            {t("workspace-settings.members.search")}
+          </label>
+          <div className="relative">
+            <Search
+              strokeWidth={1.5}
+              size={16}
+              aria-hidden="true"
+              className="pointer-events-none text-zinc-400 light:text-slate-600 absolute left-3 top-1/2 -translate-y-1/2"
+            />
+            <input
+              id={searchId}
+              type="search"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder={t("workspace-settings.members.search")}
+              aria-describedby={helpId}
+              autoComplete="off"
+              className={`${FIELD_INPUT} pl-9`}
+            />
+          </div>
+          <p id={helpId} className="text-xs text-zinc-400 light:text-slate-600">
+            {t("workspace-settings.members.roles-note")}
+          </p>
+        </div>
+
+        <fieldset className="min-w-0">
+          <legend className="sr-only">
+            {t("workspace-settings.members.users")}
+          </legend>
           {filteredUsers.length > 0 ? (
-            filteredUsers.map((user) => (
-              <tr
-                key={user.id}
-                className="flex items-center gap-x-2 cursor-pointer"
-                onClick={() => handleUserSelect(user.id)}
+            <>
+              <label
+                className={`${OPTION_ROW} border-b border-zinc-700 light:border-slate-200 mb-1`}
               >
-                <div
-                  className="shrink-0 w-3 h-3 rounded border-[1px] border-solid border-white light:border-black flex justify-center items-center"
-                  role="checkbox"
-                  aria-checked={isUserSelected(user.id)}
-                  tabIndex={0}
-                >
-                  {isUserSelected(user.id) && (
-                    <div className="w-2 h-2 bg-white light:bg-black rounded-[2px]" />
-                  )}
-                </div>
-                <p className="text-zinc-100 light:text-slate-900 text-sm font-medium">
-                  {user.username}
-                </p>
-              </tr>
-            ))
+                <input
+                  ref={selectAllRef}
+                  type="checkbox"
+                  checked={allShownSelected}
+                  onChange={toggleShown}
+                  className={CHECKBOX}
+                />
+                {searchTerm.trim()
+                  ? t("workspace-settings.members.select-shown")
+                  : t("workspace-settings.members.select-all")}
+              </label>
+              <ul className="flex flex-col max-h-[320px] overflow-y-auto">
+                {filteredUsers.map((user) => (
+                  <li key={user.id}>
+                    <label className={OPTION_ROW}>
+                      <input
+                        type="checkbox"
+                        checked={selectedUsers.includes(user.id)}
+                        onChange={() => toggleUser(user.id)}
+                        className={CHECKBOX}
+                      />
+                      <span className="min-w-0 break-words">
+                        {user.username}
+                      </span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            </>
           ) : (
-            <p className="text-zinc-400 light:text-slate-500 text-sm font-medium ">
-              No users found
+            <p className="text-zinc-400 light:text-slate-600 text-sm font-medium">
+              {listedUsers.length === 0
+                ? t("workspace-settings.members.no-users")
+                : t("common.noResults")}
             </p>
           )}
-        </table>
+        </fieldset>
+        <p
+          role="status"
+          className="text-xs text-amber-300 light:text-amber-800"
+        >
+          {removedCount > 0
+            ? t("workspace-settings.members.removing", { count: removedCount })
+            : ""}
+        </p>
+        {saveError && (
+          <StatusNote tone="error" announce>
+            {saveError}
+          </StatusNote>
+        )}
       </ModalBody>
       <ModalFooter>
-        <div className="flex items-center gap-x-2">
-          <button
-            type="button"
-            onClick={handleSelectAll}
-            className="border-none bg-transparent flex items-center gap-x-2"
-          >
-            <div
-              className="shrink-0 w-3 h-3 rounded border-[1px] border-white light:border-black flex justify-center items-center cursor-pointer"
-              role="checkbox"
-              aria-checked={selectedUsers.length === filteredUsers.length}
-              tabIndex={0}
-            >
-              {selectedUsers.length === filteredUsers.length && (
-                <div className="w-2 h-2 bg-white light:bg-black rounded-[2px]" />
-              )}
-            </div>
-            <p className="text-zinc-100 light:text-slate-900 text-sm font-medium">
-              Select All
-            </p>
-          </button>
-          {selectedUsers.length > 0 && (
-            <button
-              type="button"
-              onClick={handleUnselect}
-              className="border-none bg-transparent flex items-center gap-x-2"
-            >
-              <p className="text-zinc-400 light:text-slate-500 text-sm font-medium hover:text-zinc-100 light:hover:text-slate-900">
-                Unselect
-              </p>
-            </button>
-          )}
-        </div>
-        <ModalPrimaryButton type="submit">Save</ModalPrimaryButton>
+        <ModalSecondaryButton
+          type="button"
+          onClick={closeModal}
+          disabled={saving}
+        >
+          {t("settings-pages.cancel")}
+        </ModalSecondaryButton>
+        <ModalPrimaryButton
+          type="submit"
+          aria-busy={saving || undefined}
+          aria-disabled={saving || undefined}
+          className="aria-disabled:cursor-wait aria-disabled:opacity-60"
+        >
+          {saving ? t("common.saving") : t("common.save")}
+        </ModalPrimaryButton>
       </ModalFooter>
     </form>
   );

@@ -1,93 +1,180 @@
-import { NavLink } from "react-router-dom";
-import { House, RefreshCw, Copy, Check } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { isRouteErrorResponse, useRouteError } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import {
+  ChevronRight,
+  House,
+  RefreshCw,
+  RotateCw,
+  TriangleAlert,
+} from "lucide-react";
+import usePageTitle from "@/hooks/usePageTitle";
+import CopyButton from "@/components/lib/CopyButton";
+import paths from "@/utils/paths";
 
-export default function ErrorBoundaryFallback({ error, resetErrorBoundary }) {
-  const [copied, setCopied] = useState(false);
+// A lazy screen whose file no longer exists (the app was updated while open)
+// or could not be downloaded, in Chrome, Firefox, Safari and Vite's wording.
+const CHUNK_LOAD_ERROR =
+  /dynamically imported module|importing a module script failed|failed to load module script|unable to preload css|chunkloaderror|loading (css )?chunk [\w-]+ failed/i;
 
-  const copyErrorDetails = async () => {
-    const details = {
-      url: window.location.href,
-      error: error?.name || "Unknown Error",
-      message: error?.message || "No message available",
-      stack: error?.stack || "No stack trace available",
-      userAgent: navigator.userAgent,
-      timestamp: new Date().toISOString(),
-    };
+export function isChunkLoadError(error) {
+  return CHUNK_LOAD_ERROR.test(`${error?.name || ""} ${error?.message || ""}`);
+}
 
-    const formattedDetails = `
-Error Report
-============
-Timestamp: ${details.timestamp}
-URL: ${details.url}
-User Agent: ${details.userAgent}
+/** Plain-text report for support: no stack trace, nothing from the session. */
+function errorReport(error) {
+  const summary = isRouteErrorResponse(error)
+    ? `${error.status} ${error.statusText || ""}`.trim()
+    : `${error?.name || "Error"}: ${error?.message || String(error ?? "")}`;
+  return [
+    summary,
+    window.location.href,
+    new Date().toISOString(),
+    navigator.userAgent,
+  ].join("\n");
+}
 
-Error: ${details.error}
-Message: ${details.message}
-
-Stack Trace:
-${details.stack}
-    `.trim();
-
+/**
+ * The router error screen replaces the whole app, ThemeProvider included,
+ * and may show before it ever ran: apply the stored theme so the page is not
+ * left half dark, half light.
+ */
+function useStoredTheme() {
+  useEffect(() => {
+    const root = document.documentElement;
+    if (root.hasAttribute("data-theme")) return;
+    let stored = null;
     try {
-      await navigator.clipboard.writeText(formattedDetails);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy error details:", err);
-    }
-  };
+      stored = window.localStorage.getItem("theme");
+    } catch {}
+    const theme =
+      stored === "light" || stored === "dark"
+        ? stored
+        : stored !== "default" &&
+            window.matchMedia?.("(prefers-color-scheme: light)").matches
+          ? "light"
+          : "dark";
+    root.setAttribute("data-theme", theme);
+    document.body.classList.toggle("light", theme === "light");
+  }, []);
+}
+
+const BUTTON =
+  "inline-flex items-center justify-center gap-x-2 min-h-[44px] px-4 rounded-lg text-sm font-medium transition-colors duration-quick ease-smooth";
+const PRIMARY = `${BUTTON} bg-primary-button text-theme-button-primary-text hover:bg-primary-button-hover`;
+const SECONDARY = `${BUTTON} border border-zinc-600 light:border-slate-500 text-theme-text-primary hover:bg-zinc-800 light:hover:bg-slate-100`;
+
+/**
+ * Full-page error state: what happened in plain words, a way out (retry,
+ * reload, home) and the technical details folded away for support.
+ * @param {object} props
+ * @param {unknown} props.error
+ * @param {() => void} [props.onRetry] - re-render the failed part (error boundary reset)
+ */
+function ErrorScreen({ error, onRetry }) {
+  const { t } = useTranslation();
+  const headingRef = useRef(null);
+  const [report] = useState(() => errorReport(error));
+  const needsReload = isChunkLoadError(error);
+  const title = needsReload
+    ? t("dialogs.error.update-title")
+    : t("dialogs.error.title");
+  usePageTitle(title);
+  useStoredTheme();
+
+  useEffect(() => {
+    headingRef.current?.focus();
+  }, []);
+
+  const reload = () => window.location.reload();
+  const reloadLabel = needsReload
+    ? t("dialogs.error.reload-update")
+    : t("dialogs.error.reload");
+  const retryFirst = !needsReload && !!onRetry;
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-theme-bg-primary text-theme-text-primary gap-4 p-4 md:p-8 w-full">
-      <h1 className="text-xl md:text-2xl font-bold text-center">
-        An error occurred.
-      </h1>
-      <p className="text-theme-text-secondary text-center px-4">
-        {error?.message}
-      </p>
-      {import.meta.env.DEV && (
-        <div className="w-full max-w-4xl">
-          <div className="flex justify-end mb-2">
-            <button
-              onClick={copyErrorDetails}
-              className="flex items-center gap-2 px-3 py-1.5 bg-theme-bg-secondary text-theme-text-primary rounded hover:bg-theme-sidebar-item-hover transition-all duration-200 text-xs font-medium"
-              title="Copy error details"
-            >
-              {copied ? (
-                <>
-                  <Check strokeWidth={1.5} className="w-3.5 h-3.5" />
-                  Copied!
-                </>
-              ) : (
-                <>
-                  <Copy strokeWidth={1.5} className="w-3.5 h-3.5" />
-                  Copy Details
-                </>
-              )}
+    <main className="min-h-dvh w-full flex items-center justify-center bg-theme-bg-primary px-4 py-8">
+      <div className="flex flex-col items-center gap-y-3 w-full max-w-lg text-center">
+        <TriangleAlert
+          strokeWidth={1.5}
+          size={40}
+          aria-hidden="true"
+          className="text-theme-text-secondary"
+        />
+        <h1
+          ref={headingRef}
+          tabIndex={-1}
+          className="text-xl font-semibold text-theme-text-primary"
+        >
+          {title}
+        </h1>
+        <p className="text-sm text-theme-text-secondary">
+          {needsReload
+            ? t("dialogs.error.update-description")
+            : t("dialogs.error.description")}
+        </p>
+        <div className="mt-2 flex flex-col md:flex-row md:flex-wrap md:justify-center gap-2 w-full">
+          {retryFirst && (
+            <button type="button" onClick={onRetry} className={PRIMARY}>
+              <RotateCw strokeWidth={1.5} size={16} aria-hidden="true" />
+              {t("server-unavailable.retry")}
             </button>
-          </div>
-          <pre className="w-full text-xs md:text-sm text-theme-text-secondary bg-theme-bg-secondary p-4 md:p-6 rounded-lg overflow-x-auto overflow-y-auto max-h-[60vh] md:max-h-[70vh] whitespace-pre-wrap break-words font-mono border border-theme-border shadow-sm">
-            {error?.stack}
-          </pre>
+          )}
+          <button
+            type="button"
+            onClick={reload}
+            className={retryFirst ? SECONDARY : PRIMARY}
+          >
+            <RefreshCw strokeWidth={1.5} size={16} aria-hidden="true" />
+            {reloadLabel}
+          </button>
+          {/* A full load on purpose: a router link does nothing when the
+              failure happened on the home page itself. */}
+          <a href={paths.home()} className={SECONDARY}>
+            <House strokeWidth={1.5} size={16} aria-hidden="true" />
+            {t("sidebar-nav.go-home")}
+          </a>
         </div>
-      )}
-      <div className="flex flex-col md:flex-row gap-3 md:gap-4 mt-4 w-full md:w-auto">
-        <button
-          onClick={resetErrorBoundary}
-          className="flex items-center justify-center gap-2 px-4 py-2 bg-theme-bg-secondary text-theme-text-primary rounded-lg hover:bg-theme-sidebar-item-hover transition-all duration-300 w-full md:w-auto"
-        >
-          <RefreshCw strokeWidth={1.5} className="w-4 h-4" />
-          Reset
-        </button>
-        <NavLink
-          to="/"
-          className="flex items-center justify-center gap-2 px-4 py-2 bg-theme-bg-secondary text-theme-text-primary rounded-lg hover:bg-theme-sidebar-item-hover transition-all duration-300 w-full md:w-auto"
-        >
-          <House strokeWidth={1.5} className="w-4 h-4" />
-          Home
-        </NavLink>
+        <details className="group mt-4 w-full text-left">
+          <summary className="list-none [&::-webkit-details-marker]:hidden inline-flex items-center gap-x-1.5 min-h-[44px] md:min-h-[32px] px-2 rounded-lg cursor-pointer text-sm text-theme-text-secondary hover:text-theme-text-primary">
+            <ChevronRight
+              strokeWidth={1.5}
+              size={16}
+              aria-hidden="true"
+              className="transition-transform duration-quick ease-smooth group-open:rotate-90"
+            />
+            {t("dialogs.error.details")}
+          </summary>
+          <div className="mt-2 flex flex-col items-start gap-y-2">
+            <pre className="w-full max-h-60 overflow-auto p-3 rounded-lg bg-theme-bg-secondary border border-zinc-700 light:border-slate-300 text-xs font-mono whitespace-pre-wrap break-words text-theme-text-secondary">
+              {report}
+            </pre>
+            <CopyButton
+              text={report}
+              label={t("dialogs.error.copy-details")}
+              showLabel
+            />
+          </div>
+        </details>
       </div>
-    </div>
+    </main>
   );
+}
+
+/** Fallback for the app-wide react-error-boundary in App.jsx. */
+export default function ErrorBoundaryFallback({ error, resetErrorBoundary }) {
+  return <ErrorScreen error={error} onRetry={resetErrorBoundary} />;
+}
+
+/**
+ * `errorElement` of the root route: a lazy screen that failed to load, or an
+ * error outside the app's own boundary. Without it React Router shows its
+ * developer page (English, with the stack).
+ */
+export function RouteErrorFallback() {
+  const error = useRouteError();
+  useEffect(() => {
+    console.error(error);
+  }, [error]);
+  return <ErrorScreen error={error} />;
 }

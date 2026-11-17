@@ -13,7 +13,8 @@ import Appearance from "@/models/appearance";
  *
  * Follow model: while `followRef` is true the container is pinned to the
  * bottom every animation frame. The user disengages by scrolling up
- * (wheel/touch) and re-engages by scrolling back down to the bottom,
+ * (wheel, touch, keyboard or dragging the scrollbar) and re-engages by
+ * scrolling back down to the bottom,
  * sending a new prompt, or clicking the scroll-to-bottom button.
  *
  * @param {Array} history - The chat history (drives follow re-engage on send)
@@ -118,6 +119,33 @@ export default function useAutoScroll(history, imperativeRef) {
     if (e.deltaY < 0) followRef.current = false;
   }, []);
 
+  // Keys that scroll the container up. Ignored while typing in a field inside
+  // the history (message edit, agent cards), where they move the caret.
+  const handleKeyDown = useCallback((e) => {
+    const target = e.target;
+    if (
+      target instanceof HTMLElement &&
+      (target.isContentEditable ||
+        /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))
+    )
+      return;
+    const scrollsUp =
+      e.key === "PageUp" ||
+      e.key === "ArrowUp" ||
+      e.key === "Home" ||
+      (e.key === " " && e.shiftKey);
+    if (scrollsUp) followRef.current = false;
+  }, []);
+
+  // A press on the container itself, past its content width, is a press on
+  // its scrollbar: the user is about to drag it, so stop pinning.
+  const handlePointerDown = useCallback((e) => {
+    const el = chatHistoryRef.current;
+    if (!el || e.target !== el) return;
+    const { left } = el.getBoundingClientRect();
+    if (e.clientX - left >= el.clientWidth) followRef.current = false;
+  }, []);
+
   const handleTouchStart = useCallback((e) => {
     touchStartYRef.current = e.touches[0].clientY;
   }, []);
@@ -154,6 +182,8 @@ export default function useAutoScroll(history, imperativeRef) {
       onWheel: handleWheel,
       onTouchStart: handleTouchStart,
       onTouchMove: handleTouchMove,
+      onKeyDown: handleKeyDown,
+      onPointerDown: handlePointerDown,
     },
   };
 }

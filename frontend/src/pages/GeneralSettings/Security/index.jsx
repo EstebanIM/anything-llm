@@ -1,15 +1,23 @@
-import { useEffect, useState } from "react";
+import { ACCOUNT_ERRORS, PW_REGEX, setAuthNotice } from "@/utils/authErrors";
+import { useEffect, useId, useRef, useState } from "react";
 import Sidebar from "@/components/SettingsSidebar";
-import { isMobile } from "react-device-detect";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import System from "@/models/system";
 import paths from "@/utils/paths";
 import { AUTH_TIMESTAMP, AUTH_TOKEN, AUTH_USER } from "@/utils/constants";
 import PreLoader from "@/components/Preloader";
 import CTAButton from "@/components/lib/CTAButton";
 import { useTranslation } from "react-i18next";
+import { TriangleAlert } from "lucide-react";
 import Toggle from "@/components/lib/Toggle";
 import PasswordInput from "@/components/lib/PasswordInput";
+import {
+  FIELD_HELP,
+  FIELD_INPUT,
+  FIELD_LABEL,
+} from "@/components/ProviderFields";
+import ConfirmModal from "@/components/lib/ConfirmModal";
 import {
   USERNAME_MIN_LENGTH,
   USERNAME_MAX_LENGTH,
@@ -21,58 +29,75 @@ export default function GeneralSecurity() {
   return (
     <div className="w-screen h-screen overflow-hidden bg-zinc-950 light:bg-slate-50 flex">
       <Sidebar />
-      <div
-        style={{ height: isMobile ? "100%" : "calc(100% - 32px)" }}
-        className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full overflow-y-scroll p-4 md:p-0"
-      >
-        <div className="flex flex-col w-full px-1 md:pl-6 md:pr-[50px] md:pt-6">
-          <p className="text-lg leading-6 font-bold text-theme-text-primary md-6 border-white light:border-theme-sidebar-border border-b-2 border-opacity-10 py-4">
+      <main className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full md:h-[calc(100%-32px)] overflow-y-scroll p-4 md:p-0">
+        <div className="flex flex-col w-full px-1 md:pl-6 md:pr-[50px] pt-16 md:pt-6">
+          <h1 className="text-lg leading-6 font-bold text-theme-text-primary border-white light:border-theme-sidebar-border border-b-2 border-opacity-10 py-4">
             {t("security.title")}
-          </p>
+          </h1>
         </div>
         <MultiUserMode />
         <PasswordProtection />
-      </div>
+      </main>
+    </div>
+  );
+}
+
+function SectionLoader() {
+  return (
+    <div className="flex justify-center items-center py-10">
+      <PreLoader />
     </div>
   );
 }
 
 function MultiUserMode() {
+  const id = useId();
+  const formRef = useRef(null);
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [useMultiUserMode, setUseMultiUserMode] = useState(false);
   const [multiUserModeEnabled, setMultiUserModeEnabled] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [loading, setLoading] = useState(true);
   const { t } = useTranslation();
 
-  const handleSubmit = async (e) => {
+  // The form only validates the fields; enabling waits for the confirmation.
+  const handleSubmit = (e) => {
     e.preventDefault();
+    if (!useMultiUserMode) return;
+    setConfirming(true);
+  };
+
+  const enableMultiUser = async () => {
+    const form = new FormData(formRef.current);
+    const data = {
+      username: form.get("username"),
+      password: form.get("password"),
+    };
+
     setSaving(true);
-    setHasChanges(false);
-    if (useMultiUserMode) {
-      const form = new FormData(e.target);
-      const data = {
-        username: form.get("username"),
-        password: form.get("password"),
-      };
-
-      const { success, error } = await System.setupMultiUser(data);
-      if (success) {
-        showToast("Multi-User mode enabled successfully.", "success");
-        setSaving(false);
-        setTimeout(() => {
-          window.localStorage.removeItem(AUTH_USER);
-          window.localStorage.removeItem(AUTH_TOKEN);
-          window.localStorage.removeItem(AUTH_TIMESTAMP);
-          window.location = paths.settings.users();
-        }, 2_000);
-        return;
-      }
-
-      showToast(`Failed to enable Multi-User mode: ${error}`, "error");
-      setSaving(false);
+    const { success, error } = await System.setupMultiUser(data);
+    if (success) {
+      showToast(t("settings-pages.multiuser-enabled"), "success");
+      // The sign-in page says it again once this page is gone.
+      setAuthNotice("multiuser-enabled");
+      setTimeout(() => {
+        window.localStorage.removeItem(AUTH_USER);
+        window.localStorage.removeItem(AUTH_TOKEN);
+        window.localStorage.removeItem(AUTH_TIMESTAMP);
+        window.location = paths.settings.users();
+      }, 2_000);
       return;
     }
+
+    setSaving(false);
+    setConfirming(false);
+    showToast(
+      serverErrorMessage(error, t, "settings-pages.multiuser-failed", {
+        known: ACCOUNT_ERRORS,
+      }),
+      "error"
+    );
   };
 
   useEffect(() => {
@@ -85,126 +110,132 @@ function MultiUserMode() {
     fetchIsMultiUserMode();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="h-1/2 transition-all duration-500 relative md:ml-[2px] md:mr-[8px] md:my-[16px] md:rounded-[26px] p-[18px] h-full overflow-y-scroll">
-        <div className="w-full h-full flex justify-center items-center">
-          <PreLoader />
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <SectionLoader />;
 
   return (
     <form
+      ref={formRef}
       onSubmit={handleSubmit}
       onChange={() => setHasChanges(true)}
       className="flex flex-col w-full px-1 md:pl-6 md:pr-[50px]"
     >
-      <div className="w-full flex flex-col gap-y-1 w-full flex flex-col gap-y-1 pb-6 border-white light:border-theme-sidebar-border border-b-2 border-opacity-10">
-        <div className="w-full flex flex-col gap-y-1">
-          <div className="items-center flex gap-x-4">
-            <p className="text-base font-bold text-white mt-6">
+      <div className="w-full flex flex-col gap-y-4 pb-6 border-white light:border-theme-sidebar-border border-b-2 border-opacity-10">
+        <div className="w-full flex flex-col md:flex-row md:items-end md:justify-between gap-4 mt-6">
+          <div className="flex flex-col gap-y-1">
+            <h2 className="text-base font-bold text-white">
               {t("security.multiuser.title")}
+            </h2>
+            <p className="text-xs leading-[18px] text-white text-opacity-60">
+              {t("security.multiuser.description")}
             </p>
           </div>
-          <p className="text-xs leading-[18px] font-base text-white text-opacity-60">
-            {t("security.multiuser.description")}
-          </p>
-        </div>
-        {hasChanges && (
-          <div className="flex justify-end">
-            <CTAButton
-              onClick={() => handleSubmit()}
-              className="mt-3 mr-0 -mb-20 z-10"
-            >
+          {hasChanges && useMultiUserMode && (
+            <CTAButton busy={saving} className="!mr-0 shrink-0">
               {saving ? t("common.saving") : t("common.save")}
             </CTAButton>
-          </div>
+          )}
+        </div>
+
+        {multiUserModeEnabled ? (
+          <p className="text-white text-sm font-semibold">
+            {t("security.multiuser.enable.is-enable")}
+          </p>
+        ) : (
+          <>
+            <p
+              id={`${id}-multiuser-warning`}
+              className="flex items-start gap-x-2 max-w-[600px] rounded-lg border border-orange-400/40 light:border-orange-700/40 bg-orange-400/10 light:bg-orange-50 px-3 py-2 text-xs leading-[18px] text-orange-200 light:text-orange-800"
+            >
+              <TriangleAlert
+                strokeWidth={1.5}
+                size={16}
+                aria-hidden="true"
+                className="shrink-0 mt-px"
+              />
+              {t("settings-pages.multiuser-warning")}
+            </p>
+            <Toggle
+              size="lg"
+              label={t("security.multiuser.enable.enable")}
+              enabled={useMultiUserMode}
+              onChange={(checked) => setUseMultiUserMode(checked)}
+              describedBy={`${id}-multiuser-warning ${id}-multiuser-description`}
+            />
+            <p
+              id={`${id}-multiuser-description`}
+              className="text-white text-opacity-80 light:text-theme-text-secondary text-xs max-w-[600px]"
+            >
+              {t("security.multiuser.enable.description")}
+            </p>
+          </>
         )}
-        <div className="relative w-full max-h-full">
-          <div className="relative rounded-lg">
-            <div className="flex items-start justify-between px-6 py-4"></div>
-            <div className="space-y-6 flex h-full w-full">
-              <div className="w-full flex flex-col gap-y-4">
-                {multiUserModeEnabled ? (
-                  <p className="text-white text-sm font-semibold">
-                    {t("security.multiuser.enable.is-enable")}
-                  </p>
-                ) : (
-                  <Toggle
-                    size="lg"
-                    className="mb-4"
-                    label={t("security.multiuser.enable.enable")}
-                    enabled={useMultiUserMode}
-                    onChange={(checked) => setUseMultiUserMode(checked)}
-                  />
-                )}
-                {useMultiUserMode && (
-                  <div className="w-full flex flex-col gap-y-2 my-5">
-                    <div className="w-80">
-                      <label
-                        htmlFor="username"
-                        className="text-white text-sm font-semibold block mb-3"
-                      >
-                        {t("security.multiuser.enable.username")}
-                      </label>
-                      <input
-                        name="username"
-                        type="text"
-                        className="border-none bg-theme-settings-input-bg text-white text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5 placeholder:text-theme-settings-input-placeholder focus:ring-blue-500"
-                        placeholder="Your admin username"
-                        minLength={USERNAME_MIN_LENGTH}
-                        maxLength={USERNAME_MAX_LENGTH}
-                        pattern={USERNAME_PATTERN}
-                        required={true}
-                        autoComplete="off"
-                        disabled={multiUserModeEnabled}
-                        defaultValue={multiUserModeEnabled ? "********" : ""}
-                      />
-                      <p className="text-white text-opacity-60 text-xs mt-2">
-                        {t("common.username_requirements")}
-                      </p>
-                    </div>
-                    <div className="mt-4 w-80">
-                      <label
-                        htmlFor="password"
-                        className="text-white text-sm font-semibold block mb-3"
-                      >
-                        {t("security.multiuser.enable.password")}
-                      </label>
-                      <PasswordInput
-                        name="password"
-                        className="border-none bg-theme-settings-input-bg text-white text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5 placeholder:text-theme-settings-input-placeholder focus:ring-blue-500"
-                        placeholder="Your admin password"
-                        minLength={8}
-                        required={true}
-                        autoComplete="off"
-                        defaultValue={multiUserModeEnabled ? "********" : ""}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
+
+        {useMultiUserMode && !multiUserModeEnabled && (
+          <div className="w-full flex flex-col gap-y-6 mt-2">
+            <div className="w-full md:w-80">
+              <label htmlFor={`${id}-username`} className={FIELD_LABEL}>
+                {t("security.multiuser.enable.username")}
+              </label>
+              <input
+                id={`${id}-username`}
+                name="username"
+                type="text"
+                className={FIELD_INPUT}
+                minLength={USERNAME_MIN_LENGTH}
+                maxLength={USERNAME_MAX_LENGTH}
+                pattern={USERNAME_PATTERN}
+                required={true}
+                autoComplete="username"
+                autoCapitalize="none"
+                spellCheck={false}
+                aria-describedby={`${id}-username-help`}
+              />
+              <p id={`${id}-username-help`} className={FIELD_HELP}>
+                {t("common.username_requirements")}
+              </p>
             </div>
-            <div className="flex items-center justify-between space-x-14">
-              <p className="text-white text-opacity-80 text-xs rounded-lg w-96">
-                {t("security.multiuser.enable.description")}
+            <div className="w-full md:w-80">
+              <label htmlFor={`${id}-password`} className={FIELD_LABEL}>
+                {t("security.multiuser.enable.password")}
+              </label>
+              <PasswordInput
+                id={`${id}-password`}
+                name="password"
+                className={FIELD_INPUT}
+                minLength={8}
+                required={true}
+                autoComplete="new-password"
+                aria-describedby={`${id}-password-help`}
+              />
+              <p id={`${id}-password-help`} className={FIELD_HELP}>
+                {t("settings-pages.password-min-length")}
               </p>
             </div>
           </div>
-        </div>
+        )}
       </div>
+
+      <ConfirmModal
+        isOpen={confirming}
+        title={t("settings-pages.multiuser-confirm-title")}
+        confirmLabel={t("settings-pages.multiuser-confirm")}
+        busy={saving}
+        onConfirm={enableMultiUser}
+        onCancel={() => setConfirming(false)}
+      >
+        <p>{t("settings-pages.multiuser-confirm-body")}</p>
+      </ConfirmModal>
     </form>
   );
 }
 
-export const PW_REGEX = new RegExp(/^[a-zA-Z0-9_\-!@$%^&*();]+$/);
 function PasswordProtection() {
+  const id = useId();
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [multiUserModeEnabled, setMultiUserModeEnabled] = useState(false);
   const [usePassword, setUsePassword] = useState(false);
+  const [passwordError, setPasswordError] = useState(null);
   const [loading, setLoading] = useState(true);
   const { t } = useTranslation();
 
@@ -213,17 +244,14 @@ function PasswordProtection() {
     if (multiUserModeEnabled) return false;
     const form = new FormData(e.target);
 
-    if (!PW_REGEX.test(form.get("password"))) {
-      showToast(
-        `Your password has restricted characters in it. Allowed symbols are _,-,!,@,$,%,^,&,*,(,),;`,
-        "error"
-      );
-      setSaving(false);
+    if (usePassword && !PW_REGEX.test(form.get("password"))) {
+      setPasswordError(t("settings-pages.password-invalid-chars"));
+      document.getElementById(`${id}-password`)?.focus();
       return;
     }
 
+    setPasswordError(null);
     setSaving(true);
-    setHasChanges(false);
     const data = {
       usePassword,
       newPassword: form.get("password"),
@@ -231,8 +259,10 @@ function PasswordProtection() {
 
     const { success, error } = await System.updateSystemPassword(data);
     if (success) {
-      showToast("Your page will refresh in a few seconds.", "success");
-      setSaving(false);
+      setHasChanges(false);
+      showToast(t("settings-pages.password-saved"), "success");
+      // The sign-in page says it again after the reload.
+      if (usePassword) setAuthNotice("instance-password-changed");
       setTimeout(() => {
         window.localStorage.removeItem(AUTH_USER);
         window.localStorage.removeItem(AUTH_TOKEN);
@@ -240,10 +270,14 @@ function PasswordProtection() {
         window.location.reload();
       }, 3_000);
       return;
-    } else {
-      showToast(`Failed to update password: ${error}`, "error");
-      setSaving(false);
     }
+    showToast(
+      serverErrorMessage(error, t, "settings-pages.password-failed", {
+        known: ACCOUNT_ERRORS,
+      }),
+      "error"
+    );
+    setSaving(false);
   };
 
   useEffect(() => {
@@ -258,15 +292,7 @@ function PasswordProtection() {
     fetchIsMultiUserMode();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="h-1/2 transition-all duration-500 relative md:ml-[2px] md:mr-[8px] md:my-[16px] md:rounded-[26px] p-[18px] h-full overflow-y-scroll">
-        <div className="w-full h-full flex justify-center items-center">
-          <PreLoader />
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <SectionLoader />;
 
   if (multiUserModeEnabled) return null;
   return (
@@ -275,68 +301,58 @@ function PasswordProtection() {
       onChange={() => setHasChanges(true)}
       className="flex flex-col w-full px-1 md:pl-6 md:pr-[50px]"
     >
-      <div className="w-full flex flex-col gap-y-1 pb-6 border-white light:border-theme-sidebar-border border-b-2 border-opacity-10">
-        <div className="w-full flex flex-col gap-y-1">
-          <div className="items-center flex gap-x-4">
-            <p className="text-base font-bold text-white mt-6">
+      <div className="w-full flex flex-col gap-y-4 pb-6 border-white light:border-theme-sidebar-border border-b-2 border-opacity-10">
+        <div className="w-full flex flex-col md:flex-row md:items-end md:justify-between gap-4 mt-6">
+          <div className="flex flex-col gap-y-1">
+            <h2 className="text-base font-bold text-white">
               {t("security.password.title")}
+            </h2>
+            <p className="text-xs leading-[18px] text-white text-opacity-60">
+              {t("security.password.description")}
             </p>
           </div>
-          <p className="text-xs leading-[18px] font-base text-white text-opacity-60">
-            {t("security.password.description")}
-          </p>
-        </div>
-        {hasChanges && (
-          <div className="flex justify-end">
-            <CTAButton
-              onClick={() => handleSubmit()}
-              className="mt-3 mr-0 -mb-20 z-10"
-            >
+          {hasChanges && (
+            <CTAButton busy={saving} className="!mr-0 shrink-0">
               {saving ? t("common.saving") : t("common.save")}
             </CTAButton>
+          )}
+        </div>
+        <Toggle
+          size="lg"
+          label={t("security.password.title")}
+          enabled={usePassword}
+          onChange={(checked) => setUsePassword(checked)}
+        />
+        {usePassword && (
+          <div className="w-full md:w-80 mt-2">
+            <label htmlFor={`${id}-password`} className={FIELD_LABEL}>
+              {t("security.password.password-label")}
+            </label>
+            <PasswordInput
+              id={`${id}-password`}
+              name="password"
+              className={FIELD_INPUT}
+              minLength={8}
+              required={true}
+              autoComplete="new-password"
+              aria-invalid={passwordError ? true : undefined}
+              aria-describedby={`${id}-password-help${passwordError ? ` ${id}-password-error` : ""}`}
+              onChange={() => passwordError && setPasswordError(null)}
+            />
+            <p id={`${id}-password-help`} className={FIELD_HELP}>
+              {t("settings-pages.password-requirements")}
+            </p>
+            {passwordError && (
+              <p
+                id={`${id}-password-error`}
+                role="alert"
+                className="mt-2 text-xs text-red-400 light:text-red-700"
+              >
+                {passwordError}
+              </p>
+            )}
           </div>
         )}
-        <div className="relative w-full max-h-full">
-          <div className="relative rounded-lg">
-            <div className="flex items-start justify-between px-6 py-4"></div>
-            <div className="space-y-6 flex h-full w-full">
-              <div className="w-full flex flex-col gap-y-4">
-                <Toggle
-                  size="lg"
-                  className="mb-4"
-                  label={t("security.password.title")}
-                  enabled={usePassword}
-                  onChange={(checked) => setUsePassword(checked)}
-                />
-                {usePassword && (
-                  <div className="w-full flex flex-col gap-y-2 my-5">
-                    <div className="mt-4 w-80">
-                      <label
-                        htmlFor="password"
-                        className="text-white text-sm font-semibold block mb-3"
-                      >
-                        {t("security.password.password-label")}
-                      </label>
-                      <PasswordInput
-                        name="password"
-                        className="border-none bg-theme-settings-input-bg text-white text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5 placeholder:text-theme-settings-input-placeholder"
-                        placeholder="Your Instance Password"
-                        minLength={8}
-                        required={true}
-                        autoComplete="off"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center justify-between space-x-14">
-              <p className="text-white text-opacity-80 light:text-theme-text text-xs rounded-lg w-96">
-                {t("security.password.description")}
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
     </form>
   );

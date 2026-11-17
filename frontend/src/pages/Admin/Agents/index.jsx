@@ -1,74 +1,150 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
+import {
+  Bot,
+  ChevronLeft,
+  Hammer,
+  Package,
+  Plug,
+  Workflow,
+  Wrench,
+} from "lucide-react";
 import Sidebar from "@/components/SettingsSidebar";
-import { isMobile } from "react-device-detect";
 import Admin from "@/models/admin";
 import System from "@/models/system";
 import MCPServers from "@/models/mcpServers";
+import AgentFlows from "@/models/agentFlows";
 import showToast from "@/utils/toast";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Plug,
-  Bot,
-  Hammer,
-  Workflow,
-  Package,
-} from "lucide-react";
+import { serverErrorMessage } from "@/utils/serverErrors";
+import paths from "@/utils/paths";
+import useIsMobile from "@/hooks/useIsMobile";
 import ContextualSaveBar from "@/components/ContextualSaveBar";
-import { castToType } from "@/utils/types";
-import { FullScreenLoader } from "@/components/Preloader";
+import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
+import PreLoader from "@/components/Preloader";
 import {
   getDefaultSkills,
   getConfigurableSkills,
   getAppIntegrationSkills,
 } from "./skills.jsx";
-import { DefaultBadge } from "./Badges/default";
 import ImportedSkillList from "./Imported/SkillList";
-import ImportedSkillConfig from "./Imported/ImportedSkillConfig";
-import { Tooltip } from "react-tooltip";
 import AgentFlowsList from "./AgentFlows";
-import FlowPanel from "./AgentFlows/FlowPanel";
-import { MCPServersList, MCPServerHeader } from "./MCPServers";
-import ServerPanel from "./MCPServers/ServerPanel";
-import { Link } from "react-router-dom";
-import paths from "@/utils/paths";
-import AgentFlows from "@/models/agentFlows";
+import { MCPServersSection, useMcpServers } from "./MCPServers";
 import AgentSkillSettings from "./AgentSkillSettings";
+import SkillDetail from "./components/SkillDetail";
+import { RowList, RowButton, SectionHeading } from "./components/SkillRows";
+import { LoadError } from "./components/SubSkills";
+import useFocusAfterRemoval from "@/hooks/useFocusAfterRemoval";
 
-const IGNORE_CHANGE_SETTINGS = [
-  "agentSkillRerankerEnabled",
-  "agentSkillRerankerTopN",
-  "agentSkillMaxToolCalls",
-  "agentClarifyingQuestionsEnabled",
-  "agentClarifyingQuestionsMaxPerTurn",
+const PREFERENCE_FIELDS = [
+  "disabled_agent_skills",
+  "default_agent_skills",
+  "imported_agent_skills",
 ];
+const OUTLOOK_SKILL = "outlook-agent";
+const SECTION_ICON = {
+  strokeWidth: 1.5,
+  size: 24,
+  "aria-hidden": "true",
+  className: "shrink-0",
+};
+const HEADER_LINK =
+  "inline-flex items-center gap-x-1 min-h-[44px] md:min-h-[32px] px-2 rounded-lg text-sm text-theme-text-secondary hover:text-theme-text-primary hover:bg-white/5 light:hover:bg-slate-100 transition-colors duration-quick ease-smooth";
+
+const toggleIn = (list, value) =>
+  list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
+
+function findRow(container, rowKey) {
+  return (
+    [...(container?.querySelectorAll("[data-row-key]") || [])].find(
+      (el) => el.dataset.rowKey === rowKey
+    ) || null
+  );
+}
+
+function isVisible(el) {
+  return !!el && el.getClientRects().length > 0;
+}
 
 export default function AdminAgents() {
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
   const formEl = useRef(null);
+  const headingRef = useRef(null);
+  const listRef = useRef(null);
+  const detailRef = useRef(null);
+  const builtinId = useId();
+  const appsId = useId();
+  const importedId = useId();
+  const flowsId = useId();
+  const mcpId = useId();
+  const sectionIds = {
+    skill: builtinId,
+    imported: importedId,
+    flow: flowsId,
+    mcp: mcpId,
+  };
+  // After a delete: the next row of the same section, else its heading.
+  const sectionHeading = (kind) => ({
+    get current() {
+      return document.getElementById(sectionIds[kind]);
+    },
+  });
+  const focusAfterRowRemoval = {
+    flow: useFocusAfterRemoval(
+      listRef,
+      sectionHeading("flow"),
+      '[data-row-key^="flow:"]'
+    ),
+    imported: useFocusAfterRemoval(
+      listRef,
+      sectionHeading("imported"),
+      '[data-row-key^="imported:"]'
+    ),
+    mcp: useFocusAfterRemoval(
+      listRef,
+      sectionHeading("mcp"),
+      '[data-row-key^="mcp:"]'
+    ),
+  };
+
+  const [status, setStatus] = useState("loading"); // loading | ready | error
   const [hasChanges, setHasChanges] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState({});
-  const [selectedSkill, setSelectedSkill] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [showSkillModal, setShowSkillModal] = useState(false);
+  // { kind: "skill" | "imported" | "flow" | "mcp", id } of the open panel
+  const [selection, setSelection] = useState(null);
+  const [showDetail, setShowDetail] = useState(false);
+  const [panelKey, setPanelKey] = useState(0);
+  // Skill panels left with unsaved edits stay mounted (hidden) while another
+  // item is open, so Save still sends their fields.
+  const [keptSkillIds, setKeptSkillIds] = useState([]);
+  const [focusRequest, setFocusRequest] = useState(null);
 
   const [agentSkills, setAgentSkills] = useState([]);
   const [importedSkills, setImportedSkills] = useState([]);
   const [disabledAgentSkills, setDisabledAgentSkills] = useState([]);
 
   const [agentFlows, setAgentFlows] = useState([]);
-  const [selectedFlow, setSelectedFlow] = useState(null);
+  const [flowsStatus, setFlowsStatus] = useState("loading");
   const [activeFlowIds, setActiveFlowIds] = useState([]);
-
-  // MCP Servers are lazy loaded to not block the UI thread
-  const [mcpServers, setMcpServers] = useState([]);
-  const [selectedMcpServer, setSelectedMcpServer] = useState(null);
 
   const [fileSystemAgentAvailable, setFileSystemAgentAvailable] =
     useState(false);
   const [createFilesAgentAvailable, setCreateFilesAgentAvailable] =
     useState(false);
+
+  // Last saved state, restored by "Discard changes".
+  const saved = useRef({
+    agentSkills: [],
+    disabledAgentSkills: [],
+    activeFlowIds: [],
+  });
+  // Coming back from the Outlook sign-in: open its panel to show the result.
+  const outlookReturn = useRef(
+    new URLSearchParams(window.location.search).has("outlook_auth")
+  );
+  const mcp = useMcpServers();
 
   const defaultSkills = getDefaultSkills(t);
   const allConfigurableSkills = getConfigurableSkills(t, {
@@ -96,200 +172,291 @@ export default function AdminAgents() {
     Object.entries(allAppIntegrationSkills).filter(filterSkillsByMode)
   );
 
-  // Alert user if they try to leave the page with unsaved changes
-  useEffect(() => {
-    const handleBeforeUnload = (event) => {
-      if (hasChanges) {
-        event.preventDefault();
-        event.returnValue = "";
-      }
+  function applyPreferences(prefs) {
+    const next = {
+      agentSkills: prefs?.default_agent_skills ?? [],
+      disabledAgentSkills: prefs?.disabled_agent_skills ?? [],
     };
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-    };
-  }, [hasChanges]);
+    setAgentSkills(next.agentSkills);
+    setDisabledAgentSkills(next.disabledAgentSkills);
+    setImportedSkills(prefs?.imported_agent_skills ?? []);
+    saved.current = { ...saved.current, ...next };
+  }
 
-  useEffect(() => {
-    async function fetchSettings() {
-      const [
-        _settings,
-        _preferences,
-        flowsRes,
-        fsAgentAvailable,
-        createFilesAvailable,
-      ] = await Promise.all([
-        System.keys(),
-        Admin.systemPreferencesByFields([
-          "disabled_agent_skills",
-          "default_agent_skills",
-          "imported_agent_skills",
-          "active_agent_flows",
-        ]),
-        AgentFlows.listFlows(),
-        System.isFileSystemAgentAvailable(),
-        System.isCreateFilesAgentAvailable(),
-      ]);
-
-      const { flows = [] } = flowsRes;
-      setSettings({ ..._settings, preferences: _preferences.settings } ?? {});
-      setAgentSkills(_preferences.settings?.default_agent_skills ?? []);
-      setDisabledAgentSkills(
-        _preferences.settings?.disabled_agent_skills ?? []
-      );
-      setImportedSkills(_preferences.settings?.imported_agent_skills ?? []);
-      setActiveFlowIds(flows.filter((f) => f.active).map((f) => f.uuid));
-      setAgentFlows(flows);
-      setFileSystemAgentAvailable(fsAgentAvailable);
-      setCreateFilesAgentAvailable(createFilesAvailable);
-      setLoading(false);
+  async function loadFlows() {
+    setFlowsStatus("loading");
+    const res = await AgentFlows.listFlows();
+    if (res?.success === false || !Array.isArray(res?.flows)) {
+      setFlowsStatus("error");
+      return;
     }
+    const flowIds = res.flows.filter((f) => f.active).map((f) => f.uuid);
+    setAgentFlows(res.flows);
+    setActiveFlowIds(flowIds);
+    saved.current = { ...saved.current, activeFlowIds: flowIds };
+    setFlowsStatus("ready");
+  }
+
+  async function fetchSettings() {
+    setStatus("loading");
+    try {
+      const [_settings, _preferences, fsAgentAvailable, createFilesAvailable] =
+        await Promise.all([
+          System.keys(),
+          Admin.systemPreferencesByFields(PREFERENCE_FIELDS),
+          System.isFileSystemAgentAvailable(),
+          System.isCreateFilesAgentAvailable(),
+          loadFlows(),
+        ]);
+      // Without the saved preferences a save would overwrite them with
+      // empty lists, so the page does not render its form.
+      if (!_settings || !_preferences?.settings) {
+        setStatus("error");
+        return;
+      }
+      setSettings({ ..._settings, preferences: _preferences.settings });
+      applyPreferences(_preferences.settings);
+      setFileSystemAgentAvailable(!!fsAgentAvailable);
+      setCreateFilesAgentAvailable(!!createFilesAvailable);
+      setStatus("ready");
+    } catch (error) {
+      console.error("Failed to load agent settings:", error);
+      setStatus("error");
+    }
+  }
+
+  useEffect(() => {
     fetchSettings();
   }, []);
 
+  useEffect(() => {
+    if (status !== "ready" || !outlookReturn.current) return;
+    outlookReturn.current = false;
+    if (!appIntegrationSkills[OUTLOOK_SKILL]) return;
+    setSelection({ kind: "skill", id: OUTLOOK_SKILL });
+    setShowDetail(true);
+    setFocusRequest({ target: "detail" });
+  }, [status]);
+
+  useEffect(() => {
+    if (!hasChanges) setKeptSkillIds([]);
+  }, [hasChanges]);
+
+  /** Moves focus to the open panel's heading; false when there is none. */
+  function focusDetailHeading() {
+    const root = detailRef.current;
+    if (!isVisible(root)) return false;
+    const heading = [...root.querySelectorAll("h2")].find(
+      (h2) => !h2.closest("[hidden]")
+    );
+    if (!heading) return false;
+    if (!heading.hasAttribute("tabindex"))
+      heading.setAttribute("tabindex", "-1");
+    heading.focus();
+    return true;
+  }
+
+  useEffect(() => {
+    if (!focusRequest) return;
+    // After the render and after a closing dialog has returned focus.
+    const timer = setTimeout(() => {
+      const request = focusRequest;
+      setFocusRequest(null);
+      if (request.target === "detail") {
+        if (!focusDetailHeading()) detailRef.current?.focus();
+        return;
+      }
+      const row =
+        request.target === "row"
+          ? findRow(listRef.current, request.rowKey)
+          : null;
+      const fallback = request.kind
+        ? document.getElementById(sectionIds[request.kind])
+        : headingRef.current;
+      (row || fallback || headingRef.current)?.focus();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [focusRequest]);
+
+  /** The save bar disappears after Save / Discard: keep focus on the page. */
+  function refocusIfLost() {
+    setTimeout(() => {
+      const active = document.activeElement;
+      if (active && active !== document.body && document.body.contains(active))
+        return;
+      if (!focusDetailHeading()) headingRef.current?.focus();
+    }, 0);
+  }
+
   const toggleDefaultSkill = (skillName) => {
-    setDisabledAgentSkills((prev) => {
-      const updatedSkills = prev.includes(skillName)
-        ? prev.filter((name) => name !== skillName)
-        : [...prev, skillName];
-      setHasChanges(true);
-      return updatedSkills;
-    });
+    setDisabledAgentSkills((prev) => toggleIn(prev, skillName));
+    setHasChanges(true);
   };
 
   const toggleAgentSkill = (skillName) => {
-    setAgentSkills((prev) => {
-      const updatedSkills = prev.includes(skillName)
-        ? prev.filter((name) => name !== skillName)
-        : [...prev, skillName];
-      setHasChanges(true);
-      return updatedSkills;
-    });
+    setAgentSkills((prev) => toggleIn(prev, skillName));
+    setHasChanges(true);
   };
 
+  // Flows are switched on the server right away: the saved state moves too.
   const toggleFlow = (flowId) => {
-    setActiveFlowIds((prev) => {
-      const updatedFlows = prev.includes(flowId)
-        ? prev.filter((id) => id !== flowId)
-        : [...prev, flowId];
-      return updatedFlows;
-    });
+    setActiveFlowIds((prev) => toggleIn(prev, flowId));
+    saved.current = {
+      ...saved.current,
+      activeFlowIds: toggleIn(saved.current.activeFlowIds, flowId),
+    };
   };
 
-  const toggleMCP = (serverName) => {
-    setMcpServers((prev) => {
-      return prev.map((server) => {
-        if (server.name !== serverName) return server;
-        return { ...server, running: !server.running };
-      });
-    });
+  // One rule for phone and desktop: only named fields of the page form count.
+  // Search boxes have no name, and switches that save on their own (flows,
+  // imported skills, MCP) either have no name or are not inputs. Fields in a
+  // dialog (agent settings, SQL connection) bubble here through the React
+  // portal but are not part of this form.
+  const handleFormChange = (e) => {
+    const target = e.target;
+    if (!target?.name) return;
+    if (target.closest?.('[role="dialog"]')) return;
+    setHasChanges(true);
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    const data = {
-      workspace: {},
-      system: {},
-      env: {},
-    };
-
+    e?.preventDefault?.();
+    if (saving || !formEl.current) return;
+    setSaving(true);
+    const data = { system: {}, env: {} };
     const form = new FormData(formEl.current);
-    for (var [key, value] of form.entries()) {
+    for (const [key, value] of form.entries()) {
       if (key.startsWith("system::")) {
-        const [_, label] = key.split("system::");
-        data.system[label] = String(value);
-        continue;
+        data.system[key.slice("system::".length)] = String(value);
+      } else if (key.startsWith("env::")) {
+        data.env[key.slice("env::".length)] = String(value);
       }
-
-      if (key.startsWith("env::")) {
-        const [_, label] = key.split("env::");
-        data.env[label] = String(value);
-        continue;
-      }
-      data.workspace[key] = castToType(key, value);
     }
 
-    const { success } = await Admin.updateSystemPreferences(data.system);
-    await System.updateSystem(data.env);
-
-    if (success) {
-      const _settings = await System.keys();
-      const _preferences = await Admin.systemPreferencesByFields([
-        "disabled_agent_skills",
-        "default_agent_skills",
-        "imported_agent_skills",
-      ]);
-      setSettings({ ..._settings, preferences: _preferences.settings } ?? {});
-      setAgentSkills(_preferences.settings?.default_agent_skills ?? []);
-      setDisabledAgentSkills(
-        _preferences.settings?.disabled_agent_skills ?? []
+    const prefsRes = await Admin.updateSystemPreferences(data.system);
+    const envRes =
+      Object.keys(data.env).length > 0
+        ? await System.updateSystem(data.env)
+        : null;
+    if (!prefsRes?.success || envRes?.error) {
+      setSaving(false);
+      showToast(
+        serverErrorMessage(
+          prefsRes?.error || envRes?.error,
+          t,
+          "agent-pages.save-failed"
+        ),
+        "error",
+        { clear: true }
       );
-      setImportedSkills(_preferences.settings?.imported_agent_skills ?? []);
-      showToast(`Agent preferences saved successfully.`, "success", {
-        clear: true,
-      });
-    } else {
-      showToast(`Agent preferences failed to save.`, "error", { clear: true });
+      return;
     }
 
+    const [_settings, _preferences] = await Promise.all([
+      System.keys(),
+      Admin.systemPreferencesByFields(PREFERENCE_FIELDS),
+    ]);
+    if (_settings && _preferences?.settings) {
+      setSettings({ ..._settings, preferences: _preferences.settings });
+      applyPreferences(_preferences.settings);
+    } else {
+      saved.current = { ...saved.current, agentSkills, disabledAgentSkills };
+    }
     setHasChanges(false);
+    setSaving(false);
+    showToast(t("agent-pages.saved"), "success", { clear: true });
+    refocusIfLost();
   };
 
-  let SelectedSkillComponent = null;
-  if (selectedFlow) {
-    SelectedSkillComponent = FlowPanel;
-  } else if (selectedMcpServer) {
-    SelectedSkillComponent = ServerPanel;
-  } else if (selectedSkill?.imported) {
-    SelectedSkillComponent = ImportedSkillConfig;
-  } else if (configurableSkills[selectedSkill]) {
-    SelectedSkillComponent = configurableSkills[selectedSkill]?.component;
-  } else if (appIntegrationSkills[selectedSkill]) {
-    SelectedSkillComponent = appIntegrationSkills[selectedSkill]?.component;
-  } else {
-    SelectedSkillComponent = defaultSkills[selectedSkill]?.component;
-  }
-
-  // Update the click handlers to clear the other selection
-  const handleDefaultSkillClick = (skill) => {
-    setSelectedFlow(null);
-    setSelectedMcpServer(null);
-    setSelectedSkill(skill);
-    if (isMobile) setShowSkillModal(true);
+  const handleCancel = () => {
+    const last = saved.current;
+    setAgentSkills(last.agentSkills);
+    setDisabledAgentSkills(last.disabledAgentSkills);
+    setActiveFlowIds(last.activeFlowIds);
+    // Remount the open panel so its own fields reload the saved values.
+    setPanelKey((key) => key + 1);
+    setHasChanges(false);
+    refocusIfLost();
   };
 
-  const handleSkillClick = (skill) => {
-    setSelectedFlow(null);
-    setSelectedMcpServer(null);
-    setSelectedSkill(skill);
-    if (isMobile) setShowSkillModal(true);
+  const isSelected = (kind, id) =>
+    selection?.kind === kind && selection?.id === id;
+
+  const openItem = (kind, id) => {
+    if (hasChanges && selection?.kind === "skill") {
+      const leaving = selection.id;
+      setKeptSkillIds((ids) =>
+        ids.includes(leaving) ? ids : [...ids, leaving]
+      );
+    }
+    setSelection({ kind, id });
+    if (isMobile) {
+      setShowDetail(true);
+      setFocusRequest({ target: "detail" });
+    }
   };
 
-  const handleFlowClick = (flow) => {
-    setSelectedSkill(null);
-    setSelectedMcpServer(null);
-    setSelectedFlow(flow);
-    if (isMobile) setShowSkillModal(true);
+  const closeDetail = () => {
+    setShowDetail(false);
+    if (selection)
+      setFocusRequest({
+        target: "row",
+        rowKey: `${selection.kind}:${selection.id}`,
+        kind: selection.kind,
+      });
   };
 
-  const handleMCPClick = (server) => {
-    setSelectedSkill(null);
-    setSelectedFlow(null);
-    setSelectedMcpServer(server);
-    if (isMobile) setShowSkillModal(true);
+  /** After a delete: focus the next row of the section, or its heading. */
+  const focusAfterRemoval = (kind, ids, removedId) => {
+    focusAfterRowRemoval[kind](ids.indexOf(removedId));
+    setSelection(null);
+    setShowDetail(false);
   };
 
   const handleFlowDelete = (flowId) => {
-    setSelectedFlow(null);
+    focusAfterRemoval(
+      "flow",
+      agentFlows.map((flow) => flow.uuid),
+      flowId
+    );
     setActiveFlowIds((prev) => prev.filter((id) => id !== flowId));
+    saved.current = {
+      ...saved.current,
+      activeFlowIds: saved.current.activeFlowIds.filter((id) => id !== flowId),
+    };
     setAgentFlows((prev) => prev.filter((flow) => flow.uuid !== flowId));
   };
 
+  // ImportedSkillConfig already removed the skill from the list.
+  const handleImportedDelete = (hubId) => {
+    focusAfterRemoval(
+      "imported",
+      importedSkills.map((skill) => skill.hubId),
+      hubId
+    );
+  };
+
   const handleMCPServerDelete = (serverName) => {
-    setSelectedMcpServer(null);
-    setMcpServers((prev) =>
+    focusAfterRemoval(
+      "mcp",
+      mcp.servers.map((server) => server.name),
+      serverName
+    );
+    mcp.setServers((prev) =>
       prev.filter((server) => server.name !== serverName)
     );
+  };
+
+  const handleMCPServerToggled = async (serverName) => {
+    mcp.setServers((prev) =>
+      prev.map((server) =>
+        server.name === serverName
+          ? { ...server, running: !server.running, error: null }
+          : server
+      )
+    );
+    // Starting a server loads its tools (or its startup error).
+    await mcp.load({ silent: true });
   };
 
   const handleMCPToolToggle = async (serverName, toolName, enabled) => {
@@ -300,11 +467,17 @@ export default function AdminAgents() {
     );
 
     if (!success) {
-      showToast(error || "Failed to toggle tool.", "error", { clear: true });
+      showToast(
+        serverErrorMessage(error, t, "agent-pages.mcp.tool-toggle-failed", {
+          values: { tool: toolName },
+        }),
+        "error",
+        { clear: true }
+      );
       return;
     }
 
-    setMcpServers((prev) =>
+    mcp.setServers((prev) =>
       prev.map((server) => {
         if (server.name !== serverName) return server;
         return {
@@ -319,267 +492,89 @@ export default function AdminAgents() {
         };
       })
     );
-
-    setSelectedMcpServer((prev) => {
-      if (!prev || prev.name !== serverName) return prev;
-      return {
-        ...prev,
-        config: {
-          ...prev.config,
-          anythingllm: {
-            ...prev.config?.anythingllm,
-            suppressedTools,
-          },
-        },
-      };
-    });
   };
 
-  if (loading) {
+  if (status !== "ready") {
     return (
-      <div
-        style={{ height: isMobile ? "100%" : "calc(100% - 32px)" }}
-        className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] w-full h-full flex justify-center items-center"
-      >
-        <FullScreenLoader />
-      </div>
-    );
-  }
-
-  if (isMobile) {
-    return (
-      <SkillLayout
-        hasChanges={hasChanges}
-        handleCancel={() => setHasChanges(false)}
-        handleSubmit={handleSubmit}
-      >
-        <form
-          onSubmit={handleSubmit}
-          onChange={() => !selectedFlow && setHasChanges(true)}
-          ref={formEl}
-          className="flex flex-col w-full p-4 mt-10"
-        >
-          <input
-            name="system::default_agent_skills"
-            type="hidden"
-            value={agentSkills.join(",")}
-          />
-          <input
-            name="system::disabled_agent_skills"
-            type="hidden"
-            value={disabledAgentSkills.join(",")}
-          />
-
-          {/* Skill settings nav */}
-          <div
-            hidden={showSkillModal}
-            className="flex flex-col gap-y-[18px] overflow-y-scroll no-scroll"
-          >
-            <div className="flex justify-between items-center">
-              <div className="text-theme-text-primary flex items-center gap-x-2">
-                <Bot strokeWidth={1.5} size={24} />
-                <p className="text-lg font-medium">Agent Skills</p>
-              </div>
-              <AgentSkillSettings />
+      <PageShell>
+        <div className="flex flex-col gap-y-6 p-4 mt-10 md:mt-0 md:p-6">
+          <PageTitle headingRef={headingRef} />
+          {status === "loading" ? (
+            <div className="flex justify-center py-16">
+              <PreLoader />
             </div>
-            {/* Default skills */}
-            <SkillList
-              skills={defaultSkills}
-              selectedSkill={selectedSkill}
-              handleClick={handleDefaultSkillClick}
-              activeSkills={Object.keys(defaultSkills).filter(
-                (skill) => !disabledAgentSkills.includes(skill)
-              )}
+          ) : (
+            <LoadError
+              message={t("agent-pages.load-error")}
+              onRetry={fetchSettings}
             />
-            {/* Configurable skills */}
-            <SkillList
-              skills={configurableSkills}
-              selectedSkill={selectedSkill}
-              handleClick={handleDefaultSkillClick}
-              activeSkills={agentSkills}
-            />
-
-            {Object.keys(appIntegrationSkills).length > 0 && (
-              <>
-                <div className="text-theme-text-primary flex items-center gap-x-2 mt-6">
-                  <Package strokeWidth={1.5} size={24} />
-                  <p className="text-lg font-medium">App Integrations</p>
-                </div>
-                <SkillList
-                  skills={appIntegrationSkills}
-                  selectedSkill={selectedSkill}
-                  handleClick={handleSkillClick}
-                  activeSkills={agentSkills}
-                />
-              </>
-            )}
-
-            <div className="text-theme-text-primary flex items-center gap-x-2">
-              <Plug strokeWidth={1.5} size={24} />
-              <p className="text-lg font-medium">Custom Skills</p>
-            </div>
-            <ImportedSkillList
-              skills={importedSkills}
-              selectedSkill={selectedSkill}
-              handleClick={handleSkillClick}
-            />
-
-            <div className="text-theme-text-primary flex items-center gap-x-2 mt-6">
-              <Workflow strokeWidth={1.5} size={24} />
-              <p className="text-lg font-medium">Agent Flows</p>
-            </div>
-            <AgentFlowsList
-              flows={agentFlows}
-              selectedFlow={selectedFlow}
-              handleClick={handleFlowClick}
-              activeFlowIds={activeFlowIds}
-            />
-            <input
-              type="hidden"
-              name="system::active_agent_flows"
-              id="active_agent_flows"
-              value={activeFlowIds.join(",")}
-            />
-            <MCPServerHeader
-              setMcpServers={setMcpServers}
-              setSelectedMcpServer={setSelectedMcpServer}
-            >
-              {({ loadingMcpServers }) => {
-                return (
-                  <MCPServersList
-                    isLoading={loadingMcpServers}
-                    servers={mcpServers}
-                    selectedServer={selectedMcpServer}
-                    handleClick={handleMCPClick}
-                  />
-                );
-              }}
-            </MCPServerHeader>
-          </div>
-
-          {/* Selected agent skill modal */}
-          {showSkillModal && (
-            <div className="fixed top-0 left-0 w-full h-full bg-sidebar z-30">
-              <div className="flex flex-col h-full">
-                <div className="flex items-center p-4">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowSkillModal(false);
-                      setSelectedSkill("");
-                    }}
-                    className="text-white/60 hover:text-white transition-colors duration-200"
-                  >
-                    <div className="flex items-center text-sky-400">
-                      <ChevronLeft strokeWidth={1.5} size={24} />
-                      <div>Back</div>
-                    </div>
-                  </button>
-                </div>
-                <div className="flex-1 overflow-y-auto p-4">
-                  <div className=" bg-theme-bg-secondary text-white rounded-xl p-4 overflow-y-scroll overflow-x-visible no-scroll">
-                    {SelectedSkillComponent ? (
-                      <>
-                        {selectedMcpServer ? (
-                          <ServerPanel
-                            server={selectedMcpServer}
-                            toggleServer={toggleMCP}
-                            onDelete={handleMCPServerDelete}
-                            onToggleTool={handleMCPToolToggle}
-                          />
-                        ) : selectedFlow ? (
-                          <FlowPanel
-                            flow={selectedFlow}
-                            toggleFlow={toggleFlow}
-                            enabled={activeFlowIds.includes(selectedFlow.uuid)}
-                            onDelete={handleFlowDelete}
-                          />
-                        ) : selectedSkill.imported ? (
-                          <ImportedSkillConfig
-                            key={selectedSkill.hubId}
-                            selectedSkill={selectedSkill}
-                            setImportedSkills={setImportedSkills}
-                          />
-                        ) : (
-                          <>
-                            {defaultSkills?.[selectedSkill] ? (
-                              // The selected skill is a default skill - show the default skill panel
-                              <SelectedSkillComponent
-                                skill={defaultSkills[selectedSkill]?.skill}
-                                settings={settings}
-                                toggleSkill={toggleDefaultSkill}
-                                enabled={
-                                  !disabledAgentSkills.includes(
-                                    defaultSkills[selectedSkill]?.skill
-                                  )
-                                }
-                                setHasChanges={setHasChanges}
-                                {...defaultSkills[selectedSkill]}
-                              />
-                            ) : configurableSkills?.[selectedSkill] ? (
-                              // The selected skill is a configurable skill - show the configurable skill panel
-                              <SelectedSkillComponent
-                                skill={configurableSkills[selectedSkill]?.skill}
-                                settings={settings}
-                                toggleSkill={toggleAgentSkill}
-                                enabled={agentSkills.includes(
-                                  configurableSkills[selectedSkill]?.skill
-                                )}
-                                setHasChanges={setHasChanges}
-                                hasChanges={hasChanges}
-                                {...configurableSkills[selectedSkill]}
-                              />
-                            ) : (
-                              // The selected skill is an app integration skill
-                              <SelectedSkillComponent
-                                skill={
-                                  appIntegrationSkills[selectedSkill]?.skill
-                                }
-                                settings={settings}
-                                toggleSkill={toggleAgentSkill}
-                                enabled={agentSkills.includes(
-                                  appIntegrationSkills[selectedSkill]?.skill
-                                )}
-                                setHasChanges={setHasChanges}
-                                hasChanges={hasChanges}
-                                {...appIntegrationSkills[selectedSkill]}
-                              />
-                            )}
-                          </>
-                        )}
-                      </>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center h-full text-theme-text-secondary">
-                        <Bot strokeWidth={1.5} size={40} />
-                        <p className="font-medium">
-                          Select an Agent Skill, Agent Flow, or MCP Server
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
           )}
-        </form>
-      </SkillLayout>
+        </div>
+      </PageShell>
     );
   }
+
+  const selectedImported =
+    selection?.kind === "imported"
+      ? (importedSkills.find((skill) => skill.hubId === selection.id) ?? null)
+      : null;
+  const selectedFlow =
+    selection?.kind === "flow"
+      ? (agentFlows.find((flow) => flow.uuid === selection.id) ?? null)
+      : null;
+  const selectedServer =
+    selection?.kind === "mcp"
+      ? (mcp.servers.find((server) => server.name === selection.id) ?? null)
+      : null;
+  const skillPanelIds =
+    selection?.kind === "skill" && !keptSkillIds.includes(selection.id)
+      ? [...keptSkillIds, selection.id]
+      : keptSkillIds;
+  const detailProps = {
+    defaultSkills,
+    configurableSkills,
+    appIntegrationSkills,
+    settings,
+    agentSkills,
+    disabledAgentSkills,
+    toggleDefaultSkill,
+    toggleAgentSkill,
+    hasChanges,
+    setHasChanges,
+    importedSkill: selectedImported,
+    setImportedSkills,
+    onImportedDelete: handleImportedDelete,
+    flow: selectedFlow,
+    flowEnabled: !!selectedFlow && activeFlowIds.includes(selectedFlow.uuid),
+    toggleFlow,
+    onFlowDelete: handleFlowDelete,
+    server: selectedServer,
+    onServerToggled: handleMCPServerToggled,
+    onServerDelete: handleMCPServerDelete,
+    onToggleTool: handleMCPToolToggle,
+  };
 
   return (
-    <SkillLayout
-      hasChanges={hasChanges}
-      handleCancel={() => setHasChanges(false)}
-      handleSubmit={handleSubmit}
+    <PageShell
+      footer={
+        <>
+          <ContextualSaveBar
+            showing={hasChanges}
+            busy={saving}
+            onSave={handleSubmit}
+            onCancel={handleCancel}
+          />
+          <UnsavedChangesGuard when={hasChanges} />
+        </>
+      }
     >
       <form
         onSubmit={handleSubmit}
-        onChange={(e) => {
-          if (IGNORE_CHANGE_SETTINGS.includes(e.target.name)) return;
-          if (!selectedSkill?.imported && !selectedFlow) setHasChanges(true);
-        }}
+        onChange={handleFormChange}
         ref={formEl}
-        className="flex-1 flex gap-x-6 p-4 mt-10"
+        className={`flex flex-col md:flex-row md:flex-1 md:min-h-0 gap-6 p-4 mt-10 ${
+          hasChanges ? "pb-24 md:pb-4" : ""
+        }`}
       >
         <input
           name="system::default_agent_skills"
@@ -598,284 +593,239 @@ export default function AdminAgents() {
           value={activeFlowIds.join(",")}
         />
 
-        {/* Skill settings nav - Make this section scrollable */}
-        <div className="flex flex-col min-w-[360px] h-[calc(100vh-90px)]">
-          <div className="flex-none flex justify-between items-center mb-4">
-            <div className="text-theme-text-primary flex items-center gap-x-2">
-              <Bot strokeWidth={1.5} size={24} />
-              <p className="text-lg font-medium">Agent Skills</p>
-            </div>
+        {/* Lists: the only view on phones until an item is opened. */}
+        <div
+          ref={listRef}
+          className={`flex flex-col w-full md:w-auto md:min-w-[280px] md:max-w-[320px] xl:min-w-[360px] xl:max-w-[420px] md:shrink-0 md:min-h-0 ${
+            isMobile && showDetail ? "hidden" : ""
+          }`}
+        >
+          <div className="flex-none flex justify-between items-center gap-x-2 mb-4">
+            <PageTitle headingRef={headingRef} />
             <AgentSkillSettings />
           </div>
 
-          <div className="flex-1 overflow-y-auto pr-2 pb-4">
-            <div className="space-y-4">
-              {/* Default skills list */}
-              <SkillList
-                skills={defaultSkills}
-                selectedSkill={selectedSkill}
-                handleClick={handleSkillClick}
-                activeSkills={Object.keys(defaultSkills).filter(
-                  (skill) => !disabledAgentSkills.includes(skill)
-                )}
-              />
-              {/* Configurable skills */}
-              <SkillList
-                skills={configurableSkills}
-                selectedSkill={selectedSkill}
-                handleClick={handleSkillClick}
-                activeSkills={agentSkills}
-              />
+          <div className="md:flex-1 md:min-h-0 md:overflow-y-auto md:pr-2 pb-4">
+            <div className="flex flex-col gap-y-6">
+              <section
+                aria-labelledby={builtinId}
+                className="flex flex-col gap-y-3"
+              >
+                <SectionHeading
+                  id={builtinId}
+                  icon={<Wrench {...SECTION_ICON} />}
+                >
+                  {t("agent-pages.builtin")}
+                </SectionHeading>
+                <SkillList
+                  skills={defaultSkills}
+                  labelledBy={builtinId}
+                  isSelected={(id) => isSelected("skill", id)}
+                  onSelect={(id) => openItem("skill", id)}
+                  activeSkills={Object.keys(defaultSkills).filter(
+                    (skill) => !disabledAgentSkills.includes(skill)
+                  )}
+                />
+                <SkillList
+                  skills={configurableSkills}
+                  labelledBy={builtinId}
+                  isSelected={(id) => isSelected("skill", id)}
+                  onSelect={(id) => openItem("skill", id)}
+                  activeSkills={agentSkills}
+                />
+              </section>
 
               {Object.keys(appIntegrationSkills).length > 0 && (
-                <>
-                  <div className="text-theme-text-primary flex items-center gap-x-2 mt-6">
-                    <Package strokeWidth={1.5} size={24} />
-                    <p className="text-lg font-medium">App Integrations</p>
-                  </div>
+                <section
+                  aria-labelledby={appsId}
+                  className="flex flex-col gap-y-3"
+                >
+                  <SectionHeading
+                    id={appsId}
+                    icon={<Package {...SECTION_ICON} />}
+                  >
+                    {t("chat_window.app_integrations")}
+                  </SectionHeading>
                   <SkillList
                     skills={appIntegrationSkills}
-                    selectedSkill={selectedSkill}
-                    handleClick={handleSkillClick}
+                    labelledBy={appsId}
+                    isSelected={(id) => isSelected("skill", id)}
+                    onSelect={(id) => openItem("skill", id)}
                     activeSkills={agentSkills}
                   />
-                </>
+                </section>
               )}
 
-              <div className="text-theme-text-primary flex items-center gap-x-2 mt-4">
-                <Plug strokeWidth={1.5} size={24} />
-                <p className="text-lg font-medium">Custom Skills</p>
-              </div>
-              <ImportedSkillList
-                skills={importedSkills}
-                selectedSkill={selectedSkill}
-                handleClick={handleSkillClick}
-              />
-
-              <div className="text-theme-text-primary flex items-center justify-between gap-x-2 mt-4">
-                <div className="flex items-center gap-x-2">
-                  <Workflow strokeWidth={1.5} size={24} />
-                  <p className="text-lg font-medium">Agent Flows</p>
-                </div>
-                {agentFlows.length === 0 ? (
-                  <Link
-                    to={paths.agents.builder()}
-                    className="text-cta-button flex items-center gap-x-1 hover:underline"
-                  >
-                    <Hammer strokeWidth={1.5} size={16} />
-                    <p className="text-sm">Create Flow</p>
-                  </Link>
-                ) : (
-                  <Link
-                    to={paths.agents.builder()}
-                    className="text-theme-text-secondary hover:text-cta-button flex items-center gap-x-1"
-                  >
-                    <Hammer strokeWidth={1.5} size={16} />
-                    <p className="text-sm">Open Builder</p>
-                  </Link>
-                )}
-              </div>
-              <AgentFlowsList
-                flows={agentFlows}
-                selectedFlow={selectedFlow}
-                handleClick={handleFlowClick}
-                activeFlowIds={activeFlowIds}
-              />
-
-              <MCPServerHeader
-                setMcpServers={setMcpServers}
-                setSelectedMcpServer={setSelectedMcpServer}
+              <section
+                aria-labelledby={importedId}
+                className="flex flex-col gap-y-3"
               >
-                {({ loadingMcpServers }) => {
-                  return (
-                    <MCPServersList
-                      isLoading={loadingMcpServers}
-                      servers={mcpServers}
-                      selectedServer={selectedMcpServer}
-                      handleClick={handleMCPClick}
-                    />
-                  );
-                }}
-              </MCPServerHeader>
+                <SectionHeading
+                  id={importedId}
+                  icon={<Plug {...SECTION_ICON} />}
+                >
+                  {t("chat_window.custom_skills")}
+                </SectionHeading>
+                <ImportedSkillList
+                  skills={importedSkills}
+                  labelledBy={importedId}
+                  isSelected={(hubId) => isSelected("imported", hubId)}
+                  handleClick={(config) => openItem("imported", config.hubId)}
+                />
+              </section>
+
+              <section
+                aria-labelledby={flowsId}
+                className="flex flex-col gap-y-3"
+              >
+                <SectionHeading
+                  id={flowsId}
+                  icon={<Workflow {...SECTION_ICON} />}
+                  action={
+                    agentFlows.length > 0 && (
+                      <Link to={paths.agents.builder()} className={HEADER_LINK}>
+                        <Hammer
+                          strokeWidth={1.5}
+                          size={16}
+                          aria-hidden="true"
+                        />
+                        {t("agent-pages.flows.open-builder")}
+                      </Link>
+                    )
+                  }
+                >
+                  {t("chat_window.agent_flows")}
+                </SectionHeading>
+                {flowsStatus === "error" ? (
+                  <LoadError
+                    message={t("agent-pages.flows.load-error")}
+                    onRetry={loadFlows}
+                  />
+                ) : (
+                  <AgentFlowsList
+                    flows={agentFlows}
+                    labelledBy={flowsId}
+                    isSelected={(uuid) => isSelected("flow", uuid)}
+                    handleClick={(flow) => openItem("flow", flow.uuid)}
+                    activeFlowIds={activeFlowIds}
+                  />
+                )}
+              </section>
+
+              <MCPServersSection
+                headingId={mcpId}
+                mcp={mcp}
+                isSelected={(name) => isSelected("mcp", name)}
+                handleClick={(server) => openItem("mcp", server.name)}
+              />
             </div>
           </div>
         </div>
 
-        {/* Selected agent skill setting panel */}
-        <div className="flex-[2] flex flex-col gap-y-[18px] mt-10">
-          <div className="bg-theme-bg-secondary text-white rounded-xl flex-1 p-4 overflow-y-scroll overflow-x-visible no-scroll">
-            {SelectedSkillComponent ? (
-              <>
-                {selectedMcpServer ? (
-                  <ServerPanel
-                    server={selectedMcpServer}
-                    toggleServer={toggleMCP}
-                    onDelete={handleMCPServerDelete}
-                    onToggleTool={handleMCPToolToggle}
-                  />
-                ) : selectedFlow ? (
-                  <FlowPanel
-                    flow={selectedFlow}
-                    toggleFlow={toggleFlow}
-                    enabled={activeFlowIds.includes(selectedFlow.uuid)}
-                    onDelete={handleFlowDelete}
-                  />
-                ) : selectedSkill.imported ? (
-                  <ImportedSkillConfig
-                    key={selectedSkill.hubId}
-                    selectedSkill={selectedSkill}
-                    setImportedSkills={setImportedSkills}
-                  />
-                ) : (
-                  <>
-                    {defaultSkills?.[selectedSkill] ? (
-                      // The selected skill is a default skill - show the default skill panel
-                      <SelectedSkillComponent
-                        skill={defaultSkills[selectedSkill]?.skill}
-                        settings={settings}
-                        toggleSkill={toggleDefaultSkill}
-                        enabled={
-                          !disabledAgentSkills.includes(
-                            defaultSkills[selectedSkill]?.skill
-                          )
-                        }
-                        setHasChanges={setHasChanges}
-                        {...defaultSkills[selectedSkill]}
-                      />
-                    ) : configurableSkills?.[selectedSkill] ? (
-                      // The selected skill is a configurable skill - show the configurable skill panel
-                      <SelectedSkillComponent
-                        skill={configurableSkills[selectedSkill]?.skill}
-                        settings={settings}
-                        toggleSkill={toggleAgentSkill}
-                        enabled={agentSkills.includes(
-                          configurableSkills[selectedSkill]?.skill
-                        )}
-                        setHasChanges={setHasChanges}
-                        hasChanges={hasChanges}
-                        {...configurableSkills[selectedSkill]}
-                      />
-                    ) : (
-                      // The selected skill is an app integration skill
-                      <SelectedSkillComponent
-                        skill={appIntegrationSkills[selectedSkill]?.skill}
-                        settings={settings}
-                        toggleSkill={toggleAgentSkill}
-                        enabled={agentSkills.includes(
-                          appIntegrationSkills[selectedSkill]?.skill
-                        )}
-                        setHasChanges={setHasChanges}
-                        hasChanges={hasChanges}
-                        {...appIntegrationSkills[selectedSkill]}
-                      />
-                    )}
-                  </>
-                )}
-              </>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full text-theme-text-secondary">
-                <Bot strokeWidth={1.5} size={40} />
-                <p className="font-medium">
-                  Select an Agent Skill, Agent Flow, or MCP Server
-                </p>
+        {/* Selected item: beside the lists from md up, its own view on phones. */}
+        <div
+          className={`flex-[2] min-w-0 flex flex-col gap-y-3 md:mt-10 md:min-h-0 ${
+            isMobile && !showDetail ? "hidden" : ""
+          }`}
+        >
+          {isMobile && (
+            <button
+              type="button"
+              onClick={closeDetail}
+              className="self-start inline-flex items-center gap-x-1 min-h-[44px] pr-3 pl-1 rounded-lg text-sm font-medium text-theme-text-primary hover:bg-white/5 light:hover:bg-slate-100 transition-colors duration-quick ease-smooth"
+            >
+              <ChevronLeft strokeWidth={1.5} size={20} aria-hidden="true" />
+              {t("agent-pages.back")}
+            </button>
+          )}
+          <section
+            ref={detailRef}
+            tabIndex={-1}
+            aria-label={t("agent-pages.detail")}
+            className="bg-theme-bg-secondary text-white rounded-xl md:flex-1 p-4 md:overflow-y-auto"
+          >
+            {skillPanelIds.map((id) => (
+              <div
+                key={`skill:${id}:${panelKey}`}
+                hidden={!isSelected("skill", id)}
+              >
+                <SkillDetail
+                  selection={{ kind: "skill", id }}
+                  {...detailProps}
+                />
               </div>
+            ))}
+            {selection?.kind !== "skill" && (
+              <SkillDetail
+                key={`${selection?.kind}:${selection?.id}:${panelKey}`}
+                selection={selection}
+                {...detailProps}
+              />
             )}
-          </div>
+          </section>
         </div>
       </form>
-    </SkillLayout>
+    </PageShell>
   );
 }
 
-function SkillLayout({ children, hasChanges, handleSubmit, handleCancel }) {
+function PageShell({ children, footer = null }) {
   return (
     <div
       id="workspace-agent-settings-container"
-      className="w-screen h-screen overflow-hidden bg-zinc-950 light:bg-slate-50 flex md:mt-0 mt-6"
+      className="w-screen h-screen overflow-hidden bg-zinc-950 light:bg-slate-50 flex pt-6 md:pt-0"
     >
       <Sidebar />
-      <div
-        style={{ height: isMobile ? "100%" : "calc(100% - 32px)" }}
-        className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] w-full h-full flex"
-      >
+      <main className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] w-full h-full md:h-[calc(100%-32px)] flex flex-col overflow-y-auto md:overflow-hidden">
         {children}
-        <ContextualSaveBar
-          showing={hasChanges}
-          onSave={handleSubmit}
-          onCancel={handleCancel}
-        />
-      </div>
+      </main>
+      {footer}
     </div>
   );
 }
 
+function PageTitle({ headingRef }) {
+  const { t } = useTranslation();
+  return (
+    <h1
+      ref={headingRef}
+      tabIndex={-1}
+      className="flex items-center gap-x-2 text-lg leading-6 font-bold text-theme-text-primary"
+    >
+      <Bot {...SECTION_ICON} />
+      {t("settings.agent-skills")}
+    </h1>
+  );
+}
+
 function SkillList({
-  isDefault = false,
-  skills = [],
-  selectedSkill = null,
-  handleClick = null,
+  skills = {},
+  labelledBy,
+  isSelected = () => false,
+  onSelect,
   activeSkills = [],
-  Icon = null,
 }) {
-  if (skills.length === 0) return null;
+  const { t } = useTranslation();
+  const entries = Object.entries(skills);
+  if (entries.length === 0) return null;
 
   return (
-    <>
-      <div
-        className={`bg-theme-bg-secondary text-white rounded-xl ${
-          isMobile ? "w-full" : "min-w-[360px] w-fit"
-        }`}
-      >
-        {Object.entries(skills).map(([skill, settings], index) => (
-          <div
-            key={skill}
-            className={`py-3 px-4 flex items-center justify-between ${
-              index === 0 ? "rounded-t-xl" : ""
-            } ${
-              index === Object.keys(skills).length - 1
-                ? "rounded-b-xl"
-                : "border-b border-white/10"
-            } cursor-pointer transition-all duration-300  hover:bg-theme-bg-primary ${
-              selectedSkill === skill
-                ? "bg-white/10 light:bg-theme-bg-sidebar"
-                : ""
-            }`}
-            onClick={() => handleClick?.(skill)}
-          >
-            <div className="flex items-center gap-x-2">
-              {settings.Icon ? (
-                <settings.Icon size={16} />
-              ) : (
-                Icon && <Icon size={16} />
-              )}
-              <div className="text-sm font-light">{settings.title}</div>
-            </div>
-            <div className="flex items-center gap-x-2">
-              {isDefault ? (
-                <DefaultBadge title={skill} />
-              ) : (
-                <div className="text-sm text-theme-text-secondary font-medium">
-                  {activeSkills.includes(skill) ? "On" : "Off"}
-                </div>
-              )}
-              <ChevronRight
-                strokeWidth={1.5}
-                size={14}
-                className="text-theme-text-secondary"
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-      {/* Tooltip for default skills - only render when skill list is passed isDefault */}
-      {isDefault && (
-        <Tooltip
-          id="default-skill"
-          place="bottom"
-          delayShow={300}
-          className="tooltip light:invert-0 !text-xs"
+    <RowList labelledBy={labelledBy}>
+      {entries.map(([skill, config]) => (
+        <RowButton
+          key={skill}
+          rowKey={`skill:${skill}`}
+          selected={isSelected(skill)}
+          onClick={() => onSelect?.(skill)}
+          leading={config.Icon ? <config.Icon size={16} /> : null}
+          title={config.title}
+          status={
+            activeSkills.includes(skill)
+              ? t("agent-pages.skill-on")
+              : t("agent-pages.skill-off")
+          }
         />
-      )}
-    </>
+      ))}
+    </RowList>
   );
 }

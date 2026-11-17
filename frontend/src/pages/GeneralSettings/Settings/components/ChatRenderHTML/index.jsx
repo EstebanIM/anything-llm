@@ -22,8 +22,7 @@ export default function ChatRenderHTML() {
 
   useEffect(() => {
     function fetchSettings() {
-      const settings = Appearance.getSettings();
-      setRenderHTML(settings.renderHTML);
+      setRenderHTML(Appearance.get("renderHTML") ?? false);
     }
     fetchSettings();
   }, []);

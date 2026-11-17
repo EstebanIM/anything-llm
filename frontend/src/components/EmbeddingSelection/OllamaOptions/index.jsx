@@ -1,26 +1,45 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { LoaderCircle } from "lucide-react";
 import System from "@/models/system";
-import PreLoader from "@/components/Preloader";
 import { OLLAMA_COMMON_URLS } from "@/utils/constants";
-import { ChevronDown, ChevronUp, Info } from "lucide-react";
-import { Tooltip } from "react-tooltip";
 import useProviderEndpointAutoDiscovery from "@/hooks/useProviderEndpointAutoDiscovery";
+import {
+  AdvancedSection,
+  FIELD_COL,
+  FIELD_ERROR,
+  FIELD_HELP,
+  FIELD_INPUT,
+  FIELD_LABEL,
+  FIELD_ROW,
+  FIELD_SELECT,
+  ModelsErrorText,
+  SECRET_MASK,
+  SecretInput,
+} from "@/components/ProviderFields";
+
+const PROVIDER_NAME = "Ollama";
 
 export default function OllamaEmbeddingOptions({ settings }) {
+  const { t } = useTranslation();
+  const id = useId();
   const {
     autoDetecting: loading,
+    autoDetectStatus,
+    detectedEndpoint,
     basePath,
     basePathValue,
     showAdvancedControls,
     setShowAdvancedControls,
     handleAutoDetectClick,
     authToken,
-    authTokenValue,
   } = useProviderEndpointAutoDiscovery({
     provider: "ollama",
     initialBasePath: settings?.EmbeddingBasePath,
     ENDPOINTS: OLLAMA_COMMON_URLS,
   });
+  // A detection started by hand must not fold the section with the focused button inside.
+  const [keepOpen, setKeepOpen] = useState(false);
 
   const [maxChunkLength, setMaxChunkLength] = useState(
     settings?.EmbeddingModelMaxChunkLength || 8192
@@ -37,245 +56,283 @@ export default function OllamaEmbeddingOptions({ settings }) {
     setBatchSize(Number(e.target.value));
   };
 
+  const detectMessage =
+    autoDetectStatus === "found"
+      ? t("provider-fields.detect-success", {
+          provider: PROVIDER_NAME,
+          url: detectedEndpoint,
+        })
+      : autoDetectStatus === "not-found"
+        ? t("provider-fields.detect-failed", { provider: PROVIDER_NAME })
+        : "";
+
   return (
     <div className="w-full flex flex-col gap-y-7">
-      <div className="w-full flex items-start gap-[36px] mt-1.5">
+      <div className={`${FIELD_ROW} mt-1.5`}>
         <OllamaEmbeddingModelSelection
           settings={settings}
           basePath={basePath.value}
         />
-        <div className="flex flex-col w-60">
-          <div
-            data-tooltip-place="top"
-            data-tooltip-id="max-embedding-chunk-length-tooltip"
-            className="flex gap-x-1 items-center mb-3"
-          >
-            <label className="text-white text-sm font-semibold block">
-              Max embedding chunk length
-            </label>
-            <Info
-              strokeWidth={1.5}
-              size={16}
-              className="text-theme-text-secondary cursor-pointer"
-            />
-            <Tooltip id="max-embedding-chunk-length-tooltip">
-              Maximum length of text chunks, in characters, for embedding.
-            </Tooltip>
-          </div>
+        <div className={FIELD_COL}>
+          <label htmlFor={`${id}-chunk`} className={FIELD_LABEL}>
+            {t("provider-fields.max-chunk-length")}
+          </label>
           <input
+            id={`${id}-chunk`}
             type="number"
             name="EmbeddingModelMaxChunkLength"
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
+            className={FIELD_INPUT}
             placeholder="8192"
             min={1}
+            step={1}
             value={maxChunkLength}
             onChange={handleMaxChunkLengthChange}
-            onScroll={(e) => e.target.blur()}
+            onWheel={(e) => e.currentTarget.blur()}
             required={true}
             autoComplete="off"
+            aria-describedby={`${id}-chunk-help`}
           />
+          <p id={`${id}-chunk-help`} className={FIELD_HELP}>
+            {t("provider-forms.embedding.max-chunk-length-help")}
+          </p>
         </div>
-      </div>
-      <div className="flex justify-start mt-4">
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            setShowAdvancedControls(!showAdvancedControls);
-          }}
-          className="border-none text-theme-text-primary hover:text-theme-text-secondary flex items-center text-sm"
-        >
-          {showAdvancedControls ? "Hide" : "Show"} Advanced Settings
-          {showAdvancedControls ? (
-            <ChevronUp strokeWidth={1.5} size={14} className="ml-1" />
-          ) : (
-            <ChevronDown strokeWidth={1.5} size={14} className="ml-1" />
-          )}
-        </button>
       </div>
 
-      <div hidden={!showAdvancedControls}>
-        <div className="w-full flex items-start gap-4">
-          <div className="flex flex-col w-60">
-            <div className="flex justify-between items-center mb-2">
-              <label className="text-white text-sm font-semibold">
-                Ollama Base URL
-              </label>
-              {loading ? (
-                <PreLoader size="6" />
-              ) : (
-                <>
-                  {!basePathValue.value && (
-                    <button
-                      onClick={handleAutoDetectClick}
-                      className="bg-primary-button text-xs font-medium px-2 py-1 rounded-lg hover:bg-secondary hover:text-white shadow-[0_4px_14px_rgba(0,0,0,0.25)]"
-                    >
-                      Auto-Detect
-                    </button>
+      <div>
+        <AdvancedSection
+          open={showAdvancedControls || keepOpen}
+          onOpenChange={(next) => {
+            setKeepOpen(false);
+            setShowAdvancedControls(next);
+          }}
+        >
+          <div className={`${FIELD_ROW} mt-4`}>
+            <div className={FIELD_COL}>
+              <div className="flex items-center justify-between gap-x-2 mb-3">
+                <label
+                  htmlFor={`${id}-base-url`}
+                  className="text-white text-sm font-semibold"
+                >
+                  {t("provider-fields.base-url")}
+                </label>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    if (loading) return;
+                    setKeepOpen(true);
+                    handleAutoDetectClick(e);
+                  }}
+                  aria-disabled={loading}
+                  aria-busy={loading}
+                  className="inline-flex items-center justify-center gap-x-1 shrink-0 rounded-lg border-none bg-primary-button text-theme-button-primary-text hover:bg-primary-button-hover text-xs font-medium px-3 md:px-2 min-h-[44px] md:min-h-[28px] transition-colors duration-quick ease-smooth aria-disabled:cursor-wait aria-disabled:opacity-70"
+                >
+                  {loading && (
+                    <LoaderCircle
+                      strokeWidth={1.5}
+                      size={14}
+                      aria-hidden="true"
+                      className="animate-spin"
+                    />
                   )}
-                </>
-              )}
-            </div>
-            <input
-              type="url"
-              name="EmbeddingBasePath"
-              className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-              placeholder="http://127.0.0.1:11434"
-              value={basePathValue.value}
-              required={true}
-              autoComplete="off"
-              spellCheck={false}
-              onChange={basePath.onChange}
-              onBlur={basePath.onBlur}
-            />
-            <p className="text-xs leading-[18px] font-base text-white text-opacity-60 mt-2">
-              Enter the URL where Ollama is running.
-            </p>
-          </div>
-          <div className="flex flex-col w-60">
-            <div
-              data-tooltip-place="top"
-              data-tooltip-id="ollama-batch-size-tooltip"
-              className="flex gap-x-1 items-center mb-3"
-            >
-              <label className="text-white text-sm font-semibold block">
-                Embedding batch size
-              </label>
-              <Info
-                strokeWidth={1.5}
-                size={16}
-                className="text-theme-text-secondary cursor-pointer"
+                  {loading
+                    ? t("provider-fields.detecting")
+                    : t("provider-fields.auto-detect")}
+                </button>
+              </div>
+              <input
+                id={`${id}-base-url`}
+                type="url"
+                name="EmbeddingBasePath"
+                className={FIELD_INPUT}
+                placeholder="http://127.0.0.1:11434"
+                value={basePathValue.value || ""}
+                required={true}
+                autoComplete="off"
+                spellCheck={false}
+                onChange={basePath.onChange}
+                onBlur={basePath.onBlur}
+                aria-describedby={`${id}-base-url-help`}
               />
-              <Tooltip id="ollama-batch-size-tooltip">
-                Number of text chunks to embed in parallel. Higher values
-                improve speed but use more memory. Default is 1.
-              </Tooltip>
+              <p id={`${id}-base-url-help`} className={FIELD_HELP}>
+                {t("provider-forms.shared.url-help", {
+                  provider: PROVIDER_NAME,
+                })}
+              </p>
             </div>
-            <input
-              type="number"
-              name="OllamaEmbeddingBatchSize"
-              className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-              placeholder="1"
-              min={1}
-              value={batchSize}
-              onChange={handleBatchSizeChange}
-              onScroll={(e) => e.target.blur()}
-              required={true}
-              autoComplete="off"
-            />
-            <p className="text-xs leading-[18px] font-base text-white text-opacity-60 mt-2">
-              Increase this value to process multiple chunks simultaneously for
-              faster embedding.
-            </p>
+            <div className={FIELD_COL}>
+              <label htmlFor={`${id}-batch`} className={FIELD_LABEL}>
+                {t("provider-forms.embedding.ollama.batch-size")}
+              </label>
+              <input
+                id={`${id}-batch`}
+                type="number"
+                name="OllamaEmbeddingBatchSize"
+                className={FIELD_INPUT}
+                placeholder="1"
+                min={1}
+                step={1}
+                value={batchSize}
+                onChange={handleBatchSizeChange}
+                onWheel={(e) => e.currentTarget.blur()}
+                required={true}
+                autoComplete="off"
+                aria-describedby={`${id}-batch-help`}
+              />
+              <p id={`${id}-batch-help`} className={FIELD_HELP}>
+                {t("provider-forms.embedding.ollama.batch-size-help")}
+              </p>
+            </div>
+            <div className={FIELD_COL}>
+              <label htmlFor={`${id}-auth-token`} className={FIELD_LABEL}>
+                {t("provider-fields.auth-token")}{" "}
+                <span className="font-normal text-theme-text-secondary">
+                  ({t("provider-fields.optional")})
+                </span>
+              </label>
+              <SecretInput
+                id={`${id}-auth-token`}
+                name="OllamaLLMAuthToken"
+                defaultValue={settings?.OllamaLLMAuthToken ? SECRET_MASK : ""}
+                onChange={authToken.onChange}
+                onBlur={authToken.onBlur}
+                required={false}
+                aria-describedby={`${id}-auth-token-help`}
+              />
+              <p id={`${id}-auth-token-help`} className={FIELD_HELP}>
+                {t("provider-forms.shared.bearer-help", {
+                  provider: PROVIDER_NAME,
+                })}
+              </p>
+            </div>
           </div>
-          <div>
-            <label className="text-white font-semibold block mb-3 text-sm">
-              Auth Token (optional)
-            </label>
-            <input
-              type="password"
-              name="OllamaLLMAuthToken"
-              className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-              placeholder="Enter your Auth Token"
-              defaultValue={settings?.OllamaLLMAuthToken ? "*".repeat(20) : ""}
-              value={authTokenValue.value}
-              onChange={authToken.onChange}
-              onBlur={authToken.onBlur}
-              required={false}
-              autoComplete="off"
-              spellCheck={false}
-            />
-            <p className="text-xs leading-[18px] font-base text-white text-opacity-60 mt-2">
-              Enter a <code>Bearer</code> Auth Token for interacting with your
-              Ollama server.
-              <br />
-              Used <b>only</b> if running Ollama behind an authentication
-              server.
-            </p>
-          </div>
-        </div>
+        </AdvancedSection>
+        <p
+          aria-live="polite"
+          className={detectMessage ? FIELD_HELP : "sr-only"}
+        >
+          {detectMessage}
+        </p>
       </div>
     </div>
   );
 }
 
 function OllamaEmbeddingModelSelection({ settings, basePath = null }) {
+  const { t } = useTranslation();
+  const id = useId();
   const [customModels, setCustomModels] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     async function findCustomModels() {
       if (!basePath) {
         setCustomModels([]);
+        setError(null);
         setLoading(false);
         return;
       }
       setLoading(true);
       try {
-        const { models } = await System.customModels("ollama", null, basePath);
+        const { models, error } = await System.customModels(
+          "ollama",
+          null,
+          basePath
+        );
         setCustomModels(models || []);
+        setError(error || null);
       } catch (error) {
         console.error("Failed to fetch custom models:", error);
         setCustomModels([]);
+        setError(error.message);
       }
       setLoading(false);
     }
     findCustomModels();
-  }, [basePath]);
+  }, [basePath, attempt]);
 
-  if (loading || customModels.length == 0) {
-    return (
-      <div className="flex flex-col w-60">
-        <label className="text-white text-sm font-semibold block mb-2">
-          Ollama Embedding Model
-        </label>
-        <select
-          name="EmbeddingModelPref"
-          disabled={true}
-          className="border-none bg-theme-settings-input-bg border-gray-500 text-white text-sm rounded-lg block w-full p-2.5"
-        >
-          <option disabled={true} selected={true}>
-            {!!basePath
-              ? "--loading available models--"
-              : "Enter Ollama URL first"}
-          </option>
-        </select>
-        <p className="text-xs leading-[18px] font-base text-white text-opacity-60 mt-2">
-          Select the Ollama model for embeddings. Models will load after
-          entering a valid Ollama URL.
-        </p>
-      </div>
-    );
-  }
+  const status = loading
+    ? "loading"
+    : !basePath
+      ? "need-url"
+      : error
+        ? "error"
+        : customModels.length === 0
+          ? "empty"
+          : "ready";
+  const statusText = {
+    loading: t("provider-fields.models-loading"),
+    "need-url": t("provider-fields.models-need-url"),
+    error: t("provider-fields.models-empty"),
+    empty: t("provider-fields.models-empty"),
+  }[status];
+  const hasProblem = status === "error" || status === "empty";
 
   return (
-    <div className="flex flex-col w-60">
-      <label className="text-white text-sm font-semibold block mb-2">
-        Ollama Embedding Model
+    <div className={FIELD_COL}>
+      <label htmlFor={`${id}-model`} className={FIELD_LABEL}>
+        {t("provider-fields.embedding-model")}
       </label>
-      <select
-        name="EmbeddingModelPref"
-        required={true}
-        className="border-none bg-theme-settings-input-bg border-gray-500 text-white text-sm rounded-lg block w-full p-2.5"
-      >
-        {customModels.length > 0 && (
-          <optgroup label="Your loaded models">
+      {status === "ready" ? (
+        <select
+          key="ready"
+          id={`${id}-model`}
+          name="EmbeddingModelPref"
+          required={true}
+          defaultValue={settings?.EmbeddingModelPref}
+          aria-describedby={`${id}-model-help`}
+          className={FIELD_SELECT}
+        >
+          <optgroup label={t("provider-forms.shared.models-loaded")}>
             {customModels.map((model) => {
               return (
-                <option
-                  key={model.id}
-                  value={model.id}
-                  selected={settings.EmbeddingModelPref === model.id}
-                >
+                <option key={model.id} value={model.id}>
                   {model.id}
                 </option>
               );
             })}
           </optgroup>
-        )}
-      </select>
-      <p className="text-xs leading-[18px] font-base text-white text-opacity-60 mt-2">
-        Choose the Ollama model you want to use for generating embeddings.
-      </p>
+        </select>
+      ) : (
+        <select
+          key="pending"
+          id={`${id}-model`}
+          name="EmbeddingModelPref"
+          disabled={true}
+          aria-busy={status === "loading"}
+          aria-describedby={
+            hasProblem ? `${id}-model-error` : `${id}-model-help`
+          }
+          className={FIELD_SELECT}
+        >
+          <option value="">{statusText}</option>
+        </select>
+      )}
+      {hasProblem ? (
+        <p id={`${id}-model-error`} role="alert" className={FIELD_ERROR}>
+          {status === "error" ? (
+            <ModelsErrorText error={error} />
+          ) : (
+            t("provider-forms.shared.models-unreachable", {
+              provider: PROVIDER_NAME,
+            })
+          )}{" "}
+          <button
+            type="button"
+            onClick={() => setAttempt((n) => n + 1)}
+            className="inline-flex items-center min-h-[44px] md:min-h-0 font-semibold underline underline-offset-2"
+          >
+            {t("provider-fields.retry")}
+          </button>
+        </p>
+      ) : (
+        <p id={`${id}-model-help`} className={FIELD_HELP}>
+          {t("provider-forms.embedding.model-help", {
+            provider: PROVIDER_NAME,
+          })}
+        </p>
+      )}
     </div>
   );
 }

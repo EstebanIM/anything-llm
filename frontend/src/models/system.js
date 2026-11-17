@@ -35,7 +35,9 @@ const System = {
 
   /**
    * Checks if the onboarding is complete.
-   * @returns {Promise<boolean>}
+   * @returns {Promise<boolean|null>} null when the server could not be reached
+   * (never treat that as "not onboarded": it would send a configured instance
+   * back to the setup wizard).
    */
   isOnboardingComplete: async function () {
     return await fetch(`${API_BASE}/onboarding`)
@@ -43,8 +45,8 @@ const System = {
         if (!res.ok) throw new Error("Could not find onboarding information.");
         return res.json();
       })
-      .then((res) => res.onboardingComplete)
-      .catch(() => false);
+      .then((res) => !!res.onboardingComplete)
+      .catch(() => null);
   },
   /**
    * Marks the onboarding as complete.
@@ -124,44 +126,72 @@ const System = {
     return Number(new Date()) > expiresAtMs;
   },
 
+  /**
+   * @returns {Promise<boolean|null>} null when the server could not be reached
+   * or failed: callers must not drop the stored session in that case.
+   */
   checkAuth: async function (currentToken = null) {
     const valid = await fetch(`${API_BASE}/system/check-token`, {
       headers: baseHeaders(currentToken),
     })
-      .then((res) => res.ok)
-      .catch(() => false);
+      .then((res) => {
+        if (res.ok) return true;
+        if (res.status === 401 || res.status === 403) return false;
+        return null;
+      })
+      .catch(() => null);
 
     window.localStorage.setItem(AUTH_TIMESTAMP, Number(new Date()));
     return valid;
   },
+  /**
+   * Single-user mode answers a wrong password with a 401 whose JSON still
+   * carries the coded message, so the body is read whatever the status.
+   * A network failure gives `message: "network"` (see utils/authErrors).
+   */
   requestToken: async function (body) {
     return await fetch(`${API_BASE}/request-token`, {
       method: "POST",
       body: JSON.stringify({ ...body }),
     })
-      .then((res) => {
-        if (!res.ok) throw new Error("Could not validate login.");
-        return res.json();
+      .then(async (res) => {
+        const data = await res.json().catch(() => null);
+        if (data) return data;
+        throw new Error(res.ok ? "network" : `status-${res.status}`);
       })
-      .then((res) => res)
       .catch((e) => {
-        return { valid: false, message: e.message };
+        return { valid: false, message: e?.message || "network" };
       });
   },
   /**
    * Refreshes the user object from the session.
    * @returns {Promise<{success: boolean, user: Object | null, message: string | null}>}
    */
+  /**
+   * `unreachable: true` means the server could not be reached or failed (not
+   * that the session is invalid): keep the stored session in that case.
+   */
   refreshUser: () => {
     return fetch(`${API_BASE}/system/refresh-user`, {
       headers: baseHeaders(),
     })
       .then((res) => {
+        if (res.status === 401 || res.status === 403)
+          return {
+            success: false,
+            user: null,
+            message: "Session expired or invalid.",
+          };
         if (!res.ok) throw new Error("Could not refresh user.");
         return res.json();
       })
       .catch((e) => {
-        return { success: false, user: null, message: e.message };
+        return {
+          success: false,
+          user: null,
+          message: e.message,
+          unreachable: true,
+        };
       });
   },
   recoverAccount: async function (username, recoveryCodes) {

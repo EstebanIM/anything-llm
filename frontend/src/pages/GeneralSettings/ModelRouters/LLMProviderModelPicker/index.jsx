@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AVAILABLE_LLM_PROVIDERS } from "@/pages/GeneralSettings/LLMPreference";
 import System from "@/models/system";
@@ -10,8 +10,10 @@ import Modal, {
   ModalSecondaryButton,
 } from "@/components/lib/Modal";
 import { useModal } from "@/hooks/useModal";
-import showToast from "@/utils/toast";
+import StatusNote from "@/components/lib/StatusNote";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import { withEmbeddedLemonade } from "@/components/LLMSelection/EmbeddedLemonadeOptions";
+import { ROUTER_CONTROL, ROUTER_HINT, ROUTER_LABEL } from "../fieldClasses";
 
 // Providers that can't be routing targets
 const EXCLUDED_PROVIDERS = ["anythingllm-router"];
@@ -19,18 +21,21 @@ const EXCLUDED_PROVIDERS = ["anythingllm-router"];
 export default function LLMProviderModelPicker({
   providerFieldName = "fallback_provider",
   modelFieldName = "fallback_model",
-  label = "Provider & Model",
+  label = "",
   description = "",
   defaultProvider = "",
   defaultModel = "",
 }) {
   const { t } = useTranslation();
+  const id = useId();
   const [selectedProvider, setSelectedProvider] = useState(defaultProvider);
   const [selectedModel, setSelectedModel] = useState(defaultModel);
   const [models, setModels] = useState([]);
   const [loadingModels, setLoadingModels] = useState(false);
   const [settings, setSettings] = useState(null);
   const { isOpen, openModal, closeModal } = useModal();
+  const [setupError, setSetupError] = useState(null);
+  const [setupSaving, setSetupSaving] = useState(false);
 
   useEffect(() => {
     if (defaultProvider && !selectedProvider)
@@ -86,10 +91,13 @@ export default function LLMProviderModelPicker({
     setSelectedProvider(value);
     setSelectedModel("");
     setModels([]);
-    if (value && !isConfigured(value)) openModal();
+    // No dialog here: arrow keys change a <select> on every press, so opening
+    // setup on change would trap keyboard users. The "Configure to continue"
+    // button next to it opens setup on purpose.
   }
 
   function handleSetupCancel() {
+    setSetupError(null);
     closeModal();
     if (!isConfigured(selectedProvider)) {
       setSelectedProvider(defaultProvider || "");
@@ -100,19 +108,28 @@ export default function LLMProviderModelPicker({
   async function handleSetupSave(e) {
     e.preventDefault();
     e.stopPropagation();
+    if (setupSaving) return;
     const data = {};
     const form = new FormData(e.target);
     for (const [key, value] of form.entries()) data[key] = value;
+    setSetupSaving(true);
+    setSetupError(null);
     const { error } = await System.updateSystem(data);
     if (error) {
-      showToast(
-        t("model-router.provider-picker.toast-save-failed", { error }),
-        "error"
+      setSetupSaving(false);
+      // The dialog stays open: the error goes next to the fields.
+      setSetupError(
+        serverErrorMessage(
+          error,
+          t,
+          "model-router.provider-picker.toast-save-failed"
+        )
       );
       return;
     }
     const _settings = await System.keys();
     setSettings(_settings ?? {});
+    setSetupSaving(false);
     closeModal();
   }
 
@@ -123,22 +140,31 @@ export default function LLMProviderModelPicker({
     selectedProvider && selectedLlm && !isConfigured(selectedProvider);
 
   return (
-    <div className="flex flex-col gap-y-1.5">
-      <label className="text-sm font-medium leading-5 text-white light:text-slate-950">
+    <div
+      role="group"
+      aria-labelledby={`${id}-label`}
+      aria-describedby={description ? `${id}-description` : undefined}
+      className="flex flex-col gap-y-1.5"
+    >
+      <p id={`${id}-label`} className={ROUTER_LABEL}>
         {label}
-      </label>
+      </p>
       {description && (
-        <p className="text-xs leading-4 text-zinc-400 light:text-slate-600">
+        <p id={`${id}-description`} className={ROUTER_HINT}>
           {description}
         </p>
       )}
-      <div className="flex gap-x-3">
-        <div className="flex-1">
+      <div className="flex flex-col md:flex-row gap-3">
+        <div className="flex-1 min-w-0">
+          <label htmlFor={`${id}-provider`} className="sr-only">
+            {t("settings-pages.provider")}
+          </label>
           <select
+            id={`${id}-provider`}
             name={providerFieldName}
             value={selectedProvider}
             onChange={handleProviderChange}
-            className="bg-zinc-800 light:bg-white light:border light:border-slate-300 text-white light:text-slate-700 text-sm rounded-[8px] outline-none block w-full h-8 px-3.5"
+            className={ROUTER_CONTROL}
             required
           >
             <option value="">
@@ -154,64 +180,77 @@ export default function LLMProviderModelPicker({
             ))}
           </select>
         </div>
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           {needsSetup ? (
             <button
               type="button"
               onClick={openModal}
-              className="border-none bg-zinc-800 light:bg-white light:border light:border-slate-300 text-blue-400 light:text-blue-500 text-sm rounded-[8px] block w-full h-8 px-3.5 text-left hover:text-blue-300 light:hover:text-blue-600 transition-colors"
+              className="block w-full h-11 md:h-[34px] px-3.5 text-left text-base md:text-sm rounded-lg bg-zinc-800 light:bg-white border border-zinc-500 light:border-slate-500 text-blue-400 light:text-blue-700 hover:text-blue-300 light:hover:text-blue-800 transition-colors duration-quick ease-smooth"
             >
               {t("model-router.provider-picker.configure-to-continue", {
                 name: selectedLlm.name,
               })}
             </button>
           ) : loadingModels ? (
-            <div className="bg-zinc-800 light:bg-white light:border light:border-slate-300 text-zinc-400 light:text-slate-500 text-sm rounded-[8px] h-8 px-3.5 flex items-center">
+            <div
+              role="status"
+              className="flex items-center h-11 md:h-[34px] px-3.5 text-base md:text-sm rounded-lg bg-zinc-800 light:bg-white border border-zinc-500 light:border-slate-500 text-zinc-400 light:text-slate-600"
+            >
               {t("model-router.provider-picker.loading-models")}
             </div>
-          ) : models.length > 0 ? (
-            <select
-              name={modelFieldName}
-              value={selectedModel}
-              onChange={(e) => setSelectedModel(e.target.value)}
-              className="bg-zinc-800 light:bg-white light:border light:border-slate-300 text-white light:text-slate-700 text-sm rounded-[8px] outline-none block w-full h-8 px-3.5"
-              required
-            >
-              <option value="">
-                {t("model-router.provider-picker.select-model")}
-              </option>
-              {downloadedModels.length > 0 && (
-                <optgroup label="Downloaded models">
-                  {downloadedModels.map((model) => (
-                    <option key={model.id} value={model.id}>
-                      {model.name || model.id}
-                    </option>
-                  ))}
-                </optgroup>
-              )}
-              <optgroup label="Discovered models">
-                {models.map((model) => (
-                  <option key={model.id} value={model.id}>
-                    {model.id}
-                  </option>
-                ))}
-              </optgroup>
-            </select>
           ) : (
-            <input
-              type="text"
-              name={modelFieldName}
-              value={selectedModel}
-              onChange={(e) => setSelectedModel(e.target.value)}
-              placeholder={
-                selectedProvider
-                  ? t("model-router.provider-picker.enter-model")
-                  : t("model-router.provider-picker.select-provider-first")
-              }
-              disabled={!selectedProvider}
-              className="bg-zinc-800 light:bg-white light:border light:border-slate-300 text-white light:text-slate-700 placeholder:text-zinc-400 light:placeholder:text-slate-400 text-sm rounded-[8px] outline-none block w-full h-8 px-3.5 disabled:opacity-50"
-              required
-            />
+            <>
+              <label htmlFor={`${id}-model`} className="sr-only">
+                {t("provider-fields.model")}
+              </label>
+              {models.length > 0 ? (
+                <select
+                  id={`${id}-model`}
+                  name={modelFieldName}
+                  value={selectedModel}
+                  onChange={(e) => setSelectedModel(e.target.value)}
+                  className={ROUTER_CONTROL}
+                  required
+                >
+                  <option value="">
+                    {t("model-router.provider-picker.select-model")}
+                  </option>
+                  {downloadedModels.length > 0 && (
+                    <optgroup label={t("settings-pages.models-downloaded")}>
+                      {downloadedModels.map((model) => (
+                        <option key={model.id} value={model.id}>
+                          {model.name || model.id}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                  <optgroup label={t("settings-pages.models-discovered")}>
+                    {models.map((model) => (
+                      <option key={model.id} value={model.id}>
+                        {model.id}
+                      </option>
+                    ))}
+                  </optgroup>
+                </select>
+              ) : (
+                <input
+                  id={`${id}-model`}
+                  type="text"
+                  name={modelFieldName}
+                  value={selectedModel}
+                  onChange={(e) => setSelectedModel(e.target.value)}
+                  placeholder={
+                    selectedProvider
+                      ? t("model-router.provider-picker.enter-model")
+                      : t("model-router.provider-picker.select-provider-first")
+                  }
+                  disabled={!selectedProvider}
+                  autoComplete="off"
+                  className={ROUTER_CONTROL}
+                  required
+                />
+              )}
+            </>
           )}
         </div>
       </div>
@@ -222,12 +261,22 @@ export default function LLMProviderModelPicker({
         settings={settings}
         onSave={handleSetupSave}
         onClose={handleSetupCancel}
+        error={setupError}
+        busy={setupSaving}
       />
     </div>
   );
 }
 
-function ProviderSetupModal({ isOpen, provider, settings, onSave, onClose }) {
+function ProviderSetupModal({
+  isOpen,
+  provider,
+  settings,
+  onSave,
+  onClose,
+  error = null,
+  busy = false,
+}) {
   const { t } = useTranslation();
   if (!isOpen || !provider) return null;
 
@@ -244,7 +293,7 @@ function ProviderSetupModal({ isOpen, provider, settings, onSave, onClose }) {
               {provider.logo && (
                 <img
                   src={provider.logo}
-                  alt={`${provider.name} logo`}
+                  alt=""
                   className="w-8 h-8 rounded-md"
                 />
               )}
@@ -262,12 +311,21 @@ function ProviderSetupModal({ isOpen, provider, settings, onSave, onClose }) {
         />
         <ModalBody>
           <div className="space-y-4">{provider.options(settings ?? {})}</div>
+          {error && (
+            <StatusNote tone="error" announce className="mt-4">
+              {error}
+            </StatusNote>
+          )}
         </ModalBody>
         <ModalFooter>
           <ModalSecondaryButton type="button" onClick={onClose}>
-            {t("model-router.provider-picker.cancel")}
+            {t("settings-pages.cancel")}
           </ModalSecondaryButton>
-          <ModalPrimaryButton type="submit" form="provider-setup-form">
+          <ModalPrimaryButton
+            type="submit"
+            form="provider-setup-form"
+            busy={busy}
+          >
             {t("model-router.provider-picker.save-settings")}
           </ModalPrimaryButton>
         </ModalFooter>

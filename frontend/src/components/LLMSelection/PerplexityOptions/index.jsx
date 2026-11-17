@@ -1,22 +1,34 @@
+import { useState, useEffect, useId } from "react";
+import { useTranslation } from "react-i18next";
 import System from "@/models/system";
-import { useState, useEffect } from "react";
+import {
+  FIELD_COL,
+  FIELD_ROW,
+  SECRET_MASK,
+  SecretInput,
+} from "@/components/ProviderFields";
+import {
+  FieldLabel,
+  ModelSelectField,
+  modelStatus,
+} from "@/components/LLMSelection/FormParts";
 
 export default function PerplexityOptions({ settings }) {
+  const { t } = useTranslation();
+  const id = useId();
+
   return (
-    <div className="flex gap-[36px] mt-1.5">
-      <div className="flex flex-col w-60">
-        <label className="text-white text-sm font-semibold block mb-3">
-          Perplexity API Key
-        </label>
-        <input
-          type="password"
+    <div className={`${FIELD_ROW} mt-1.5`}>
+      <div className={FIELD_COL}>
+        <FieldLabel
+          htmlFor={`${id}-key`}
+          label={t("provider-fields.api-key")}
+        />
+        <SecretInput
+          id={`${id}-key`}
           name="PerplexityApiKey"
-          className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-          placeholder="Perplexity API Key"
-          defaultValue={settings?.PerplexityApiKey ? "*".repeat(20) : ""}
+          defaultValue={settings?.PerplexityApiKey ? SECRET_MASK : ""}
           required={true}
-          autoComplete="off"
-          spellCheck={false}
         />
       </div>
       {!settings?.credentialsOnly && (
@@ -27,64 +39,39 @@ export default function PerplexityOptions({ settings }) {
 }
 
 function PerplexityModelSelection({ settings }) {
+  const { t } = useTranslation();
   const [customModels, setCustomModels] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     async function findCustomModels() {
       setLoading(true);
-      const { models } = await System.customModels("perplexity");
+      const { models, error } = await System.customModels("perplexity");
       setCustomModels(models || []);
+      setError(error || null);
       setLoading(false);
     }
     findCustomModels();
-  }, []);
-
-  if (loading || customModels.length == 0) {
-    return (
-      <div className="flex flex-col w-60">
-        <label className="text-white text-sm font-semibold block mb-3">
-          Chat Model Selection
-        </label>
-        <select
-          name="PerplexityModelPref"
-          disabled={true}
-          className="border-none bg-theme-settings-input-bg border-gray-500 text-white text-sm rounded-lg block w-full p-2.5"
-        >
-          <option disabled={true} selected={true}>
-            -- loading available models --
-          </option>
-        </select>
-      </div>
-    );
-  }
+  }, [attempt]);
 
   return (
-    <div className="flex flex-col w-60">
-      <label className="text-white text-sm font-semibold block mb-3">
-        Chat Model Selection
-      </label>
-      <select
-        name="PerplexityModelPref"
-        required={true}
-        className="border-none bg-theme-settings-input-bg border-gray-500 text-white text-sm rounded-lg block w-full p-2.5"
-      >
-        {customModels.length > 0 && (
-          <optgroup label="Available Perplexity Models">
-            {customModels.map((model) => {
-              return (
-                <option
-                  key={model.id}
-                  value={model.id}
-                  selected={settings?.PerplexityModelPref === model.id}
-                >
-                  {model.id}
-                </option>
-              );
-            })}
-          </optgroup>
-        )}
-      </select>
-    </div>
+    <ModelSelectField
+      name="PerplexityModelPref"
+      label={t("provider-fields.chat-model")}
+      status={modelStatus({ loading, error, count: customModels.length })}
+      error={error}
+      onRetry={() => setAttempt((n) => n + 1)}
+      defaultValue={settings?.PerplexityModelPref}
+    >
+      <optgroup label={t("llm-fields.common.available-models")}>
+        {customModels.map((model) => (
+          <option key={model.id} value={model.id}>
+            {model.id}
+          </option>
+        ))}
+      </optgroup>
+    </ModelSelectField>
   );
 }

@@ -1,8 +1,9 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import Appearance from "@/models/appearance";
 import System from "@/models/system";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import MicButton from "../MicButton";
 import useSilenceDetector from "../useSilenceDetector";
 
@@ -28,6 +29,18 @@ export default function ServerSTT({ sendCommand }) {
   const [stream, setStream] = useState(null);
   const recorderRef = useRef(null);
   const chunksRef = useRef([]);
+  const unmountedRef = useRef(false);
+
+  // Leaving the chat must release the microphone and discard the recording
+  // instead of uploading it into a prompt that no longer exists.
+  useEffect(() => {
+    unmountedRef.current = false;
+    return () => {
+      unmountedRef.current = true;
+      const recorder = recorderRef.current;
+      if (recorder && recorder.state !== "inactive") recorder.stop();
+    };
+  }, []);
 
   const stopListening = useCallback(() => {
     const recorder = recorderRef.current;
@@ -49,6 +62,10 @@ export default function ServerSTT({ sendCommand }) {
       const audioStream = await navigator.mediaDevices.getUserMedia({
         audio: true,
       });
+      if (unmountedRef.current) {
+        audioStream.getTracks().forEach((t) => t.stop());
+        return;
+      }
       const mimeType = MIME_CANDIDATES.find((m) =>
         MediaRecorder.isTypeSupported(m)
       );
@@ -62,12 +79,13 @@ export default function ServerSTT({ sendCommand }) {
       };
       recorder.onstop = async () => {
         audioStream.getTracks().forEach((t) => t.stop());
-        setStream(null);
-        setListening(false);
         recorderRef.current = null;
-
         const chunks = chunksRef.current;
         chunksRef.current = [];
+        if (unmountedRef.current) return;
+
+        setStream(null);
+        setListening(false);
         if (!chunks.length) return;
         const blob = new Blob(chunks, { type: recorder.mimeType });
         if (blob.size === 0) return;
@@ -117,9 +135,13 @@ async function uploadAndDispatch(
   setProcessing(false);
 
   if (error) {
-    showToast(t("chat_window.stt_transcription_failed", { error }), "error", {
-      clear: true,
-    });
+    showToast(
+      serverErrorMessage(error, t, "chat_window.stt_transcription_failed"),
+      "error",
+      {
+        clear: true,
+      }
+    );
     return;
   }
   if (!text) return;

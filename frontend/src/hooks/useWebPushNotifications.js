@@ -2,6 +2,9 @@ import { useEffect } from "react";
 import { API_BASE } from "@/utils/constants";
 import { baseHeaders } from "@/utils/request";
 
+/** Fired when an updated service worker is ready; NewVersionDialog asks to reload. */
+export const NEW_VERSION_EVENT = "app-new-version";
+
 const PUSH_PUBKEY_URL = `${API_BASE}/web-push/pubkey`;
 const PUSH_USER_SUBSCRIBE_URL = `${API_BASE}/web-push/subscribe`;
 
@@ -19,13 +22,13 @@ function log(message, ...args) {
 /**
  * Subscribes to push notifications for the current client - can be called multiple times without re-subscribing
  * or generating infinite tokens.
- * @returns {Promise<void>}
+ * @returns {Promise<boolean>} true once the server stored the subscription
  */
 export async function subscribeToPushNotifications(askToEnable = true) {
   try {
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
       log("Push notifications not supported");
-      return;
+      return false;
     }
 
     if (askToEnable) {
@@ -33,13 +36,13 @@ export async function subscribeToPushNotifications(askToEnable = true) {
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
         log("Notification permission not granted");
-        return;
+        return false;
       }
     } else {
       const permission = Notification.permission;
       if (permission !== "granted") {
         log("Notification permission not granted");
-        return;
+        return false;
       }
     }
 
@@ -51,7 +54,10 @@ export async function subscribeToPushNotifications(askToEnable = true) {
       })
       .catch(() => null);
 
-    if (!publicKey) return log("No public key found or generated");
+    if (!publicKey) {
+      log("No public key found or generated");
+      return false;
+    }
 
     const swReg = await navigator.serviceWorker.register(
       `/service-workers/push-notifications.js?v=${SW_VERSION}`
@@ -70,10 +76,8 @@ export async function subscribeToPushNotifications(askToEnable = true) {
           // New service worker is installed and ready
           log("New service worker installed, ready to activate");
 
-          // Optionally show a notification to the user
-          if (confirm("A new version is available. Reload to update?")) {
-            window.location.reload();
-          }
+          // A translated dialog asks before reloading (never reload unasked).
+          window.dispatchEvent(new Event(NEW_VERSION_EVENT));
         }
       });
     });
@@ -101,13 +105,15 @@ export async function subscribeToPushNotifications(askToEnable = true) {
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(publicKey),
     });
-    await fetch(PUSH_USER_SUBSCRIBE_URL, {
+    const saved = await fetch(PUSH_USER_SUBSCRIBE_URL, {
       method: "POST",
       body: JSON.stringify(subscription),
       headers: baseHeaders(),
     });
+    return saved.ok;
   } catch (error) {
     log("Error subscribing to push notifications", error);
+    return false;
   }
 }
 

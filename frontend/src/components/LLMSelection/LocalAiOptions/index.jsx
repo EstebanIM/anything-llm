@@ -1,15 +1,32 @@
-import React, { useEffect, useState } from "react";
-import { Info, ChevronDown, ChevronUp } from "lucide-react";
-import paths from "@/utils/paths";
+import { useEffect, useId, useState } from "react";
+import { useTranslation } from "react-i18next";
 import System from "@/models/system";
-import PreLoader from "@/components/Preloader";
 import { LOCALAI_COMMON_URLS } from "@/utils/constants";
 import useProviderEndpointAutoDiscovery from "@/hooks/useProviderEndpointAutoDiscovery";
-import { Tooltip } from "react-tooltip";
+import {
+  AdvancedSection,
+  FIELD_COL,
+  FIELD_INPUT,
+  FIELD_ROW,
+  SECRET_MASK,
+  SecretInput,
+} from "@/components/ProviderFields";
+import {
+  AutoDetectRow,
+  EmbedderRequiredNotice,
+  FieldLabel,
+  ModelSelectField,
+  blurOnWheel,
+  modelStatus,
+} from "@/components/LLMSelection/FormParts";
 
 export default function LocalAiOptions({ settings, showAlert = false }) {
+  const { t } = useTranslation();
+  const id = useId();
   const {
     autoDetecting: loading,
+    autoDetectStatus,
+    detectedEndpoint,
     basePath,
     basePathValue,
     showAdvancedControls,
@@ -26,24 +43,8 @@ export default function LocalAiOptions({ settings, showAlert = false }) {
 
   return (
     <div className="w-full flex flex-col gap-y-7">
-      {showAlert && (
-        <div className="flex flex-col md:flex-row md:items-center gap-x-2 text-white mb-6 bg-blue-800/30 w-fit rounded-lg px-4 py-2">
-          <div className="gap-x-2 flex items-center">
-            <Info strokeWidth={1.5} size={12} className="hidden md:visible" />
-            <p className="text-sm md:text-base">
-              LocalAI as your LLM requires you to set an embedding service to
-              use.
-            </p>
-          </div>
-          <a
-            href={paths.settings.embedder.modelPreference()}
-            className="text-sm md:text-base my-2 underline"
-          >
-            Manage embedding &rarr;
-          </a>
-        </div>
-      )}
-      <div className="w-full flex items-center gap-[36px] mt-1.5">
+      {showAlert && <EmbedderRequiredNotice provider="LocalAI" />}
+      <div className={`${FIELD_ROW} mt-1.5`}>
         {!settings?.credentialsOnly && (
           <LocalAIModelSelection
             settings={settings}
@@ -51,68 +52,44 @@ export default function LocalAiOptions({ settings, showAlert = false }) {
             apiKey={apiKey}
           />
         )}
-        <div className="flex flex-col w-60">
-          <div className="flex flex-col gap-y-1 mb-2">
-            <label className="text-white text-sm font-semibold flex items-center gap-x-2">
-              Local AI API Key{" "}
-              <p className="!text-xs !italic !font-thin">optional</p>
-            </label>
-          </div>
-          <input
-            type="password"
+        <div className={FIELD_COL}>
+          <FieldLabel
+            htmlFor={`${id}-key`}
+            label={t("provider-fields.api-key")}
+            optional={true}
+          />
+          <SecretInput
+            id={`${id}-key`}
             name="LocalAiApiKey"
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
             placeholder="sk-mysecretkey"
-            defaultValue={settings?.LocalAiApiKey ? "*".repeat(20) : ""}
-            autoComplete="off"
-            spellCheck={false}
+            defaultValue={settings?.LocalAiApiKey ? SECRET_MASK : ""}
             onChange={(e) => setApiKeyValue(e.target.value)}
             onBlur={() => setApiKey(apiKeyValue)}
           />
         </div>
       </div>
-      <div className="flex justify-start mt-4">
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            setShowAdvancedControls(!showAdvancedControls);
-          }}
-          className="border-none text-theme-text-primary hover:text-theme-text-secondary flex items-center text-sm"
-        >
-          {showAdvancedControls ? "Hide" : "Show"} advanced settings
-          {showAdvancedControls ? (
-            <ChevronUp strokeWidth={1.5} size={14} className="ml-1" />
-          ) : (
-            <ChevronDown strokeWidth={1.5} size={14} className="ml-1" />
-          )}
-        </button>
-      </div>
-      <div hidden={!showAdvancedControls}>
-        <div className="w-full flex items-center gap-4">
-          <div className="flex flex-col w-60">
-            <div className="flex justify-between items-center mb-2">
-              <label className="text-white text-sm font-semibold">
-                Local AI Base URL
-              </label>
-              {loading ? (
-                <PreLoader size="6" />
-              ) : (
-                <>
-                  {!basePathValue.value && (
-                    <button
-                      onClick={handleAutoDetectClick}
-                      className="bg-primary-button text-xs font-medium px-2 py-1 rounded-lg hover:bg-secondary hover:text-white shadow-[0_4px_14px_rgba(0,0,0,0.25)]"
-                    >
-                      Auto-Detect
-                    </button>
-                  )}
-                </>
-              )}
-            </div>
+      <AutoDetectRow
+        provider="LocalAI"
+        busy={loading}
+        status={autoDetectStatus}
+        endpoint={detectedEndpoint}
+        onDetect={handleAutoDetectClick}
+      />
+      <AdvancedSection
+        open={showAdvancedControls}
+        onOpenChange={setShowAdvancedControls}
+      >
+        <div className={`${FIELD_ROW} mt-4`}>
+          <div className={FIELD_COL}>
+            <FieldLabel
+              htmlFor={`${id}-url`}
+              label={t("provider-fields.base-url")}
+            />
             <input
+              id={`${id}-url`}
               type="url"
               name="LocalAiBasePath"
-              className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
+              className={FIELD_INPUT}
               placeholder="http://localhost:8080/v1"
               value={basePathValue.value}
               required={true}
@@ -122,52 +99,43 @@ export default function LocalAiOptions({ settings, showAlert = false }) {
               onBlur={basePath.onBlur}
             />
           </div>
-          <div className="flex flex-col w-60">
-            <div className="flex items-center mb-2 gap-x-1">
-              <label className="text-white text-sm font-semibold">
-                Model Context Window
-              </label>
-              <Info
-                strokeWidth={1.5}
-                size={18}
-                className="text-theme-text-secondary cursor-pointer"
-                data-tooltip-id="localai-max-tokens"
-                data-tooltip-content="Override the context window limit. Leave empty to auto-detect from the model (defaults to 8192 if detection fails)."
-              />
-              <Tooltip
-                id="localai-max-tokens"
-                className="tooltip !text-xs !opacity-100"
-                style={{
-                  maxWidth: "250px",
-                  whiteSpace: "normal",
-                  wordWrap: "break-word",
-                }}
-              />
-            </div>
+          <div className={FIELD_COL}>
+            <FieldLabel
+              htmlFor={`${id}-context`}
+              label={t("provider-fields.context-window")}
+              tip={t("llm-fields.common.context-window-override-tip", {
+                fallback: 8192,
+              })}
+            />
             <input
+              id={`${id}-context`}
               type="number"
               name="LocalAiTokenLimit"
-              className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-              placeholder="Automatically managed"
+              className={FIELD_INPUT}
+              placeholder={t("provider-fields.context-window-auto")}
               min={1}
               value={maxTokens}
               onChange={(e) =>
                 setMaxTokens(e.target.value ? Number(e.target.value) : "")
               }
-              onScroll={(e) => e.target.blur()}
+              onWheel={blurOnWheel}
               required={false}
               autoComplete="off"
             />
           </div>
         </div>
-      </div>
+      </AdvancedSection>
     </div>
   );
 }
 
 function LocalAIModelSelection({ settings, basePath = null, apiKey = null }) {
+  const { t } = useTranslation();
   const [customModels, setCustomModels] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [attempt, setAttempt] = useState(0);
+  const validUrl = !!basePath && basePath.includes("/v1");
 
   useEffect(() => {
     async function findCustomModels() {
@@ -177,64 +145,44 @@ function LocalAIModelSelection({ settings, basePath = null, apiKey = null }) {
         return;
       }
       setLoading(true);
-      const { models } = await System.customModels(
+      const { models, error } = await System.customModels(
         "localai",
         typeof apiKey === "boolean" ? null : apiKey,
         basePath
       );
       setCustomModels(models || []);
+      setError(error || null);
       setLoading(false);
     }
     findCustomModels();
-  }, [basePath, apiKey]);
-
-  if (loading || customModels.length == 0) {
-    return (
-      <div className="flex flex-col w-60">
-        <label className="text-white text-sm font-semibold block mb-2">
-          Chat Model Selection
-        </label>
-        <select
-          name="LocalAiModelPref"
-          disabled={true}
-          className="border-none bg-theme-settings-input-bg border-gray-500 text-white text-sm rounded-lg block w-full p-2.5"
-        >
-          <option disabled={true} selected={true}>
-            {basePath?.includes("/v1")
-              ? "-- loading available models --"
-              : "-- waiting for URL --"}
-          </option>
-        </select>
-      </div>
-    );
-  }
+  }, [basePath, apiKey, attempt]);
 
   return (
-    <div className="flex flex-col w-60">
-      <label className="text-white text-sm font-semibold block mb-2">
-        Chat Model Selection
-      </label>
-      <select
-        name="LocalAiModelPref"
-        required={true}
-        className="border-none bg-theme-settings-input-bg border-gray-500 text-white text-sm rounded-lg block w-full p-2.5"
-      >
-        {customModels.length > 0 && (
-          <optgroup label="Your loaded models">
-            {customModels.map((model) => {
-              return (
-                <option
-                  key={model.id}
-                  value={model.id}
-                  selected={settings.LocalAiModelPref === model.id}
-                >
-                  {model.id}
-                </option>
-              );
-            })}
-          </optgroup>
-        )}
-      </select>
-    </div>
+    <ModelSelectField
+      name="LocalAiModelPref"
+      label={t("provider-fields.chat-model")}
+      status={modelStatus({
+        loading,
+        error,
+        count: customModels.length,
+        needs: validUrl ? null : "need-url",
+      })}
+      messages={
+        basePath && !validUrl
+          ? { "need-url": t("llm-fields.common.url-needs-v1") }
+          : undefined
+      }
+      error={error}
+      onRetry={() => setAttempt((n) => n + 1)}
+      defaultValue={settings?.LocalAiModelPref}
+    >
+      <optgroup label={t("llm-fields.common.loaded-models")}>
+        {customModels.map((model) => (
+          <option key={model.id} value={model.id}>
+            {model.id}
+          </option>
+        ))}
+      </optgroup>
+    </ModelSelectField>
   );
 }

@@ -20,6 +20,7 @@ import { chatQueryRefusalResponse } from "@/utils/chat";
 import HistoricalOutputs from "./HistoricalOutputs";
 import HistoricalClarifyingQuestions from "./HistoricalClarifyingQuestions";
 import { openImageLightbox } from "@/components/ImageLightbox";
+import ResponseError from "../ResponseError";
 
 function hasVisibleContent(message) {
   if (!message) return false;
@@ -52,6 +53,7 @@ const HistoricalMessage = ({
   metrics = {},
   outputs = [],
   clarifyingQuestions = [],
+  canRetry = false,
 }) => {
   // Freeze uuid on first render. User messages arrive without a uuid and this value
   // is used as the wrapper div's `key` — a default param fallback would regenerate
@@ -59,10 +61,11 @@ const HistoricalMessage = ({
   const [uuid] = useState(() => uuidProp ?? v4());
   const { t } = useTranslation();
   const { isEditing } = useEditMessage({ chatId, role });
-  const { isDeleted, completeDelete, onEndAnimation } = useWatchDeleteMessage({
-    chatId,
-    role,
-  });
+  const { isDeleted, completeDelete, onExitTransitionEnd } =
+    useWatchDeleteMessage({
+      chatId,
+      role,
+    });
   const adjustTextArea = (event) => {
     const element = event.target;
     element.style.height = "auto";
@@ -84,24 +87,29 @@ const HistoricalMessage = ({
 
   if (!!error) {
     return (
-      <div key={uuid} className="flex justify-start w-full">
-        <div className="py-4 pl-0 pr-4 flex flex-col md:max-w-[80%]">
-          <div className="p-2 rounded-lg bg-red-50 text-red-500">
-            <span className="inline-block">
-              <TriangleAlert
-                strokeWidth={1.5}
-                className="h-4 w-4 mb-1 inline-block"
-              />{" "}
-              Could not respond to message.
-            </span>
-            <p className="text-xs font-mono mt-2 border-l-2 border-red-300 pl-2 bg-red-200 p-2 rounded-sm">
-              {error}
-            </p>
-          </div>
-        </div>
-      </div>
+      <ResponseError
+        key={uuid}
+        error={error}
+        // Only the latest failure is live; older ones are history.
+        announce={isLastMessage}
+        onRetry={
+          isLastMessage && canRetry && regenerateMessage
+            ? () => regenerateMessage(chatId)
+            : null
+        }
+      />
     );
   }
+
+  // Shared by both roles: lets focus land on a message after a delete, and
+  // fades the message out before it unmounts.
+  const messageProps = {
+    "data-chat-message": "",
+    "data-chat-id": chatId ?? undefined,
+    tabIndex: -1,
+    onTransitionEnd: onExitTransitionEnd,
+  };
+  const exitClass = `transition-opacity duration-base ease-smooth ${isDeleted ? "opacity-0 pointer-events-none" : "opacity-100"}`;
 
   if (role === "user") {
     if (isEditing) {
@@ -122,8 +130,8 @@ const HistoricalMessage = ({
     return (
       <div
         key={uuid}
-        onAnimationEnd={onEndAnimation}
-        className={`${isDeleted ? "animate-remove" : ""} flex justify-end w-full group`}
+        {...messageProps}
+        className={`${exitClass} flex justify-end w-full group`}
       >
         <div className="py-4 px-4 flex flex-col items-end">
           <div className="bg-zinc-800 light:bg-slate-100 rounded-[20px] rounded-br-none px-4 py-3.5 max-w-[600px] [&_p]:m-0">
@@ -156,8 +164,8 @@ const HistoricalMessage = ({
   return (
     <div
       key={uuid}
-      onAnimationEnd={onEndAnimation}
-      className={`${isDeleted ? "animate-remove" : ""} flex justify-start w-full group`}
+      {...messageProps}
+      className={`${exitClass} flex justify-start w-full group`}
     >
       <div className="py-4 px-4 md:pl-0 flex flex-col w-full">
         {isEditing ? (
@@ -174,7 +182,11 @@ const HistoricalMessage = ({
             <HistoricalClarifyingQuestions surveys={clarifyingQuestions} />
             {isUnanswered ? (
               <div className="flex items-center gap-x-1.5 text-xs font-mono text-zinc-400 light:text-slate-500">
-                <TriangleAlert strokeWidth={1.5} className="h-4 w-4 shrink-0" />
+                <TriangleAlert
+                  strokeWidth={1.5}
+                  aria-hidden="true"
+                  className="h-4 w-4 shrink-0"
+                />
                 <p className="!m-0">{t("chat.no_response")}</p>
               </div>
             ) : (
@@ -191,6 +203,7 @@ const HistoricalMessage = ({
                 <div className="flex flex-row items-center gap-x-1 group-hover:opacity-100 opacity-60 w-fit">
                   <Info
                     strokeWidth={1.5}
+                    aria-hidden="true"
                     className="text-theme-text-secondary"
                   />
                   <p className="!m-0 !p-0 text-theme-text-secondary !no-underline text-xs cursor-pointer">
@@ -202,8 +215,12 @@ const HistoricalMessage = ({
             <ChatAttachments attachments={attachments} />
             <HistoricalOutputs outputs={outputs} />
             {metrics?.truncated && (
-              <div className="flex items-center gap-x-1.5 mt-2 text-xs text-amber-400 light:text-amber-600">
-                <TriangleAlert strokeWidth={1.5} className="h-4 w-4 shrink-0" />
+              <div className="flex items-center gap-x-1.5 mt-2 text-xs text-amber-400 light:text-amber-700">
+                <TriangleAlert
+                  strokeWidth={1.5}
+                  aria-hidden="true"
+                  className="h-4 w-4 shrink-0"
+                />
                 <p className="!m-0">{t("chat.token_limit_reached")}</p>
               </div>
             )}
@@ -249,6 +266,8 @@ export default memo(
       prevProps.message === nextProps.message &&
       prevProps.isLastMessage === nextProps.isLastMessage &&
       prevProps.chatId === nextProps.chatId &&
+      prevProps.error === nextProps.error &&
+      prevProps.canRetry === nextProps.canRetry &&
       JSON.stringify(prevProps.metrics) === JSON.stringify(nextProps.metrics) &&
       JSON.stringify(prevProps.sources) === JSON.stringify(nextProps.sources) &&
       JSON.stringify(prevProps.clarifyingQuestions) ===
@@ -262,6 +281,7 @@ export default memo(
  * Other attachment types may be supported here in the future.
  */
 function ChatAttachments({ attachments = [] }) {
+  const { t } = useTranslation();
   if (!attachments.length) return null;
   return (
     <div className="flex flex-wrap gap-4 mt-4">
@@ -273,7 +293,7 @@ function ChatAttachments({ attachments = [] }) {
           className="p-0 border-none bg-transparent cursor-pointer hover:opacity-80 transition-opacity"
         >
           <img
-            alt={`Attachment: ${item.name}`}
+            alt={t("chat-history.attachment-alt", { name: item.name })}
             src={item.contentString}
             className="w-[120px] h-[120px] object-cover rounded-lg"
           />
@@ -309,28 +329,19 @@ function TruncatableContent({ children }) {
           {children}
         </div>
         {showTruncation && (
-          <>
-            <div
-              className="absolute bottom-0 left-0 right-0 h-[36px] light:hidden pointer-events-none"
-              style={{
-                background:
-                  "linear-gradient(180deg, rgba(39, 39, 42, 0.00) 0%, rgba(39, 39, 42, 0.65) 50%, #27272A 100%)",
-              }}
-            />
-            <div
-              className="absolute bottom-0 left-0 right-0 h-[36px] hidden light:block pointer-events-none"
-              style={{
-                background:
-                  "linear-gradient(180deg, rgba(241, 245, 249, 0.00) 0%, rgba(241, 245, 249, 0.65) 50%, #F1F5F9 100%)",
-              }}
-            />
-          </>
+          // Same palette tokens as the bubble behind it, so the fade has no seam.
+          <div
+            aria-hidden="true"
+            className="absolute bottom-0 left-0 right-0 h-9 pointer-events-none bg-gradient-to-b from-transparent to-zinc-800 light:to-slate-100"
+          />
         )}
       </div>
       {isOverflowing && (
         <button
+          type="button"
           onClick={() => setIsExpanded(!isExpanded)}
-          className="text-zinc-300 light:text-slate-700 hover:text-white light:hover:text-slate-900 text-xs font-medium leading-4 mt-2"
+          aria-expanded={isExpanded}
+          className="text-zinc-300 light:text-slate-700 hover:text-white light:hover:text-slate-900 text-xs font-medium leading-4 mt-2 min-h-[44px] md:min-h-0"
         >
           {isExpanded ? t("chat_window.see_less") : t("chat_window.see_more")}
         </button>

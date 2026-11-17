@@ -1,6 +1,5 @@
-import React, { useState } from "react";
-import { CircleCheck, Copy } from "lucide-react";
-import showToast from "@/utils/toast";
+import { useId } from "react";
+import { useTranslation } from "react-i18next";
 import hljs from "highlight.js";
 import "@/utils/chat/themes/github-dark.css";
 import "@/utils/chat/themes/github.css";
@@ -9,29 +8,40 @@ import {
   ModalBody,
   ModalFooter,
   ModalSecondaryButton,
-  ModalLabel,
   ModalHint,
 } from "@/components/lib/Modal";
+import CopyButton from "@/components/lib/CopyButton";
+import { useTheme } from "@/hooks/useTheme";
 
-export default function CodeSnippetModal({ embed, closeModal }) {
+/**
+ * Embed code of one widget, shown after creating it and from the "Code"
+ * action of its row. Render it inside a <Modal size="lg">.
+ */
+export default function CodeSnippetModal({ embed, closeModal, isNew = false }) {
+  const { t } = useTranslation();
   return (
-    <div className="flex flex-col gap-y-5">
-      <ModalHeader title="Copy your embed code" onClose={closeModal} />
-      <ModalBody className="max-h-[60vh] overflow-y-auto">
+    <>
+      <ModalHeader
+        title={t("embed-pages.code.title")}
+        subtitle={isNew ? t("embed-pages.code.created") : null}
+        onClose={closeModal}
+      />
+      <ModalBody>
         <ScriptTag embed={embed} />
       </ModalBody>
       <ModalFooter className="justify-end">
         <ModalSecondaryButton onClick={closeModal} type="button">
-          Close
+          {t("api.modal.close")}
         </ModalSecondaryButton>
       </ModalFooter>
-    </div>
+    </>
   );
 }
 
-function createScriptTagSnippet(embed, scriptHost, serverHost) {
+// Only the comment is translated: the script URL and attributes must stay as they are.
+function createScriptTagSnippet(embed, scriptHost, serverHost, comment) {
   return `<!--
-Paste this script at the bottom of your HTML before the </body> tag.
+${comment}
 -->
 <script
   data-embed-id="${embed.uuid}"
@@ -41,43 +51,45 @@ Paste this script at the bottom of your HTML before the </body> tag.
 `;
 }
 
-const ScriptTag = ({ embed }) => {
-  const [copied, setCopied] = useState(false);
+function ScriptTag({ embed }) {
+  const { t } = useTranslation();
+  const { isLight } = useTheme();
+  const labelId = useId();
+  const hintId = useId();
   const scriptHost = import.meta.env.DEV
     ? "http://localhost:3000"
     : window.location.origin;
   const serverHost = import.meta.env.DEV
     ? "http://localhost:3001"
     : window.location.origin;
-  const snippet = createScriptTagSnippet(embed, scriptHost, serverHost);
-  const theme =
-    window.localStorage.getItem("theme") === "light" ? "github" : "github-dark";
-
-  const handleClick = () => {
-    window.navigator.clipboard.writeText(snippet);
-    setCopied(true);
-    setTimeout(() => {
-      setCopied(false);
-    }, 2500);
-    showToast("Snippet copied to clipboard!", "success", { clear: true });
-  };
+  const snippet = createScriptTagSnippet(
+    embed,
+    scriptHost,
+    serverHost,
+    t("embed-pages.code.comment")
+  );
 
   return (
-    <div>
-      <div className="flex flex-col gap-y-1 mb-3">
-        <ModalLabel>HTML Script Tag Embed Code</ModalLabel>
-        <ModalHint>
-          Have your workspace chat embed function like a help desk chat bottom
-          in the corner of your website.
-        </ModalHint>
+    <div className="flex flex-col gap-y-3">
+      <div className="flex flex-col gap-y-1">
+        <p
+          id={labelId}
+          className="text-sm font-medium text-zinc-50 light:text-slate-700"
+        >
+          {t("embed-pages.code.label")}
+        </p>
+        <ModalHint id={hintId}>{t("embed-pages.code.hint")}</ModalHint>
       </div>
-      <button
-        disabled={copied}
-        onClick={handleClick}
-        className={`border-none disabled:border disabled:border-green-300 disabled:light:border-green-600 border border-transparent relative w-full font-mono flex hljs ${theme} light:border light:border-gray-700 text-white placeholder:text-zinc-400 text-sm rounded-lg focus:border-sky-500 light:focus:border-sky-500 outline-none p-3`}
+      {/* The scrolling <pre> takes focus so the code can be read and scrolled
+          with the keyboard; the region role lets it carry a name. */}
+      <pre
+        tabIndex={0}
+        role="region"
+        aria-labelledby={labelId}
+        aria-describedby={hintId}
+        className={`hljs ${isLight ? "github" : "github-dark"} m-0 p-3 rounded-lg border border-zinc-600 light:border-slate-500 text-sm leading-relaxed font-mono whitespace-pre overflow-x-auto`}
       >
-        <div
-          className="flex w-full text-left flex-col gap-y-1 pr-6 whitespace-pre-line"
+        <code
           dangerouslySetInnerHTML={{
             __html: hljs.highlight(snippet, {
               language: "html",
@@ -85,20 +97,13 @@ const ScriptTag = ({ embed }) => {
             }).value,
           }}
         />
-        {copied ? (
-          <CircleCheck
-            strokeWidth={1.5}
-            size={14}
-            className="text-green-300 light:text-green-600 absolute top-2 right-2"
-          />
-        ) : (
-          <Copy
-            strokeWidth={1.5}
-            size={14}
-            className="absolute top-2 right-2"
-          />
-        )}
-      </button>
+      </pre>
+      <CopyButton
+        text={snippet}
+        label={t("embed-pages.code.copy")}
+        showLabel
+        className="self-start border border-zinc-500 light:border-slate-500"
+      />
     </div>
   );
-};
+}

@@ -1,11 +1,15 @@
 import PreLoader from "@/components/Preloader";
 import System from "@/models/system";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { formatNumber } from "@/utils/dates";
+import { SECTION_HEADING } from "../../components/SettingsField";
 
+/** Total vectors of the workspace; `reload` changes to fetch it again. */
 export default function VectorCount({ reload, workspace }) {
-  const [totalVectors, setTotalVectors] = useState(null);
   const { t } = useTranslation();
+  const headingId = useId();
+  const [totalVectors, setTotalVectors] = useState(null);
 
   useEffect(() => {
     async function fetchVectorCount() {
@@ -15,24 +19,18 @@ export default function VectorCount({ reload, workspace }) {
     fetchVectorCount();
   }, [workspace?.slug, reload]);
 
-  if (totalVectors === null)
-    return (
-      <div>
-        <h3 className="input-label">{t("general.vector.title")}</h3>
-        <p className="text-white text-opacity-60 text-xs font-medium py-1">
-          {t("general.vector.description")}
-        </p>
-        <div className="text-white text-opacity-60 text-sm font-medium">
-          <PreLoader size="4" />
-        </div>
-      </div>
-    );
   return (
-    <div>
-      <h3 className="input-label">{t("general.vector.title")}</h3>
-      <p className="text-white text-opacity-60 text-sm font-medium">
-        {totalVectors}
-      </p>
-    </div>
+    <section aria-labelledby={headingId} className="flex flex-col gap-y-2">
+      <h2 id={headingId} className={SECTION_HEADING}>
+        {t("general.vector.title")}
+      </h2>
+      {totalVectors === null ? (
+        <PreLoader size="4" />
+      ) : (
+        <p className="text-sm text-theme-text-secondary tabular-nums">
+          {formatNumber(totalVectors)}
+        </p>
+      )}
+    </section>
   );
 }

@@ -1,4 +1,3 @@
-import LocalInstanceIcon from "@/media/logo/anything-llm-icon.png";
 import OpenAiLogo from "@/media/llmprovider/openai.png";
 import GenericOpenAiLogo from "@/media/llmprovider/generic-openai.png";
 import AzureOpenAiLogo from "@/media/llmprovider/azure.png";
@@ -48,7 +47,7 @@ import OMLXLogo from "@/media/llmprovider/omlx.png";
 import MinimaxLogo from "@/media/llmprovider/minimax.png";
 import CerebrasLogo from "@/media/llmprovider/cerebras.png";
 
-const LLM_PROVIDER_PRIVACY_MAP = {
+const LLM_PROVIDER_PRIVACY_MAP = (brandName) => ({
   openai: {
     name: "OpenAI",
     policyUrl: "https://openai.com/policies/privacy-policy/",
@@ -72,28 +71,40 @@ const LLM_PROVIDER_PRIVACY_MAP = {
   "nvidia-nim": {
     name: "NVIDIA NIM",
     description: [
-      "Your model and chats are only accessible on the machine running the NVIDIA NIM.",
+      {
+        key: "settings-pages.privacy-local-machine",
+        values: { name: "NVIDIA NIM" },
+      },
     ],
     logo: NvidiaNimLogo,
   },
   lmstudio: {
     name: "LMStudio",
     description: [
-      "Your model and chats are only accessible on the server running LMStudio.",
+      {
+        key: "settings-pages.privacy-local-server",
+        values: { name: "LMStudio" },
+      },
     ],
     logo: LMStudioLogo,
   },
   localai: {
     name: "LocalAI",
     description: [
-      "Your model and chats are only accessible on the server running LocalAI.",
+      {
+        key: "settings-pages.privacy-local-server",
+        values: { name: "LocalAI" },
+      },
     ],
     logo: LocalAiLogo,
   },
   ollama: {
     name: "Ollama",
     description: [
-      "Your model and chats are only accessible on the machine running Ollama models.",
+      {
+        key: "settings-pages.privacy-local-machine",
+        values: { name: "Ollama" },
+      },
     ],
     logo: OllamaLogo,
   },
@@ -135,22 +146,26 @@ const LLM_PROVIDER_PRIVACY_MAP = {
   koboldcpp: {
     name: "KoboldCPP",
     description: [
-      "Your model and chats are only accessible on the server running KoboldCPP",
+      {
+        key: "settings-pages.privacy-local-server",
+        values: { name: "KoboldCPP" },
+      },
     ],
     logo: KoboldCPPLogo,
   },
   textgenwebui: {
     name: "Oobabooga Web UI",
     description: [
-      "Your model and chats are only accessible on the server running the Oobabooga Text Generation Web UI",
+      {
+        key: "settings-pages.privacy-local-server",
+        values: { name: "Oobabooga Text Generation Web UI" },
+      },
     ],
     logo: TextGenWebUILogo,
   },
   "generic-openai": {
-    name: "Generic OpenAI compatible service",
-    description: [
-      "Data is shared according to the terms of service applicable with your generic endpoint provider.",
-    ],
+    nameKey: "settings-pages.privacy-generic-openai",
+    description: [{ key: "settings-pages.privacy-generic-endpoint" }],
     logo: GenericOpenAiLogo,
   },
   cohere: {
@@ -161,7 +176,10 @@ const LLM_PROVIDER_PRIVACY_MAP = {
   litellm: {
     name: "LiteLLM",
     description: [
-      "Your model and chats are only accessible on the server running LiteLLM",
+      {
+        key: "settings-pages.privacy-local-server",
+        values: { name: "LiteLLM" },
+      },
     ],
     logo: LiteLLMLogo,
   },
@@ -215,7 +233,10 @@ const LLM_PROVIDER_PRIVACY_MAP = {
   foundry: {
     name: "Microsoft Foundry Local",
     description: [
-      "Your model and chats are only accessible on the machine running Foundry Local.",
+      {
+        key: "settings-pages.privacy-local-machine",
+        values: { name: "Foundry Local" },
+      },
     ],
     logo: FoundryLogo,
   },
@@ -227,7 +248,10 @@ const LLM_PROVIDER_PRIVACY_MAP = {
   llmman: {
     name: "llmman",
     description: [
-      "Your model and chats are only accessible on the machine running llmman.",
+      {
+        key: "settings-pages.privacy-local-machine",
+        values: { name: "llmman" },
+      },
     ],
     logo: LlmmanLogo,
   },
@@ -244,21 +268,27 @@ const LLM_PROVIDER_PRIVACY_MAP = {
   lemonade: {
     name: "Lemonade",
     description: [
-      "Your model and chats are only accessible on the machine running the Lemonade server.",
+      {
+        key: "settings-pages.privacy-local-machine",
+        values: { name: "Lemonade" },
+      },
     ],
     logo: LemonadeLogo,
   },
   embedded_lemonade: {
-    name: "Built-in",
+    nameKey: "settings-pages.privacy-built-in",
     description: [
-      "Your model and chats are only accessible on the server running AnythingLLM.",
+      {
+        key: "settings-pages.privacy-local-server",
+        values: { name: brandName },
+      },
     ],
-    logo: LocalInstanceIcon,
+    icon: "local",
   },
   omlx: {
     name: "oMLX",
     description: [
-      "Your model and chats are only accessible on the machine running the oMLX server.",
+      { key: "settings-pages.privacy-local-machine", values: { name: "oMLX" } },
     ],
     logo: OMLXLogo,
   },
@@ -272,22 +302,28 @@ const LLM_PROVIDER_PRIVACY_MAP = {
     policyUrl: "https://www.cerebras.ai/privacy-policy",
     logo: CerebrasLogo,
   },
-};
+});
 
-const VECTOR_DB_PROVIDER_PRIVACY_MAP = (brandName) => ({
+const VECTOR_DB_PROVIDER_PRIVACY_MAP = {
   pgvector: {
     name: "PGVector",
     description: [
-      "Your vectors and document text are stored on your PostgreSQL instance.",
-      "Access to your instance is managed by you.",
+      {
+        key: "settings-pages.privacy-vectors-instance",
+        values: { name: "PostgreSQL" },
+      },
+      { key: "settings-pages.privacy-instance-access" },
     ],
     logo: PGVectorLogo,
   },
   chroma: {
     name: "Chroma",
     description: [
-      "Your vectors and document text are stored on your Chroma instance.",
-      "Access to your instance is managed by you.",
+      {
+        key: "settings-pages.privacy-vectors-instance",
+        values: { name: "Chroma" },
+      },
+      { key: "settings-pages.privacy-instance-access" },
     ],
     logo: ChromaLogo,
   },
@@ -313,9 +349,7 @@ const VECTOR_DB_PROVIDER_PRIVACY_MAP = (brandName) => ({
   },
   milvus: {
     name: "Milvus",
-    description: [
-      "Your vectors and document text are stored on your Milvus instance (cloud or self-hosted).",
-    ],
+    description: [{ key: "settings-pages.privacy-vectors-milvus" }],
     logo: MilvusLogo,
   },
   zilliz: {
@@ -330,20 +364,16 @@ const VECTOR_DB_PROVIDER_PRIVACY_MAP = (brandName) => ({
   },
   lancedb: {
     name: "LanceDB",
-    description: [
-      `Your vectors and document text are stored privately on this instance of ${brandName}.`,
-    ],
+    description: [{ key: "settings-pages.privacy-vectors-local" }],
     logo: LanceDbLogo,
   },
-});
+};
 
-const EMBEDDING_ENGINE_PROVIDER_PRIVACY_MAP = (brandName) => ({
+const EMBEDDING_ENGINE_PROVIDER_PRIVACY_MAP = {
   native: {
-    name: `${brandName} Embedder`,
-    description: [
-      `Your document text is embedded privately on this instance of ${brandName}.`,
-    ],
-    logo: LocalInstanceIcon,
+    nameKey: "settings-pages.privacy-native-embedder",
+    description: [{ key: "settings-pages.privacy-embed-local" }],
+    icon: "local",
   },
   openai: {
     name: "OpenAI",
@@ -358,21 +388,30 @@ const EMBEDDING_ENGINE_PROVIDER_PRIVACY_MAP = (brandName) => ({
   localai: {
     name: "LocalAI",
     description: [
-      "Your document text is embedded privately on the server running LocalAI.",
+      {
+        key: "settings-pages.privacy-embed-server",
+        values: { name: "LocalAI" },
+      },
     ],
     logo: LocalAiLogo,
   },
   ollama: {
     name: "Ollama",
     description: [
-      "Your document text is embedded privately on the server running Ollama.",
+      {
+        key: "settings-pages.privacy-embed-server",
+        values: { name: "Ollama" },
+      },
     ],
     logo: OllamaLogo,
   },
   lmstudio: {
     name: "LMStudio",
     description: [
-      "Your document text is embedded privately on the server running LMStudio.",
+      {
+        key: "settings-pages.privacy-embed-server",
+        values: { name: "LMStudio" },
+      },
     ],
     logo: LMStudioLogo,
   },
@@ -398,16 +437,12 @@ const EMBEDDING_ENGINE_PROVIDER_PRIVACY_MAP = (brandName) => ({
   },
   litellm: {
     name: "LiteLLM",
-    description: [
-      "Your document text is only accessible on the server running LiteLLM and to the providers you configured in LiteLLM.",
-    ],
+    description: [{ key: "settings-pages.privacy-embed-litellm" }],
     logo: LiteLLMLogo,
   },
   "generic-openai": {
-    name: "Generic OpenAI compatible service",
-    description: [
-      "Data is shared according to the terms of service applicable with your generic endpoint provider.",
-    ],
+    nameKey: "settings-pages.privacy-generic-openai",
+    description: [{ key: "settings-pages.privacy-generic-endpoint" }],
     logo: GenericOpenAiLogo,
   },
   gemini: {
@@ -418,14 +453,23 @@ const EMBEDDING_ENGINE_PROVIDER_PRIVACY_MAP = (brandName) => ({
   lemonade: {
     name: "Lemonade",
     description: [
-      "Your document text is embedded privately on the machine running the Lemonade server.",
+      {
+        key: "settings-pages.privacy-embed-machine",
+        values: { name: "Lemonade" },
+      },
     ],
     logo: LemonadeLogo,
   },
-});
+};
 
-export const getProviderPrivacyMap = (brandName = "this instance") => ({
-  llm: LLM_PROVIDER_PRIVACY_MAP,
-  embeddingEngine: EMBEDDING_ENGINE_PROVIDER_PRIVACY_MAP(brandName),
-  vectorDb: VECTOR_DB_PROVIDER_PRIVACY_MAP(brandName),
+/**
+ * Privacy facts per provider. `description` entries are translation keys
+ * (with optional interpolation values); `nameKey` replaces `name` when the
+ * name itself needs translating; `icon: "local"` marks providers that run on
+ * this instance and have no logo of their own.
+ */
+export const getProviderPrivacyMap = (brandName = "") => ({
+  llm: LLM_PROVIDER_PRIVACY_MAP(brandName),
+  embeddingEngine: EMBEDDING_ENGINE_PROVIDER_PRIVACY_MAP,
+  vectorDb: VECTOR_DB_PROVIDER_PRIVACY_MAP,
 });

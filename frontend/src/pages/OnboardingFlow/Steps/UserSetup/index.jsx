@@ -1,354 +1,525 @@
-import System from "@/models/system";
-import showToast from "@/utils/toast";
-import React, { useState, useEffect, useRef } from "react";
-import debounce from "lodash.debounce";
-import paths from "@/utils/paths";
-import { useNavigate } from "react-router-dom";
-import { AUTH_TIMESTAMP, AUTH_TOKEN, AUTH_USER } from "@/utils/constants";
+import { useEffect, useId, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { USERNAME_MIN_LENGTH, USERNAME_MAX_LENGTH } from "@/utils/username";
-import { PW_REGEX } from "@/pages/GeneralSettings/Security";
+import System from "@/models/system";
+import paths from "@/utils/paths";
+import { AUTH_TIMESTAMP, AUTH_TOKEN, AUTH_USER } from "@/utils/constants";
+import { ACCOUNT_ERRORS, PW_REGEX, authErrorMessage } from "@/utils/authErrors";
+import {
+  USERNAME_MIN_LENGTH,
+  USERNAME_MAX_LENGTH,
+  USERNAME_PATTERN,
+  USERNAME_REGEX,
+} from "@/utils/username";
+import { serverErrorMessage } from "@/utils/serverErrors";
+import PreLoader from "@/components/Preloader";
+import CTAButton from "@/components/lib/CTAButton";
+import StatusNote from "@/components/lib/StatusNote";
+import SegmentedControl from "@/components/lib/SegmentedControl";
 import PasswordInput from "@/components/lib/PasswordInput";
+import RecoveryCodesDialog from "@/components/Modals/DisplayRecoveryCodeModal";
+import {
+  FIELD_ERROR,
+  FIELD_HELP,
+  FIELD_INPUT,
+  FIELD_LABEL,
+} from "@/components/ProviderFields";
+import OnboardingLayout, { useOnboarding } from "../OnboardingLayout";
 
-export default function UserSetup({ setHeader, setForwardBtn, setBackBtn }) {
-  const { t } = useTranslation();
-  const [selectedOption, setSelectedOption] = useState("");
-  const [singleUserPasswordValid, setSingleUserPasswordValid] = useState(false);
-  const [multiUserLoginValid, setMultiUserLoginValid] = useState(false);
-  const [enablePassword, setEnablePassword] = useState(false);
-  const myTeamSubmitRef = useRef(null);
-  const justMeSubmitRef = useRef(null);
-  const navigate = useNavigate();
+const MIN_PASSWORD_LENGTH = 8;
+// Order in which errors are checked and the first one receives focus.
+const FIELD_ORDER = [
+  "audience",
+  "usePassword",
+  "username",
+  "password",
+  "confirm",
+];
 
-  const TITLE = t("onboarding.userSetup.title");
-  const DESCRIPTION = t("onboarding.userSetup.description");
+// Inherits the note's color, which already has the contrast for its tone.
+const NOTE_LINK = "font-semibold underline";
 
-  function handleForward() {
-    if (selectedOption === "just_me" && enablePassword) {
-      justMeSubmitRef.current?.click();
-    } else if (selectedOption === "just_me" && !enablePassword) {
-      navigate(paths.onboarding.dataHandling());
-    } else if (selectedOption === "my_team") {
-      myTeamSubmitRef.current?.click();
-    }
-  }
-
-  function handleBack() {
-    navigate(paths.onboarding.llmPreference());
-  }
-
-  useEffect(() => {
-    let isDisabled = true;
-    if (selectedOption === "just_me") {
-      isDisabled = !singleUserPasswordValid;
-    } else if (selectedOption === "my_team") {
-      isDisabled = !multiUserLoginValid;
-    }
-
-    setForwardBtn({
-      showing: true,
-      disabled: isDisabled,
-      onClick: handleForward,
-    });
-  }, [selectedOption, singleUserPasswordValid, multiUserLoginValid]);
-
-  useEffect(() => {
-    setHeader({ title: TITLE, description: DESCRIPTION });
-    setBackBtn({ showing: true, disabled: false, onClick: handleBack });
-  }, []);
-
-  return (
-    <div className="w-full flex items-center justify-center flex-col gap-y-6">
-      <div className="flex flex-col border rounded-lg border-white/20 light:border-theme-sidebar-border p-8 items-center gap-y-4 w-full max-w-[600px]">
-        <div className=" text-white text-sm font-semibold md:-ml-44">
-          {t("onboarding.userSetup.howManyUsers")}
-        </div>
-        <div className="flex flex-col md:flex-row gap-6 w-full justify-center">
-          <button
-            onClick={() => setSelectedOption("just_me")}
-            className={`${
-              selectedOption === "just_me"
-                ? "text-sky-400 border-sky-400/70"
-                : "text-theme-text-primary border-theme-sidebar-border"
-            } min-w-[230px] h-11 p-4 rounded-[10px] border-2  justify-center items-center gap-[100px] inline-flex hover:border-sky-400/70 hover:text-sky-400 transition-all duration-300`}
-          >
-            <div className="text-center text-sm font-bold">
-              {t("onboarding.userSetup.justMe")}
-            </div>
-          </button>
-          <button
-            onClick={() => setSelectedOption("my_team")}
-            className={`${
-              selectedOption === "my_team"
-                ? "text-sky-400 border-sky-400/70"
-                : "text-theme-text-primary border-theme-sidebar-border"
-            } min-w-[230px] h-11 p-4 rounded-[10px] border-2  justify-center items-center gap-[100px] inline-flex hover:border-sky-400/70 hover:text-sky-400 transition-all duration-300`}
-          >
-            <div className="text-center text-sm font-bold">
-              {t("onboarding.userSetup.myTeam")}
-            </div>
-          </button>
-        </div>
-      </div>
-      {selectedOption === "just_me" && (
-        <JustMe
-          setSingleUserPasswordValid={setSingleUserPasswordValid}
-          enablePassword={enablePassword}
-          setEnablePassword={setEnablePassword}
-          justMeSubmitRef={justMeSubmitRef}
-          navigate={navigate}
-        />
-      )}
-      {selectedOption === "my_team" && (
-        <MyTeam
-          setMultiUserLoginValid={setMultiUserLoginValid}
-          myTeamSubmitRef={myTeamSubmitRef}
-          navigate={navigate}
-        />
-      )}
-    </div>
-  );
+function storeSession(token, user = null) {
+  if (user) window.localStorage.setItem(AUTH_USER, JSON.stringify(user));
+  else window.localStorage.removeItem(AUTH_USER);
+  window.localStorage.setItem(AUTH_TOKEN, token);
+  window.localStorage.removeItem(AUTH_TIMESTAMP);
 }
 
-const JustMe = ({
-  setSingleUserPasswordValid,
-  enablePassword,
-  setEnablePassword,
-  justMeSubmitRef,
-  navigate,
-}) => {
+export default function UserSetup() {
   const { t } = useTranslation();
-  const [itemSelected, setItemSelected] = useState(false);
-  const [password, setPassword] = useState("");
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const form = e.target;
-    const formData = new FormData(form);
+  const navigate = useNavigate();
+  const { userSetup, updateUserSetup } = useOnboarding();
+  const { audience, usePassword, username, password, confirm } = userSetup;
+  const id = useId();
+  const formId = `${id}-form`;
+  const fieldId = (name) => `${id}-${name}`;
 
-    if (!PW_REGEX.test(formData.get("password"))) {
-      showToast(
-        `Your password has restricted characters in it. Allowed symbols are _,-,!,@,$,%,^,&,*,(,),;`,
-        "error"
-      );
+  // What the server already has: { multiUser, requiresAuth }, or null if it failed to load.
+  const [instance, setInstance] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState({});
+  // { message, signIn } - signIn when access was saved but the session was not.
+  const [formError, setFormError] = useState(null);
+  const [recovery, setRecovery] = useState(null);
+
+  async function fetchInstance() {
+    setLoading(true);
+    const settings = await System.keys();
+    setInstance(
+      settings
+        ? {
+            multiUser: !!settings.MultiUserMode,
+            requiresAuth: !!settings.RequiresAuth,
+          }
+        : null
+    );
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    fetchInstance();
+  }, []);
+
+  // Access set up earlier in this setup (or before a reload) is not offered again.
+  const configured = instance?.multiUser
+    ? "team"
+    : instance?.requiresAuth
+      ? "password"
+      : null;
+  const needsCredentials =
+    audience === "my_team" || (audience === "just_me" && usePassword === "yes");
+
+  function setField(name, value) {
+    updateUserSetup({ [name]: value });
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: null }));
+  }
+
+  function validate() {
+    const found = {};
+    if (!audience) found.audience = t("onboarding-flow.choose-audience");
+    if (audience === "just_me" && !usePassword)
+      found.usePassword = t("onboarding-flow.choose-password");
+
+    if (audience === "my_team") {
+      const name = username.trim();
+      if (!name) found.username = t("onboarding-flow.username-required");
+      else if (
+        name.length < USERNAME_MIN_LENGTH ||
+        name.length > USERNAME_MAX_LENGTH ||
+        !USERNAME_REGEX.test(name)
+      )
+        found.username = t("onboarding-flow.username-invalid");
+    }
+
+    if (needsCredentials) {
+      if (!password) found.password = t("onboarding-flow.password-required");
+      else if (password.length < MIN_PASSWORD_LENGTH)
+        found.password = t("onboarding-flow.password-too-short");
+      else if (audience === "just_me" && !PW_REGEX.test(password))
+        found.password = t("settings-pages.password-invalid-chars");
+
+      if (!confirm) found.confirm = t("onboarding-flow.confirm-required");
+      else if (confirm !== password)
+        found.confirm = t("auth-errors.passwords-mismatch");
+    }
+    return found;
+  }
+
+  function focusField(name) {
+    const target = document.getElementById(fieldId(name));
+    if (!target) return;
+    // A radio group takes focus on its tabbable option.
+    (target.querySelector('[role="radio"][tabindex="0"]') ?? target).focus();
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (saving) return;
+    if (configured) {
+      navigate(paths.onboarding.dataHandling());
       return;
     }
 
-    const { error } = await System.updateSystemPassword({
+    const found = validate();
+    setErrors(found);
+    const firstError = FIELD_ORDER.find((name) => found[name]);
+    if (firstError) {
+      focusField(firstError);
+      return;
+    }
+
+    setFormError(null);
+    if (audience === "just_me" && usePassword === "no") {
+      navigate(paths.onboarding.dataHandling());
+      return;
+    }
+
+    setSaving(true);
+    if (audience === "just_me") await setInstancePassword();
+    else await createAdmin();
+  }
+
+  function signInFailed(message) {
+    setSaving(false);
+    setFormError({
+      message: t("onboarding-flow.signin-failed", {
+        error: authErrorMessage(message, t),
+      }),
+      signIn: true,
+    });
+  }
+
+  async function setInstancePassword() {
+    const { success, error } = await System.updateSystemPassword({
       usePassword: true,
-      newPassword: formData.get("password"),
+      newPassword: password,
     });
-
-    if (error) {
-      showToast(`Failed to set password: ${error}`, "error");
-      return;
-    }
-
-    // Auto-request token with password that was just set so they
-    // are not redirected to login after completion.
-    const { token } = await System.requestToken({
-      password: formData.get("password"),
-    });
-    window.localStorage.removeItem(AUTH_USER);
-    window.localStorage.removeItem(AUTH_TIMESTAMP);
-    window.localStorage.setItem(AUTH_TOKEN, token);
-
-    navigate(paths.onboarding.dataHandling());
-  };
-
-  const setNewPassword = (e) => setPassword(e.target.value);
-  const handlePasswordChange = debounce(setNewPassword, 500);
-
-  function handleYes() {
-    setItemSelected(true);
-    setEnablePassword(true);
-  }
-
-  function handleNo() {
-    setItemSelected(true);
-    setEnablePassword(false);
-  }
-
-  useEffect(() => {
-    if (enablePassword && itemSelected && password.length >= 8) {
-      setSingleUserPasswordValid(true);
-    } else if (!enablePassword && itemSelected) {
-      setSingleUserPasswordValid(true);
-    } else {
-      setSingleUserPasswordValid(false);
-    }
-  });
-  return (
-    <div className="w-full flex items-center justify-center flex-col gap-y-6">
-      <div className="flex flex-col border rounded-lg border-white/20 light:border-theme-sidebar-border p-8 items-center gap-y-4 w-full max-w-[600px]">
-        <div className=" text-white text-sm font-semibold md:-ml-56">
-          {t("onboarding.userSetup.setPassword")}
-        </div>
-        <div className="flex flex-col md:flex-row gap-6 w-full justify-center">
-          <button
-            onClick={handleYes}
-            className={`${
-              enablePassword && itemSelected
-                ? "text-sky-400 border-sky-400/70"
-                : "text-theme-text-primary border-theme-sidebar-border"
-            } min-w-[230px] h-11 p-4 rounded-[10px] border-2  justify-center items-center gap-[100px] inline-flex hover:border-sky-400/70 hover:text-sky-400 transition-all duration-300`}
-          >
-            <div className="text-center text-sm font-bold">
-              {t("common.yes")}
-            </div>
-          </button>
-          <button
-            onClick={handleNo}
-            className={`${
-              !enablePassword && itemSelected
-                ? "text-sky-400 border-sky-400/70"
-                : "text-theme-text-primary border-theme-sidebar-border"
-            } min-w-[230px] h-11 p-4 rounded-[10px] border-2  justify-center items-center gap-[100px] inline-flex hover:border-sky-400/70 hover:text-sky-400 transition-all duration-300`}
-          >
-            <div className="text-center text-sm font-bold">
-              {t("common.no")}
-            </div>
-          </button>
-        </div>
-        {enablePassword && (
-          <form className="w-full mt-4" onSubmit={handleSubmit}>
-            <label
-              htmlFor="name"
-              className="block mb-3 text-sm font-medium text-white"
-            >
-              {t("onboarding.userSetup.instancePassword")}
-            </label>
-            <PasswordInput
-              name="password"
-              className="border-none bg-theme-settings-input-bg text-white text-sm rounded-lg block w-full p-2.5 focus:outline-primary-button active:outline-primary-button outline-none placeholder:text-theme-text-secondary"
-              placeholder="Your admin password"
-              minLength={6}
-              required={true}
-              autoComplete="off"
-              onChange={handlePasswordChange}
-            />
-            <div className="mt-4 text-white text-opacity-80 text-xs font-base -mb-2">
-              {t("onboarding.userSetup.passwordReq")}
-              <br />
-              <i>{t("onboarding.userSetup.passwordWarn")}</i>{" "}
-            </div>
-            <button
-              type="submit"
-              ref={justMeSubmitRef}
-              hidden
-              aria-hidden="true"
-            ></button>
-          </form>
-        )}
-      </div>
-    </div>
-  );
-};
-
-const MyTeam = ({ setMultiUserLoginValid, myTeamSubmitRef, navigate }) => {
-  const { t } = useTranslation();
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const form = e.target;
-    const formData = new FormData(form);
-    const data = {
-      username: formData.get("username"),
-      password: formData.get("password"),
-    };
-    const { success, error } = await System.setupMultiUser(data);
     if (!success) {
-      showToast(`Error: ${error}`, "error");
+      setSaving(false);
+      setFormError({
+        message: serverErrorMessage(
+          error,
+          t,
+          "settings-pages.password-failed",
+          {
+            known: ACCOUNT_ERRORS,
+          }
+        ),
+      });
       return;
     }
 
+    // Sign in with the password just set so the next steps (and the app)
+    // do not stop at the login screen.
+    const { valid, token, message } = await System.requestToken({ password });
+    updateUserSetup({ password: "", confirm: "" });
+    setInstance((prev) => ({ ...prev, requiresAuth: true }));
+    if (!valid || !token) return signInFailed(message);
+
+    storeSession(token);
     navigate(paths.onboarding.dataHandling());
-    // Auto-request token with credentials that was just set so they
-    // are not redirected to login after completion.
-    const { user, token } = await System.requestToken(data);
-    window.localStorage.setItem(AUTH_USER, JSON.stringify(user));
-    window.localStorage.setItem(AUTH_TOKEN, token);
-    window.localStorage.removeItem(AUTH_TIMESTAMP);
-  };
+  }
 
-  const setNewUsername = (e) => setUsername(e.target.value);
-  const setNewPassword = (e) => setPassword(e.target.value);
-  const handleUsernameChange = debounce(setNewUsername, 500);
-  const handlePasswordChange = debounce(setNewPassword, 500);
-
-  useEffect(() => {
-    // Enable button if there's any input, allowing users to attempt submission
-    // Validation errors will be shown via toast in handleSubmit
-    if (username.trim().length > 0 && password.length > 0) {
-      setMultiUserLoginValid(true);
-    } else {
-      setMultiUserLoginValid(false);
+  async function createAdmin() {
+    const name = username.trim();
+    const { success, error } = await System.setupMultiUser({
+      username: name,
+      password,
+    });
+    if (!success) {
+      setSaving(false);
+      setFormError({
+        message: serverErrorMessage(
+          error,
+          t,
+          "settings-pages.multiuser-failed",
+          { known: ACCOUNT_ERRORS }
+        ),
+      });
+      return;
     }
-  }, [username, password]);
+
+    const { valid, token, user, message, recoveryCodes } =
+      await System.requestToken({ username: name, password });
+    updateUserSetup({ password: "", confirm: "" });
+    setInstance((prev) => ({ ...prev, multiUser: true }));
+    if (!valid || !token) return signInFailed(message);
+
+    // The server shows the recovery codes only once, on this first sign-in:
+    // keep the session until the person confirms they saved them.
+    if (recoveryCodes?.length) {
+      setRecovery({ codes: recoveryCodes, token, user, username: name });
+      return;
+    }
+    storeSession(token, user);
+    navigate(paths.onboarding.dataHandling());
+  }
+
+  function describedBy(name, ...help) {
+    return [...help, errors[name] ? `${fieldId(name)}-error` : null]
+      .filter(Boolean)
+      .join(" ");
+  }
+
+  // A plain render helper, not a component: a component declared here would
+  // remount (and re-announce) on every keystroke.
+  function fieldError(name) {
+    if (!errors[name]) return null;
+    return (
+      <p id={`${fieldId(name)}-error`} role="alert" className={FIELD_ERROR}>
+        {errors[name]}
+      </p>
+    );
+  }
+
+  const passwordHelpId = `${fieldId("password")}-help`;
+  const warnId = `${fieldId("password")}-warn`;
+
   return (
-    <div className="w-full flex items-center justify-center border max-w-[600px] rounded-lg border-white/20 light:border-theme-sidebar-border">
-      <form onSubmit={handleSubmit}>
-        <div className="flex flex-col w-full md:px-8 px-2 py-4">
-          <div className="space-y-6 flex h-full w-full">
-            <div className="w-full flex flex-col gap-y-4">
-              <div>
-                <label
-                  htmlFor="name"
-                  className="block mb-3 text-sm font-medium text-white"
-                >
-                  {t("onboarding.userSetup.adminUsername")}
-                </label>
-                <input
-                  name="username"
-                  type="text"
-                  className="border-none bg-theme-settings-input-bg text-white text-sm rounded-lg block w-full p-2.5 focus:outline-primary-button active:outline-primary-button placeholder:text-theme-text-secondary outline-none"
-                  placeholder="Your admin username"
-                  minLength={USERNAME_MIN_LENGTH}
-                  maxLength={USERNAME_MAX_LENGTH}
-                  required={true}
-                  autoComplete="off"
-                  onChange={handleUsernameChange}
-                />
-              </div>
-              <p className=" text-white text-opacity-80 text-xs font-base">
-                {t("common.username_requirements")}
-              </p>
-              <div className="mt-4">
-                <label
-                  htmlFor="name"
-                  className="block mb-3 text-sm font-medium text-white"
-                >
-                  {t("onboarding.userSetup.adminPassword")}
-                </label>
-                <PasswordInput
-                  name="password"
-                  className="border-none bg-theme-settings-input-bg text-white text-sm rounded-lg block w-full p-2.5 focus:outline-primary-button active:outline-primary-button placeholder:text-theme-text-secondary outline-none"
-                  placeholder="Your admin password"
-                  minLength={8}
-                  required={true}
-                  autoComplete="off"
-                  onChange={handlePasswordChange}
-                />
-              </div>
-              <p className=" text-white text-opacity-80 text-xs font-base">
-                {t("onboarding.userSetup.adminPasswordReq")}
-              </p>
-            </div>
-          </div>
+    <OnboardingLayout
+      step="user-setup"
+      title={t("onboarding.userSetup.title")}
+      description={t("onboarding.userSetup.description")}
+      onBack={() => navigate(paths.onboarding.llmPreference())}
+      next={{
+        label: t("onboarding-flow.next"),
+        busyLabel: t("common.saving"),
+        busy: saving,
+        disabled: loading || !instance,
+        form: formId,
+      }}
+    >
+      {loading ? (
+        <div className="flex justify-center py-16">
+          <PreLoader />
         </div>
-        <div className="flex w-full justify-between items-center px-6 py-4 space-x-6 border-t rounded-b border-theme-sidebar-border">
-          <div className="text-theme-text-secondary text-opacity-80 text-xs font-base">
-            {t("onboarding.userSetup.teamHint")}
-          </div>
+      ) : !instance ? (
+        <div className="flex flex-col items-start gap-y-4 py-6">
+          <p role="alert" className="text-sm text-white">
+            {t("provider-pages.load-error")}
+          </p>
+          <CTAButton type="button" onClick={fetchInstance} className="!mr-0">
+            {t("provider-fields.retry")}
+          </CTAButton>
         </div>
-        <button
-          type="submit"
-          ref={myTeamSubmitRef}
-          hidden
-          aria-hidden="true"
-        ></button>
-      </form>
-    </div>
+      ) : (
+        <form
+          id={formId}
+          onSubmit={handleSubmit}
+          noValidate
+          className="flex flex-col gap-y-8"
+        >
+          {configured ? (
+            <StatusNote tone="success">
+              {t(
+                configured === "team"
+                  ? "onboarding-flow.team-done"
+                  : "onboarding-flow.password-done"
+              )}
+            </StatusNote>
+          ) : (
+            <>
+              <div className="flex flex-col gap-y-3">
+                <p
+                  id={`${fieldId("audience")}-label`}
+                  className="text-sm font-semibold text-white"
+                >
+                  {t("onboarding.userSetup.howManyUsers")}
+                </p>
+                <div id={fieldId("audience")}>
+                  <SegmentedControl
+                    value={audience}
+                    onChange={(value) => {
+                      setField("audience", value);
+                      setErrors({});
+                      setFormError(null);
+                    }}
+                    labelledBy={`${fieldId("audience")}-label`}
+                    describedBy={
+                      describedBy(
+                        "audience",
+                        audience === "my_team"
+                          ? `${fieldId("audience")}-help`
+                          : null
+                      ) || undefined
+                    }
+                    options={[
+                      {
+                        value: "just_me",
+                        label: t("onboarding.userSetup.justMe"),
+                      },
+                      {
+                        value: "my_team",
+                        label: t("onboarding.userSetup.myTeam"),
+                      },
+                    ]}
+                  />
+                </div>
+                {fieldError("audience")}
+                {audience === "my_team" && (
+                  <p
+                    id={`${fieldId("audience")}-help`}
+                    className="text-xs text-theme-text-secondary max-w-[600px]"
+                  >
+                    {t("onboarding.userSetup.teamHint")}
+                  </p>
+                )}
+              </div>
+
+              {audience === "just_me" && (
+                <div className="flex flex-col gap-y-3">
+                  <p
+                    id={`${fieldId("usePassword")}-label`}
+                    className="text-sm font-semibold text-white"
+                  >
+                    {t("onboarding.userSetup.setPassword")}
+                  </p>
+                  <div id={fieldId("usePassword")}>
+                    <SegmentedControl
+                      value={usePassword}
+                      onChange={(value) => {
+                        setField("usePassword", value);
+                        setErrors({});
+                      }}
+                      labelledBy={`${fieldId("usePassword")}-label`}
+                      describedBy={
+                        describedBy(
+                          "usePassword",
+                          usePassword === "no" ? warnId : null
+                        ) || undefined
+                      }
+                      options={[
+                        { value: "yes", label: t("common.yes") },
+                        { value: "no", label: t("common.no") },
+                      ]}
+                    />
+                  </div>
+                  {fieldError("usePassword")}
+                  {usePassword === "no" && (
+                    <StatusNote
+                      tone="warning"
+                      id={warnId}
+                      className="max-w-[600px]"
+                    >
+                      {t("onboarding-flow.no-password-warning")}
+                    </StatusNote>
+                  )}
+                </div>
+              )}
+
+              {needsCredentials && (
+                <div className="flex flex-col gap-y-6">
+                  {audience === "my_team" && (
+                    <div className="w-full md:w-80">
+                      <label
+                        htmlFor={fieldId("username")}
+                        className={FIELD_LABEL}
+                      >
+                        {t("onboarding.userSetup.adminUsername")}
+                      </label>
+                      <input
+                        id={fieldId("username")}
+                        name="username"
+                        type="text"
+                        className={FIELD_INPUT}
+                        value={username}
+                        onChange={(e) => setField("username", e.target.value)}
+                        minLength={USERNAME_MIN_LENGTH}
+                        maxLength={USERNAME_MAX_LENGTH}
+                        pattern={USERNAME_PATTERN}
+                        required
+                        autoComplete="username"
+                        autoCapitalize="none"
+                        autoCorrect="off"
+                        spellCheck={false}
+                        aria-invalid={errors.username ? true : undefined}
+                        aria-describedby={describedBy(
+                          "username",
+                          `${fieldId("username")}-help`
+                        )}
+                      />
+                      <p
+                        id={`${fieldId("username")}-help`}
+                        className={FIELD_HELP}
+                      >
+                        {t("common.username_requirements")}
+                      </p>
+                      {fieldError("username")}
+                    </div>
+                  )}
+
+                  <div className="w-full md:w-80">
+                    <label
+                      htmlFor={fieldId("password")}
+                      className={FIELD_LABEL}
+                    >
+                      {t(
+                        audience === "my_team"
+                          ? "onboarding.userSetup.adminPassword"
+                          : "onboarding.userSetup.instancePassword"
+                      )}
+                    </label>
+                    <PasswordInput
+                      id={fieldId("password")}
+                      name="password"
+                      className={FIELD_INPUT}
+                      value={password}
+                      onChange={(e) => setField("password", e.target.value)}
+                      minLength={MIN_PASSWORD_LENGTH}
+                      required
+                      autoComplete="new-password"
+                      aria-invalid={errors.password ? true : undefined}
+                      aria-describedby={describedBy(
+                        "password",
+                        passwordHelpId,
+                        audience === "just_me" ? warnId : null
+                      )}
+                    />
+                    <p id={passwordHelpId} className={FIELD_HELP}>
+                      {t(
+                        audience === "my_team"
+                          ? "settings-pages.password-min-length"
+                          : "settings-pages.password-requirements"
+                      )}
+                    </p>
+                    {audience === "just_me" && (
+                      <p id={warnId} className={FIELD_HELP}>
+                        {t("onboarding.userSetup.passwordWarn")}
+                      </p>
+                    )}
+                    {fieldError("password")}
+                  </div>
+
+                  <div className="w-full md:w-80">
+                    <label htmlFor={fieldId("confirm")} className={FIELD_LABEL}>
+                      {t("onboarding-flow.confirm-password")}
+                    </label>
+                    <PasswordInput
+                      id={fieldId("confirm")}
+                      name="confirm"
+                      className={FIELD_INPUT}
+                      value={confirm}
+                      onChange={(e) => setField("confirm", e.target.value)}
+                      minLength={MIN_PASSWORD_LENGTH}
+                      required
+                      autoComplete="new-password"
+                      aria-invalid={errors.confirm ? true : undefined}
+                      aria-describedby={describedBy("confirm") || undefined}
+                    />
+                    {fieldError("confirm")}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {formError && (
+            <StatusNote tone="error" announce>
+              {formError.message}
+              {formError.signIn && (
+                <>
+                  {" "}
+                  <Link to={paths.login()} className={NOTE_LINK}>
+                    {t("onboarding-flow.signin-link")}
+                  </Link>
+                </>
+              )}
+            </StatusNote>
+          )}
+        </form>
+      )}
+
+      <RecoveryCodesDialog
+        isOpen={!!recovery}
+        recoveryCodes={recovery?.codes ?? []}
+        username={recovery?.username}
+        onContinue={() => {
+          storeSession(recovery.token, recovery.user);
+          navigate(paths.onboarding.dataHandling());
+        }}
+      />
+    </OnboardingLayout>
   );
-};
+}

@@ -3,7 +3,13 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import paths from "@/utils/paths";
 import ModelRouter from "@/models/modelRouter";
-import { useAutosaveForm, SavedIndicator } from "@/components/AutosaveForm";
+import { useAutosaveForm } from "@/components/AutosaveForm";
+import { FIELD_SELECT } from "@/components/ProviderFields";
+import PreLoader from "@/components/Preloader";
+import SettingsField, {
+  HELP_TEXT,
+  TEXT_LINK,
+} from "../../../components/SettingsField";
 
 export default function RouterSelection({ workspace }) {
   const { t } = useTranslation();
@@ -27,8 +33,9 @@ export default function RouterSelection({ workspace }) {
 
   if (loading) {
     return (
-      <div className="flex flex-col gap-y-[8px]">
-        <p className="text-sm text-white text-opacity-60">
+      <div className="flex items-center gap-x-3">
+        <PreLoader size="4" />
+        <p className={HELP_TEXT} aria-hidden="true">
           {t("model-router.router-selection.loading-routers")}
         </p>
       </div>
@@ -37,46 +44,41 @@ export default function RouterSelection({ workspace }) {
 
   if (routers.length === 0) {
     return (
-      <div className="flex flex-col gap-y-[8px]">
-        <p className="text-sm text-white text-opacity-60">
-          {t("model-router.router-selection.no-routers-prefix-workspace")}{" "}
-          <Link
-            to={paths.settings.modelRouters()}
-            className="underline text-white"
-          >
-            {t("model-router.router-selection.no-routers-link")}
-          </Link>
-          .
-        </p>
-      </div>
+      <p className="text-sm text-theme-text-secondary">
+        {t("model-router.router-selection.no-routers-prefix-workspace")}{" "}
+        <Link to={paths.settings.modelRouters()} className={TEXT_LINK}>
+          {t("model-router.router-selection.no-routers-link")}
+        </Link>
+      </p>
     );
   }
 
   return (
-    <div className="flex flex-col gap-y-[8px]">
-      <label className="block input-label">
-        {t("model-router.router-selection.model-router-label")}
-        <SavedIndicator name="router_id" />
-      </label>
-      <p className="text-white text-opacity-60 text-xs font-medium">
-        {t("model-router.router-selection.select-description")}
-      </p>
-      <select
-        name="router_id"
-        defaultValue={workspace?.router_id || ""}
-        className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full max-w-[640px] p-2.5"
-        required
-      >
-        <option value="">
-          {t("model-router.router-selection.select-router")}
-        </option>
-        {routers.map((router) => (
-          <option key={router.id} value={router.id}>
-            {router.name}
-            {router.description ? ` — ${router.description}` : ""}
+    <SettingsField
+      name="router_id"
+      label={t("model-router.router-selection.model-router-label")}
+      help={t("model-router.router-selection.select-description")}
+    >
+      {(control) => (
+        <select
+          {...control}
+          name="router_id"
+          defaultValue={workspace?.router_id || ""}
+          className={`${FIELD_SELECT} max-w-[640px]`}
+          required
+        >
+          <option value="">
+            {t("model-router.router-selection.select-router")}
           </option>
-        ))}
-      </select>
-    </div>
+          {routers.map((router) => (
+            <option key={router.id} value={router.id}>
+              {router.description
+                ? `${router.name}: ${router.description}`
+                : router.name}
+            </option>
+          ))}
+        </select>
+      )}
+    </SettingsField>
   );
 }

@@ -1,98 +1,113 @@
-import React, { useRef, useState } from "react";
-import { X } from "lucide-react";
+import React, { useState } from "react";
 import WorkspaceFolder from "@/models/workspaceFolder";
 import showToast from "@/utils/toast";
 import { useTranslation } from "react-i18next";
-import Modal from "@/components/lib/Modal";
+import Modal, {
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  ModalInput,
+  ModalPrimaryButton,
+  ModalSecondaryButton,
+} from "@/components/lib/Modal";
 
 const noop = () => false;
 
+/**
+ * Create a folder at the root, or inside `parentId` (subfolder).
+ * @param {object} props
+ * @param {() => void} props.hideModal
+ * @param {(folder: object) => void} [props.onFolderCreated]
+ * @param {number|string} [props.parentId] - parent folder; root when missing
+ * @param {string} [props.parentName] - shown in the subfolder title
+ */
 export default function NewFolderModal({
   hideModal = noop,
   onFolderCreated = noop,
+  parentId = null,
+  parentName = null,
 }) {
   const { t } = useTranslation();
-  const formEl = useRef(null);
+  const [name, setName] = useState("");
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const isSubfolder = parentId !== null && parentId !== undefined;
 
   const handleCreate = async (e) => {
     e.preventDefault();
+    const trimmed = name.trim();
+    if (!trimmed) {
+      setError(t("workspace-folders.name-required"));
+      return;
+    }
     setError(null);
     setSubmitting(true);
-    const data = {};
-    const form = new FormData(formEl.current);
-    for (const [key, value] of form.entries()) data[key] = value;
-
     const { folder, message } = await WorkspaceFolder.new({
-      name: data.name,
+      name: trimmed,
+      ...(isSubfolder ? { parent_id: parentId } : {}),
     });
-
     setSubmitting(false);
     if (folder) {
-      showToast(t("workspace-folders.new") + " OK", "success", { clear: true });
-      onFolderCreated();
+      showToast(
+        t(
+          isSubfolder
+            ? "workspace-folders.subfolder-created"
+            : "workspace-folders.created",
+          {
+            name: trimmed,
+          }
+        ),
+        "success",
+        { clear: true }
+      );
+      onFolderCreated(folder);
       hideModal();
     } else {
-      setError(message);
+      setError(message || t("sidebar-nav.folder-create-failed"));
     }
   };
 
   return (
-    <Modal isOpen={true} onClose={hideModal} variant="bare">
-      <div className="w-full max-w-md bg-theme-bg-secondary rounded-lg shadow border-2 border-theme-modal-border overflow-hidden">
-        <div className="relative p-6 border-b rounded-t border-theme-modal-border">
-          <h3 className="text-xl font-semibold text-white">
-            {t("workspace-folders.new")}
-          </h3>
-          <button
-            onClick={hideModal}
-            type="button"
-            className="absolute top-4 right-4 transition-all duration-300 bg-transparent rounded-lg text-sm p-1 inline-flex items-center hover:bg-theme-modal-border border-transparent border"
+    <Modal isOpen={true} onClose={hideModal} size="sm">
+      <ModalHeader
+        title={
+          isSubfolder
+            ? t("workspace-folders.new-subfolder-in", { name: parentName })
+            : t("workspace-folders.new")
+        }
+        onClose={hideModal}
+      />
+      <form onSubmit={handleCreate} noValidate>
+        <ModalBody>
+          <ModalInput
+            name="name"
+            label={t("workspace-folders.placeholder")}
+            value={name}
+            onChange={(e) => {
+              setName(e.target.value);
+              if (error) setError(null);
+            }}
+            error={error}
+            autoComplete="off"
+            maxLength={100}
+            autoFocus
+          />
+        </ModalBody>
+        <ModalFooter>
+          <ModalSecondaryButton type="button" onClick={hideModal}>
+            {t("settings-pages.cancel")}
+          </ModalSecondaryButton>
+          <ModalPrimaryButton
+            type="submit"
+            disabled={submitting}
+            aria-busy={submitting || undefined}
           >
-            <X strokeWidth={1.5} size={24} className="text-white" />
-          </button>
-        </div>
-        <form ref={formEl} onSubmit={handleCreate}>
-          <div className="py-6 px-9 space-y-4">
-            <div>
-              <label
-                htmlFor="folder-name"
-                className="block mb-2 text-sm font-medium text-white"
-              >
-                {t("workspace-folders.placeholder")}
-              </label>
-              <input
-                name="name"
-                id="folder-name"
-                type="text"
-                className="border-none bg-theme-settings-input-bg w-full text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button outline-none block p-2.5"
-                placeholder={t("workspace-folders.placeholder")}
-                required
-                autoComplete="off"
-                autoFocus
-              />
-            </div>
-            {error && <p className="text-red-400 text-sm">Error: {error}</p>}
-          </div>
-          <div className="flex w-full justify-end items-center p-6 space-x-2 border-t border-theme-modal-border rounded-b">
-            <button
-              type="button"
-              onClick={hideModal}
-              className="transition-all duration-300 border border-theme-modal-border text-theme-text-primary hover:bg-theme-action-menu-item-hover px-4 py-2 rounded-lg text-sm"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="transition-all duration-300 bg-primary-button text-theme-button-primary-text hover:bg-primary-button-hover px-4 py-2 rounded-lg text-sm disabled:opacity-40"
-            >
-              {submitting ? "Creating..." : "Create"}
-            </button>
-          </div>
-        </form>
-      </div>
+            {submitting
+              ? t("workspace-folders.creating")
+              : t("workspace-folders.create")}
+          </ModalPrimaryButton>
+        </ModalFooter>
+      </form>
     </Modal>
   );
 }

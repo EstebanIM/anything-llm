@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { ListFilter } from "lucide-react";
 import Admin from "@/models/admin";
 import SerpApiIcon from "./icons/serpapi.png";
 import SearchApiIcon from "./icons/searchapi.png";
@@ -18,170 +20,138 @@ import KeenableSearchIcon from "./icons/keenable.png";
 import AnySearchSearchIcon from "./icons/anysearch.png";
 import FirecrawlSearchIcon from "./icons/firecrawl.png";
 import DeepSeekSearchIcon from "@/media/llmprovider/deepseek.png";
-import { ListFilter } from "lucide-react";
-import Toggle from "@/components/lib/Toggle";
-import { DefaultBadge } from "../Badges/default";
-import SearchProviderItem from "./SearchProviderItem";
 import WebSearchImage from "@/media/agents/scrape-websites.png";
 import ProviderSearchMenu from "@/components/lib/ProviderSearchMenu";
+import ProviderOption from "@/components/lib/ProviderSearchMenu/ProviderOption";
+import { DefaultBadge } from "../Badges/default";
 import {
-  SerpApiOptions,
-  SearchApiOptions,
-  SerperDotDevOptions,
-  BingSearchOptions,
-  BaiduSearchOptions,
-  SerplySearchOptions,
-  SearXNGOptions,
-  TavilySearchOptions,
-  DuckDuckGoOptions,
-  ExaSearchOptions,
-  PerplexitySearchOptions,
-  BraveSearchOptions,
-  CrwSearchOptions,
-  YouSearchOptions,
-  KeenableSearchOptions,
-  AnySearchOptions,
-  FirecrawlSearchOptions,
-  DeepSeekSearchOptions,
-} from "./SearchProviderOptions";
+  PANEL_TEXT,
+  PanelHeader,
+  PanelLoadError,
+  PanelLoading,
+} from "../IntegrationParts/PanelParts";
+import SearchProviderOptions from "./SearchProviderOptions";
 
+const DEFAULT_PROVIDER = "you-search";
+
+/** `description` is the English fallback for `descriptionKey`. */
 const SEARCH_PROVIDERS = [
   {
     name: "You.com Search",
     value: "you-search",
     logo: YouSearchIcon,
-    options: (settings) => <YouSearchOptions settings={settings} />,
-    description:
-      "LLM-ready web search with no API key required and zero data retention.",
+    description: "LLM-ready web search that works without an API key.",
   },
   {
     name: "DuckDuckGo",
     value: "duckduckgo-engine",
     logo: DuckDuckGoIcon,
-    options: () => <DuckDuckGoOptions />,
-    description: "Free and privacy-focused web search using DuckDuckGo.",
+    description: "Web search with DuckDuckGo, with no API key or setup.",
   },
   {
     name: "Brave Search",
     value: "brave-search",
     logo: BraveSearchIcon,
-    options: (settings) => <BraveSearchOptions settings={settings} />,
-    description: "Web search powered by the Brave Search API.",
+    description: "Web search with the Brave Search API.",
   },
   {
     name: "SerpApi",
     value: "serpapi",
     logo: SerpApiIcon,
-    options: (settings) => <SerpApiOptions settings={settings} />,
     description:
-      "Scrape Google and several other search engines with SerpApi. 250 free searches every month, and then paid.",
+      "Results from Google and other search engines through SerpApi.",
   },
   {
     name: "SearchApi",
     value: "searchapi",
     logo: SearchApiIcon,
-    options: (settings) => <SearchApiOptions settings={settings} />,
     description:
-      "SearchApi delivers structured data from multiple search engines. Free for 100 queries, but then paid. ",
+      "Structured data from several search engines through SearchApi.",
   },
   {
     name: "Serper.dev",
     value: "serper-dot-dev",
     logo: SerperDotDevIcon,
-    options: (settings) => <SerperDotDevOptions settings={settings} />,
-    description:
-      "Serper.dev web-search. Free account with a 2,500 calls, but then paid.",
+    description: "Google web search through Serper.dev.",
   },
   {
     name: "Bing Search",
     value: "bing-search",
     logo: BingSearchIcon,
-    options: (settings) => <BingSearchOptions settings={settings} />,
-    description: "Web search powered by the Bing Search API (paid service).",
+    description: "Web search with the Bing Search API, through Azure.",
   },
   {
     name: "Baidu Search",
     value: "baidu-search",
     logo: BaiduSearchIcon,
-    options: (settings) => <BaiduSearchOptions settings={settings} />,
-    description:
-      "Web search powered by Baidu Search for stronger zh-CN retrieval.",
+    description: "Web search with Baidu Search, suited to Chinese content.",
   },
   {
     name: "Serply.io",
     value: "serply-engine",
     logo: SerplySearchIcon,
-    options: (settings) => <SerplySearchOptions settings={settings} />,
-    description:
-      "Serply.io web-search. Free account with a 100 calls/month forever.",
+    description: "Web search through Serply.io.",
   },
   {
     name: "SearXNG",
     value: "searxng-engine",
     logo: SearXNGSearchIcon,
-    options: (settings) => <SearXNGOptions settings={settings} />,
-    description:
-      "Free, open-source, internet meta-search engine with no tracking.",
+    description: "Open-source metasearch engine that you can host yourself.",
   },
   {
     name: "Tavily Search",
     value: "tavily-search",
     logo: TavilySearchIcon,
-    options: (settings) => <TavilySearchOptions settings={settings} />,
-    description:
-      "Tavily Search API. Offers a free tier with 1000 queries per month.",
+    description: "Web search with the Tavily API.",
   },
   {
     name: "Exa Search",
     value: "exa-search",
     logo: ExaIcon,
-    options: (settings) => <ExaSearchOptions settings={settings} />,
     description:
-      "One of the best web search APIs for AI agents with real-time results and full page contents.",
+      "Web search API for AI agents that returns the full page contents.",
   },
   {
     name: "Perplexity Search",
     value: "perplexity-search",
     logo: PerplexitySearchIcon,
-    options: (settings) => <PerplexitySearchOptions settings={settings} />,
-    description: "AI-powered web search using the Perplexity Search API.",
+    description: "Web search with the Perplexity Search API.",
   },
   {
     name: "fastCRW Search",
     value: "crw-search",
     logo: CrwSearchIcon,
-    options: (settings) => <CrwSearchOptions settings={settings} />,
-    description: "Open-source, self-hostable Firecrawl/Tavily alternative.",
+    description:
+      "Open-source alternative to Firecrawl and Tavily that you can host yourself.",
   },
   {
     name: "Keenable",
     value: "keenable-search",
     logo: KeenableSearchIcon,
-    options: (settings) => <KeenableSearchOptions settings={settings} />,
-    description: "Web search built for AI agents. No API key required.",
+    description: "Web search for AI agents that works without an API key.",
   },
   {
     name: "AnySearch",
     value: "anysearch-search",
     logo: AnySearchSearchIcon,
-    options: (settings) => <AnySearchOptions settings={settings} />,
-    description: "Real-time web search for AI agents. Requires a free API key.",
+    description: "Real-time web search for AI agents. Needs an API key.",
   },
   {
     name: "Firecrawl",
     value: "firecrawl-search",
     logo: FirecrawlSearchIcon,
-    options: (settings) => <FirecrawlSearchOptions settings={settings} />,
-    description: "Web search API for AI agents. Requires a free API key.",
+    description: "Web search API for AI agents. Needs an API key.",
   },
   {
     name: "DeepSeek",
     value: "deepseek-search",
     logo: DeepSeekSearchIcon,
-    options: (settings) => <DeepSeekSearchOptions settings={settings} />,
-    description: "DeepSeek's web search tool API. Requires a DeepSeek API key.",
+    description: "DeepSeek's web search tool. Needs a DeepSeek API key.",
   },
-];
+].map((provider) => ({
+  ...provider,
+  descriptionKey: `provider-pages.descriptions.web-search.${provider.value}`,
+}));
 
 export default function AgentWebSearchSelection({
   skill,
@@ -191,87 +161,130 @@ export default function AgentWebSearchSelection({
   toggleSkill,
   enabled = true,
   setHasChanges,
+  hasChanges,
 }) {
-  const [selectedProvider, setSelectedProvider] = useState("you-search");
+  const { t } = useTranslation();
+  const headingId = useId();
+  const providerHeadingId = useId();
+  // null until the stored provider is known: a failed load must never fall
+  // back to a default that the next save would write over the real choice.
+  const [selectedProvider, setSelectedProvider] = useState(null);
+  const [loadError, setLoadError] = useState(false);
+  // Bumped on every load so the provider fields drop unsaved typing.
+  const [revision, setRevision] = useState(0);
+
+  const load = useCallback(async () => {
+    setLoadError(false);
+    const res = await Admin.systemPreferencesByFields([
+      "agent_search_provider",
+    ]);
+    if (!res?.settings) {
+      setLoadError(true);
+      return;
+    }
+    setSelectedProvider(res.settings.agent_search_provider ?? DEFAULT_PROVIDER);
+    setRevision((n) => n + 1);
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  // Saved or discarded (hasChanges: true -> false): show the stored provider.
+  const prevHasChanges = useRef(hasChanges);
+  useEffect(() => {
+    if (prevHasChanges.current === true && hasChanges === false) load();
+    prevHasChanges.current = hasChanges;
+  }, [hasChanges]);
 
   function updateChoice(selection) {
+    if (selection === selectedProvider) return;
     setSelectedProvider(selection);
     setHasChanges(true);
   }
 
-  useEffect(() => {
-    Admin.systemPreferencesByFields(["agent_search_provider"])
-      .then((res) =>
-        setSelectedProvider(
-          res?.settings?.agent_search_provider ?? "you-search"
-        )
-      )
-      .catch(() => setSelectedProvider("you-search"));
-  }, []);
-
-  const selectedSearchProviderObject =
-    SEARCH_PROVIDERS.find((provider) => provider.value === selectedProvider) ??
-    SEARCH_PROVIDERS[0];
+  const selectedSearchProviderObject = SEARCH_PROVIDERS.find(
+    (provider) => provider.value === selectedProvider
+  );
 
   return (
     <div className="p-2">
       <div className="flex flex-col gap-y-[18px] max-w-[500px]">
-        <div className="flex w-full justify-between items-center">
-          <div className="flex items-center gap-x-2">
+        <PanelHeader
+          headingId={headingId}
+          title={title}
+          icon={
             <ListFilter
               strokeWidth={1.5}
               size={24}
-              color="var(--theme-text-primary)"
+              aria-hidden="true"
+              className="shrink-0 text-theme-text-primary"
             />
-            <label
-              htmlFor="name"
-              className="text-theme-text-primary text-md font-bold"
-            >
-              {title}
-            </label>
-            <DefaultBadge title={title} />
-          </div>
-          <Toggle
-            size="lg"
-            enabled={enabled}
-            onChange={() => toggleSkill(skill)}
-          />
-        </div>
-        <img
-          src={WebSearchImage}
-          alt="Web Search"
-          className="w-full rounded-md"
+          }
+          badge={<DefaultBadge title={title} />}
+          enabled={enabled}
+          onToggle={() => toggleSkill(skill)}
         />
-        <p className="text-theme-text-secondary text-opacity-60 text-xs font-medium py-1.5">
-          {description}
-        </p>
-        <div hidden={!enabled}>
-          <div className="relative">
-            <input
-              type="hidden"
-              name="system::agent_search_provider"
-              value={selectedProvider}
-            />
-            <ProviderSearchMenu
-              items={SEARCH_PROVIDERS}
-              selected={selectedSearchProviderObject}
-              placeholder="Search available web-search providers"
-              renderItem={(provider, close) => (
-                <SearchProviderItem
-                  provider={provider}
-                  checked={selectedProvider === provider.value}
-                  onClick={() => {
-                    updateChoice(provider.value);
-                    close();
-                  }}
+        <img src={WebSearchImage} alt="" className="w-full rounded-md" />
+        <p className={PANEL_TEXT}>{description}</p>
+        {enabled && (
+          <section
+            aria-labelledby={providerHeadingId}
+            className="flex flex-col gap-y-4"
+          >
+            <h3
+              id={providerHeadingId}
+              className="text-theme-text-primary font-semibold text-sm"
+            >
+              {t("agent-integrations.web-search.provider")}
+            </h3>
+            {loadError ? (
+              <PanelLoadError
+                message={t("agent-integrations.web-search.load-error")}
+                onRetry={load}
+              />
+            ) : !selectedProvider ? (
+              <PanelLoading />
+            ) : (
+              <>
+                <input
+                  type="hidden"
+                  name="system::agent_search_provider"
+                  value={selectedProvider}
                 />
-              )}
-            />
-          </div>
-          <div className="mt-4 flex flex-col gap-y-1">
-            {selectedSearchProviderObject.options(settings)}
-          </div>
-        </div>
+                <div className="relative">
+                  <ProviderSearchMenu
+                    items={SEARCH_PROVIDERS}
+                    labelledBy={providerHeadingId}
+                    selected={selectedSearchProviderObject}
+                    placeholder={t(
+                      "agent-integrations.web-search.search-providers"
+                    )}
+                    renderItem={(provider, close) => (
+                      <ProviderOption
+                        name={provider.name}
+                        value={provider.value}
+                        image={provider.logo}
+                        description={provider.description}
+                        descriptionKey={provider.descriptionKey}
+                        checked={selectedProvider === provider.value}
+                        onClick={() => {
+                          updateChoice(provider.value);
+                          close();
+                        }}
+                      />
+                    )}
+                  />
+                </div>
+                <SearchProviderOptions
+                  key={`${selectedProvider}-${revision}`}
+                  provider={selectedProvider}
+                  settings={settings}
+                />
+              </>
+            )}
+          </section>
+        )}
       </div>
     </div>
   );

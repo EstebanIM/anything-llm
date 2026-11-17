@@ -1,31 +1,104 @@
-import React, {
-  useEffect,
-  useState,
-  useRef,
-  useMemo,
-  useCallback,
-} from "react";
-import Toggle, { SimpleToggleSwitch } from "@/components/lib/Toggle";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { Trans, useTranslation } from "react-i18next";
-import debounce from "lodash.debounce";
-import {
-  Search,
-  LoaderCircle,
-  TriangleAlert,
-  ChevronDown,
-  CircleCheck,
-  Info,
-  SquareArrowOutUpRight,
-  CircleX,
-} from "lucide-react";
+import { CircleX, RefreshCw, SquareArrowOutUpRight } from "lucide-react";
 import Admin from "@/models/admin";
 import System from "@/models/system";
 import OutlookAgent from "@/models/outlookAgent";
-import { getOutlookSkills, filterSkillCategories } from "./utils";
-import OutlookIcon from "./outlook.png";
-import { Tooltip } from "react-tooltip";
-import { Link } from "react-router-dom";
+import StatusNote from "@/components/lib/StatusNote";
+import CTAButton from "@/components/lib/CTAButton";
+import ConfirmModal from "@/components/lib/ConfirmModal";
+import CopyButton from "@/components/lib/CopyButton";
+import ServerErrorDetail from "@/components/lib/ServerErrorDetail";
+import {
+  ExternalLink,
+  FIELD_ERROR,
+  FIELD_HELP,
+  FIELD_INPUT,
+  FIELD_LABEL,
+  FIELD_SELECT,
+  FieldLabel,
+  SecretInput,
+} from "@/components/ProviderFields";
+import { API_BASE } from "@/utils/constants";
 import paths from "@/utils/paths";
+import { serverErrorParts } from "@/utils/serverErrors";
+import {
+  DANGER_OUTLINE_BUTTON,
+  IntegrationConfigCard,
+  LINK_CLASS,
+  PANEL_TEXT,
+  PanelHeader,
+  PanelLoadError,
+  PanelLoading,
+  SECONDARY_BUTTON,
+} from "../IntegrationParts/PanelParts";
+import SkillToggleList from "../IntegrationParts/SkillToggleList";
+import { getOutlookSkills } from "./utils";
+import OutlookIcon from "./outlook.png";
+
+const EMPTY_FORM = {
+  clientId: "",
+  tenantId: "",
+  clientSecret: "",
+  authType: "common",
+};
+const AZURE_PORTAL_URL = "https://portal.azure.com/";
+
+/**
+ * Redirect URI to register in Azure. The server builds it from the request
+ * host (getOutlookRedirectUri in server/endpoints/utils/outlookAgentUtils.js);
+ * the API origin seen from the browser gives the same value.
+ */
+function outlookRedirectUri() {
+  const api = new URL(API_BASE, window.location.origin);
+  const path = api.pathname.replace(/\/+$/, "");
+  return `${api.origin}${path}/agent-skills/outlook/auth-callback`;
+}
+
+function formFromStatus(status) {
+  const config = status?.config ?? {};
+  return {
+    clientId: config.clientId || "",
+    tenantId: config.tenantId || "",
+    clientSecret: config.clientSecret || "",
+    authType: config.authType || "common",
+  };
+}
+
+function sameForm(a, b) {
+  return (
+    a.clientId.trim() === b.clientId.trim() &&
+    a.tenantId.trim() === b.tenantId.trim() &&
+    a.clientSecret === b.clientSecret &&
+    a.authType === b.authType
+  );
+}
+
+function validateForm(form, t) {
+  const errors = {};
+  if (!form.clientId.trim())
+    errors.clientId = t("agent-integrations.outlook.client-id-required");
+  if (form.authType === "organization" && !form.tenantId.trim())
+    errors.tenantId = t("agent-integrations.outlook.tenant-id-required");
+  if (!form.clientSecret.trim())
+    errors.clientSecret = t(
+      "agent-integrations.outlook.client-secret-required"
+    );
+  return errors;
+}
+
+/** Drops the OAuth result from the address bar, keeping the router state. */
+function clearAuthParams(params) {
+  params.delete("outlook_auth");
+  params.delete("message");
+  const query = params.toString();
+  window.history.replaceState(
+    window.history.state,
+    document.title,
+    `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`
+  );
+}
 
 export default function OutlookSkillPanel({
   title,
@@ -37,105 +110,102 @@ export default function OutlookSkillPanel({
   hasChanges = false,
 }) {
   const { t } = useTranslation();
+  const headingId = useId();
+  const warningId = useId();
   const [disabledSkills, setDisabledSkills] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [clientId, setClientId] = useState("");
-  const [tenantId, setTenantId] = useState("");
-  const [clientSecret, setClientSecret] = useState("");
-  const [authType, setAuthType] = useState("common");
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [authLoading, setAuthLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [isMultiUserMode, setIsMultiUserMode] = useState(false);
-  const [configDefaultExpanded, setConfigDefaultExpanded] = useState(true);
+  const [status, setStatus] = useState({
+    isAuthenticated: false,
+    hasCredentials: false,
+  });
+  // `saved` mirrors the server (secret masked); `draft` is what the fields show.
+  const [credentials, setCredentials] = useState({
+    saved: EMPTY_FORM,
+    draft: EMPTY_FORM,
+  });
+  const [configExpanded, setConfigExpanded] = useState(true);
+  const [notice, setNotice] = useState(null);
   const prevHasChanges = useRef(hasChanges);
-  const skillCategories = getOutlookSkills(t);
 
-  const fetchStatus = async () => {
-    try {
-      const data = await OutlookAgent.getStatus();
-      if (data.success) {
-        setIsAuthenticated(data.isAuthenticated);
-        // Load config from status endpoint
-        if (data.config) {
-          setClientId(data.config.clientId || "");
-          setTenantId(data.config.tenantId || "");
-          setClientSecret(data.config.clientSecret || "");
-          setAuthType(data.config.authType || "common");
-          setConfigDefaultExpanded(
-            !(data.config.clientId && data.config.clientSecret)
-          );
-        }
-      }
-    } catch (e) {
-      console.error("Failed to fetch Outlook status:", e);
-    }
-  };
+  /**
+   * Stores a status response. The fields follow the server unless the user is
+   * editing them (or `resetForm` asks to discard the edits).
+   */
+  const applyStatus = useCallback((res, { resetForm = false } = {}) => {
+    const next = formFromStatus(res);
+    setStatus({
+      isAuthenticated: !!res?.isAuthenticated,
+      hasCredentials: !!res?.hasCredentials,
+    });
+    setCredentials((prev) => ({
+      saved: next,
+      draft: resetForm || sameForm(prev.draft, prev.saved) ? next : prev.draft,
+    }));
+  }, []);
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     setLoading(true);
-    Promise.all([
+    setLoadError(false);
+    const [prefsRes, settingsRes, statusRes] = await Promise.all([
       Admin.systemPreferencesByFields(["disabled_outlook_skills"]),
       System.keys(),
       OutlookAgent.getStatus(),
-    ])
-      .then(([prefsRes, settingsRes, statusRes]) => {
-        setDisabledSkills(prefsRes?.settings?.disabled_outlook_skills ?? []);
-        setIsMultiUserMode(settingsRes?.MultiUserMode ?? false);
-
-        // Load config from status endpoint
-        if (statusRes?.success) {
-          setIsAuthenticated(statusRes.isAuthenticated);
-          if (statusRes.config) {
-            setClientId(statusRes.config.clientId || "");
-            setTenantId(statusRes.config.tenantId || "");
-            setClientSecret(statusRes.config.clientSecret || "");
-            setAuthType(statusRes.config.authType || "common");
-            setConfigDefaultExpanded(
-              !(statusRes.config.clientId && statusRes.config.clientSecret)
-            );
-          }
-        }
-      })
-      .catch(() => {
-        setDisabledSkills([]);
-        setClientId("");
-        setTenantId("");
-        setClientSecret("");
-        setAuthType("common");
-      })
-      .finally(() => setLoading(false));
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const outlookAuth = urlParams.get("outlook_auth");
-    if (outlookAuth === "success") {
-      fetchStatus();
-      window.history.replaceState({}, document.title, window.location.pathname);
-    } else if (outlookAuth === "error") {
-      const message = urlParams.get("message");
-      console.error("Outlook auth error:", message);
-      window.history.replaceState({}, document.title, window.location.pathname);
+    ]);
+    const multiUser = settingsRes?.MultiUserMode ?? false;
+    setIsMultiUserMode(multiUser);
+    if (multiUser) {
+      setLoading(false);
+      return;
     }
+    if (!prefsRes?.settings || !statusRes?.success) {
+      setLoadError(true);
+      setLoading(false);
+      return;
+    }
+    setDisabledSkills(prefsRes.settings.disabled_outlook_skills ?? []);
+    applyStatus(statusRes, { resetForm: true });
+    setConfigExpanded(!(statusRes.isAuthenticated && statusRes.hasCredentials));
+    setLoading(false);
+  }, [applyStatus]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  // Result of the Microsoft sign-in when the callback brought us back here.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const result = params.get("outlook_auth");
+    if (!result) return;
+    if (result === "success") {
+      setNotice({
+        tone: "success",
+        text: t("agent-integrations.outlook.auth-success"),
+      });
+    } else {
+      const { message, detail } = serverErrorParts(
+        params.get("message"),
+        t,
+        "agent-integrations.outlook.auth-error"
+      );
+      setNotice({ tone: "error", text: message, detail });
+    }
+    clearAuthParams(params);
   }, []);
 
+  // The page saved or discarded its changes: reload the sub-skills.
   useEffect(() => {
     if (prevHasChanges.current === true && hasChanges === false) {
       Promise.all([
         Admin.systemPreferencesByFields(["disabled_outlook_skills"]),
         OutlookAgent.getStatus(),
-      ])
-        .then(([prefsRes, statusRes]) => {
-          setDisabledSkills(prefsRes?.settings?.disabled_outlook_skills ?? []);
-          if (statusRes?.success) {
-            setIsAuthenticated(statusRes.isAuthenticated);
-            if (statusRes.config) {
-              setClientId(statusRes.config.clientId || "");
-              setTenantId(statusRes.config.tenantId || "");
-              setClientSecret(statusRes.config.clientSecret || "");
-              setAuthType(statusRes.config.authType || "common");
-            }
-          }
-        })
-        .catch(() => {});
+      ]).then(([prefsRes, statusRes]) => {
+        if (prefsRes?.settings)
+          setDisabledSkills(prefsRes.settings.disabled_outlook_skills ?? []);
+        if (statusRes?.success) applyStatus(statusRes);
+      });
     }
     prevHasChanges.current = hasChanges;
   }, [hasChanges]);
@@ -149,130 +219,89 @@ export default function OutlookSkillPanel({
     );
   }
 
-  const handleStartAuth = async () => {
-    setAuthLoading(true);
-    try {
-      const data = await OutlookAgent.saveCredentialsAndGetAuthUrl({
-        clientId,
-        tenantId,
-        clientSecret,
-        authType,
-      });
-      if (data.success && data.url) {
-        window.open(data.url, "_blank");
-      } else {
-        console.error("Failed to get auth URL:", data.error);
-      }
-    } catch (e) {
-      console.error("Auth error:", e);
-    } finally {
-      setAuthLoading(false);
-    }
-  };
-
-  const handleRevokeAuth = async () => {
-    setAuthLoading(true);
-    try {
-      const data = await OutlookAgent.revokeAccess();
-      if (data.success) {
-        setIsAuthenticated(false);
-      }
-    } catch (e) {
-      console.error("Revoke error:", e);
-    } finally {
-      setAuthLoading(false);
-    }
-  };
-
-  // For organization auth type, tenant ID is required; for others it's optional
-  const hasCredentials =
-    authType === "organization"
-      ? clientId && tenantId && clientSecret
-      : clientId && clientSecret;
-  const isConfigured = hasCredentials && isAuthenticated;
+  const connected = status.isAuthenticated && status.hasCredentials;
+  const ready = !loading && !loadError;
 
   return (
     <div className="p-2">
       <div className="flex flex-col gap-y-[18px] max-w-[500px]">
-        <div className="flex w-full justify-between items-center">
-          <div className="flex items-center gap-x-2">
-            <img src={OutlookIcon} alt="Outlook" className="w-6 h-6" />
-            <label className="text-theme-text-primary text-md font-bold">
-              {title}
-            </label>
-          </div>
-          <Toggle
-            size="lg"
-            enabled={enabled}
-            disabled={disabled || isMultiUserMode}
-            onChange={() => toggleSkill(skill)}
-          />
-        </div>
+        <PanelHeader
+          headingId={headingId}
+          title={title}
+          icon={<img src={OutlookIcon} alt="" className="w-6 h-6 shrink-0" />}
+          enabled={enabled}
+          disabled={disabled || isMultiUserMode}
+          onToggle={() => toggleSkill(skill)}
+          describedBy={isMultiUserMode ? warningId : undefined}
+        />
 
         {isMultiUserMode && (
-          <div className="flex items-center gap-x-2 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-            <TriangleAlert
-              strokeWidth={1.5}
-              size={20}
-              className="text-yellow-500 shrink-0"
-            />
-            <p className="text-yellow-500 text-xs">
-              {t("agent.skill.outlook.multiUserWarning")}
-            </p>
-          </div>
+          <StatusNote tone="warning" id={warningId}>
+            {t("agent.skill.outlook.multiUserWarning")}
+          </StatusNote>
         )}
 
-        <p className="text-theme-text-secondary text-opacity-60 text-xs font-medium">
+        <p className={PANEL_TEXT}>
           <Trans
             i18nKey="agent.skill.outlook.description"
             components={{
               a: (
-                <Link
-                  className="text-sky-400 hover:text-sky-500 text-xs font-medium underline"
-                  to={paths.docs("/agent/usage/outlook-agent")}
-                  target="_blank"
+                <ExternalLink
+                  href={paths.docs("/agent/usage/outlook-agent")}
+                  className={LINK_CLASS}
                 />
               ),
             }}
           />
         </p>
 
+        {/* The Microsoft callback can land here with the skill still off (it
+            was enabled but not saved in the other tab): show its result anyway. */}
+        {notice && !(enabled && !isMultiUserMode && ready) && (
+          <StatusNote tone={notice.tone} announce>
+            {notice.text}
+            <ServerErrorDetail detail={notice.detail} />
+          </StatusNote>
+        )}
+
         {enabled && !isMultiUserMode && (
           <>
-            <HiddenFormInputs disabledSkills={disabledSkills} />
-
-            {loading ? (
-              <div className="flex items-center justify-center py-4">
-                <LoaderCircle
-                  strokeWidth={1.5}
-                  size={24}
-                  className="animate-spin text-theme-text-primary"
-                />
-              </div>
-            ) : (
+            {loading && <PanelLoading />}
+            {!loading && loadError && (
+              <PanelLoadError
+                message={t("agent-integrations.load-error", { name: title })}
+                onRetry={load}
+              />
+            )}
+            {ready && (
               <>
-                <ConfigurationSection
-                  clientId={clientId}
-                  setClientId={setClientId}
-                  tenantId={tenantId}
-                  setTenantId={setTenantId}
-                  clientSecret={clientSecret}
-                  setClientSecret={setClientSecret}
-                  authType={authType}
-                  setAuthType={setAuthType}
-                  setHasChanges={setHasChanges}
-                  hasCredentials={hasCredentials}
-                  isAuthenticated={isAuthenticated}
-                  isConfigured={isConfigured}
-                  defaultExpanded={configDefaultExpanded}
-                  onStartAuth={handleStartAuth}
-                  onRevokeAuth={handleRevokeAuth}
-                  authLoading={authLoading}
+                <input
+                  name="system::disabled_outlook_skills"
+                  type="hidden"
+                  value={disabledSkills.join(",")}
                 />
+                <IntegrationConfigCard
+                  title={t("agent.skill.outlook.configuration")}
+                  configuredLabel={
+                    connected ? t("agent.skill.outlook.configured") : null
+                  }
+                  expanded={configExpanded}
+                  onExpandedChange={setConfigExpanded}
+                >
+                  <OutlookConnection
+                    status={status}
+                    credentials={credentials}
+                    setCredentials={setCredentials}
+                    applyStatus={applyStatus}
+                    notice={notice}
+                    setNotice={setNotice}
+                    onRevoked={() => setConfigExpanded(true)}
+                  />
+                </IntegrationConfigCard>
 
-                {isConfigured && (
-                  <SkillsSection
-                    skillCategories={skillCategories}
+                {connected && (
+                  <SkillToggleList
+                    categories={getOutlookSkills(t)}
                     disabledSkills={disabledSkills}
                     onToggle={toggleOutlookSkill}
                   />
@@ -286,412 +315,469 @@ export default function OutlookSkillPanel({
   );
 }
 
-function ConfigurationSection({
-  clientId,
-  setClientId,
-  tenantId,
-  setTenantId,
-  clientSecret,
-  setClientSecret,
-  authType,
-  setAuthType,
-  setHasChanges,
-  hasCredentials,
-  isAuthenticated,
-  isConfigured,
-  defaultExpanded = true,
-  onStartAuth,
-  onRevokeAuth,
-  authLoading,
+/**
+ * Azure setup steps, credentials and the Microsoft connection. The
+ * credentials are saved by "Save and connect" (they have no `name` and never
+ * mark the page as modified), because a new app or secret needs a new sign-in.
+ */
+function OutlookConnection({
+  status,
+  credentials,
+  setCredentials,
+  applyStatus,
+  notice,
+  setNotice,
+  onRevoked,
 }) {
   const { t } = useTranslation();
-  const [expanded, setExpanded] = useState(defaultExpanded);
-  const showTenantId = authType === "organization";
+  const id = useId();
+  const fieldIds = {
+    authType: `${id}-auth-type`,
+    clientId: `${id}-client-id`,
+    tenantId: `${id}-tenant-id`,
+    clientSecret: `${id}-client-secret`,
+    redirect: `${id}-redirect`,
+  };
+  const saveNoteId = `${id}-save-note`;
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [authBusy, setAuthBusy] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [awaitingAuth, setAwaitingAuth] = useState(false);
+  const [popupUrl, setPopupUrl] = useState(null);
+  const [revokeOpen, setRevokeOpen] = useState(false);
+  const [revokeBusy, setRevokeBusy] = useState(false);
+  const checkingRef = useRef(false);
+  const revokeButtonRef = useRef(null);
+  const focusRevokeAfterConnect = useRef(false);
 
-  return (
-    <div className="border border-theme-sidebar-border/50 rounded-lg overflow-hidden mt-2">
-      <button
-        type="button"
-        onClick={() => setExpanded(!expanded)}
-        className="border-none w-full flex items-center justify-between p-3 bg-theme-bg-secondary/30 hover:bg-theme-bg-secondary/50 transition-colors"
-      >
-        <div className="flex items-center gap-x-2">
-          <span className="text-theme-text-primary font-semibold text-sm">
-            {t("agent.skill.outlook.configuration")}
-          </span>
-          {isConfigured && (
-            <div className="flex items-center gap-x-1">
-              <CircleCheck
-                strokeWidth={1.5}
-                size={14}
-                className="text-green-500"
-              />
-              <span className="text-xs text-green-500">
-                {t("agent.skill.outlook.configured")}
-              </span>
-            </div>
-          )}
-        </div>
-        <ChevronDown
-          strokeWidth={1.5}
-          size={16}
-          className={`text-theme-text-secondary transition-transform ${expanded ? "rotate-180" : ""}`}
-        />
-      </button>
+  const { draft, saved } = credentials;
+  const connected = status.isAuthenticated && status.hasCredentials;
+  const credentialsChanged = !sameForm(draft, saved);
+  const redirectUri = outlookRedirectUri();
 
-      {expanded && (
-        <div className="p-3 flex flex-col gap-y-4 border-t border-theme-sidebar-border/50">
-          <div className="flex flex-col gap-y-2">
-            <div className="flex items-center gap-x-2">
-              <label className="text-theme-text-primary text-sm font-medium">
-                {t("agent.skill.outlook.authType")}
-              </label>
-              <Info
-                strokeWidth={1.5}
-                data-tooltip-id="auth-type-tooltip"
-                size={16}
-                className="text-theme-text-secondary"
-              />
-              <Tooltip
-                id="auth-type-tooltip"
-                place="top"
-                delayShow={300}
-                className="tooltip !text-xs !opacity-100 max-w-xs"
-              >
-                {t("agent.skill.outlook.authTypeHelp")}
-              </Tooltip>
-            </div>
-            <select
-              value={authType}
-              onChange={(e) => {
-                setAuthType(e.target.value);
-                setHasChanges(true);
-              }}
-              className="w-full px-3 py-2 bg-theme-bg-primary border border-theme-sidebar-border rounded-lg text-theme-text-primary text-sm"
-            >
-              <option value="common">
-                {t("agent.skill.outlook.authTypeCommon")}
-              </option>
-              <option value="consumers">
-                {t("agent.skill.outlook.authTypeConsumers")}
-              </option>
-              <option value="organization">
-                {t("agent.skill.outlook.authTypeOrganization")}
-              </option>
-            </select>
-          </div>
+  function updateField(key, value) {
+    setCredentials((prev) => ({
+      ...prev,
+      draft: { ...prev.draft, [key]: value },
+    }));
+    if (fieldErrors[key])
+      setFieldErrors((prev) => ({ ...prev, [key]: undefined }));
+  }
 
-          <div className="flex flex-col gap-y-2">
-            <div className="flex items-center gap-x-2">
-              <label className="text-theme-text-primary text-sm font-medium">
-                {t("agent.skill.outlook.clientId")}
-              </label>
-              <Info
-                strokeWidth={1.5}
-                data-tooltip-id="client-id-tooltip"
-                size={16}
-                className="text-theme-text-secondary"
-              />
-              <Tooltip
-                id="client-id-tooltip"
-                place="top"
-                delayShow={300}
-                className="tooltip !text-xs !opacity-100"
-              >
-                {t("agent.skill.outlook.clientIdHelp")}
-              </Tooltip>
-            </div>
-            <input
-              type="text"
-              value={clientId}
-              onChange={(e) => {
-                setClientId(e.target.value);
-                setHasChanges(true);
-              }}
-              placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-              className="w-full px-3 py-2 bg-theme-bg-primary border border-theme-sidebar-border rounded-lg text-theme-text-primary text-sm placeholder:text-theme-text-secondary/50"
-            />
-          </div>
-
-          {showTenantId && (
-            <div className="flex flex-col gap-y-2">
-              <div className="flex items-center gap-x-2">
-                <label className="text-theme-text-primary text-sm font-medium">
-                  {t("agent.skill.outlook.tenantId")}
-                </label>
-                <Info
-                  strokeWidth={1.5}
-                  data-tooltip-id="tenant-id-tooltip"
-                  size={16}
-                  className="text-theme-text-secondary"
-                />
-                <Tooltip
-                  id="tenant-id-tooltip"
-                  place="top"
-                  delayShow={300}
-                  className="tooltip !text-xs !opacity-100"
-                >
-                  {t("agent.skill.outlook.tenantIdHelp")}
-                </Tooltip>
-              </div>
-              <input
-                type="text"
-                value={tenantId}
-                onChange={(e) => {
-                  setTenantId(e.target.value);
-                  setHasChanges(true);
-                }}
-                placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-                className="w-full px-3 py-2 bg-theme-bg-primary border border-theme-sidebar-border rounded-lg text-theme-text-primary text-sm placeholder:text-theme-text-secondary/50"
-              />
-            </div>
-          )}
-
-          <div className="flex flex-col gap-y-2">
-            <div className="flex items-center gap-x-2">
-              <label className="text-theme-text-primary text-sm font-medium">
-                {t("agent.skill.outlook.clientSecret")}
-              </label>
-              <Info
-                strokeWidth={1.5}
-                data-tooltip-id="client-secret-tooltip"
-                size={16}
-                className="text-theme-text-secondary"
-              />
-              <Tooltip
-                id="client-secret-tooltip"
-                place="top"
-                delayShow={300}
-                className="tooltip !text-xs !opacity-100"
-              >
-                {t("agent.skill.outlook.clientSecretHelp")}
-              </Tooltip>
-            </div>
-            <input
-              type="password"
-              value={clientSecret}
-              onChange={(e) => {
-                setClientSecret(e.target.value);
-                setHasChanges(true);
-              }}
-              placeholder="Your client secret..."
-              className="w-full px-3 py-2 bg-theme-bg-primary border border-theme-sidebar-border rounded-lg text-theme-text-primary text-sm placeholder:text-theme-text-secondary/50"
-            />
-          </div>
-
-          {!hasCredentials && (
-            <div className="flex items-center gap-x-2 p-3 bg-orange-500/10 border border-orange-500/30 rounded-lg">
-              <TriangleAlert
-                strokeWidth={1.5}
-                size={20}
-                className="text-orange-500 shrink-0"
-              />
-              <p className="text-orange-500 text-xs">
-                {t("agent.skill.outlook.configurationRequired")}
-              </p>
-            </div>
-          )}
-
-          {hasCredentials && !isAuthenticated && (
-            <div className="flex flex-col gap-y-3">
-              <div className="flex items-center gap-x-2 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-                <Info
-                  strokeWidth={1.5}
-                  size={20}
-                  className="text-blue-500 shrink-0"
-                />
-                <p className="text-blue-500 text-xs">
-                  {t("agent.skill.outlook.authRequired")}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={onStartAuth}
-                disabled={authLoading}
-                className="flex items-center justify-center gap-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white text-sm font-medium rounded-lg transition-colors"
-              >
-                {authLoading ? (
-                  <LoaderCircle
-                    strokeWidth={1.5}
-                    size={16}
-                    className="animate-spin"
-                  />
-                ) : (
-                  <SquareArrowOutUpRight strokeWidth={1.5} size={16} />
-                )}
-                {t("agent.skill.outlook.authenticateWithMicrosoft")}
-              </button>
-            </div>
-          )}
-
-          {hasCredentials && isAuthenticated && (
-            <div className="flex flex-col gap-y-3">
-              <div className="flex items-center gap-x-2 p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
-                <CircleCheck
-                  strokeWidth={1.5}
-                  size={20}
-                  className="text-green-500 shrink-0"
-                />
-                <p className="text-green-500 text-xs">
-                  {t("agent.skill.outlook.authenticated")}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={onRevokeAuth}
-                disabled={authLoading}
-                className="flex items-center justify-center gap-x-2 px-4 py-2 bg-red-600/20 hover:bg-red-600/30 border border-red-600/50 text-red-500 text-sm font-medium rounded-lg transition-colors"
-              >
-                {authLoading ? (
-                  <LoaderCircle
-                    strokeWidth={1.5}
-                    size={16}
-                    className="animate-spin"
-                  />
-                ) : (
-                  <CircleX strokeWidth={1.5} size={16} />
-                )}
-                {t("agent.skill.outlook.revokeAccess")}
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function SkillSearchInput({ onSearch }) {
-  const { t } = useTranslation();
-  const inputRef = useRef(null);
-
-  const debouncedSearch = useMemo(
-    () =>
-      debounce((value) => {
-        onSearch(value);
-      }, 300),
-    [onSearch]
-  );
-
-  useEffect(() => {
-    return () => {
-      debouncedSearch.cancel();
-    };
-  }, [debouncedSearch]);
-
-  const handleChange = (e) => {
-    debouncedSearch(e.target.value);
+  // Credential inputs are saved by "Save and connect", not by the page form.
+  const fieldChange = (key) => (e) => {
+    e.stopPropagation();
+    updateField(key, e.target.value);
   };
 
+  const checkStatus = useCallback(
+    async ({ announce = false, afterSignIn = false } = {}) => {
+      if (checkingRef.current) return;
+      checkingRef.current = true;
+      setChecking(true);
+      const res = await OutlookAgent.getStatus();
+      checkingRef.current = false;
+      setChecking(false);
+      if (!res?.success) {
+        if (announce)
+          setNotice({
+            tone: "error",
+            text: t("agent-integrations.outlook.status-error"),
+          });
+        return;
+      }
+      applyStatus(res);
+      if (res.isAuthenticated && res.hasCredentials) {
+        if (announce || afterSignIn) {
+          focusRevokeAfterConnect.current = true;
+          setNotice({
+            tone: "success",
+            text: t("agent-integrations.outlook.auth-success"),
+          });
+        }
+        setAwaitingAuth(false);
+        setPopupUrl(null);
+      } else if (announce) {
+        setNotice({
+          tone: "info",
+          text: t("agent-integrations.outlook.not-connected-yet"),
+        });
+      }
+    },
+    [applyStatus]
+  );
+
+  // Back from the Microsoft tab: this tab does not get the callback, so ask.
+  useEffect(() => {
+    if (!awaitingAuth) return;
+    const onReturn = () => {
+      if (document.visibilityState === "visible")
+        checkStatus({ afterSignIn: true });
+    };
+    document.addEventListener("visibilitychange", onReturn);
+    window.addEventListener("focus", onReturn);
+    return () => {
+      document.removeEventListener("visibilitychange", onReturn);
+      window.removeEventListener("focus", onReturn);
+    };
+  }, [awaitingAuth, checkStatus]);
+
+  // The connect button is replaced by the revoke button: keep the keyboard there.
+  useEffect(() => {
+    if (!focusRevokeAfterConnect.current || !connected) return;
+    focusRevokeAfterConnect.current = false;
+    const active = document.activeElement;
+    if (!active || active === document.body) revokeButtonRef.current?.focus();
+  }, [connected]);
+
+  async function handleConnect() {
+    const errors = validateForm(draft, t);
+    setFieldErrors(errors);
+    const firstInvalid = ["clientId", "tenantId", "clientSecret"].find(
+      (key) => errors[key]
+    );
+    if (firstInvalid) {
+      document.getElementById(fieldIds[firstInvalid])?.focus();
+      return;
+    }
+
+    setAuthBusy(true);
+    setNotice(null);
+    setPopupUrl(null);
+    const data = await OutlookAgent.saveCredentialsAndGetAuthUrl({
+      clientId: draft.clientId.trim(),
+      tenantId: draft.tenantId.trim(),
+      clientSecret: draft.clientSecret,
+      authType: draft.authType,
+    });
+    if (!data?.success || !data.url) {
+      setAuthBusy(false);
+      const { message, detail } = serverErrorParts(
+        data?.error,
+        t,
+        "agent-integrations.outlook.connect-error"
+      );
+      setNotice({ tone: "error", text: message, detail });
+      return;
+    }
+
+    // Open the tab first: browsers only allow it shortly after the click.
+    const authWindow = window.open(data.url, "_blank");
+    if (authWindow) {
+      try {
+        authWindow.opener = null;
+      } catch {}
+      setNotice({
+        tone: "info",
+        text: t("agent-integrations.outlook.auth-pending"),
+      });
+    } else {
+      setPopupUrl(data.url);
+    }
+    setAwaitingAuth(true);
+
+    // The credentials are saved now; show them as the server keeps them.
+    const res = await OutlookAgent.getStatus();
+    if (res?.success) applyStatus(res, { resetForm: true });
+    setAuthBusy(false);
+  }
+
+  async function handleRevoke() {
+    setRevokeBusy(true);
+    const res = await OutlookAgent.revokeAccess();
+    if (!res?.success) {
+      setRevokeBusy(false);
+      setRevokeOpen(false);
+      const { message, detail } = serverErrorParts(
+        res?.error,
+        t,
+        "agent-integrations.outlook.revoke-error"
+      );
+      setNotice({ tone: "error", text: message, detail });
+      return;
+    }
+    const statusRes = await OutlookAgent.getStatus();
+    flushSync(() => {
+      applyStatus(statusRes?.success ? statusRes : {}, { resetForm: true });
+      setRevokeBusy(false);
+      setRevokeOpen(false);
+      setAwaitingAuth(false);
+      setPopupUrl(null);
+      setFieldErrors({});
+      setNotice({
+        tone: "success",
+        text: t("agent-integrations.outlook.revoked"),
+      });
+      onRevoked?.();
+    });
+    // The revoke button is gone: continue at the first credential.
+    document.getElementById(fieldIds.clientId)?.focus();
+  }
+
+  const connectLabel = connected
+    ? t("agent-integrations.outlook.save-reconnect")
+    : t("agent-integrations.outlook.save-connect");
+  const showConnect = !connected || credentialsChanged;
+
   return (
-    <div className="relative">
-      <input
-        ref={inputRef}
-        type="search"
-        placeholder={t("agent.skill.outlook.searchSkills")}
-        onChange={handleChange}
-        className="w-full pl-9 pr-3 py-2 bg-theme-bg-primary border border-theme-sidebar-border rounded-lg text-theme-text-primary text-sm placeholder:text-theme-text-secondary/50 search-input"
-      />
-      <Search
-        strokeWidth={1.5}
-        size={16}
-        className="absolute left-3 top-1/2 -translate-y-1/2 text-theme-text-secondary"
-      />
-    </div>
+    <>
+      <div className="flex flex-col gap-y-2">
+        <h4 className="text-sm font-semibold text-theme-text-primary">
+          {t("agent-integrations.outlook.steps-title")}
+        </h4>
+        <ol className="list-decimal ml-5 flex flex-col gap-y-1 text-xs text-theme-text-secondary">
+          <li>
+            <Trans
+              i18nKey="agent-integrations.outlook.step-register"
+              components={{
+                anchor: (
+                  <ExternalLink
+                    href={AZURE_PORTAL_URL}
+                    className={LINK_CLASS}
+                  />
+                ),
+              }}
+            />
+          </li>
+          <li>{t("agent-integrations.outlook.step-redirect")}</li>
+          <li>{t("agent-integrations.outlook.step-permissions")}</li>
+          <li>{t("agent-integrations.outlook.step-secret")}</li>
+          <li>{t("agent-integrations.outlook.step-copy")}</li>
+        </ol>
+      </div>
+
+      <div className="flex flex-col">
+        <label htmlFor={fieldIds.redirect} className={FIELD_LABEL}>
+          {t("agent-integrations.outlook.redirect-uri")}
+        </label>
+        <div className="flex items-center gap-x-2">
+          <input
+            id={fieldIds.redirect}
+            type="text"
+            readOnly
+            value={redirectUri}
+            onFocus={(e) => e.target.select()}
+            aria-describedby={`${fieldIds.redirect}-help`}
+            className={`${FIELD_INPUT} font-mono`}
+          />
+          <CopyButton
+            text={redirectUri}
+            label={t("agent-integrations.outlook.copy-redirect-uri")}
+          />
+        </div>
+        <p id={`${fieldIds.redirect}-help`} className={FIELD_HELP}>
+          {t("agent-integrations.outlook.redirect-uri-help")}
+        </p>
+      </div>
+
+      <div className="flex flex-col">
+        <FieldLabel
+          htmlFor={fieldIds.authType}
+          label={t("agent.skill.outlook.authType")}
+          tip={t("agent.skill.outlook.authTypeHelp")}
+        />
+        <select
+          id={fieldIds.authType}
+          value={draft.authType}
+          onChange={fieldChange("authType")}
+          className={FIELD_SELECT}
+        >
+          <option value="common">
+            {t("agent.skill.outlook.authTypeCommon")}
+          </option>
+          <option value="consumers">
+            {t("agent.skill.outlook.authTypeConsumers")}
+          </option>
+          <option value="organization">
+            {t("agent.skill.outlook.authTypeOrganization")}
+          </option>
+        </select>
+      </div>
+
+      <CredentialField
+        id={fieldIds.clientId}
+        label={t("agent.skill.outlook.clientId")}
+        help={t("agent.skill.outlook.clientIdHelp")}
+        error={fieldErrors.clientId}
+      >
+        {(a11y) => (
+          <input
+            {...a11y}
+            type="text"
+            value={draft.clientId}
+            onChange={fieldChange("clientId")}
+            placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            autoComplete="off"
+            spellCheck={false}
+            className={FIELD_INPUT}
+          />
+        )}
+      </CredentialField>
+
+      {draft.authType === "organization" && (
+        <CredentialField
+          id={fieldIds.tenantId}
+          label={t("agent.skill.outlook.tenantId")}
+          help={t("agent.skill.outlook.tenantIdHelp")}
+          error={fieldErrors.tenantId}
+        >
+          {(a11y) => (
+            <input
+              {...a11y}
+              type="text"
+              value={draft.tenantId}
+              onChange={fieldChange("tenantId")}
+              placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+              autoComplete="off"
+              spellCheck={false}
+              className={FIELD_INPUT}
+            />
+          )}
+        </CredentialField>
+      )}
+
+      <CredentialField
+        id={fieldIds.clientSecret}
+        label={t("agent.skill.outlook.clientSecret")}
+        help={t("agent.skill.outlook.clientSecretHelp")}
+        error={fieldErrors.clientSecret}
+      >
+        {(a11y) => (
+          <SecretInput
+            {...a11y}
+            value={draft.clientSecret}
+            onChange={fieldChange("clientSecret")}
+          />
+        )}
+      </CredentialField>
+
+      {connected && credentialsChanged && (
+        <StatusNote tone="warning">
+          {t("agent-integrations.outlook.reconnect-needed")}
+        </StatusNote>
+      )}
+      {connected && !credentialsChanged && notice?.tone !== "success" && (
+        <StatusNote tone="success">
+          {t("agent.skill.outlook.authenticated")}
+        </StatusNote>
+      )}
+      {!connected && !status.hasCredentials && (
+        <StatusNote tone="warning">
+          {t("agent.skill.outlook.configurationRequired")}
+        </StatusNote>
+      )}
+
+      {notice && (
+        <StatusNote tone={notice.tone} announce>
+          {notice.text}
+          <ServerErrorDetail detail={notice.detail} />
+        </StatusNote>
+      )}
+      {popupUrl && (
+        <StatusNote tone="warning" announce>
+          <p>{t("agent-integrations.outlook.popup-blocked")}</p>
+          <ExternalLink href={popupUrl} className={LINK_CLASS}>
+            {t("agent-integrations.outlook.open-sign-in")}
+          </ExternalLink>
+        </StatusNote>
+      )}
+
+      <div className="flex flex-col gap-y-3">
+        {showConnect && (
+          <>
+            <p id={saveNoteId} className="text-xs text-theme-text-secondary">
+              {t("agent-integrations.outlook.save-note")}
+            </p>
+            <CTAButton
+              type="button"
+              busy={authBusy}
+              onClick={handleConnect}
+              aria-describedby={saveNoteId}
+              className="!mr-0"
+            >
+              <SquareArrowOutUpRight
+                strokeWidth={1.5}
+                size={16}
+                aria-hidden="true"
+              />
+              {authBusy
+                ? t("agent-integrations.outlook.connecting")
+                : connectLabel}
+            </CTAButton>
+          </>
+        )}
+        <div className="flex flex-wrap gap-2">
+          {(awaitingAuth || (!connected && status.hasCredentials)) && (
+            <button
+              type="button"
+              aria-busy={checking || undefined}
+              aria-disabled={checking || undefined}
+              onClick={() => !checking && checkStatus({ announce: true })}
+              className={SECONDARY_BUTTON}
+            >
+              <RefreshCw
+                strokeWidth={1.5}
+                size={16}
+                aria-hidden="true"
+                className={checking ? "animate-spin" : ""}
+              />
+              {checking
+                ? t("agent-integrations.outlook.checking")
+                : t("agent-integrations.outlook.check-status")}
+            </button>
+          )}
+          {connected && (
+            <button
+              ref={revokeButtonRef}
+              type="button"
+              onClick={() => setRevokeOpen(true)}
+              className={DANGER_OUTLINE_BUTTON}
+            >
+              <CircleX strokeWidth={1.5} size={16} aria-hidden="true" />
+              {t("agent.skill.outlook.revokeAccess")}
+            </button>
+          )}
+        </div>
+      </div>
+
+      <ConfirmModal
+        isOpen={revokeOpen}
+        title={t("agent-integrations.outlook.revoke-title")}
+        confirmLabel={t("agent.skill.outlook.revokeAccess")}
+        busy={revokeBusy}
+        danger
+        onConfirm={handleRevoke}
+        onCancel={() => setRevokeOpen(false)}
+      >
+        <p>{t("agent-integrations.outlook.revoke-consequences")}</p>
+        <p>{t("agent-integrations.outlook.revoke-after")}</p>
+      </ConfirmModal>
+    </>
   );
 }
 
-function SkillsSection({ skillCategories, disabledSkills, onToggle }) {
-  const { t } = useTranslation();
-  const [searchTerm, setSearchTerm] = useState("");
-
-  const handleSearch = useCallback((value) => {
-    setSearchTerm(value);
-  }, []);
-
-  const filteredCategories = useMemo(
-    () => filterSkillCategories(skillCategories, searchTerm),
-    [skillCategories, searchTerm]
-  );
-
-  const hasResults = Object.keys(filteredCategories).length > 0;
-
+/** Labelled credential field with visible help and an inline error. */
+function CredentialField({ id, label, help, error, children }) {
+  const helpId = `${id}-help`;
+  const errorId = `${id}-error`;
   return (
-    <div className="flex flex-col mt-4 gap-y-4">
-      <SkillSearchInput onSearch={handleSearch} />
-      {hasResults ? (
-        <div className="flex flex-col gap-y-4">
-          {Object.entries(filteredCategories).map(([categoryKey, category]) => (
-            <CategorySection
-              key={categoryKey}
-              category={category}
-              disabledSkills={disabledSkills}
-              onToggle={onToggle}
-            />
-          ))}
-        </div>
-      ) : (
-        <p className="text-theme-text-secondary text-sm text-center py-4">
-          {t("agent.skill.outlook.noSkillsFound")}
+    <div className="flex flex-col">
+      <label htmlFor={id} className={FIELD_LABEL}>
+        {label}
+      </label>
+      {children({
+        id,
+        "aria-describedby": error ? `${errorId} ${helpId}` : helpId,
+        "aria-invalid": error ? true : undefined,
+      })}
+      {error && (
+        <p id={errorId} role="alert" className={FIELD_ERROR}>
+          {error}
         </p>
       )}
+      <p id={helpId} className={FIELD_HELP}>
+        {help}
+      </p>
     </div>
-  );
-}
-
-function CategorySection({ category, disabledSkills, onToggle }) {
-  const Icon = category.icon;
-
-  return (
-    <div className="flex flex-col gap-y-2">
-      <div className="flex items-center gap-x-2 px-1">
-        <Icon size={18} className="text-theme-text-primary" />
-        <span className="text-sm font-medium text-theme-text-primary">
-          {category.title}
-        </span>
-      </div>
-      <div className="flex flex-col gap-y-2">
-        {category.skills.map((skill) => (
-          <SkillRow
-            key={skill.name}
-            skill={skill}
-            disabled={disabledSkills.includes(skill.name)}
-            onToggle={() => onToggle(skill.name)}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function SkillRow({ skill, disabled, onToggle }) {
-  return (
-    <div
-      className={`flex items-center justify-between p-2 rounded-lg border ${
-        disabled
-          ? "bg-theme-bg-secondary/30 border-theme-sidebar-border/30"
-          : "bg-theme-bg-secondary/50 border-theme-sidebar-border/50"
-      }`}
-    >
-      <div className="flex flex-col">
-        <span className="text-sm font-medium text-slate-100 light:text-slate-900">
-          {skill.title}
-        </span>
-        <span className="text-xs text-slate-100/50 light:text-slate-900/50">
-          {skill.description}
-        </span>
-      </div>
-      <SimpleToggleSwitch enabled={!disabled} onChange={onToggle} size="md" />
-    </div>
-  );
-}
-
-function HiddenFormInputs({ disabledSkills }) {
-  return (
-    <input
-      name="system::disabled_outlook_skills"
-      type="hidden"
-      value={disabledSkills.join(",")}
-    />
   );
 }

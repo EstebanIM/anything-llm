@@ -1,105 +1,96 @@
-import React, { useEffect, useState } from "react";
-import System from "../../../models/system";
-import { AUTH_TOKEN } from "../../../utils/constants";
-import paths from "../../../utils/paths";
-import Modal from "@/components/lib/Modal";
-import { useModal } from "@/hooks/useModal";
-import RecoveryCodeModal from "@/components/Modals/DisplayRecoveryCodeModal";
+import React, { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
-import useCustomAppName from "@/hooks/useCustomAppName";
 import { Key } from "lucide-react";
-import { AuthError, AuthHeader, AuthInput, AuthSubmitButton } from "./AuthUI";
+import System from "@/models/system";
+import { authErrorMessage } from "@/utils/authErrors";
+import useCustomAppName from "@/hooks/useCustomAppName";
+import usePageTitle from "@/hooks/usePageTitle";
+import {
+  AuthError,
+  AuthHeader,
+  AuthInput,
+  AuthNotice,
+  AuthSubmitButton,
+  useAuthNotice,
+} from "./AuthUI";
+import { startSession } from "./session";
+
+// The server never sends recovery codes in single-user mode: there is no
+// account to recover, only the instance password.
 export default function SingleUserAuth() {
   const { t } = useTranslation();
   const { brandName } = useCustomAppName();
-  const [loading, setLoading] = useState(false);
+  const passwordId = useId();
+  const errorId = useId();
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
-  const [recoveryCodes, setRecoveryCodes] = useState([]);
-  const [downloadComplete, setDownloadComplete] = useState(false);
-  const [token, setToken] = useState(null);
-  const {
-    isOpen: isRecoveryCodeModalOpen,
-    openModal: openRecoveryCodeModal,
-    closeModal: closeRecoveryCodeModal,
-  } = useModal();
-  const handleLogin = async (e) => {
-    setError(null);
-    setLoading(true);
-    e.preventDefault();
-    const data = {};
-    const form = new FormData(e.target);
-    for (var [key, value] of form.entries()) data[key] = value;
-    const { valid, token, message, recoveryCodes } =
-      await System.requestToken(data);
-    if (valid && !!token) {
-      setToken(token);
-      if (recoveryCodes) {
-        setRecoveryCodes(recoveryCodes);
-        openRecoveryCodeModal();
-      } else {
-        window.localStorage.setItem(AUTH_TOKEN, token);
-        window.location = paths.home();
-      }
-    } else {
-      setError(message);
-      setLoading(false);
-    }
-    setLoading(false);
-  };
-  const handleDownloadComplete = () => {
-    setDownloadComplete(true);
-  };
-  useEffect(() => {
-    if (downloadComplete && token) {
-      window.localStorage.setItem(AUTH_TOKEN, token);
-      window.location = paths.home();
-    }
-  }, [downloadComplete, token]);
-  return (
-    <>
-      <form
-        onSubmit={handleLogin}
-        className="flex w-full flex-col items-center"
-      >
-        <AuthHeader
-          title={t("login.multi-user.welcome")}
-          description={t("login.sign-in", {
-            appName: brandName,
-          })}
-        />
-        <div className="flex w-full flex-col gap-4">
-          <AuthInput
-            icon={Key}
-            label="Password"
-            name="password"
-            type="password"
-            required={true}
-            autoComplete="off"
-          />
-          <AuthError message={error} />
-        </div>
-        <div className="mt-4 w-full">
-          <AuthSubmitButton
-            loading={loading}
-            loadingText={t("login.multi-user.validating")}
-            type="submit"
-          >
-            {t("login.multi-user.login")}
-          </AuthSubmitButton>
-        </div>
-      </form>
+  const [notice, setNotice] = useAuthNotice();
+  usePageTitle(t("login.multi-user.login"));
 
-      <Modal
-        isOpen={isRecoveryCodeModalOpen}
-        noPortal={true}
-        onClose={closeRecoveryCodeModal}
-      >
-        <RecoveryCodeModal
-          recoveryCodes={recoveryCodes}
-          onDownloadComplete={handleDownloadComplete}
-          onClose={closeRecoveryCodeModal}
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    if (busy) return;
+    setError(null);
+    setNotice(null);
+    setBusy(true);
+    const form = new FormData(e.target);
+    const { valid, token, message } = await System.requestToken({
+      password: form.get("password"),
+    });
+    if (valid && !!token) {
+      startSession({ token });
+      return;
+    }
+    setBusy(false);
+    const wrongPassword = /^\[003\]/.test(String(message || ""));
+    setError({ message: authErrorMessage(message, t), wrongPassword });
+    if (wrongPassword) {
+      const field = document.getElementById(passwordId);
+      field?.focus();
+      field?.select();
+    }
+  };
+
+  return (
+    <form onSubmit={handleLogin} className="flex w-full flex-col items-center">
+      <AuthHeader
+        title={t("auth-pages.login.title", { brandName })}
+        description={t("auth-pages.single.description")}
+      />
+      <AuthNotice reason={notice} />
+      {/* Password managers need a username to file the password under. */}
+      <input
+        type="text"
+        autoComplete="username"
+        value={brandName}
+        readOnly={true}
+        hidden={true}
+      />
+      <div className="flex w-full flex-col gap-4">
+        <AuthInput
+          id={passwordId}
+          icon={Key}
+          label={t("login.multi-user.placeholder-password")}
+          name="password"
+          type="password"
+          required={true}
+          autoComplete="current-password"
+          invalid={!!error?.wrongPassword}
+          describedBy={error?.wrongPassword ? errorId : undefined}
         />
-      </Modal>
-    </>
+        <AuthError id={errorId} message={error?.message} />
+      </div>
+      <div className="mt-5 flex w-full flex-col items-center gap-3">
+        <AuthSubmitButton
+          busy={busy}
+          busyText={t("login.multi-user.validating")}
+        >
+          {t("login.multi-user.login")}
+        </AuthSubmitButton>
+        <p className="text-center text-[12px] leading-4 text-[#374151]">
+          {t("auth-pages.single.forgot")}
+        </p>
+      </div>
+    </form>
   );
 }

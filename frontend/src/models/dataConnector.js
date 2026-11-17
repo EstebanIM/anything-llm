@@ -1,6 +1,5 @@
 import { API_BASE } from "@/utils/constants";
 import { baseHeaders } from "@/utils/request";
-import showToast from "@/utils/toast";
 
 const DataConnector = {
   github: {
@@ -21,7 +20,6 @@ const DataConnector = {
         })
         .catch((e) => {
           console.error(e);
-          showToast(e.message, "error");
           return { branches: [], error: e.message };
         });
     },
@@ -60,7 +58,6 @@ const DataConnector = {
         })
         .catch((e) => {
           console.error(e);
-          showToast(e.message, "error");
           return { branches: [], error: e.message };
         });
     },
@@ -99,7 +96,6 @@ const DataConnector = {
         })
         .catch((e) => {
           console.error(e);
-          showToast(e.message, "error");
           return { branches: [], error: e.message };
         });
     },

@@ -1,38 +1,56 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useId } from "react";
+import { useTranslation } from "react-i18next";
 import System from "@/models/system";
+import {
+  FIELD_COL,
+  FIELD_INPUT,
+  FIELD_ROW,
+  SECRET_MASK,
+  SecretInput,
+} from "@/components/ProviderFields";
+import {
+  FieldLabel,
+  ModelSelectField,
+  blurOnWheel,
+  modelStatus,
+} from "@/components/LLMSelection/FormParts";
 
 export default function GiteeAIOptions({ settings }) {
+  const { t } = useTranslation();
+  const id = useId();
+
   return (
-    <div className="flex gap-[36px] mt-1.5">
-      <div className="flex flex-col w-60">
-        <label className="text-white text-sm font-semibold block mb-3">
-          API Key
-        </label>
-        <input
-          type="password"
+    <div className={`${FIELD_ROW} mt-1.5`}>
+      <div className={FIELD_COL}>
+        <FieldLabel
+          htmlFor={`${id}-key`}
+          label={t("provider-fields.api-key")}
+        />
+        <SecretInput
+          id={`${id}-key`}
           name="GiteeAIApiKey"
-          className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-          placeholder="GiteeAI API Key"
-          defaultValue={settings?.GiteeAIApiKey ? "*".repeat(20) : ""}
+          defaultValue={settings?.GiteeAIApiKey ? SECRET_MASK : ""}
           required={true}
-          autoComplete="off"
-          spellCheck={false}
         />
       </div>
       {!settings?.credentialsOnly && (
         <>
           <GiteeAIModelSelection settings={settings} />
-          <div className="flex flex-col w-60">
-            <label className="text-white text-sm font-semibold block mb-2">
-              Model context window
-            </label>
+          <div className={FIELD_COL}>
+            <FieldLabel
+              htmlFor={`${id}-context`}
+              label={t("provider-fields.context-window")}
+            />
             <input
+              id={`${id}-context`}
               type="number"
               name="GiteeAITokenLimit"
-              className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-              placeholder="Content window limit (eg: 8192)"
+              className={FIELD_INPUT}
+              placeholder={t("llm-fields.common.context-window-placeholder", {
+                example: 8192,
+              })}
               min={1}
-              onScroll={(e) => e.target.blur()}
+              onWheel={blurOnWheel}
               defaultValue={settings?.GiteeAITokenLimit}
               required={true}
               autoComplete="off"
@@ -45,13 +63,16 @@ export default function GiteeAIOptions({ settings }) {
 }
 
 function GiteeAIModelSelection({ settings }) {
+  const { t } = useTranslation();
   const [groupedModels, setGroupedModels] = useState({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     async function findCustomModels() {
       setLoading(true);
-      const { models = [] } = await System.customModels("giteeai");
+      const { models = [], error } = await System.customModels("giteeai");
       if (models?.length > 0) {
         const modelsByOrganization = models.reduce((acc, model) => {
           acc[model.organization] = acc[model.organization] || [];
@@ -61,56 +82,36 @@ function GiteeAIModelSelection({ settings }) {
         setGroupedModels(modelsByOrganization);
       }
 
+      setError(error || null);
       setLoading(false);
     }
     findCustomModels();
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="flex flex-col w-60">
-        <label className="text-white text-sm font-semibold block mb-3">
-          Chat Model Selection
-        </label>
-        <select
-          name="GiteeAIModelPref"
-          disabled={true}
-          className="border-none bg-theme-settings-input-bg border-gray-500 text-white text-sm rounded-lg block w-full p-2.5"
-        >
-          <option disabled={true} selected={true}>
-            -- loading available models --
-          </option>
-        </select>
-      </div>
-    );
-  }
+  }, [attempt]);
 
   return (
-    <div className="flex flex-col w-60">
-      <label className="text-white text-sm font-semibold block mb-3">
-        Chat Model Selection
-      </label>
-      <select
-        name="GiteeAIModelPref"
-        required={true}
-        className="border-none bg-theme-settings-input-bg border-gray-500 text-white text-sm rounded-lg block w-full p-2.5"
-      >
-        {Object.keys(groupedModels)
-          .sort()
-          .map((organization) => (
-            <optgroup key={organization} label={organization}>
-              {groupedModels[organization].map((model) => (
-                <option
-                  key={model.id}
-                  value={model.id}
-                  selected={settings?.GiteeAIModelPref === model.id}
-                >
-                  {model.name}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-      </select>
-    </div>
+    <ModelSelectField
+      name="GiteeAIModelPref"
+      label={t("provider-fields.chat-model")}
+      status={modelStatus({
+        loading,
+        error,
+        count: Object.keys(groupedModels).length,
+      })}
+      error={error}
+      onRetry={() => setAttempt((n) => n + 1)}
+      defaultValue={settings?.GiteeAIModelPref}
+    >
+      {Object.keys(groupedModels)
+        .sort()
+        .map((organization) => (
+          <optgroup key={organization} label={organization}>
+            {groupedModels[organization].map((model) => (
+              <option key={model.id} value={model.id}>
+                {model.name}
+              </option>
+            ))}
+          </optgroup>
+        ))}
+    </ModelSelectField>
   );
 }

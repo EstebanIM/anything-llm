@@ -5,6 +5,11 @@ export const REFETCH_LOGO_EVENT = "refetch-logo";
 
 export const LogoContext = createContext();
 
+/**
+ * `logo` follows the current theme. `loginLogo` is always the light-theme
+ * variant: the sign-in panel and the onboarding welcome are light surfaces in
+ * both themes, where the dark-theme logo (white text) would be unreadable.
+ */
 export function LogoProvider({ children }) {
   const [logo, setLogo] = useState("");
   const [loginLogo, setLoginLogo] = useState("");
@@ -12,16 +17,20 @@ export function LogoProvider({ children }) {
 
   async function fetchInstanceLogo() {
     try {
-      const { isCustomLogo, logoURL } = await System.fetchLogo();
-      if (isCustomLogo && logoURL) {
-        setLogo(logoURL);
-        setLoginLogo(logoURL);
-        setIsCustomLogo(true);
-      } else {
-        setLogo("");
-        setLoginLogo("");
-        setIsCustomLogo(false);
-      }
+      const [current, light] = await Promise.all([
+        System.fetchLogo(),
+        System.fetchLogo("light"),
+      ]);
+      const custom = !!(current?.isCustomLogo && current?.logoURL);
+      setLogo(custom ? current.logoURL : "");
+      setLoginLogo(
+        light?.isCustomLogo && light?.logoURL
+          ? light.logoURL
+          : custom
+            ? current.logoURL
+            : ""
+      );
+      setIsCustomLogo(custom || !!(light?.isCustomLogo && light?.logoURL));
     } catch (err) {
       setLogo("");
       setLoginLogo("");

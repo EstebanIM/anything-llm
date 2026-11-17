@@ -5,8 +5,7 @@ import System from "@/models/system";
 import { useModal } from "@/hooks/useModal";
 import AddPresetModal from "./SlashPresets/AddPresetModal";
 import EditPresetModal from "./SlashPresets/EditPresetModal";
-import PublishEntityModal from "@/components/CommunityHub/PublishEntityModal";
-import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import { PROMPT_INPUT_EVENT } from "@/components/WorkspaceChat/ChatContainer/PromptInput";
 import useToolsMenuItems from "../../useToolsMenuItems";
 import SlashCommandRow from "./SlashCommandRow";
@@ -17,6 +16,9 @@ export default function SlashCommandsTab({
   promptRef,
   highlightedIndex = -1,
   registerItemCount,
+  listboxId,
+  listboxLabelledBy,
+  getOptionId = (index) => `slash-command-${index}`,
 }) {
   const { t } = useTranslation();
   const {
@@ -29,14 +31,8 @@ export default function SlashCommandsTab({
     openModal: openEditModal,
     closeModal: closeEditModal,
   } = useModal();
-  const {
-    isOpen: isPublishModalOpen,
-    openModal: openPublishModal,
-    closeModal: closePublishModal,
-  } = useModal();
   const [presets, setPresets] = useState([]);
   const [selectedPreset, setSelectedPreset] = useState(null);
-  const [presetToPublish, setPresetToPublish] = useState(null);
   const [imageGenEnabled, setImageGenEnabled] = useState(false);
 
   useEffect(() => {
@@ -112,25 +108,34 @@ export default function SlashCommandsTab({
     [sendCommand, setShowing, promptRef]
   );
 
+  // "Add new" is the last option so it is reachable with the arrow keys too.
+  const navItems = useMemo(() => [...items, { type: "add-new" }], [items]);
+  const addNewIndex = items.length;
+
   useToolsMenuItems({
-    items,
+    items: navItems,
     highlightedIndex,
     onSelect: (item) => {
+      if (item.type === "add-new") return openAddModal();
       const text = item.autoSubmit ? item.command : `${item.command} `;
       handleUseCommand(text, item.autoSubmit);
     },
     registerItemCount,
   });
 
+  // Errors go back to the open dialog, next to the fields.
+  const presetError = (error) =>
+    serverErrorMessage(error, t, "notices.preset-save-failed", {
+      known: [["matches a system command", "chat-input.preset-reserved"]],
+    });
+
+  /** @returns {Promise<string|null>} translated error, or null when saved */
   const handleSavePreset = async (preset) => {
     const { error } = await System.createSlashCommandPreset(preset);
-    if (error) {
-      showToast(error, "error");
-      return false;
-    }
+    if (error) return presetError(error);
     fetchPresets();
     closeAddModal();
-    return true;
+    return null;
   };
 
   const handleEditPreset = (preset) => {
@@ -138,18 +143,17 @@ export default function SlashCommandsTab({
     openEditModal();
   };
 
+  /** @returns {Promise<string|null>} translated error, or null when saved */
   const handleUpdatePreset = async (updatedPreset) => {
     const { error } = await System.updateSlashCommandPreset(
       updatedPreset.id,
       updatedPreset
     );
-    if (error) {
-      showToast(error, "error");
-      return;
-    }
+    if (error) return presetError(error);
     fetchPresets();
     closeEditModal();
     setSelectedPreset(null);
+    return null;
   };
 
   const handleDeletePreset = async (presetId) => {
@@ -159,51 +163,56 @@ export default function SlashCommandsTab({
     setSelectedPreset(null);
   };
 
-  const handlePublishPreset = (preset) => {
-    setPresetToPublish({
-      name: preset.command.slice(1),
-      description: preset.description,
-      command: preset.command,
-      prompt: preset.prompt,
-    });
-    openPublishModal();
-  };
-
   return (
     <>
-      {items.map((item, index) => (
-        <SlashCommandRow
-          key={item.preset?.id ?? item.command}
-          command={item.command}
-          description={item.description}
-          onClick={() =>
-            handleUseCommand(
-              item.autoSubmit ? item.command : `${item.command} `,
-              item.autoSubmit
-            )
-          }
-          onEdit={item.preset ? () => handleEditPreset(item.preset) : undefined}
-          onPublish={
-            item.preset ? () => handlePublishPreset(item.preset) : undefined
-          }
-          showMenu={!!item.preset}
-          highlighted={highlightedIndex === index}
-        />
-      ))}
-
-      {/* Add new */}
       <div
-        onClick={openAddModal}
-        className="flex items-center gap-1.5 px-2 py-1 rounded cursor-pointer hover:bg-zinc-700/50 light:hover:bg-slate-100"
+        role="listbox"
+        id={listboxId}
+        aria-labelledby={listboxLabelledBy}
+        className="flex flex-col gap-1"
       >
-        <Plus
-          strokeWidth={1.5}
-          size={12}
-          className="text-white light:text-slate-900"
-        />
-        <span className="text-xs text-white light:text-slate-900">
-          {t("chat_window.add_new")}
-        </span>
+        {items.map((item, index) => (
+          <SlashCommandRow
+            key={item.preset?.id ?? item.command}
+            optionId={getOptionId(index)}
+            command={item.command}
+            description={item.description}
+            onClick={() =>
+              handleUseCommand(
+                item.autoSubmit ? item.command : `${item.command} `,
+                item.autoSubmit
+              )
+            }
+            onEdit={
+              item.preset ? () => handleEditPreset(item.preset) : undefined
+            }
+            showMenu={!!item.preset}
+            highlighted={highlightedIndex === index}
+          />
+        ))}
+
+        {/* Add new */}
+        <div
+          role="option"
+          id={getOptionId(addNewIndex)}
+          aria-selected={highlightedIndex === addNewIndex}
+          onClick={openAddModal}
+          className={`flex items-center gap-1.5 px-2 py-1 min-h-11 md:min-h-0 rounded cursor-pointer transition-colors duration-quick ${
+            highlightedIndex === addNewIndex
+              ? "bg-zinc-700/50 light:bg-slate-100"
+              : "hover:bg-zinc-700/50 light:hover:bg-slate-100"
+          }`}
+        >
+          <Plus
+            strokeWidth={1.5}
+            size={12}
+            aria-hidden="true"
+            className="text-white light:text-slate-900"
+          />
+          <span className="text-xs text-white light:text-slate-900">
+            {t("chat_window.add_new_preset").trim()}
+          </span>
+        </div>
       </div>
 
       {/* Modals */}
@@ -224,12 +233,6 @@ export default function SlashCommandsTab({
           preset={selectedPreset}
         />
       )}
-      <PublishEntityModal
-        show={isPublishModalOpen}
-        onClose={closePublishModal}
-        entityType="slash-command"
-        entity={presetToPublish}
-      />
     </>
   );
 }

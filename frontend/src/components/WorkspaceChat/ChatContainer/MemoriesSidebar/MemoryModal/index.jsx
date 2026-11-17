@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useId, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import Modal, {
   ModalHeader,
@@ -13,7 +13,8 @@ import Modal, {
  * @param {Object} props
  * @param {boolean} props.isOpen
  * @param {function} props.onClose
- * @param {function} props.onSubmit - Called with (content)
+ * @param {(content: string) => Promise<boolean>} props.onSubmit - Resolves to
+ *   whether the memory was saved; the modal stays open with the text if not.
  * @param {string} [props.initialContent] - Pre-filled content for editing
  * @param {"create"|"edit"} [props.mode]
  */
@@ -25,7 +26,15 @@ export default function MemoryModal({
   mode = "create",
 }) {
   const { t } = useTranslation();
+  const fieldId = useId();
+  const errorId = useId();
   const [content, setContent] = useState(initialContent);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+  const openRef = useRef(isOpen);
+  useEffect(() => {
+    openRef.current = isOpen;
+  }, [isOpen]);
   const isCreate = mode === "create";
   const [title, submitLabel, description] = useMemo(() => {
     if (isCreate) {
@@ -44,13 +53,25 @@ export default function MemoryModal({
   }, [isCreate, t]);
 
   useEffect(() => {
-    if (isOpen) setContent(initialContent);
+    if (!isOpen) return;
+    setContent(initialContent);
+    setSaving(false);
+    setError(null);
   }, [isOpen, initialContent]);
 
-  function handleSubmit() {
-    if (!content.trim()) return;
-    onSubmit(content.trim());
-    onClose();
+  async function handleSubmit() {
+    const value = content.trim();
+    if (!value || saving) return;
+    setSaving(true);
+    setError(null);
+    const saved = await Promise.resolve(onSubmit(value)).catch((e) => {
+      console.error(e);
+      return false;
+    });
+    if (!openRef.current) return;
+    setSaving(false);
+    if (saved) return onClose();
+    setError(t("chat-panels.memories.save-failed"));
   }
 
   return (
@@ -58,6 +79,7 @@ export default function MemoryModal({
       <ModalHeader title={title} subtitle={description} onClose={onClose} />
       <ModalBody>
         <ModalTextarea
+          id={fieldId}
           label={t("chat_window.memories.modal.label")}
           autoFocus
           onFocus={(e) => {
@@ -67,19 +89,32 @@ export default function MemoryModal({
           value={content}
           onChange={(e) => setContent(e.target.value)}
           placeholder={t("chat_window.memories.modal.placeholder")}
+          aria-invalid={!!error || undefined}
+          aria-describedby={error ? errorId : undefined}
+          className="text-base md:text-sm"
           rows={4}
         />
+        {error && (
+          <p
+            id={errorId}
+            role="alert"
+            className="text-sm text-red-300 light:text-red-700"
+          >
+            {error}
+          </p>
+        )}
       </ModalBody>
       <ModalFooter>
         <ModalSecondaryButton type="button" onClick={onClose}>
-          {t("chat_window.memories.modal.cancel")}
+          {t("settings-pages.cancel")}
         </ModalSecondaryButton>
         <ModalPrimaryButton
           type="button"
           onClick={handleSubmit}
           disabled={!content.trim()}
+          aria-disabled={saving || undefined}
         >
-          {submitLabel}
+          {saving ? t("common.saving") : submitLabel}
         </ModalPrimaryButton>
       </ModalFooter>
     </Modal>

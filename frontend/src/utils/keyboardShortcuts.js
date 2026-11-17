@@ -8,95 +8,236 @@ export const KEYBOARD_SHORTCUTS_HELP_EVENT = "keyboard-shortcuts-help";
 export const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
 
 /**
- * Keyboard shortcut definitions.
+ * Opens (true), closes (false) or toggles (undefined) the shortcuts help.
+ * @param {boolean} [show]
+ */
+export function showKeyboardShortcutsHelp(show = true) {
+  window.dispatchEvent(
+    new CustomEvent(KEYBOARD_SHORTCUTS_HELP_EVENT, { detail: { show } })
+  );
+}
+
+// `null` user = single-user mode, where everything is available.
+const canOpenSettings = (user) => !user || user.role !== "default";
+const isAdmin = (user) => !user || ["admin", "superadmin"].includes(user.role);
+
+/**
+ * @typedef {Object} Shortcut
+ * @property {string} id
+ * @property {string[][]} combos - alternatives; "Mod" is ⌘ on Mac and Ctrl elsewhere, "Ctrl" is Control everywhere
+ * @property {string} labelKey - translation key of what it does
+ * @property {"global"|"chat"} group - where it works (help dialog section)
+ * @property {string} [noteKey] - translation key with extra context
+ * @property {boolean} [allowInFields] - also acts while typing in a text field
+ * @property {(user: object|null) => boolean} [available] - roles that get it
+ * @property {(ctx: {navigate: import("react-router-dom").NavigateFunction}) => void} [action]
+ *   handled here; entries without it are handled where they live and only listed
+ */
+
+/**
+ * Single registry of the app's keyboard shortcuts: the help dialog lists it
+ * and `initKeyboardShortcuts` runs the entries with an `action`.
  *
  * @note Navigating actions MUST use the injected `navigate` (react-router)
  * rather than `window.location`. Router navigation is interceptable - it lets
  * ActiveGenerationGuard warn before a shortcut abandons an in-flight response -
  * and avoids a full page reload of the whole SPA.
  *
- * @type {Record<string, {translationKey: string, action: (ctx: {navigate: import("react-router-dom").NavigateFunction}) => void}>}
+ * @type {Shortcut[]}
  */
-export const SHORTCUTS = {
-  "⌘ + ,": {
-    translationKey: "settings",
+export const SHORTCUTS = [
+  {
+    id: "help",
+    combos: [["F1"], ["Mod", "Shift", "?"]],
+    labelKey: "keyboard-shortcuts.shortcuts.help",
+    group: "global",
+    allowInFields: true,
+    action: () => showKeyboardShortcutsHelp(true),
+  },
+  {
+    id: "settings",
+    combos: [["Mod", ","]],
+    labelKey: "keyboard-shortcuts.shortcuts.settings",
+    group: "global",
+    available: canOpenSettings,
     action: ({ navigate }) => navigate(paths.settings.interface()),
   },
-  "⌘ + H": {
-    translationKey: "home",
-    action: ({ navigate }) => navigate(paths.home()),
+  {
+    id: "llmSelector",
+    combos: [["Mod", "Shift", "L"]],
+    labelKey: "keyboard-shortcuts.shortcuts.showLLMSelector",
+    noteKey: "dialogs.shortcuts.note-workspace",
+    group: "chat",
+    available: isAdmin,
+    action: () => window.dispatchEvent(new Event(TOGGLE_LLM_SELECTOR_EVENT)),
   },
-  "⌘ + I": {
-    translationKey: "workspaces",
-    action: ({ navigate }) => navigate(paths.settings.workspaces()),
+  {
+    // components/Sidebar/SidebarToggle
+    id: "sidebar",
+    combos: [["Mod", "Shift", "S"]],
+    labelKey: "dialogs.shortcuts.sidebar",
+    noteKey: "dialogs.shortcuts.note-sidebar",
+    group: "chat",
   },
-  "⌘ + K": {
-    translationKey: "apiKeys",
-    action: ({ navigate }) => navigate(paths.settings.apiKeys()),
+  {
+    // components/WorkspaceChat/ChatContainer/PromptInput/SpeechToText/MicButton
+    id: "dictation",
+    combos: [["Ctrl", "M"]],
+    labelKey: "dialogs.shortcuts.dictation",
+    noteKey: "dialogs.shortcuts.note-dictation",
+    group: "chat",
+    allowInFields: true,
   },
-  "⌘ + L": {
-    translationKey: "llmPreferences",
-    action: ({ navigate }) => navigate(paths.settings.llmPreference()),
+  {
+    // hooks/useChatContainerQuickScroll
+    id: "scrollTop",
+    combos: [["Mod", "ArrowUp"]],
+    labelKey: "dialogs.shortcuts.scroll-top",
+    group: "chat",
   },
-  "⌘ + Shift + C": {
-    translationKey: "chatSettings",
-    action: ({ navigate }) => navigate(paths.settings.chat()),
+  {
+    id: "scrollBottom",
+    combos: [["Mod", "ArrowDown"]],
+    labelKey: "dialogs.shortcuts.scroll-bottom",
+    group: "chat",
   },
-  "⌘ + Shift + ?": {
-    translationKey: "help",
-    action: () => {
-      window.dispatchEvent(
-        new CustomEvent(KEYBOARD_SHORTCUTS_HELP_EVENT, {
-          detail: { show: true },
-        })
-      );
-    },
-  },
-  F1: {
-    translationKey: "help",
-    action: () => {
-      window.dispatchEvent(
-        new CustomEvent(KEYBOARD_SHORTCUTS_HELP_EVENT, {
-          detail: { show: true },
-        })
-      );
-    },
-  },
-  "⌘ + Shift + L": {
-    translationKey: "showLLMSelector",
-    action: () => {
-      window.dispatchEvent(new Event(TOGGLE_LLM_SELECTOR_EVENT));
-    },
-  },
-};
+];
 
-const LISTENERS = {};
-const modifier = isMac ? "meta" : "ctrl";
-for (const key in SHORTCUTS) {
-  const listenerKey = key
-    .replace("⌘", modifier)
-    .replaceAll(" ", "")
-    .toLowerCase();
-  LISTENERS[listenerKey] = SHORTCUTS[key].action;
+/**
+ * @param {Shortcut} shortcut
+ * @param {object|null} user
+ */
+export function isShortcutAvailable(shortcut, user) {
+  return !shortcut.available || shortcut.available(user ?? null);
 }
 
-// Convert keyboard event to shortcut key
-function getShortcutKey(event) {
-  let key = "";
-  if (event.metaKey || event.ctrlKey) key += modifier + "+";
-  if (event.shiftKey) key += "shift+";
-  if (event.altKey) key += "alt+";
+const TEXT_INPUT_TYPES = [
+  "text",
+  "search",
+  "email",
+  "url",
+  "tel",
+  "password",
+  "number",
+  "date",
+  "datetime-local",
+  "month",
+  "time",
+  "week",
+];
 
-  // Handle special keys
-  if (event.key === ",") key += ",";
-  // Handle question mark or slash for help shortcut
-  else if (event.key === "?" || event.key === "/") key += "?";
-  else if (event.key === "Control")
-    return ""; // Ignore Control key by itself
-  else if (event.key === "Shift")
-    return ""; // Ignore Shift key by itself
-  else key += event.key.toLowerCase();
-  return key;
+/** Elements where typed keys belong to the text, not to the app. */
+function isTextField(target) {
+  if (!(target instanceof Element)) return false;
+  if (target.isContentEditable || target.tagName === "TEXTAREA") return true;
+  if (target.tagName === "INPUT")
+    return TEXT_INPUT_TYPES.includes((target.type || "text").toLowerCase());
+  return target.closest('[role="textbox"]') !== null;
+}
+
+/**
+ * Shared rules for the app's shortcuts: never while an IME composes, on a
+ * held-down key, after someone else handled the key, or over a modal dialog;
+ * and, unless `allowInFields`, never while typing in a text field.
+ * @param {KeyboardEvent} event
+ * @param {{allowInFields?: boolean}} [options]
+ */
+export function isShortcutBlocked(event, { allowInFields = false } = {}) {
+  if (event.defaultPrevented || event.repeat) return true;
+  if (event.isComposing || event.keyCode === 229) return true;
+  if (document.querySelector("[data-app-dialog]")) return true;
+  return !allowInFields && isTextField(event.target);
+}
+
+function matchesKey(event, key) {
+  if (key === "?")
+    return event.key === "?" || event.key === "/" || event.code === "Slash";
+  if (key.length === 1 && /[a-z]/i.test(key)) {
+    // Non-Latin layouts report another character: fall back to the key position.
+    if (/^[a-z]$/i.test(event.key))
+      return event.key.toLowerCase() === key.toLowerCase();
+    return event.code === `Key${key.toUpperCase()}`;
+  }
+  return event.key === key;
+}
+
+/** On Mac only ⌘ counts as "Mod"; elsewhere only Ctrl. */
+function matchesCombo(event, combo) {
+  const key = combo[combo.length - 1];
+  const ctrl = combo.includes("Ctrl") || (combo.includes("Mod") && !isMac);
+  const meta = combo.includes("Mod") && isMac;
+  if (event.ctrlKey !== ctrl || event.metaKey !== meta || event.altKey)
+    return false;
+  if (event.shiftKey !== combo.includes("Shift")) return false;
+  return matchesKey(event, key);
+}
+
+/**
+ * @param {KeyboardEvent} event
+ * @param {string} id - registry id
+ */
+export function matchesShortcut(event, id) {
+  const shortcut = SHORTCUTS.find((s) => s.id === id);
+  return !!shortcut?.combos.some((combo) => matchesCombo(event, combo));
+}
+
+/**
+ * Keys of a combo as shown to people: `{ label, srLabel? }` per key
+ * ("Ctrl", "Mayús", "↑" read as "Flecha arriba"…).
+ * @param {string[]} combo
+ * @param {import("i18next").TFunction} t
+ */
+export function comboKeys(combo, t) {
+  return combo.map((key) => {
+    switch (key) {
+      case "Mod":
+        return { label: isMac ? "⌘" : "Ctrl" };
+      case "Ctrl":
+        return { label: isMac ? "⌃" : "Ctrl" };
+      case "Shift":
+        return { label: isMac ? "⇧" : t("dialogs.shortcuts.key-shift") };
+      case "ArrowUp":
+        return { label: "↑", srLabel: t("dialogs.shortcuts.key-up") };
+      case "ArrowDown":
+        return { label: "↓", srLabel: t("dialogs.shortcuts.key-down") };
+      default:
+        return { label: key.length === 1 ? key.toUpperCase() : key };
+    }
+  });
+}
+
+/**
+ * First combo of a shortcut as plain text ("Ctrl + Mayús + S"), for tooltips.
+ * @param {string} id
+ * @param {import("i18next").TFunction} t
+ */
+export function shortcutText(id, t) {
+  const combo = SHORTCUTS.find((s) => s.id === id)?.combos[0];
+  if (!combo) return "";
+  return comboKeys(combo, t)
+    .map(({ label }) => label)
+    .join(" + ");
+}
+
+/**
+ * `aria-keyshortcuts` value for a shortcut ("F1 Control+Shift+?").
+ * @param {string} id
+ */
+export function ariaKeyShortcuts(id) {
+  const shortcut = SHORTCUTS.find((s) => s.id === id);
+  if (!shortcut) return undefined;
+  const name = (key) => {
+    if (key === "Mod") return isMac ? "Meta" : "Control";
+    if (key === "Ctrl") return "Control";
+    return key;
+  };
+  return shortcut.combos.map((combo) => combo.map(name).join("+")).join(" ");
+}
+
+/** The open dialog on top is the shortcuts help itself. */
+function helpIsOnTop() {
+  const dialogs = document.querySelectorAll("[data-app-dialog]");
+  return !!dialogs[dialogs.length - 1]?.querySelector("[data-shortcuts-help]");
 }
 
 /**
@@ -106,14 +247,24 @@ function getShortcutKey(event) {
  */
 export function initKeyboardShortcuts(ctx = {}) {
   function handleKeyDown(event) {
-    const shortcutKey = getShortcutKey(event);
-    if (!shortcutKey) return;
+    const shortcut = SHORTCUTS.find(
+      (s) => s.action && s.combos.some((combo) => matchesCombo(event, combo))
+    );
+    if (!shortcut || !isShortcutAvailable(shortcut, userFromStorage())) return;
 
-    const action = LISTENERS[shortcutKey];
-    if (action) {
-      event.preventDefault();
-      action(ctx);
+    if (shortcut.id === "help" && !event.defaultPrevented) {
+      // F1 is ours even over a dialog (no browser help tab); it only closes
+      // the help when the help is the dialog on top.
+      if (document.querySelector("[data-app-dialog]")) {
+        event.preventDefault();
+        if (helpIsOnTop() && !event.repeat) showKeyboardShortcutsHelp(false);
+        return;
+      }
     }
+    if (isShortcutBlocked(event, { allowInFields: shortcut.allowInFields }))
+      return;
+    event.preventDefault();
+    shortcut.action(ctx);
   }
 
   window.addEventListener("keydown", handleKeyDown);
@@ -123,15 +274,10 @@ export function initKeyboardShortcuts(ctx = {}) {
 function useKeyboardShortcuts() {
   const navigate = useNavigate();
   useEffect(() => {
-    // If there is a user and the user is not an admin do not register the event listener
-    // since some of the shortcuts are only available in multi-user mode as admin
-    const user = userFromStorage();
-    if (!!user && !["admin", "superadmin"].includes(user?.role)) return;
+    // Every role gets the listener; each shortcut checks its own `available`.
     const cleanup = initKeyboardShortcuts({ navigate });
-
     return () => cleanup();
   }, [navigate]);
-  return;
 }
 
 export function KeyboardShortcutWrapper({ children }) {

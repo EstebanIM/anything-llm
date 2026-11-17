@@ -1,11 +1,31 @@
+import { useState, useEffect, useId } from "react";
+import { useTranslation } from "react-i18next";
 import { SquareArrowOutUpRight, Info } from "lucide-react";
-import { AWS_REGIONS } from "./regions";
-import { useState, useEffect } from "react";
 import System from "@/models/system";
+import {
+  FIELD_COL,
+  FIELD_ERROR,
+  FIELD_INPUT,
+  FIELD_ROW,
+  FIELD_SELECT,
+  ModelsErrorText,
+  SECRET_MASK,
+  SecretInput,
+} from "@/components/ProviderFields";
+import {
+  ExternalLink,
+  FieldLabel,
+  ModelSelectField,
+  TEXT_BUTTON,
+  blurOnWheel,
+} from "@/components/LLMSelection/FormParts";
+import { AWS_REGIONS } from "./regions";
 
 const MANUAL_REGION_ENTRY = "-- Enter region manually --";
 
 export default function AwsBedrockLLMOptions({ settings }) {
+  const { t } = useTranslation();
+  const id = useId();
   const [inputValue, setInputValue] = useState(settings?.AwsBedrockLLMApiKey);
   const [apiKey, setApiKey] = useState(settings?.AwsBedrockLLMApiKey);
   const [region, setRegion] = useState(settings?.AwsBedrockLLMRegion);
@@ -20,54 +40,60 @@ export default function AwsBedrockLLMOptions({ settings }) {
   return (
     <div className="w-full flex flex-col">
       {!settings?.credentialsOnly && (
-        <div className="flex flex-col md:flex-row md:items-center gap-x-2 text-white mb-4 bg-blue-800/30 w-fit rounded-lg px-4 py-2">
+        <div className="flex flex-col md:flex-row md:items-center gap-x-2 text-white mb-4 bg-blue-800/30 light:bg-sky-100 w-fit rounded-lg px-4 py-2">
           <div className="gap-x-2 flex items-center">
-            <Info strokeWidth={1.5} size={40} />
+            <Info
+              strokeWidth={1.5}
+              size={40}
+              aria-hidden="true"
+              className="shrink-0"
+            />
             <p className="text-base">
-              Connect to AWS Bedrock using the OpenAI-compatible Mantle API.
+              {t("llm-fields.bedrock.intro")}
               <br />
-              <a
+              <ExternalLink
                 href="https://docs.anythingllm.com/setup/llm-configuration/cloud/aws-bedrock"
-                target="_blank"
-                className="underline flex gap-x-1 items-center"
-                rel="noreferrer"
+                className="underline inline-flex gap-x-1 items-center"
               >
-                Read more on how to use AWS Bedrock in AnythingLLM
-                <SquareArrowOutUpRight strokeWidth={1.5} size={14} />
-              </a>
+                {t("llm-fields.bedrock.read-more")}
+                <SquareArrowOutUpRight
+                  strokeWidth={1.5}
+                  size={14}
+                  aria-hidden="true"
+                />
+              </ExternalLink>
             </p>
           </div>
         </div>
       )}
 
-      <div className="w-full flex items-center gap-[36px] my-1.5">
-        <div className="flex flex-col w-60">
-          <label className="text-white text-sm font-semibold block mb-3">
-            AWS Bedrock API Key
-          </label>
-          <input
-            type="password"
+      <div className={`${FIELD_ROW} my-1.5`}>
+        <div className={FIELD_COL}>
+          <FieldLabel
+            htmlFor={`${id}-key`}
+            label={t("provider-fields.api-key")}
+          />
+          <SecretInput
+            id={`${id}-key`}
             name="AwsBedrockLLMApiKey"
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-            placeholder="AWS Bedrock API Key"
-            defaultValue={settings?.AwsBedrockLLMApiKey ? "*".repeat(20) : ""}
+            defaultValue={settings?.AwsBedrockLLMApiKey ? SECRET_MASK : ""}
             required={true}
-            autoComplete="off"
-            spellCheck={false}
             onChange={(e) => setInputValue(e.target.value)}
             onBlur={() => setApiKey(inputValue)}
           />
         </div>
-        <div className="flex flex-col w-60">
-          <label className="text-white text-sm font-semibold block mb-3">
-            AWS Region
-          </label>
+        <div className={FIELD_COL}>
+          <FieldLabel
+            htmlFor={`${id}-region`}
+            label={t("provider-fields.region")}
+          />
           {manualRegion ? (
             <>
               <input
+                id={`${id}-region`}
                 type="text"
                 name="AwsBedrockLLMRegion"
-                className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
+                className={FIELD_INPUT}
                 placeholder="us-gov-west-1"
                 defaultValue={region}
                 required={true}
@@ -82,17 +108,18 @@ export default function AwsBedrockLLMOptions({ settings }) {
                     setRegion(AWS_REGIONS[0].code);
                   setManualRegion(false);
                 }}
-                className="text-white/60 hover:text-white text-xs text-left mt-1.5 underline w-fit"
+                className={TEXT_BUTTON}
               >
-                Select from available regions
+                {t("llm-fields.common.select-from-regions")}
               </button>
             </>
           ) : (
             <select
+              id={`${id}-region`}
               name="AwsBedrockLLMRegion"
               value={region}
               required={true}
-              className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
+              className={FIELD_SELECT}
               onChange={(e) => {
                 if (e.target.value === MANUAL_REGION_ENTRY)
                   return setManualRegion(true);
@@ -107,13 +134,15 @@ export default function AwsBedrockLLMOptions({ settings }) {
                 );
               })}
               <option disabled={true}>──────────</option>
-              <option value={MANUAL_REGION_ENTRY}>{MANUAL_REGION_ENTRY}</option>
+              <option value={MANUAL_REGION_ENTRY}>
+                {t("llm-fields.common.enter-region-manually")}
+              </option>
             </select>
           )}
         </div>
       </div>
 
-      <div className="w-full flex items-center gap-[36px] my-1.5">
+      <div className={`${FIELD_ROW} my-1.5`}>
         {!settings?.credentialsOnly && (
           <>
             <BedrockModelSelection
@@ -121,46 +150,40 @@ export default function AwsBedrockLLMOptions({ settings }) {
               apiKey={apiKey}
               region={region}
             />
-            <div className="flex flex-col w-60">
-              <label className="text-white text-sm font-semibold block mb-3">
-                Model context window
-              </label>
+            <div className={FIELD_COL}>
+              <FieldLabel
+                htmlFor={`${id}-context`}
+                label={t("provider-fields.context-window")}
+              />
               <input
+                id={`${id}-context`}
                 type="number"
                 name="AwsBedrockLLMTokenLimit"
-                className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-                placeholder="Content window limit (eg: 8192)"
+                className={FIELD_INPUT}
+                placeholder={t("llm-fields.common.context-window-placeholder", {
+                  example: 8192,
+                })}
                 min={1}
-                onScroll={(e) => e.target.blur()}
+                onWheel={blurOnWheel}
                 defaultValue={settings?.AwsBedrockLLMTokenLimit}
                 required={true}
                 autoComplete="off"
               />
             </div>
-            <div className="flex flex-col w-60">
-              <div className="flex items-center gap-x-1 mb-3">
-                <label className="text-white text-sm font-semibold block">
-                  Max Tokens
-                </label>
-                <div className="group relative">
-                  <Info
-                    strokeWidth={1.5}
-                    size={14}
-                    className="text-white/60 cursor-pointer"
-                  />
-                  <div className="hidden group-hover:block absolute left-0 bottom-full mb-1 w-64 p-2 bg-theme-settings-input-bg text-white text-xs rounded-lg shadow-lg z-10">
-                    Maximum number of tokens the model can generate per
-                    response. Increase for longer outputs. Default is 4096.
-                  </div>
-                </div>
-              </div>
+            <div className={FIELD_COL}>
+              <FieldLabel
+                htmlFor={`${id}-max-tokens`}
+                label={t("provider-fields.max-tokens")}
+                tip={t("llm-fields.bedrock.max-tokens-tip")}
+              />
               <input
+                id={`${id}-max-tokens`}
                 type="number"
                 name="AwsBedrockLLMMaxTokens"
-                className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
+                className={FIELD_INPUT}
                 placeholder="4096"
                 min={1}
-                onScroll={(e) => e.target.blur()}
+                onWheel={blurOnWheel}
                 defaultValue={settings?.AwsBedrockLLMMaxTokens}
                 required={false}
                 autoComplete="off"
@@ -176,14 +199,17 @@ export default function AwsBedrockLLMOptions({ settings }) {
 const MANUAL_MODEL_ENTRY = "-- Enter model ID manually --";
 
 function BedrockModelSelection({ settings, apiKey, region }) {
+  const { t } = useTranslation();
+  const id = useId();
   const [groupedModels, setGroupedModels] = useState({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [manualEntry, setManualEntry] = useState(false);
 
   useEffect(() => {
     async function findCustomModels() {
       setLoading(true);
-      const { models = [] } = await System.customModels(
+      const { models = [], error } = await System.customModels(
         "bedrock",
         apiKey,
         null,
@@ -197,6 +223,7 @@ function BedrockModelSelection({ settings, apiKey, region }) {
         return acc;
       }, {});
       setGroupedModels(modelsByOrganization);
+      setError(error || null);
 
       // Saved models not present in the fetched list (eg: cross-region
       // inference profile IDs the Mantle listing omits) can only render
@@ -213,46 +240,45 @@ function BedrockModelSelection({ settings, apiKey, region }) {
 
   if (loading) {
     return (
-      <div className="flex flex-col w-60">
-        <label className="text-white text-sm font-semibold block mb-3">
-          Chat Model Selection
-        </label>
-        <select
-          name="AwsBedrockLLMModel"
-          disabled={true}
-          className="border-none bg-theme-settings-input-bg border-gray-500 text-white text-sm rounded-lg block w-full p-2.5"
-        >
-          <option disabled={true} selected={true}>
-            -- loading available models --
-          </option>
-        </select>
-      </div>
+      <ModelSelectField
+        name="AwsBedrockLLMModel"
+        label={t("provider-fields.chat-model")}
+        status="loading"
+      />
     );
   }
 
   if (manualEntry) {
     return (
-      <div className="flex flex-col w-60">
-        <label className="text-white text-sm font-semibold block mb-3">
-          Chat Model Selection
-        </label>
+      <div className={FIELD_COL}>
+        <FieldLabel
+          htmlFor={`${id}-model`}
+          label={t("provider-fields.chat-model")}
+        />
         <input
+          id={`${id}-model`}
           type="text"
           name="AwsBedrockLLMModel"
-          className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
+          className={FIELD_INPUT}
           placeholder="eu.anthropic.claude-sonnet-4-5-20250929-v1:0"
           defaultValue={settings?.AwsBedrockLLMModel}
           required={true}
           autoComplete="off"
           spellCheck={false}
+          aria-describedby={error ? `${id}-model-error` : undefined}
         />
+        {error && (
+          <p id={`${id}-model-error`} role="alert" className={FIELD_ERROR}>
+            <ModelsErrorText error={error} />
+          </p>
+        )}
         {Object.keys(groupedModels).length > 0 && (
           <button
             type="button"
             onClick={() => setManualEntry(false)}
-            className="text-white/60 hover:text-white text-xs text-left mt-1.5 underline w-fit"
+            className={TEXT_BUTTON}
           >
-            Select from available models
+            {t("llm-fields.common.select-from-models")}
           </button>
         )}
       </div>
@@ -260,36 +286,30 @@ function BedrockModelSelection({ settings, apiKey, region }) {
   }
 
   return (
-    <div className="flex flex-col w-60">
-      <label className="text-white text-sm font-semibold block mb-3">
-        Chat Model Selection
-      </label>
-      <select
-        name="AwsBedrockLLMModel"
-        required={true}
-        onChange={(e) => {
-          if (e.target.value === MANUAL_MODEL_ENTRY) setManualEntry(true);
-        }}
-        className="border-none bg-theme-settings-input-bg border-gray-500 text-white text-sm rounded-lg block w-full p-2.5"
-      >
-        {Object.keys(groupedModels)
-          .sort()
-          .map((organization) => (
-            <optgroup key={organization} label={organization}>
-              {groupedModels[organization].map((model) => (
-                <option
-                  key={model.id}
-                  value={model.id}
-                  selected={settings?.AwsBedrockLLMModel === model.id}
-                >
-                  {model.name}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        <option disabled={true}>──────────</option>
-        <option value={MANUAL_MODEL_ENTRY}>{MANUAL_MODEL_ENTRY}</option>
-      </select>
-    </div>
+    <ModelSelectField
+      name="AwsBedrockLLMModel"
+      label={t("provider-fields.chat-model")}
+      status="ready"
+      defaultValue={settings?.AwsBedrockLLMModel}
+      onChange={(e) => {
+        if (e.target.value === MANUAL_MODEL_ENTRY) setManualEntry(true);
+      }}
+    >
+      {Object.keys(groupedModels)
+        .sort()
+        .map((organization) => (
+          <optgroup key={organization} label={organization}>
+            {groupedModels[organization].map((model) => (
+              <option key={model.id} value={model.id}>
+                {model.name}
+              </option>
+            ))}
+          </optgroup>
+        ))}
+      <option disabled={true}>──────────</option>
+      <option value={MANUAL_MODEL_ENTRY}>
+        {t("llm-fields.common.enter-model-manually")}
+      </option>
+    </ModelSelectField>
   );
 }

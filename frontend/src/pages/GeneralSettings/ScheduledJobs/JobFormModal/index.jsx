@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import { CircleAlert } from "lucide-react";
+import { useState, useEffect, useId } from "react";
 import ScheduledJobs from "@/models/scheduledJobs";
 import showToast from "@/utils/toast";
 import { safeJsonParse } from "@/utils/request";
@@ -9,39 +8,67 @@ import JobDescription from "./JobDescription";
 import JobSchedule from "./JobSchedule";
 import ToolsSelector from "./ToolsSelector";
 import FormActions from "./FormActions";
+import {
+  defaultSchedule,
+  isValidCron,
+  parseCronToBuilderState,
+} from "../utils/cron";
+import { translateJobError } from "../utils/format";
 
 function setDefaultFormState(job) {
+  const schedule = job?.schedule || defaultSchedule();
   return {
     name: job?.name || "",
     prompt: job?.prompt || "",
-    schedule: job?.schedule || "0 9 * * *",
-    scheduleMode: "builder",
+    schedule,
+    // A stored expression the builder cannot show opens as written.
+    scheduleMode: parseCronToBuilderState(schedule).wasFallback
+      ? "custom"
+      : "builder",
     selectedTools: job?.tools ? safeJsonParse(job.tools, []) : [],
   };
 }
 
+const NO_ERRORS = { name: null, prompt: null, schedule: null };
+
 export default function JobFormModal({ job = null, onClose, onSaved }) {
   const { t } = useTranslation();
   const isEditing = !!job;
-  const [form, setForm] = useState(setDefaultFormState(job));
-  const [availableTools, setAvailableTools] = useState([]);
+  const [form, setForm] = useState(() => setDefaultFormState(job));
+  // null while loading, [] when the list could not be loaded
+  const [availableTools, setAvailableTools] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [errors, setErrors] = useState({
-    name: false,
-    prompt: false,
-    schedule: false,
-  });
-  const hasErrors = () => Object.values(errors).some(Boolean);
+  const [errors, setErrors] = useState(NO_ERRORS);
+  const [submitError, setSubmitError] = useState(null);
+  const [focusField, setFocusField] = useState(null);
+  const ids = {
+    name: useId(),
+    prompt: useId(),
+    schedule: useId(),
+  };
 
-  const clearError = (field) => {
-    setErrors((prev) => (prev[field] ? { ...prev, [field]: false } : prev));
+  const loadTools = () => {
+    setAvailableTools(null);
+    ScheduledJobs.availableTools().then(({ tools }) => {
+      setAvailableTools(Array.isArray(tools) ? tools : []);
+    });
   };
 
   useEffect(() => {
-    ScheduledJobs.availableTools().then(({ tools }) => {
-      setAvailableTools(tools || []);
-    });
+    loadTools();
   }, []);
+
+  // Move focus once the field (and its error) is on screen: the cron input
+  // only exists after switching to the custom mode.
+  useEffect(() => {
+    if (!focusField) return;
+    document.getElementById(ids[focusField])?.focus();
+    setFocusField(null);
+  }, [focusField]);
+
+  const clearError = (field) => {
+    setErrors((prev) => (prev[field] ? { ...prev, [field]: null } : prev));
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -62,15 +89,37 @@ export default function JobFormModal({ job = null, onClose, onSaved }) {
     setForm((prev) => ({ ...prev, selectedTools }));
   };
 
+  const showScheduleError = (message) => {
+    setForm((prev) => ({ ...prev, scheduleMode: "custom" }));
+    setErrors((prev) => ({ ...prev, schedule: message }));
+    setFocusField("schedule");
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (saving) return;
+    setSubmitError(null);
+    const schedule = form.schedule.trim();
     const nextErrors = {
-      name: !form.name.trim(),
-      prompt: !form.prompt.trim(),
-      schedule: !form.schedule.trim(),
+      name: form.name.trim() ? null : t("scheduledJobs.modal.nameRequired"),
+      prompt: form.prompt.trim()
+        ? null
+        : t("scheduledJobs.modal.promptRequired"),
+      schedule: !schedule
+        ? t("scheduledJobs.modal.cronRequired")
+        : isValidCron(schedule)
+          ? null
+          : t("scheduledJobs.modal.cronInvalid"),
     };
-    if (nextErrors.name || nextErrors.prompt || nextErrors.schedule) {
+    const firstInvalid = ["name", "prompt", "schedule"].find(
+      (field) => nextErrors[field]
+    );
+    if (firstInvalid) {
       setErrors(nextErrors);
+      // An invalid expression can only be fixed as text.
+      if (nextErrors.schedule)
+        setForm((prev) => ({ ...prev, scheduleMode: "custom" }));
+      setFocusField(firstInvalid);
       return;
     }
 
@@ -78,7 +127,7 @@ export default function JobFormModal({ job = null, onClose, onSaved }) {
     const data = {
       name: form.name.trim(),
       prompt: form.prompt.trim(),
-      schedule: form.schedule.trim(),
+      schedule,
       tools: form.selectedTools,
     };
 
@@ -88,8 +137,18 @@ export default function JobFormModal({ job = null, onClose, onSaved }) {
 
     setSaving(false);
 
-    if (result.error) {
-      showToast(result.error, "error");
+    if (result?.error || !result?.job) {
+      if (result?.error === "Invalid cron expression") {
+        showScheduleError(t("scheduledJobs.modal.cronInvalid"));
+        return;
+      }
+      setSubmitError(
+        translateJobError(
+          t,
+          result?.error,
+          "scheduledJobs.modal.saveFailedGeneric"
+        )
+      );
       return;
     }
 
@@ -99,11 +158,11 @@ export default function JobFormModal({ job = null, onClose, onSaved }) {
         : t("scheduledJobs.modal.jobCreated"),
       "success"
     );
-    onSaved();
+    onSaved(result.job);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-y-5">
+    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-y-5">
       <ModalHeader
         title={
           isEditing
@@ -111,44 +170,38 @@ export default function JobFormModal({ job = null, onClose, onSaved }) {
             : t("scheduledJobs.modal.titleNew")
         }
         onClose={onClose}
-      >
-        {hasErrors() && (
-          <div className="flex gap-1 items-center mt-1">
-            <CircleAlert
-              strokeWidth={1.5}
-              size={16}
-              className="text-red-400 shrink-0"
-            />
-            <p className="text-sm text-red-400">
-              {t(
-                "scheduledJobs.modal.requiredFieldsBanner",
-                "Please fill out all required fields in order to create job."
-              )}
-            </p>
-          </div>
-        )}
-      </ModalHeader>
+      />
       <ModalBody>
-        <JobDescription form={form} errors={errors} onChange={handleChange} />
+        <JobDescription
+          form={form}
+          errors={errors}
+          ids={ids}
+          onChange={handleChange}
+        />
 
         <JobSchedule
           schedule={form.schedule}
           scheduleMode={form.scheduleMode}
           error={errors.schedule}
+          cronInputId={ids.schedule}
           onScheduleChange={handleScheduleChange}
           onModeChange={handleModeChange}
         />
 
-        {availableTools.length > 0 && (
-          <ToolsSelector
-            availableTools={availableTools}
-            selectedTools={form.selectedTools}
-            onChange={setSelectedTools}
-          />
-        )}
-
-        <FormActions isEditing={isEditing} saving={saving} onClose={onClose} />
+        <ToolsSelector
+          availableTools={availableTools}
+          selectedTools={form.selectedTools}
+          onChange={setSelectedTools}
+          onRetry={loadTools}
+        />
       </ModalBody>
+
+      {submitError && (
+        <p role="alert" className="text-sm text-red-400 light:text-red-700">
+          {submitError}
+        </p>
+      )}
+      <FormActions isEditing={isEditing} saving={saving} onClose={onClose} />
     </form>
   );
 }

@@ -1,14 +1,29 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
+import { useTranslation } from "react-i18next";
 import System from "@/models/system";
-import PreLoader from "@/components/Preloader";
 import { KOBOLDCPP_COMMON_URLS } from "@/utils/constants";
-import { ChevronDown, ChevronUp, Info } from "lucide-react";
 import useProviderEndpointAutoDiscovery from "@/hooks/useProviderEndpointAutoDiscovery";
-import { Tooltip } from "react-tooltip";
+import {
+  AdvancedSection,
+  FIELD_COL,
+  FIELD_INPUT,
+  FIELD_ROW,
+} from "@/components/ProviderFields";
+import {
+  AutoDetectRow,
+  FieldLabel,
+  ModelSelectField,
+  blurOnWheel,
+  modelStatus,
+} from "@/components/LLMSelection/FormParts";
 
 export default function KoboldCPPOptions({ settings }) {
+  const { t } = useTranslation();
+  const id = useId();
   const {
     autoDetecting: loading,
+    autoDetectStatus,
+    detectedEndpoint,
     basePath,
     basePathValue,
     showAdvancedControls,
@@ -37,145 +52,81 @@ export default function KoboldCPPOptions({ settings }) {
 
   return (
     <div className="w-full flex flex-col gap-y-7">
-      <div className="w-full flex items-start gap-[36px] mt-1.5">
+      <div className={`${FIELD_ROW} mt-1.5`}>
         <KoboldCPPModelSelection
           settings={settings}
           basePath={basePath.value}
         />
-        <div className="flex flex-col w-60">
-          <div className="flex items-center gap-x-1 mb-2">
-            <label className="text-white text-sm font-semibold">
-              Model context window
-            </label>
-            <Info
-              strokeWidth={1.5}
-              size={18}
-              className="text-theme-text-secondary cursor-pointer"
-              data-tooltip-id="koboldcpp-context-window"
-              data-tooltip-content="Override the context window limit. Leave empty to auto-detect from the server (defaults to 16384 if detection fails)."
-            />
-            <Tooltip
-              id="koboldcpp-context-window"
-              className="tooltip !text-xs !opacity-100"
-              style={{
-                maxWidth: "250px",
-                whiteSpace: "normal",
-                wordWrap: "break-word",
-              }}
-            />
-          </div>
+        <div className={FIELD_COL}>
+          <FieldLabel
+            htmlFor={`${id}-context`}
+            label={t("provider-fields.context-window")}
+            tip={t("llm-fields.common.context-window-override-tip", {
+              fallback: 16384,
+            })}
+          />
           <input
+            id={`${id}-context`}
             type="number"
             name="KoboldCPPTokenLimit"
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-            placeholder="Automatically managed"
+            className={FIELD_INPUT}
+            placeholder={t("provider-fields.context-window-auto")}
             min={1}
             value={tokenLimit}
             onChange={handleTokenLimitChange}
-            onScroll={(e) => e.target.blur()}
+            onWheel={blurOnWheel}
             required={false}
             autoComplete="off"
           />
         </div>
-        <div className="flex flex-col w-60">
-          <div className="flex items-center gap-x-1 mb-2">
-            <label className="text-white text-sm font-semibold">
-              Max response tokens
-            </label>
-            <Info
-              strokeWidth={1.5}
-              size={18}
-              className="text-theme-text-secondary cursor-pointer"
-              data-tooltip-id="koboldcpp-max-tokens"
-              data-tooltip-content="Maximum number of tokens the model can generate in a single response. Leave empty to let the model use the full remaining context."
-            />
-            <Tooltip
-              id="koboldcpp-max-tokens"
-              className="tooltip !text-xs !opacity-100"
-              style={{
-                maxWidth: "250px",
-                whiteSpace: "normal",
-                wordWrap: "break-word",
-              }}
-            />
-          </div>
+        <div className={FIELD_COL}>
+          <FieldLabel
+            htmlFor={`${id}-max-tokens`}
+            label={t("llm-fields.common.max-response-tokens")}
+            tip={t("llm-fields.koboldcpp.max-tokens-tip")}
+          />
           <input
+            id={`${id}-max-tokens`}
             type="number"
             name="KoboldCPPMaxTokens"
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
+            className={FIELD_INPUT}
             placeholder="2048"
             min={1}
             value={maxTokens}
             onChange={handleMaxTokensChange}
-            onScroll={(e) => e.target.blur()}
+            onWheel={blurOnWheel}
             required={false}
             autoComplete="off"
           />
         </div>
       </div>
-      <div className="flex justify-start mt-4">
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            setShowAdvancedControls(!showAdvancedControls);
-          }}
-          className="border-none text-theme-text-primary hover:text-theme-text-secondary flex items-center text-sm"
-        >
-          {showAdvancedControls ? "Hide" : "Show"} Manual Endpoint Input
-          {showAdvancedControls ? (
-            <ChevronUp strokeWidth={1.5} size={14} className="ml-1" />
-          ) : (
-            <ChevronDown strokeWidth={1.5} size={14} className="ml-1" />
-          )}
-        </button>
-      </div>
+      <AutoDetectRow
+        provider="KoboldCPP"
+        busy={loading}
+        status={autoDetectStatus}
+        endpoint={detectedEndpoint}
+        onDetect={handleAutoDetectClick}
+      />
 
-      <div hidden={!showAdvancedControls}>
-        <div className="w-full flex items-start gap-4">
-          <div className="flex flex-col w-60">
-            <div className="flex justify-between items-center mb-2">
-              <div className="flex items-center gap-x-1">
-                <label className="text-white text-sm font-semibold">
-                  KoboldCPP Base URL
-                </label>
-                <Info
-                  strokeWidth={1.5}
-                  size={18}
-                  className="text-theme-text-secondary cursor-pointer"
-                  data-tooltip-id="koboldcpp-base-url"
-                  data-tooltip-content="Enter the URL where KoboldCPP is running."
-                />
-                <Tooltip
-                  id="koboldcpp-base-url"
-                  place="top"
-                  delayShow={300}
-                  className="tooltip !text-xs !opacity-100"
-                  style={{
-                    maxWidth: "250px",
-                    whiteSpace: "normal",
-                    wordWrap: "break-word",
-                  }}
-                />
-              </div>
-              {loading ? (
-                <PreLoader size="6" />
-              ) : (
-                <>
-                  {!basePathValue.value && (
-                    <button
-                      onClick={handleAutoDetectClick}
-                      className="border-none bg-primary-button text-xs font-medium px-2 py-1 rounded-lg hover:bg-secondary hover:text-white shadow-[0_4px_14px_rgba(0,0,0,0.25)]"
-                    >
-                      Auto-Detect
-                    </button>
-                  )}
-                </>
-              )}
-            </div>
+      <AdvancedSection
+        label={t("llm-fields.common.manual-endpoint")}
+        open={showAdvancedControls}
+        onOpenChange={setShowAdvancedControls}
+      >
+        <div className={`${FIELD_ROW} mt-4`}>
+          <div className={FIELD_COL}>
+            <FieldLabel
+              htmlFor={`${id}-url`}
+              label={t("provider-fields.base-url")}
+              tip={t("llm-fields.common.base-url-tip", {
+                provider: "KoboldCPP",
+              })}
+            />
             <input
+              id={`${id}-url`}
               type="url"
               name="KoboldCPPBasePath"
-              className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
+              className={FIELD_INPUT}
               placeholder="http://127.0.0.1:5001/v1"
               value={basePathValue.value}
               required={true}
@@ -186,14 +137,18 @@ export default function KoboldCPPOptions({ settings }) {
             />
           </div>
         </div>
-      </div>
+      </AdvancedSection>
     </div>
   );
 }
 
 function KoboldCPPModelSelection({ settings, basePath = null }) {
+  const { t } = useTranslation();
   const [customModels, setCustomModels] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [attempt, setAttempt] = useState(0);
+  const validUrl = !!basePath && basePath.includes("/v1");
 
   useEffect(() => {
     async function findCustomModels() {
@@ -204,66 +159,47 @@ function KoboldCPPModelSelection({ settings, basePath = null }) {
       }
       setLoading(true);
       try {
-        const { models } = await System.customModels(
+        const { models, error } = await System.customModels(
           "koboldcpp",
           null,
           basePath
         );
         setCustomModels(models || []);
+        setError(error || null);
       } catch (error) {
         console.error("Failed to fetch custom models:", error);
         setCustomModels([]);
+        setError(error.message);
       }
       setLoading(false);
     }
     findCustomModels();
-  }, [basePath]);
-
-  if (loading || customModels.length === 0) {
-    return (
-      <div className="flex flex-col w-60">
-        <div className="flex items-center gap-x-1 mb-2">
-          <label className="text-white text-sm font-semibold">
-            KoboldCPP Model
-          </label>
-        </div>
-        <select
-          name="KoboldCPPModelPref"
-          disabled={true}
-          className="border-none bg-theme-settings-input-bg border-gray-500 text-white text-sm rounded-lg block w-full p-2.5"
-        >
-          <option disabled={true} selected={true}>
-            {basePath?.includes("/v1")
-              ? "--loading available models--"
-              : "Enter KoboldCPP URL first"}
-          </option>
-        </select>
-      </div>
-    );
-  }
+  }, [basePath, attempt]);
 
   return (
-    <div className="flex flex-col w-60">
-      <div className="flex items-center gap-x-1 mb-2">
-        <label className="text-white text-sm font-semibold">
-          KoboldCPP Model
-        </label>
-      </div>
-      <select
-        name="KoboldCPPModelPref"
-        required={true}
-        className="border-none bg-theme-settings-input-bg border-gray-500 text-white text-sm rounded-lg block w-full p-2.5"
-      >
-        {customModels.map((model) => (
-          <option
-            key={model.id}
-            value={model.id}
-            selected={settings.KoboldCPPModelPref === model.id}
-          >
-            {model.id}
-          </option>
-        ))}
-      </select>
-    </div>
+    <ModelSelectField
+      name="KoboldCPPModelPref"
+      label={t("provider-fields.chat-model")}
+      status={modelStatus({
+        loading,
+        error,
+        count: customModels.length,
+        needs: validUrl ? null : "need-url",
+      })}
+      messages={
+        basePath && !validUrl
+          ? { "need-url": t("llm-fields.common.url-needs-v1") }
+          : undefined
+      }
+      error={error}
+      onRetry={() => setAttempt((n) => n + 1)}
+      defaultValue={settings?.KoboldCPPModelPref}
+    >
+      {customModels.map((model) => (
+        <option key={model.id} value={model.id}>
+          {model.id}
+        </option>
+      ))}
+    </ModelSelectField>
   );
 }

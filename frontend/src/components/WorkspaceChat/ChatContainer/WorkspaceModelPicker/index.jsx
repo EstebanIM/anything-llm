@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useId, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { isMobile } from "react-device-detect";
@@ -9,11 +9,13 @@ import SetupProvider from "../PromptInput/LLMSelector/SetupProvider";
 import {
   SAVE_LLM_SELECTOR_EVENT,
   PROVIDER_SETUP_EVENT,
+  TOGGLE_LLM_SELECTOR_EVENT,
 } from "../PromptInput/LLMSelector/action";
 import Workspace from "@/models/workspace";
 import System from "@/models/system";
 import ModelRouterAPI from "@/models/modelRouter";
 import { SIDEBAR_TOGGLE_EVENT } from "@/components/Sidebar/SidebarToggle";
+import { ariaKeyShortcuts } from "@/utils/keyboardShortcuts";
 
 async function resolveModelName(workspace, systemSettings, t) {
   const effectiveProvider =
@@ -40,6 +42,11 @@ async function fetchModelName(slug, setModelName, t) {
   setModelName(await resolveModelName(workspace, systemSettings, t));
 }
 
+/**
+ * Model picker in the chat header: a button that opens a non-modal dialog
+ * with the provider and model selector. Escape closes it and returns focus to
+ * the button; Ctrl/⌘ + Shift + L toggles it from anywhere.
+ */
 export default function WorkspaceModelPicker({ workspaceSlug = null }) {
   const { t } = useTranslation();
   const { slug: urlSlug } = useParams();
@@ -57,11 +64,39 @@ export default function WorkspaceModelPicker({ workspaceSlug = null }) {
   const [sidebarOpen, setSidebarOpen] = useState(
     () => window.localStorage.getItem("anythingllm_sidebar_toggle") !== "closed"
   );
+  const triggerRef = useRef(null);
+  const dialogRef = useRef(null);
+  const dialogId = useId();
+
+  function closeSelector() {
+    const hadFocus = dialogRef.current?.contains(document.activeElement);
+    setShowSelector(false);
+    if (hadFocus) triggerRef.current?.focus();
+  }
 
   useEffect(() => {
     const handleToggle = (e) => setSidebarOpen(e.detail.open);
     window.addEventListener(SIDEBAR_TOGGLE_EVENT, handleToggle);
     return () => window.removeEventListener(SIDEBAR_TOGGLE_EVENT, handleToggle);
+  }, []);
+
+  // Move focus into the dialog when it opens so keyboard and screen reader
+  // users land on it (the provider search comes next in the Tab order).
+  useEffect(() => {
+    if (!showSelector) return;
+    const timer = setTimeout(() => dialogRef.current?.focus(), 0);
+    return () => clearTimeout(timer);
+  }, [showSelector]);
+
+  // Keyboard shortcut (registered in utils/keyboardShortcuts.js)
+  useEffect(() => {
+    function handleShortcut() {
+      if (dialogRef.current) closeSelector();
+      else setShowSelector(true);
+    }
+    window.addEventListener(TOGGLE_LLM_SELECTOR_EVENT, handleShortcut);
+    return () =>
+      window.removeEventListener(TOGGLE_LLM_SELECTOR_EVENT, handleShortcut);
   }, []);
 
   // Fetch current model name for display
@@ -72,7 +107,7 @@ export default function WorkspaceModelPicker({ workspaceSlug = null }) {
   // Close selector and refresh model name when model is saved
   useEffect(() => {
     function handleSave() {
-      setShowSelector(false);
+      closeSelector();
       fetchModelName(slug, setModelName, t);
     }
     window.addEventListener(SAVE_LLM_SELECTOR_EVENT, handleSave);
@@ -96,23 +131,32 @@ export default function WorkspaceModelPicker({ workspaceSlug = null }) {
   if (!!user && !["admin", "superadmin"].includes(user.role)) return null;
   if (!slug || isMobile) return null;
 
+  const triggerLabel = modelName
+    ? t("chat-input.model-picker", { model: modelName })
+    : t("chat_window.select_model");
+
   return (
     <>
       {showSelector && (
-        <div
-          className="fixed inset-0 z-20"
-          onClick={() => setShowSelector(false)}
-        />
+        <div className="fixed inset-0 z-20" onClick={() => closeSelector()} />
       )}
       <div
-        className={`hidden md:block absolute top-2 z-30 transition-all duration-500 ${
+        className={`hidden md:block absolute top-2 z-30 transition-[left] duration-panel ease-drawer ${
           sidebarOpen ? "left-3" : "left-11"
         }`}
       >
         <button
+          ref={triggerRef}
           type="button"
-          onClick={() => setShowSelector(!showSelector)}
-          className={`group border-none cursor-pointer px-2.5 py-1 flex items-center rounded-full transition-all ${
+          aria-label={triggerLabel}
+          aria-haspopup="dialog"
+          aria-expanded={showSelector}
+          aria-controls={showSelector ? dialogId : undefined}
+          aria-keyshortcuts={ariaKeyShortcuts("llmSelector")}
+          onClick={() =>
+            showSelector ? closeSelector() : setShowSelector(true)
+          }
+          className={`group border-none cursor-pointer px-2.5 py-1 flex items-center rounded-full transition-colors duration-quick ${
             showSelector
               ? "bg-zinc-700 light:bg-slate-200"
               : "hover:bg-zinc-700 light:hover:bg-slate-200"
@@ -122,7 +166,7 @@ export default function WorkspaceModelPicker({ workspaceSlug = null }) {
             className={`text-xs ${
               showSelector
                 ? "text-white light:text-slate-800"
-                : "text-zinc-500 light:text-slate-500 group-hover:text-white light:group-hover:text-slate-800"
+                : "text-zinc-400 light:text-slate-600 group-hover:text-white light:group-hover:text-slate-800"
             }`}
           >
             {modelName || t("chat_window.select_model")}
@@ -130,7 +174,20 @@ export default function WorkspaceModelPicker({ workspaceSlug = null }) {
         </button>
 
         {showSelector && (
-          <div className="absolute left-0 top-full mt-1 bg-zinc-800 light:bg-white border border-zinc-700 light:border-slate-300 rounded-xl shadow-lg w-[620px] overflow-hidden">
+          <div
+            ref={dialogRef}
+            id={dialogId}
+            role="dialog"
+            aria-label={t("chat-input.model-picker-title")}
+            tabIndex={-1}
+            onKeyDown={(e) => {
+              if (e.key !== "Escape" || e.defaultPrevented) return;
+              e.preventDefault();
+              e.stopPropagation();
+              closeSelector();
+            }}
+            className="absolute left-0 top-full mt-1 bg-zinc-800 light:bg-white border border-zinc-700 light:border-slate-300 rounded-xl shadow-lg w-[620px] max-w-[calc(100vw-2rem)] overflow-hidden focus:outline-none animate-in fade-in-0 [--tw-enter-translate-y:-4px] [animation-duration:var(--dur-base)] [animation-timing-function:var(--ease-smooth)]"
+          >
             <LLMSelectorModal
               key={refreshKey}
               workspaceSlug={slug}

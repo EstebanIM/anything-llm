@@ -1,8 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import Sidebar from "@/components/SettingsSidebar";
-import { isMobile } from "react-device-detect";
-import * as Skeleton from "react-loading-skeleton";
-import "react-loading-skeleton/dist/skeleton.css";
 import { UserPlus } from "lucide-react";
 import Admin from "@/models/admin";
 import UserRow from "./UserRow";
@@ -11,184 +9,142 @@ import NewUserModal from "./NewUserModal";
 import { useModal } from "@/hooks/useModal";
 import Modal from "@/components/lib/Modal";
 import CTAButton from "@/components/lib/CTAButton";
-import Toggle from "@/components/lib/Toggle";
+import TableState from "@/components/lib/TableState";
+import { TABLE, TBODY, TH, THEAD } from "./AdminTable";
+import useFocusAfterRemoval from "@/hooks/useFocusAfterRemoval";
+
+const COLUMNS = 5;
 
 export default function AdminUsers() {
+  const { t } = useTranslation();
+  const { user: currUser } = useUser();
   const { isOpen, openModal, closeModal } = useModal();
+  const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [users, setUsers] = useState([]);
+  const headingId = useId();
+  const headingRef = useRef(null);
+  const tbodyRef = useRef(null);
+  const focusAfterRemoval = useFocusAfterRemoval(tbodyRef, headingRef);
+
+  const fetchUsers = async () => {
+    const _users = await Admin.users();
+    setUsers(_users);
+    setLoadFailed(!!_users?.failed);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const updateUser = (id, patch) =>
+    setUsers((prev) =>
+      prev.map((user) => (user.id === id ? { ...user, ...patch } : user))
+    );
+
+  const removeUser = (id) => {
+    focusAfterRemoval(users.findIndex((user) => user.id === id));
+    setUsers((prev) => prev.filter((user) => user.id !== id));
+  };
 
   return (
     <div className="w-screen h-screen overflow-hidden bg-zinc-950 light:bg-slate-50 flex">
       <Sidebar />
-      <div
-        style={{ height: isMobile ? "100%" : "calc(100% - 32px)" }}
-        className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full overflow-y-scroll p-4 md:p-0"
-      >
+      <main className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full md:h-[calc(100%-32px)] overflow-y-auto p-4 md:p-0">
         <div className="flex flex-col w-full px-1 md:pl-6 md:pr-[50px] md:py-6 py-16">
           <div className="w-full flex flex-col gap-y-1 pb-6 border-white/10 border-b-2">
-            <div className="items-center flex gap-x-4">
-              <p className="text-lg leading-6 font-bold text-theme-text-primary">
-                Users
-              </p>
-            </div>
-            <p className="text-xs leading-[18px] font-base text-theme-text-secondary">
-              These are all the accounts which have an account on this instance.
-              Removing an account will instantly remove their access to this
-              instance.
+            <h1
+              id={headingId}
+              ref={headingRef}
+              tabIndex={-1}
+              className="text-lg leading-6 font-bold text-theme-text-primary"
+            >
+              {t("admin-pages.users.title")}
+            </h1>
+            <p className="text-xs leading-[18px] text-theme-text-secondary">
+              {t("admin-pages.users.description")}
             </p>
           </div>
           <div className="w-full justify-end flex">
             <CTAButton
+              type="button"
               onClick={openModal}
               className="mt-3 mr-0 mb-4 md:-mb-6 z-10"
             >
-              <UserPlus strokeWidth={1.5} className="h-4 w-4" /> Add user
+              <UserPlus
+                strokeWidth={1.5}
+                className="h-4 w-4"
+                aria-hidden="true"
+              />
+              {t("admin-pages.users.add")}
             </CTAButton>
           </div>
-          <div className="overflow-x-auto">
-            <UsersContainer />
-          </div>
+          <table
+            aria-labelledby={headingId}
+            aria-busy={loading || undefined}
+            className={TABLE}
+          >
+            <thead className={THEAD}>
+              <tr>
+                <th scope="col" className={TH}>
+                  {t("admin-pages.users.username")}
+                </th>
+                <th scope="col" className={TH}>
+                  {t("admin-pages.users.role")}
+                </th>
+                <th scope="col" className={TH}>
+                  {t("admin-pages.users.status")}
+                </th>
+                <th scope="col" className={TH}>
+                  {t("admin-pages.users.created")}
+                </th>
+                <th scope="col" className={TH}>
+                  <span className="sr-only">{t("api.actions")}</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody ref={tbodyRef} className={TBODY}>
+              {loading ? (
+                <TableState state="loading" colSpan={COLUMNS} />
+              ) : loadFailed ? (
+                <TableState
+                  state="error"
+                  colSpan={COLUMNS}
+                  onRetry={() => {
+                    setLoading(true);
+                    fetchUsers();
+                  }}
+                />
+              ) : users.length === 0 ? (
+                <TableState
+                  state="empty"
+                  colSpan={COLUMNS}
+                  message={t("admin-pages.users.empty")}
+                />
+              ) : (
+                users.map((user) => (
+                  <UserRow
+                    key={user.id}
+                    currUser={currUser}
+                    user={user}
+                    onUpdated={(patch) => updateUser(user.id, patch)}
+                    onDeleted={() => removeUser(user.id)}
+                    onEdited={fetchUsers}
+                  />
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
         <Modal isOpen={isOpen} onClose={closeModal}>
-          <NewUserModal closeModal={closeModal} />
+          <NewUserModal
+            currUser={currUser}
+            closeModal={closeModal}
+            onSuccess={fetchUsers}
+          />
         </Modal>
-      </div>
-    </div>
-  );
-}
-
-function UsersContainer() {
-  const { user: currUser } = useUser();
-  const [loading, setLoading] = useState(true);
-  const [users, setUsers] = useState([]);
-
-  useEffect(() => {
-    async function fetchUsers() {
-      const _users = await Admin.users();
-      setUsers(_users);
-      setLoading(false);
-    }
-    fetchUsers();
-  }, []);
-
-  if (loading) {
-    return (
-      <Skeleton.default
-        height="80vh"
-        width="100%"
-        highlightColor="var(--theme-bg-primary)"
-        baseColor="var(--theme-bg-secondary)"
-        count={1}
-        className="w-full p-4 rounded-b-2xl rounded-tr-2xl rounded-tl-sm mt-8"
-        containerClassName="flex w-full"
-      />
-    );
-  }
-
-  return (
-    <table className="w-full text-xs text-left rounded-lg min-w-[640px] border-spacing-0">
-      <thead className="text-theme-text-secondary text-xs leading-[18px] font-bold uppercase border-white/10 border-b">
-        <tr>
-          <th scope="col" className="px-6 py-3 rounded-tl-lg">
-            Username
-          </th>
-          <th scope="col" className="px-6 py-3">
-            Role
-          </th>
-          <th scope="col" className="px-6 py-3">
-            Date Added
-          </th>
-          <th scope="col" className="px-6 py-3 rounded-tr-lg">
-            {" "}
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {users.map((user) => (
-          <UserRow key={user.id} currUser={currUser} user={user} />
-        ))}
-      </tbody>
-    </table>
-  );
-}
-
-const ROLE_HINT = {
-  default: [
-    "Can only send chats with workspaces they are added to by admin or managers.",
-    "Cannot modify any settings at all.",
-  ],
-  manager: [
-    "Can view, create, and delete any workspaces and modify workspace-specific settings.",
-    "Can create, update and invite new users to the instance.",
-    "Cannot modify LLM, vectorDB, embedding, or other connections.",
-  ],
-  admin: [
-    "Can access standard admin settings and workspace management.",
-    "Can create and manage admin, manager, and default users.",
-    "Cannot create or modify super administrators.",
-  ],
-  superadmin: [
-    "Highest user level privilege.",
-    "Can access all configuration, personalization, and workspace data.",
-    "Can create and manage users at every role level, including super administrators.",
-  ],
-};
-
-export function RoleHintDisplay({ role }) {
-  return (
-    <div className="flex flex-col gap-y-1 py-1 pb-4">
-      <p className="text-sm font-medium text-theme-text-primary">Permissions</p>
-      <ul className="flex flex-col gap-y-1 list-disc px-4">
-        {ROLE_HINT[role ?? "default"].map((hints, i) => {
-          return (
-            <li key={i} className="text-xs text-theme-text-secondary">
-              {hints}
-            </li>
-          );
-        })}
-      </ul>
-    </div>
-  );
-}
-
-export function MessageLimitInput({ enabled, limit, updateState, role }) {
-  if (["admin", "superadmin"].includes(role)) return null;
-  return (
-    <div>
-      <Toggle
-        size="md"
-        variant="horizontal"
-        label="Limit messages per day"
-        description="Restrict this user to a number of successful queries or chats within a 24 hour window."
-        enabled={enabled}
-        onChange={(checked) => {
-          updateState((prev) => ({
-            ...prev,
-            enabled: checked,
-          }));
-        }}
-      />
-      {enabled && (
-        <div className="mt-4">
-          <label className="text-zinc-50 light:text-slate-700 text-sm font-semibold block mb-4">
-            Message limit per day
-          </label>
-          <div className="relative mt-2">
-            <input
-              type="number"
-              onScroll={(e) => e.target.blur()}
-              onChange={(e) => {
-                updateState({
-                  enabled: true,
-                  limit: Number(e?.target?.value || 0),
-                });
-              }}
-              value={limit}
-              min={1}
-              className="w-full h-[34px] px-3.5 text-sm rounded-lg outline-none bg-zinc-800 border border-zinc-800 text-zinc-100 placeholder:text-zinc-400 light:bg-white light:border-slate-300 light:text-slate-900 light:placeholder:text-slate-400 focus:border-sky-500 light:focus:border-sky-500"
-            />
-          </div>
-        </div>
-      )}
+      </main>
     </div>
   );
 }

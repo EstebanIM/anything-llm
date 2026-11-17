@@ -1,25 +1,40 @@
+import { useState, useEffect, useId } from "react";
+import { useTranslation } from "react-i18next";
 import System from "@/models/system";
-import { ChevronDown, ChevronUp, Info } from "lucide-react";
-import { useState, useEffect } from "react";
-import { Tooltip } from "react-tooltip";
+import {
+  AdvancedSection,
+  FIELD_COL,
+  FIELD_HELP,
+  FIELD_INPUT,
+  FIELD_ROW,
+  FIELD_SELECT,
+  SECRET_MASK,
+  SecretInput,
+} from "@/components/ProviderFields";
+import {
+  FieldLabel,
+  ModelSelectField,
+  blurOnWheel,
+  modelStatus,
+} from "@/components/LLMSelection/FormParts";
 
 export default function OpenRouterOptions({ settings }) {
+  const { t } = useTranslation();
+  const id = useId();
+
   return (
     <div className="flex flex-col gap-y-4 mt-1.5">
-      <div className="flex gap-[36px]">
-        <div className="flex flex-col w-60">
-          <label className="text-white text-sm font-semibold block mb-3">
-            OpenRouter API Key
-          </label>
-          <input
-            type="password"
+      <div className={FIELD_ROW}>
+        <div className={FIELD_COL}>
+          <FieldLabel
+            htmlFor={`${id}-key`}
+            label={t("provider-fields.api-key")}
+          />
+          <SecretInput
+            id={`${id}-key`}
             name="OpenRouterApiKey"
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-            placeholder="OpenRouter API Key"
-            defaultValue={settings?.OpenRouterApiKey ? "*".repeat(20) : ""}
+            defaultValue={settings?.OpenRouterApiKey ? SECRET_MASK : ""}
             required={true}
-            autoComplete="off"
-            spellCheck={false}
           />
         </div>
         {!settings?.credentialsOnly && (
@@ -32,55 +47,51 @@ export default function OpenRouterOptions({ settings }) {
 }
 
 function AdvancedControls({ settings }) {
-  const [showAdvancedControls, setShowAdvancedControls] = useState(false);
+  const { t } = useTranslation();
+  const id = useId();
 
   return (
-    <div className="flex flex-col gap-y-4">
-      <button
-        type="button"
-        onClick={() => setShowAdvancedControls(!showAdvancedControls)}
-        className="border-none text-white hover:text-white/70 flex items-center text-sm"
-      >
-        {showAdvancedControls ? "Hide" : "Show"} advanced controls
-        {showAdvancedControls ? (
-          <ChevronUp strokeWidth={1.5} size={14} className="ml-1" />
-        ) : (
-          <ChevronDown strokeWidth={1.5} size={14} className="ml-1" />
-        )}
-      </button>
-      <div hidden={!showAdvancedControls}>
-        <div className="flex gap-[36px]">
-          <div className="flex flex-col w-60">
-            <label className="text-white text-sm font-semibold block mb-3">
-              Stream Timeout (ms)
-            </label>
-            <input
-              type="number"
-              name="OpenRouterTimeout"
-              className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-              placeholder="Timeout value between token responses to auto-timeout the stream"
-              defaultValue={settings?.OpenRouterTimeout ?? 3_000}
-              autoComplete="off"
-              onScroll={(e) => e.target.blur()}
-              min={500}
-              step={1}
-            />
-          </div>
-          <ServiceTierSelection settings={settings} />
+    <AdvancedSection>
+      <div className={`${FIELD_ROW} mt-4`}>
+        <div className={FIELD_COL}>
+          <FieldLabel
+            htmlFor={`${id}-timeout`}
+            label={t("provider-fields.timeout-ms")}
+          />
+          <input
+            id={`${id}-timeout`}
+            type="number"
+            name="OpenRouterTimeout"
+            className={FIELD_INPUT}
+            aria-describedby={`${id}-timeout-help`}
+            defaultValue={settings?.OpenRouterTimeout ?? 3_000}
+            autoComplete="off"
+            onWheel={blurOnWheel}
+            min={500}
+            max={600_000}
+            step={1}
+          />
+          <p id={`${id}-timeout-help`} className={FIELD_HELP}>
+            {t("llm-fields.common.stream-timeout-help")}
+          </p>
         </div>
+        <ServiceTierSelection settings={settings} />
       </div>
-    </div>
+    </AdvancedSection>
   );
 }
 
 function OpenRouterModelSelection({ settings }) {
+  const { t } = useTranslation();
   const [groupedModels, setGroupedModels] = useState({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     async function findCustomModels() {
       setLoading(true);
-      const { models } = await System.customModels("openrouter");
+      const { models, error } = await System.customModels("openrouter");
       if (models?.length > 0) {
         const modelsByOrganization = models.reduce((acc, model) => {
           acc[model.organization] = acc[model.organization] || [];
@@ -91,102 +102,67 @@ function OpenRouterModelSelection({ settings }) {
         setGroupedModels(modelsByOrganization);
       }
 
+      setError(error || null);
       setLoading(false);
     }
     findCustomModels();
-  }, []);
-
-  if (loading || Object.keys(groupedModels).length === 0) {
-    return (
-      <div className="flex flex-col w-60">
-        <label className="text-white text-sm font-semibold block mb-3">
-          Chat Model Selection
-        </label>
-        <select
-          name="OpenRouterModelPref"
-          disabled={true}
-          className="border-none bg-theme-settings-input-bg border-gray-500 text-white text-sm rounded-lg block w-full p-2.5"
-        >
-          <option disabled={true} selected={true}>
-            -- loading available models --
-          </option>
-        </select>
-      </div>
-    );
-  }
+  }, [attempt]);
 
   return (
-    <div className="flex flex-col w-60">
-      <label className="text-white text-sm font-semibold block mb-3">
-        Chat Model Selection
-      </label>
-      <select
-        name="OpenRouterModelPref"
-        required={true}
-        className="border-none bg-theme-settings-input-bg border-gray-500 text-white text-sm rounded-lg block w-full p-2.5"
-      >
-        {Object.keys(groupedModels)
-          .sort()
-          .map((organization) => (
-            <optgroup key={organization} label={organization}>
-              {groupedModels[organization].map((model) => (
-                <option
-                  key={model.id}
-                  value={model.id}
-                  selected={settings?.OpenRouterModelPref === model.id}
-                >
-                  {model.name}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-      </select>
-    </div>
+    <ModelSelectField
+      name="OpenRouterModelPref"
+      label={t("provider-fields.chat-model")}
+      status={modelStatus({
+        loading,
+        error,
+        count: Object.keys(groupedModels).length,
+      })}
+      error={error}
+      onRetry={() => setAttempt((n) => n + 1)}
+      defaultValue={settings?.OpenRouterModelPref}
+    >
+      {Object.keys(groupedModels)
+        .sort()
+        .map((organization) => (
+          <optgroup key={organization} label={organization}>
+            {groupedModels[organization].map((model) => (
+              <option key={model.id} value={model.id}>
+                {model.name}
+              </option>
+            ))}
+          </optgroup>
+        ))}
+    </ModelSelectField>
   );
 }
 
 function ServiceTierSelection({ settings }) {
+  const { t } = useTranslation();
+  const id = useId();
+  const label = t("llm-fields.openrouter.service-tier");
+
   return (
-    <div className="flex flex-col w-60">
-      <div className="flex items-center gap-1 mb-3">
-        <label className="text-white text-sm font-semibold block">
-          Service Tier
-        </label>
-        <Tooltip
-          id="openrouter-service-tier"
-          place="top"
-          delayShow={300}
-          className="tooltip !text-xs !opacity-100"
-          style={{
-            maxWidth: "250px",
-            whiteSpace: "normal",
-            wordWrap: "break-word",
-          }}
-        />
-        <div
-          type="button"
-          className="text-theme-text-secondary cursor-pointer hover:bg-theme-bg-primary flex items-center justify-center rounded-full"
-          data-tooltip-id="openrouter-service-tier"
-          data-tooltip-place="top"
-          data-tooltip-content="Not every model honors every tier. Unsupported tiers are usually ignored, but some providers reject them and the request will error."
-        >
-          <Info
-            strokeWidth={1.5}
-            size={18}
-            className="text-theme-text-secondary"
-          />
-        </div>
-      </div>
+    <div className={FIELD_COL}>
+      <FieldLabel
+        htmlFor={`${id}-tier`}
+        label={label}
+        tip={t("llm-fields.openrouter.service-tier-tip")}
+      />
       <select
+        id={`${id}-tier`}
         name="OpenRouterServiceTier"
         defaultValue={settings?.OpenRouterServiceTier ?? "default"}
-        className="border-none bg-theme-settings-input-bg border-gray-500 text-white text-sm rounded-lg block w-full p-2.5"
+        className={FIELD_SELECT}
       >
-        <option value="auto">Auto</option>
-        <option value="default">Default</option>
-        <option value="fast">Fast</option>
+        <option value="auto">{t("llm-fields.openrouter.tier-auto")}</option>
+        <option value="default">
+          {t("llm-fields.openrouter.tier-default")}
+        </option>
+        <option value="fast">{t("llm-fields.openrouter.tier-fast")}</option>
         <option value="flex">Flex</option>
-        <option value="priority">Priority</option>
+        <option value="priority">
+          {t("llm-fields.openrouter.tier-priority")}
+        </option>
         <option value="scale">Scale</option>
       </select>
     </div>

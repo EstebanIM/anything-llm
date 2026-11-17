@@ -1,17 +1,23 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useId, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import PiperTTSClient from "@/utils/piperTTS";
 import { titleCase } from "text-case";
 import { humanFileSize } from "@/utils/numbers";
 import showToast from "@/utils/toast";
 import { LoaderCircle, CirclePause, CirclePlay } from "lucide-react";
-import { DEFAULT_APP_NAME } from "@/utils/constants/brand";
+import {
+  FIELD_ERROR,
+  FIELD_HELP,
+  FIELD_LABEL,
+  FIELD_SELECT,
+} from "@/components/ProviderFields";
 
 export default function PiperTTSOptions({ settings }) {
+  const { t } = useTranslation();
   return (
     <>
-      <p className="text-sm font-base text-white text-opacity-60 mb-4">
-        All PiperTTS models will run in your browser locally. This can be
-        resource intensive on lower-end devices.
+      <p className="text-sm text-theme-text-secondary mb-4">
+        {t("provider-forms.tts.piper.intro")}
       </p>
       <div className="flex gap-x-4 items-center">
         <PiperTTSModelSelection settings={settings} />
@@ -20,9 +26,9 @@ export default function PiperTTSOptions({ settings }) {
   );
 }
 
-function voicesByLanguage(voices = []) {
+function voicesByLanguage(voices = [], unlistedLabel) {
   const voicesByLanguage = voices.reduce((acc, voice) => {
-    const langName = voice?.language?.name_english ?? "Unlisted";
+    const langName = voice?.language?.name_english ?? unlistedLabel;
     acc[langName] = acc[langName] || [];
     acc[langName].push(voice);
     return acc;
@@ -30,16 +36,23 @@ function voicesByLanguage(voices = []) {
   return Object.entries(voicesByLanguage);
 }
 
-function voiceDisplayName(voice) {
+function voiceDisplayName(voice, t) {
   const { is_stored, name, quality, files } = voice;
   const onnxFileKey = Object.keys(files).find((key) => key.endsWith(".onnx"));
   const fileSize = files?.[onnxFileKey]?.size_bytes || 0;
-  return `${is_stored ? "✔ " : ""}${titleCase(name)}-${quality === "low" ? "Low" : "HQ"} (${humanFileSize(fileSize)})`;
+  const qualityLabel =
+    quality === "low"
+      ? t("provider-forms.tts.piper.quality-low")
+      : t("provider-forms.tts.piper.quality-high");
+  return `${is_stored ? "✔ " : ""}${titleCase(name)}-${qualityLabel} (${humanFileSize(fileSize)})`;
 }
 
 function PiperTTSModelSelection({ settings }) {
+  const { t } = useTranslation();
+  const id = useId();
   const [loading, setLoading] = useState(true);
   const [voices, setVoices] = useState([]);
+  const [attempt, setAttempt] = useState(0);
   const [selectedVoice, setSelectedVoice] = useState(
     settings?.TTSPiperTTSVoiceModel
   );
@@ -47,7 +60,7 @@ function PiperTTSModelSelection({ settings }) {
   function flushVoices() {
     PiperTTSClient.flush()
       .then(() =>
-        showToast("All voices flushed from browser storage", "info", {
+        showToast(t("provider-forms.tts.piper.flushed"), "info", {
           clear: true,
         })
       )
@@ -55,57 +68,103 @@ function PiperTTSModelSelection({ settings }) {
   }
 
   useEffect(() => {
+    setLoading(true);
     PiperTTSClient.voices()
       .then((voices) => {
-        if (voices?.length !== 0) return setVoices(voices);
-        throw new Error("Could not fetch voices from web worker.");
+        if (!voices?.length)
+          throw new Error("Could not fetch voices from web worker.");
+        setVoices(voices);
+        // Keep the saved voice when it still exists; otherwise show what the form will submit.
+        setSelectedVoice((current) =>
+          voices.some((voice) => voice.key === current)
+            ? current
+            : voices[0].key
+        );
       })
       .catch((e) => {
         console.error(e);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [attempt]);
 
   if (loading) {
     return (
-      <div className="flex flex-col w-60">
-        <label className="text-white text-sm font-semibold block mb-3">
-          Voice Model Selection
+      <div className="flex flex-col w-full md:w-60">
+        <label htmlFor={`${id}-voice`} className={FIELD_LABEL}>
+          {t("provider-forms.tts.voice-model")}
         </label>
         <select
+          key="pending"
+          id={`${id}-voice`}
           name="TTSPiperTTSVoiceModel"
           value=""
           disabled={true}
-          className="border-none bg-theme-settings-input-bg border-gray-500 text-white text-sm rounded-lg block w-full p-2.5"
+          aria-busy={true}
+          className={FIELD_SELECT}
         >
-          <option value="" disabled={true}>
-            -- loading available models --
-          </option>
+          <option value="">{t("provider-forms.tts.voices-loading")}</option>
         </select>
       </div>
     );
   }
 
-  return (
-    <div className="flex flex-col w-fit">
-      <div className="flex flex-col w-60">
-        <label className="text-white text-sm font-semibold block mb-3">
-          Voice Model Selection
+  if (voices.length === 0) {
+    return (
+      <div className="flex flex-col w-full md:w-60">
+        <label htmlFor={`${id}-voice`} className={FIELD_LABEL}>
+          {t("provider-forms.tts.voice-model")}
         </label>
-        <div className="flex items-center w-fit gap-x-4 mb-2">
+        <select
+          key="empty"
+          id={`${id}-voice`}
+          name="TTSPiperTTSVoiceModel"
+          value=""
+          disabled={true}
+          aria-describedby={`${id}-voice-error`}
+          className={FIELD_SELECT}
+        >
+          <option value="">{t("provider-fields.models-empty")}</option>
+        </select>
+        <p id={`${id}-voice-error`} role="alert" className={FIELD_ERROR}>
+          {t("provider-forms.tts.piper.voices-error")}{" "}
+          <button
+            type="button"
+            onClick={() => setAttempt((n) => n + 1)}
+            className="inline-flex items-center min-h-[44px] md:min-h-0 font-semibold underline underline-offset-2"
+          >
+            {t("provider-fields.retry")}
+          </button>
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col w-full md:w-fit">
+      <div className="flex flex-col w-full md:w-60">
+        <label htmlFor={`${id}-voice`} className={FIELD_LABEL}>
+          {t("provider-forms.tts.voice-model")}
+        </label>
+        <div className="flex flex-col md:flex-row md:items-center md:w-fit gap-x-4 gap-y-2 mb-2">
           <select
+            key="ready"
+            id={`${id}-voice`}
             name="TTSPiperTTSVoiceModel"
             required={true}
             onChange={(e) => setSelectedVoice(e.target.value)}
             value={selectedVoice}
-            className="border-none flex-shrink-0 bg-theme-settings-input-bg border-gray-500 text-white text-sm rounded-lg block w-full p-2.5"
+            aria-describedby={`${id}-voice-help`}
+            className={`${FIELD_SELECT} flex-shrink-0`}
           >
-            {voicesByLanguage(voices).map(([lang, voices]) => {
+            {voicesByLanguage(
+              voices,
+              t("provider-forms.tts.piper.unlisted")
+            ).map(([lang, voices]) => {
               return (
                 <optgroup key={lang} label={lang}>
                   {voices.map((voice) => (
                     <option key={voice.key} value={voice.key}>
-                      {voiceDisplayName(voice)}
+                      {voiceDisplayName(voice, t)}
                     </option>
                   ))}
                 </optgroup>
@@ -114,18 +173,17 @@ function PiperTTSModelSelection({ settings }) {
           </select>
           <DemoVoiceSample voiceId={selectedVoice} />
         </div>
-        <p className="text-xs text-white/40">
-          The "✔" indicates this model is already stored locally and does not
-          need to be downloaded when run.
+        <p id={`${id}-voice-help`} className={FIELD_HELP}>
+          {t("provider-forms.tts.piper.stored-hint")}
         </p>
       </div>
       {!!voices.find((voice) => voice.is_stored) && (
         <button
           type="button"
           onClick={flushVoices}
-          className="w-fit border-none hover:text-white hover:underline text-white/40 text-sm my-4"
+          className="w-fit min-h-[44px] md:min-h-0 border-none text-theme-text-secondary hover:text-white hover:underline text-sm my-4 transition-colors duration-quick"
         >
-          Flush voice cache
+          {t("provider-forms.tts.piper.flush")}
         </button>
       )}
     </div>
@@ -133,6 +191,7 @@ function PiperTTSModelSelection({ settings }) {
 }
 
 function DemoVoiceSample({ voiceId }) {
+  const { t } = useTranslation();
   const playerRef = useRef(null);
   const [speaking, setSpeaking] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -140,6 +199,7 @@ function DemoVoiceSample({ voiceId }) {
 
   async function speakMessage(e) {
     e.preventDefault();
+    if (loading) return;
     if (speaking) {
       playerRef?.current?.pause();
       return;
@@ -150,7 +210,7 @@ function DemoVoiceSample({ voiceId }) {
         setLoading(true);
         const client = new PiperTTSClient({ voiceId });
         const blobUrl = await client.getAudioBlobForText(
-          `Hello, welcome to ${DEFAULT_APP_NAME}!`
+          t("provider-forms.tts.piper.sample-text")
         );
         setAudioSrc(blobUrl);
         setLoading(false);
@@ -183,40 +243,52 @@ function DemoVoiceSample({ voiceId }) {
   }, []);
 
   return (
-    <button
-      type="button"
-      onClick={speakMessage}
-      disabled={loading}
-      className="border-none text-zinc-300 flex items-center gap-x-1"
-    >
-      {speaking ? (
-        <>
-          <CirclePause strokeWidth={1.5} size={20} className="flex-shrink-0" />
-          <p className="text-sm flex-shrink-0">Stop demo</p>
-        </>
-      ) : (
-        <>
-          {loading ? (
-            <>
-              <LoaderCircle
-                strokeWidth={1.5}
-                size={20}
-                className="animate-spin flex-shrink-0"
-              />
-              <p className="text-sm flex-shrink-0">Loading voice</p>
-            </>
-          ) : (
-            <>
-              <CirclePlay
-                strokeWidth={1.5}
-                size={20}
-                className="flex-shrink-0 text-white"
-              />
-              <p className="text-white text-sm flex-shrink-0">Play sample</p>
-            </>
-          )}
-        </>
-      )}
+    <>
+      <button
+        type="button"
+        onClick={speakMessage}
+        aria-disabled={loading}
+        aria-busy={loading}
+        className="w-fit min-h-[44px] md:min-h-0 border-none text-white flex items-center gap-x-1 aria-disabled:cursor-wait"
+      >
+        {speaking ? (
+          <>
+            <CirclePause
+              strokeWidth={1.5}
+              size={20}
+              aria-hidden="true"
+              className="flex-shrink-0"
+            />
+            <span className="text-sm flex-shrink-0">
+              {t("provider-forms.tts.piper.stop-sample")}
+            </span>
+          </>
+        ) : loading ? (
+          <>
+            <LoaderCircle
+              strokeWidth={1.5}
+              size={20}
+              aria-hidden="true"
+              className="animate-spin flex-shrink-0"
+            />
+            <span className="text-sm flex-shrink-0">
+              {t("provider-forms.tts.piper.loading-voice")}
+            </span>
+          </>
+        ) : (
+          <>
+            <CirclePlay
+              strokeWidth={1.5}
+              size={20}
+              aria-hidden="true"
+              className="flex-shrink-0"
+            />
+            <span className="text-sm flex-shrink-0">
+              {t("provider-forms.tts.piper.play-sample")}
+            </span>
+          </>
+        )}
+      </button>
       <audio
         ref={playerRef}
         hidden={true}
@@ -224,6 +296,6 @@ function DemoVoiceSample({ voiceId }) {
         autoPlay={true}
         controls={false}
       />
-    </button>
+    </>
   );
 }

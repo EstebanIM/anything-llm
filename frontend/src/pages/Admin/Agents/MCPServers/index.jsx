@@ -1,165 +1,278 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { titleCase } from "text-case";
-import { RefreshCw, TriangleAlert } from "lucide-react";
-import { Tooltip } from "react-tooltip";
+import {
+  CircleAlert,
+  CircleCheck,
+  CircleStop,
+  RefreshCw,
+  TriangleAlert,
+} from "lucide-react";
+import { useTranslation } from "react-i18next";
 import MCPLogo from "@/media/agents/mcp-logo.svg";
 import MCPServers from "@/models/mcpServers";
 import showToast from "@/utils/toast";
-import { useTranslation } from "react-i18next";
+import { serverErrorMessage, serverErrorParts } from "@/utils/serverErrors";
+import ConfirmModal from "@/components/lib/ConfirmModal";
+import ServerErrorDetail from "@/components/lib/ServerErrorDetail";
+import {
+  RowList,
+  RowButton,
+  SectionEmpty,
+  SectionHeading,
+} from "../components/SkillRows";
+import { LoadError } from "../components/SubSkills";
 
-export function MCPServerHeader({
-  setMcpServers,
-  setSelectedMcpServer,
-  children,
-}) {
+/** Readable server name ("brave_search" -> "Brave Search"). */
+export function serverTitle(server) {
+  return titleCase(String(server?.name ?? "").replace(/[_-]/g, " "));
+}
+
+/** "running" | "stopped" | "error" (stopped because it failed to start). */
+export function serverState(server) {
+  if (server?.running) return "running";
+  if (server?.error) return "error";
+  return "stopped";
+}
+
+export function enabledToolCount(server) {
+  const suppressed = server?.config?.anythingllm?.suppressedTools || [];
+  return (server?.tools || []).filter((tool) => !suppressed.includes(tool.name))
+    .length;
+}
+
+const STATES = {
+  running: {
+    Icon: CircleCheck,
+    className: "text-green-400 light:text-green-700",
+    key: "agent-pages.mcp.state-running",
+  },
+  stopped: {
+    Icon: CircleStop,
+    className: "text-theme-text-secondary",
+    key: "agent-pages.mcp.state-stopped",
+  },
+  error: {
+    Icon: CircleAlert,
+    className: "text-red-400 light:text-red-700",
+    key: "agent-pages.mcp.state-error",
+  },
+};
+
+/** Server state as icon + text (never color alone). */
+export function ServerState({ server, className = "" }) {
   const { t } = useTranslation();
-  const [loadingMcpServers, setLoadingMcpServers] = useState(false);
-  useEffect(() => {
-    async function fetchMCPServers() {
-      setLoadingMcpServers(true);
-      const { servers = [] } = await MCPServers.listServers();
-      setMcpServers(servers);
-      setLoadingMcpServers(false);
+  const { Icon, className: tone, key } = STATES[serverState(server)];
+  return (
+    <span className={`inline-flex items-center gap-x-1 ${tone} ${className}`}>
+      <Icon strokeWidth={1.5} size={14} aria-hidden="true" />
+      {t(key)}
+    </span>
+  );
+}
+
+/**
+ * MCP server list state. `status` is "loading" | "ready" | "error": a list
+ * that fails to load is not shown as "no servers".
+ */
+export function useMcpServers() {
+  const [servers, setServers] = useState([]);
+  const [status, setStatus] = useState("loading");
+  const [error, setError] = useState(null);
+
+  const load = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setStatus("loading");
+    const res = await MCPServers.listServers();
+    if (res?.success === false || !Array.isArray(res?.servers)) {
+      if (!silent) {
+        setError(res?.error || null);
+        setStatus("error");
+      }
+      return false;
     }
-    fetchMCPServers();
+    setServers(res.servers);
+    setError(null);
+    setStatus("ready");
+    return true;
   }, []);
 
-  // Refresh the list of MCP servers
-  const refreshMCPServers = () => {
-    if (
-      window.confirm(
-        "Are you sure you want to refresh the list of MCP servers? This will restart all MCP servers and reload their tools."
-      )
-    ) {
-      setLoadingMcpServers(true);
-      MCPServers.forceReload()
-        .then(({ servers = [] }) => {
-          setSelectedMcpServer(null);
-          setMcpServers(servers);
-        })
-        .catch((err) => {
-          console.error(err);
-          showToast(`Failed to refresh MCP servers.`, "error", { clear: true });
-        })
-        .finally(() => {
-          setLoadingMcpServers(false);
-        });
+  const forceReload = useCallback(async () => {
+    const res = await MCPServers.forceReload();
+    if (res?.success === false || !Array.isArray(res?.servers))
+      return { ok: false, error: res?.error || null };
+    setServers(res.servers);
+    setError(null);
+    setStatus("ready");
+    return { ok: true };
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  return { servers, setServers, status, error, load, forceReload };
+}
+
+export function MCPServersSection({
+  headingId,
+  mcp,
+  isSelected = () => false,
+  handleClick,
+}) {
+  const { t } = useTranslation();
+  const [confirming, setConfirming] = useState(false);
+  const [reloading, setReloading] = useState(false);
+  const busy = reloading || mcp.status === "loading";
+
+  async function reloadAll() {
+    setReloading(true);
+    const { ok, error } = await mcp.forceReload();
+    setReloading(false);
+    setConfirming(false);
+    if (ok) {
+      showToast(t("agent-pages.mcp.reloaded"), "success", { clear: true });
+    } else {
+      showToast(
+        serverErrorMessage(error, t, "agent-pages.mcp.reload-failed"),
+        "error",
+        { clear: true }
+      );
     }
-  };
+  }
 
   return (
-    <>
-      <div className="text-theme-text-primary flex items-center justify-between gap-x-2 mt-4">
-        <div className="flex items-center gap-x-2">
-          <img src={MCPLogo} className="w-6 h-6 light:invert" alt="MCP Logo" />
-          <p className="text-lg font-medium">{t("agent.mcp.title")}</p>
-        </div>
-        <div className="flex items-center gap-x-3">
+    <section aria-labelledby={headingId} className="flex flex-col gap-y-3">
+      <SectionHeading
+        id={headingId}
+        icon={
+          <img
+            src={MCPLogo}
+            className="w-6 h-6 light:invert"
+            alt=""
+            aria-hidden="true"
+          />
+        }
+        action={
           <button
             type="button"
-            onClick={refreshMCPServers}
-            disabled={loadingMcpServers}
-            className="border-none text-theme-text-secondary hover:text-cta-button flex items-center gap-x-1"
+            onClick={() => {
+              if (busy) return;
+              setConfirming(true);
+            }}
+            aria-busy={busy || undefined}
+            className="inline-flex items-center gap-x-1 min-h-[44px] md:min-h-[32px] px-2 rounded-lg text-sm text-theme-text-secondary hover:text-theme-text-primary hover:bg-white/5 light:hover:bg-slate-100 aria-busy:cursor-wait transition-colors duration-quick ease-smooth"
           >
             <RefreshCw
               strokeWidth={1.5}
               size={16}
-              className={loadingMcpServers ? "animate-spin" : ""}
+              aria-hidden="true"
+              className={busy ? "motion-safe:animate-spin" : ""}
             />
-            <p className="text-sm">
-              {loadingMcpServers
-                ? `${t("common.loading")}...`
-                : t("common.refresh")}
-            </p>
+            {t("common.refresh")}
           </button>
-        </div>
-      </div>
-      {children({ loadingMcpServers })}
-    </>
+        }
+      >
+        {t("agent.mcp.title")}
+      </SectionHeading>
+      <MCPServersList
+        headingId={headingId}
+        mcp={mcp}
+        isSelected={isSelected}
+        handleClick={handleClick}
+      />
+      <ConfirmModal
+        isOpen={confirming}
+        title={t("agent-pages.mcp.reload-title")}
+        confirmLabel={t("agent-pages.mcp.reload-confirm")}
+        busy={reloading}
+        danger={false}
+        onConfirm={reloadAll}
+        onCancel={() => setConfirming(false)}
+      >
+        <p>{t("agent-pages.mcp.reload-body")}</p>
+      </ConfirmModal>
+    </section>
   );
 }
 
-export function MCPServersList({
-  isLoading = false,
-  servers = [],
-  selectedServer,
-  handleClick,
-}) {
+function MCPServersList({ headingId, mcp, isSelected, handleClick }) {
   const { t } = useTranslation();
-  if (isLoading) {
+  if (mcp.status === "loading") {
     return (
-      <div className="text-theme-text-secondary text-center text-xs flex flex-col gap-y-2">
-        <p>{t("agent.mcp.loading-from-config")}...</p>
-      </div>
+      <SectionEmpty>
+        <p role="status">{t("agent.mcp.loading-from-config")}</p>
+      </SectionEmpty>
     );
   }
 
-  if (servers.length === 0) {
+  if (mcp.status === "error") {
+    const { message, detail } = mcp.error
+      ? serverErrorParts(mcp.error, t, "agent-pages.mcp.load-error-detail")
+      : { message: t("agent-pages.mcp.load-error"), detail: null };
     return (
-      <div className="text-theme-text-secondary text-center text-xs flex flex-col gap-y-2">
+      <LoadError
+        message={
+          <>
+            {message}
+            <ServerErrorDetail detail={detail} />
+          </>
+        }
+        onRetry={() => mcp.load()}
+      />
+    );
+  }
+
+  if (mcp.servers.length === 0) {
+    return (
+      <SectionEmpty>
         <p>{t("agent.mcp.no-servers-found")}</p>
-      </div>
+        <p>{t("agent-pages.mcp.empty-hint")}</p>
+      </SectionEmpty>
     );
   }
 
   return (
-    <div className="bg-theme-bg-secondary text-white rounded-xl w-full md:min-w-[360px]">
-      {servers.map((server, index) => (
+    <RowList labelledBy={headingId}>
+      {mcp.servers.map((server) => (
         <MCPServerItem
           key={server.name}
           server={server}
-          isFirst={index === 0}
-          isLast={index === servers.length - 1}
-          isSelected={selectedServer?.name === server.name}
+          isSelected={isSelected(server.name)}
           handleClick={() => handleClick?.(server)}
         />
       ))}
-      <Tooltip
-        id="mcp-server-warning"
-        place="bottom"
-        delayShow={300}
-        className="tooltip !text-xs"
-        content={t("agent.mcp.tool-warning")}
-      />
-    </div>
+    </RowList>
   );
 }
 
-function MCPServerItem({ server, isFirst, isLast, isSelected, handleClick }) {
+function MCPServerItem({ server, isSelected, handleClick }) {
   const { t } = useTranslation();
-  const suppressedTools = server.config?.anythingllm?.suppressedTools || [];
-  const enabledToolCount = server.tools.length - suppressedTools.length;
-  const showWarning = enabledToolCount > 10;
-  const running = server.running;
-
+  const showWarning = enabledToolCount(server) > 10;
   return (
-    <div
-      className={`py-3 px-4 flex items-center justify-between ${
-        isFirst ? "rounded-t-xl" : ""
-      } ${
-        isLast ? "rounded-b-xl" : "border-b border-white/10"
-      } cursor-pointer transition-all duration-300 hover:bg-theme-bg-primary ${
-        isSelected ? "bg-white/10 light:bg-theme-bg-sidebar" : ""
-      }`}
+    <RowButton
+      rowKey={`mcp:${server.name}`}
+      selected={isSelected}
       onClick={handleClick}
-    >
-      <div className="flex items-center gap-x-2 text-sm font-light">
-        {showWarning && (
-          <TriangleAlert
-            strokeWidth={1.5}
-            data-tooltip-id="mcp-server-warning"
-            className="h-4 w-4 text-yellow-500"
-          />
-        )}
-        {titleCase(server.name.replace(/[_-]/g, " "))}
-      </div>
-      <div className="flex items-center gap-x-2">
-        <div
-          className={`text-sm text-theme-text-secondary font-medium ${running ? "text-green-500" : "text-red-500"}`}
-        >
-          {running ? t("common.on") : t("common.stopped")}
-        </div>
-      </div>
-    </div>
+      title={serverTitle(server)}
+      status={
+        <>
+          {showWarning && (
+            <span
+              className="inline-flex"
+              title={t("agent-pages.mcp.many-tools")}
+            >
+              <TriangleAlert
+                strokeWidth={1.5}
+                aria-hidden="true"
+                className="h-4 w-4 shrink-0 text-amber-400 light:text-amber-700"
+              />
+              <span className="sr-only">
+                {t("agent-pages.mcp.many-tools")},{" "}
+              </span>
+            </span>
+          )}
+          <ServerState server={server} />
+        </>
+      }
+    />
   );
 }

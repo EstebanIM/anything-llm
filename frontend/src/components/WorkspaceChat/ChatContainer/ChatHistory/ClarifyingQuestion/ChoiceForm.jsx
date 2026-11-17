@@ -45,7 +45,7 @@ function OtherRow({ selected, onToggle, allowSkip, onSkip }) {
         }`}
       >
         <span className="flex items-center justify-center shrink-0 w-7 h-7 rounded-lg bg-zinc-700 light:bg-slate-300 text-white light:text-slate-900">
-          <Pencil strokeWidth={1.5} size={16} />
+          <Pencil strokeWidth={1.5} size={16} aria-hidden="true" />
         </span>
         <span
           className={`text-sm leading-5 ${
@@ -86,7 +86,10 @@ function OtherInput({ value, onChange }) {
       placeholder={t(
         "chat_window.agent_invocation.clarifying_other_placeholder"
       )}
-      className="mt-2 w-full border border-solid border-zinc-700 light:border-slate-500 bg-zinc-800 light:bg-white text-white light:text-slate-900 placeholder:text-zinc-500 light:placeholder:text-slate-500 text-sm rounded-lg focus:outline-white light:focus:outline-slate-400 outline-none p-2"
+      aria-label={t(
+        "chat_window.agent_invocation.clarifying_other_placeholder"
+      )}
+      className="mt-2 w-full border border-solid border-zinc-700 light:border-slate-500 bg-zinc-800 light:bg-white text-white light:text-slate-900 placeholder:text-zinc-400 light:placeholder:text-slate-600 text-base md:text-sm rounded-lg p-2"
     />
   );
 }

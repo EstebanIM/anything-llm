@@ -1,7 +1,10 @@
-import React, { useEffect, useState } from "react";
+import { useState } from "react";
 import BrowserExtensionApiKey from "@/models/browserExtensionApiKey";
 import { fullApiUrl, POPUP_BROWSER_EXTENSION_EVENT } from "@/utils/constants";
-import useCustomAppName from "@/hooks/useCustomAppName";
+import { NewKeyField } from "@/pages/GeneralSettings/ApiKeys/NewApiKeyModal";
+import { serverErrorParts } from "@/utils/serverErrors";
+import ServerErrorDetail from "@/components/lib/ServerErrorDetail";
+import { useTranslation } from "react-i18next";
 import {
   ModalHeader,
   ModalBody,
@@ -15,17 +18,21 @@ export default function NewBrowserExtensionApiKeyModal({
   onSuccess,
   isMultiUser,
 }) {
-  const { brandName } = useCustomAppName();
+  const { t } = useTranslation();
   const [apiKey, setApiKey] = useState(null);
   const [error, setError] = useState(null);
-  const [copied, setCopied] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   const handleCreate = async (e) => {
-    setError(null);
     e.preventDefault();
+    // Enter in the read-only key field would submit the form again.
+    if (creating || apiKey) return;
+    setError(null);
+    setCreating(true);
 
     const { apiKey: newApiKey, error } =
       await BrowserExtensionApiKey.generateKey();
+    setCreating(false);
     if (!!newApiKey) {
       const fullApiKey = `${fullApiUrl()}|${newApiKey}`;
       setApiKey(fullApiKey);
@@ -37,75 +44,63 @@ export default function NewBrowserExtensionApiKeyModal({
         },
         "*"
       );
+      return;
     }
-    setError(error);
+    setError(serverErrorParts(error, t, "api.messages.error"));
   };
-
-  const copyApiKey = () => {
-    if (!apiKey) return false;
-    window.navigator.clipboard.writeText(apiKey);
-    setCopied(true);
-  };
-
-  useEffect(() => {
-    function resetStatus() {
-      if (!copied) return false;
-      setTimeout(() => {
-        setCopied(false);
-      }, 3000);
-    }
-    resetStatus();
-  }, [copied]);
 
   return (
     <form onSubmit={handleCreate} className="flex flex-col gap-y-5">
-      <ModalHeader title="New Browser Extension API Key" onClose={closeModal} />
+      <ModalHeader
+        title={
+          apiKey
+            ? t("tools-pages.extension.created-title")
+            : t("tools-pages.extension.modal-title")
+        }
+        onClose={closeModal}
+      />
       <ModalBody>
-        {error && <p className="text-red-400 text-sm">Error: {error}</p>}
+        {error && (
+          <p role="alert" className="text-sm text-red-400 light:text-red-700">
+            {error.message}
+            <ServerErrorDetail detail={error.detail} />
+          </p>
+        )}
         {apiKey && (
-          <input
-            type="text"
-            defaultValue={apiKey}
-            disabled={true}
-            className="border-none bg-zinc-800 w-full text-zinc-100 placeholder:text-zinc-400 light:bg-white light:text-slate-900 light:placeholder:text-slate-400 text-sm rounded-lg block p-2.5"
+          <NewKeyField
+            value={apiKey}
+            label={t("tools-pages.extension.new-key")}
+            hint={t("tools-pages.extension.new-key-hint")}
+            copyLabel={t("tools-pages.extension.copy-new")}
           />
         )}
         {isMultiUser && (
-          <p className="text-yellow-300 light:text-orange-500 text-xs md:text-sm font-semibold">
-            Warning: You are in multi-user mode, this API key will allow access
-            to all workspaces associated with your account. Please share it
-            cautiously.
+          <p className="text-xs md:text-sm font-semibold text-amber-300 light:text-amber-700">
+            {t("tools-pages.extension.multi-user-warning")}
           </p>
         )}
         <p className="text-xs text-zinc-400 light:text-slate-600">
-          After clicking "Create API Key", {brandName} will attempt to connect
-          to your browser extension automatically.
-        </p>
-        <p className="text-xs text-zinc-400 light:text-slate-600">
-          If you see "Connected to {brandName}" in the extension, the connection
-          was successful. If not, please copy the connection string and paste it
-          into the extension manually.
+          {apiKey
+            ? t("tools-pages.extension.after-create")
+            : t("tools-pages.extension.before-create")}
         </p>
       </ModalBody>
-      <ModalFooter>
+      <ModalFooter className={apiKey ? "justify-end" : undefined}>
         {!apiKey ? (
           <>
             <ModalSecondaryButton onClick={closeModal} type="button">
-              Cancel
+              {t("settings-pages.cancel")}
             </ModalSecondaryButton>
-            <ModalPrimaryButton type="submit">
-              Create API Key
+            <ModalPrimaryButton type="submit" busy={creating}>
+              {creating
+                ? t("tools-pages.api-keys.creating")
+                : t("tools-pages.extension.create")}
             </ModalPrimaryButton>
           </>
         ) : (
-          <ModalPrimaryButton
-            onClick={copyApiKey}
-            type="button"
-            disabled={copied}
-            className="w-full"
-          >
-            {copied ? "API Key Copied!" : "Copy API Key"}
-          </ModalPrimaryButton>
+          <ModalSecondaryButton onClick={closeModal} type="button">
+            {t("api.modal.close")}
+          </ModalSecondaryButton>
         )}
       </ModalFooter>
     </form>

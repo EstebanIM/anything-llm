@@ -1,6 +1,7 @@
-import React from "react";
+import { useId } from "react";
 import { DefaultBadge } from "../Badges/default";
 import Toggle from "@/components/lib/Toggle";
+import PanelHeader, { panelIcon } from "../components/PanelHeader";
 
 export default function DefaultSkillPanel({
   title,
@@ -11,33 +12,25 @@ export default function DefaultSkillPanel({
   toggleSkill,
   skill,
 }) {
+  const titleId = useId();
   return (
     <div className="p-2">
       <div className="flex flex-col gap-y-[18px] max-w-[500px]">
-        <div className="flex w-full justify-between items-center">
-          <div className="flex items-center gap-x-2">
-            {icon &&
-              React.createElement(icon, {
-                size: 24,
-                color: "var(--theme-text-primary)",
-                weight: "bold",
-              })}
-            <label
-              htmlFor="name"
-              className="text-theme-text-primary text-md font-bold"
-            >
-              {title}
-            </label>
-            <DefaultBadge title={title} />
-          </div>
+        <PanelHeader
+          titleId={titleId}
+          title={title}
+          icon={panelIcon(icon)}
+          badge={<DefaultBadge title={title} />}
+        >
           <Toggle
             size="lg"
             enabled={enabled}
+            ariaLabelledBy={titleId}
             onChange={() => toggleSkill(skill)}
           />
-        </div>
-        <img src={image} alt={title} className="w-full rounded-md" />
-        <p className="text-theme-text-secondary text-opacity-60 text-xs font-medium py-1.5">
+        </PanelHeader>
+        {image && <img src={image} alt="" className="w-full rounded-md" />}
+        <p className="text-theme-text-secondary text-xs font-medium py-1.5">
           {description}
         </p>
       </div>

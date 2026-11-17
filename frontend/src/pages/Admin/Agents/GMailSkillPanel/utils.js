@@ -1,5 +1,4 @@
 import { Search, MailOpen, Send, ChartBar, Pencil } from "lucide-react";
-export { filterSkillCategories } from "../utils";
 
 export const getGmailSkills = (t) => ({
   search: {

@@ -1,25 +1,36 @@
+import { useState, useEffect, useId } from "react";
+import { useTranslation } from "react-i18next";
 import System from "@/models/system";
-import { useState, useEffect } from "react";
+import {
+  FIELD_COL,
+  FIELD_ROW,
+  SECRET_MASK,
+  SecretInput,
+} from "@/components/ProviderFields";
+import {
+  FieldLabel,
+  ModelSelectField,
+  modelStatus,
+} from "@/components/LLMSelection/FormParts";
 
 export default function SambaNovaOptions({ settings }) {
+  const { t } = useTranslation();
+  const id = useId();
   const [inputValue, setInputValue] = useState(settings?.SambaNovaLLMApiKey);
   const [apiKey, setApiKey] = useState(settings?.SambaNovaLLMApiKey);
 
   return (
-    <div className="flex gap-[36px] mt-1.5">
-      <div className="flex flex-col w-60">
-        <label className="text-white text-sm font-semibold block mb-3">
-          SambaNova API Key
-        </label>
-        <input
-          type="password"
+    <div className={`${FIELD_ROW} mt-1.5`}>
+      <div className={FIELD_COL}>
+        <FieldLabel
+          htmlFor={`${id}-key`}
+          label={t("provider-fields.api-key")}
+        />
+        <SecretInput
+          id={`${id}-key`}
           name="SambaNovaLLMApiKey"
-          className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-          placeholder="SambaNova AI API Key"
-          defaultValue={settings?.SambaNovaLLMApiKey ? "*".repeat(20) : ""}
+          defaultValue={settings?.SambaNovaLLMApiKey ? SECRET_MASK : ""}
           required={true}
-          autoComplete="off"
-          spellCheck={false}
           onChange={(e) => setInputValue(e.target.value)}
           onBlur={() => setApiKey(inputValue)}
         />
@@ -32,13 +43,17 @@ export default function SambaNovaOptions({ settings }) {
 }
 
 function SambaNovaModelSelection({ settings, apiKey }) {
+  const { t } = useTranslation();
   const [groupedModels, setGroupedModels] = useState({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     async function findCustomModels() {
+      if (!apiKey) return;
       setLoading(true);
-      const { models } = await System.customModels("sambanova", apiKey);
+      const { models, error } = await System.customModels("sambanova", apiKey);
       if (models?.length > 0) {
         const modelsByOrganization = models.reduce((acc, model) => {
           acc[model.organization] = acc[model.organization] || [];
@@ -48,56 +63,37 @@ function SambaNovaModelSelection({ settings, apiKey }) {
         setGroupedModels(modelsByOrganization);
       }
 
+      setError(error || null);
       setLoading(false);
     }
     findCustomModels();
-  }, [apiKey]);
-
-  if (loading || Object.keys(groupedModels).length === 0) {
-    return (
-      <div className="flex flex-col w-60">
-        <label className="text-white text-sm font-semibold block mb-3">
-          Chat Model Selection
-        </label>
-        <select
-          name="SambaNovaLLMModelPref"
-          disabled={true}
-          className="border-none bg-theme-settings-input-bg border-gray-500 text-white text-sm rounded-lg block w-full p-2.5"
-        >
-          <option disabled={true} selected={true}>
-            -- loading available models --
-          </option>
-        </select>
-      </div>
-    );
-  }
+  }, [apiKey, attempt]);
 
   return (
-    <div className="flex flex-col w-60">
-      <label className="text-white text-sm font-semibold block mb-3">
-        Chat Model Selection
-      </label>
-      <select
-        name="SambaNovaLLMModelPref"
-        required={true}
-        className="border-none bg-theme-settings-input-bg border-gray-500 text-white text-sm rounded-lg block w-full p-2.5"
-      >
-        {Object.keys(groupedModels)
-          .sort()
-          .map((organization) => (
-            <optgroup key={organization} label={organization}>
-              {groupedModels[organization].map((model) => (
-                <option
-                  key={model.id}
-                  value={model.id}
-                  selected={settings?.SambaNovaLLMModelPref === model.id}
-                >
-                  {model.name}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-      </select>
-    </div>
+    <ModelSelectField
+      name="SambaNovaLLMModelPref"
+      label={t("provider-fields.chat-model")}
+      status={modelStatus({
+        loading,
+        error,
+        count: Object.keys(groupedModels).length,
+        needs: apiKey ? null : "need-key",
+      })}
+      error={error}
+      onRetry={() => setAttempt((n) => n + 1)}
+      defaultValue={settings?.SambaNovaLLMModelPref}
+    >
+      {Object.keys(groupedModels)
+        .sort()
+        .map((organization) => (
+          <optgroup key={organization} label={organization}>
+            {groupedModels[organization].map((model) => (
+              <option key={model.id} value={model.id}>
+                {model.name}
+              </option>
+            ))}
+          </optgroup>
+        ))}
+    </ModelSelectField>
   );
 }

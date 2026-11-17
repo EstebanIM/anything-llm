@@ -1,20 +1,32 @@
-import { useEffect, useState } from "react";
-import {
-  Info,
-  ChevronDown,
-  ChevronUp,
-  LoaderCircle,
-  TriangleAlert,
-} from "lucide-react";
-import paths from "@/utils/paths";
+import { useEffect, useId, useState } from "react";
+import { useTranslation } from "react-i18next";
 import System from "@/models/system";
 import { LMSTUDIO_COMMON_URLS } from "@/utils/constants";
 import useProviderEndpointAutoDiscovery from "@/hooks/useProviderEndpointAutoDiscovery";
-import { Tooltip } from "react-tooltip";
+import {
+  AdvancedSection,
+  FIELD_COL,
+  FIELD_INPUT,
+  FIELD_ROW,
+  SECRET_MASK,
+  SecretInput,
+} from "@/components/ProviderFields";
+import {
+  AutoDetectRow,
+  EmbedderRequiredNotice,
+  FieldLabel,
+  ModelSelectField,
+  blurOnWheel,
+  modelStatus,
+} from "@/components/LLMSelection/FormParts";
 
 export default function LMStudioOptions({ settings, showAlert = false }) {
+  const { t } = useTranslation();
+  const id = useId();
   const {
     autoDetecting: loading,
+    autoDetectStatus,
+    detectedEndpoint,
     basePath,
     basePathValue,
     authToken,
@@ -38,97 +50,40 @@ export default function LMStudioOptions({ settings, showAlert = false }) {
 
   return (
     <div className="w-full flex flex-col gap-y-7">
-      {showAlert && (
-        <div className="flex flex-col md:flex-row md:items-center gap-x-2 text-white mb-6 bg-blue-800/30 w-fit rounded-lg px-4 py-2">
-          <div className="gap-x-2 flex items-center">
-            <Info strokeWidth={1.5} size={12} className="hidden md:visible" />
-            <p className="text-sm md:text-base">
-              LMStudio as your LLM requires you to set an embedding service to
-              use.
-            </p>
-          </div>
-          <a
-            href={paths.settings.embedder.modelPreference()}
-            className="text-sm md:text-base my-2 underline"
-          >
-            Manage embedding &rarr;
-          </a>
-        </div>
-      )}
-      <div className="w-full flex items-start gap-[36px] mt-1.5">
+      {showAlert && <EmbedderRequiredNotice provider="LM Studio" />}
+      <div className={`${FIELD_ROW} mt-1.5`}>
         <LMStudioModelSelection
           settings={settings}
           basePath={basePath.value}
           apiKey={authTokenValue.value}
         />
       </div>
-      <div className="flex justify-start mt-4">
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            setShowAdvancedControls(!showAdvancedControls);
-          }}
-          className="border-none text-theme-text-primary hover:text-theme-text-secondary flex items-center text-sm"
-        >
-          {showAdvancedControls ? "Hide" : "Show"} advanced settings
-          {showAdvancedControls ? (
-            <ChevronUp strokeWidth={1.5} size={14} className="ml-1" />
-          ) : (
-            <ChevronDown strokeWidth={1.5} size={14} className="ml-1" />
-          )}
-        </button>
-      </div>
+      <AutoDetectRow
+        provider="LM Studio"
+        busy={loading}
+        status={autoDetectStatus}
+        endpoint={detectedEndpoint}
+        onDetect={handleAutoDetectClick}
+      />
 
-      <div hidden={!showAdvancedControls}>
-        <div className="w-full flex items-start gap-4">
-          <div className="flex flex-col w-[300px]">
-            <div className="flex justify-between items-center mb-2">
-              <div className="flex items-center gap-1">
-                <label className="text-white text-sm font-semibold">
-                  LM Studio Base URL
-                </label>
-                <Info
-                  strokeWidth={1.5}
-                  size={18}
-                  className="text-theme-text-secondary cursor-pointer"
-                  data-tooltip-id="lmstudio-base-url"
-                  data-tooltip-content="Enter the URL where LM Studio is running."
-                />
-                <Tooltip
-                  id="lmstudio-base-url"
-                  place="top"
-                  delayShow={300}
-                  className="tooltip !text-xs !opacity-100"
-                  style={{
-                    maxWidth: "250px",
-                    whiteSpace: "normal",
-                    wordWrap: "break-word",
-                  }}
-                />
-              </div>
-              {loading ? (
-                <LoaderCircle
-                  strokeWidth={1.5}
-                  size={16}
-                  className="text-theme-text-secondary animate-spin"
-                />
-              ) : (
-                <>
-                  {!basePathValue.value && (
-                    <button
-                      onClick={handleAutoDetectClick}
-                      className="border-none bg-primary-button text-xs font-medium px-2 py-1 rounded-lg hover:bg-secondary hover:text-white shadow-[0_4px_14px_rgba(0,0,0,0.25)]"
-                    >
-                      Auto-Detect
-                    </button>
-                  )}
-                </>
-              )}
-            </div>
+      <AdvancedSection
+        open={showAdvancedControls}
+        onOpenChange={setShowAdvancedControls}
+      >
+        <div className={`${FIELD_ROW} mt-4`}>
+          <div className={FIELD_COL}>
+            <FieldLabel
+              htmlFor={`${id}-url`}
+              label={t("provider-fields.base-url")}
+              tip={t("llm-fields.common.base-url-tip", {
+                provider: "LM Studio",
+              })}
+            />
             <input
+              id={`${id}-url`}
               type="url"
               name="LMStudioBasePath"
-              className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
+              className={FIELD_INPUT}
               placeholder="http://localhost:1234/v1"
               value={basePathValue.value}
               required={true}
@@ -138,99 +93,64 @@ export default function LMStudioOptions({ settings, showAlert = false }) {
               onBlur={basePath.onBlur}
             />
           </div>
-          <div className="flex flex-col w-60">
-            <div className="flex items-center mb-2 gap-x-1">
-              <label className="text-white text-sm font-semibold">
-                Model Context Window
-              </label>
-              <Info
-                strokeWidth={1.5}
-                size={18}
-                className="text-theme-text-secondary cursor-pointer"
-                data-tooltip-id="lmstudio-max-tokens"
-                data-tooltip-content="Override the context window limit. Leave empty to auto-detect from the model (defaults to 4096 if detection fails)."
-              />
-              <Tooltip
-                id="lmstudio-max-tokens"
-                className="tooltip !text-xs !opacity-100"
-                style={{
-                  maxWidth: "250px",
-                  whiteSpace: "normal",
-                  wordWrap: "break-word",
-                }}
-              />
-            </div>
+          <div className={FIELD_COL}>
+            <FieldLabel
+              htmlFor={`${id}-context`}
+              label={t("provider-fields.context-window")}
+              tip={t("llm-fields.common.context-window-override-tip", {
+                fallback: 4096,
+              })}
+            />
             <input
+              id={`${id}-context`}
               type="number"
               name="LMStudioTokenLimit"
-              className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-              placeholder="Automatically managed"
+              className={FIELD_INPUT}
+              placeholder={t("provider-fields.context-window-auto")}
               min={1}
               value={maxTokens}
               onChange={handleMaxTokensChange}
-              onScroll={(e) => e.target.blur()}
+              onWheel={blurOnWheel}
               required={false}
               autoComplete="off"
             />
           </div>
         </div>
 
-        <div className="flex items-start gap-4 mt-4">
-          <div className="flex flex-col w-60">
-            <div className="flex items-center mb-2 gap-x-1">
-              <label className="text-white text-sm font-semibold">
-                Authentication Token
-              </label>
-              <Info
-                strokeWidth={1.5}
-                size={18}
-                className="text-theme-text-secondary cursor-pointer"
-                data-tooltip-id="lmstudio-authentication-token"
-              />
-              <Tooltip
-                id="lmstudio-authentication-token"
-                place="top"
-                delayShow={300}
-                delayHide={400}
-                clickable={true}
-                className="tooltip !text-xs !opacity-100"
-                style={{
-                  maxWidth: "250px",
-                  whiteSpace: "normal",
-                  wordWrap: "break-word",
-                }}
-              >
-                <p className="text-xs leading-[18px] font-base">
-                  Enter a <code>Bearer</code> Auth Token for interacting with
-                  your LM Studio server.
-                  <br /> <br />
-                  Useful if running LM Studio behind an authentication or proxy.
-                </p>
-              </Tooltip>
-            </div>
-            <input
-              type="password"
+        <div className={`${FIELD_ROW} mt-4`}>
+          <div className={FIELD_COL}>
+            <FieldLabel
+              htmlFor={`${id}-token`}
+              label={t("provider-fields.auth-token")}
+              optional={true}
+              tip={t("llm-fields.common.auth-token-tip", {
+                provider: "LM Studio",
+              })}
+            />
+            <SecretInput
+              id={`${id}-token`}
               name="LMStudioAuthToken"
-              className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg outline-none block w-full p-2.5 focus:outline-primary-button active:outline-primary-button"
-              placeholder="LM Studio Auth Token"
-              defaultValue={settings?.LMStudioAuthToken ? "*".repeat(20) : ""}
-              value={authTokenValue.value}
+              value={
+                authTokenValue.value ??
+                (settings?.LMStudioAuthToken ? SECRET_MASK : "")
+              }
               onChange={authToken.onChange}
               onBlur={authToken.onBlur}
               required={false}
-              autoComplete="off"
-              spellCheck={false}
             />
           </div>
         </div>
-      </div>
+      </AdvancedSection>
     </div>
   );
 }
 
 function LMStudioModelSelection({ settings, basePath = null, apiKey = null }) {
+  const { t } = useTranslation();
   const [customModels, setCustomModels] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     async function findCustomModels() {
@@ -241,100 +161,49 @@ function LMStudioModelSelection({ settings, basePath = null, apiKey = null }) {
       }
       setLoading(true);
       try {
-        const { models } = await System.customModels(
+        const { models, error } = await System.customModels(
           "lmstudio",
           apiKey,
           basePath
         );
         setCustomModels(models || []);
+        setError(error || null);
       } catch (error) {
         console.error("Failed to fetch custom models:", error);
         setCustomModels([]);
+        setError(error.message);
       }
       setLoading(false);
     }
     findCustomModels();
-  }, [basePath, apiKey]);
+  }, [basePath, apiKey, attempt]);
 
-  if (loading || customModels.length === 0) {
-    return (
-      <div className="flex flex-col w-60">
-        <div className="flex items-center mb-2 gap-x-1">
-          <label className="text-white text-sm font-semibold">
-            Selected Model
-          </label>
-          {!loading && !!basePath && (
-            <>
-              <TriangleAlert
-                strokeWidth={1.5}
-                size={18}
-                className="text-red-400 cursor-pointer"
-                data-tooltip-id="lmstudio-selected-model"
-              />
-              <Tooltip
-                id="lmstudio-selected-model"
-                place="top"
-                delayShow={300}
-                delayHide={400}
-                clickable={true}
-                className="tooltip !text-xs !opacity-100 z-99"
-                style={{
-                  maxWidth: "250px",
-                  whiteSpace: "normal",
-                  wordWrap: "break-word",
-                }}
-              >
-                <p className="text-xs leading-[18px] font-base">
-                  Could not reach LM Studio. Verify the URL is correct and the
-                  LMStudio server is running and accessible.
-                </p>
-              </Tooltip>
-            </>
-          )}
-        </div>
-        <select
-          name="LMStudioModelPref"
-          disabled={true}
-          className="border-none bg-theme-settings-input-bg border-gray-500 text-white text-sm rounded-lg block w-full p-2.5"
-        >
-          <option disabled={true} selected={true}>
-            {loading
-              ? "--loading available models--"
-              : !!basePath
-                ? "No models found"
-                : "Enter LM Studio URL first"}
-          </option>
-        </select>
-      </div>
-    );
-  }
+  // The server answers an unreachable LM Studio with an empty list, so an
+  // empty list for a given URL is reported as a connection problem.
+  const unreachable = !!basePath && customModels.length === 0;
 
   return (
-    <div className="flex flex-col w-60">
-      <label className="text-white text-sm font-semibold block mb-2">
-        Selected Model
-      </label>
-      <select
-        name="LMStudioModelPref"
-        required={true}
-        className="border-none bg-theme-settings-input-bg border-gray-500 text-white text-sm rounded-lg block w-full p-2.5"
-      >
-        {customModels.length > 0 && (
-          <optgroup label="Your loaded models">
-            {customModels.map((model) => {
-              return (
-                <option
-                  key={model.id}
-                  value={model.id}
-                  selected={settings.LMStudioModelPref === model.id}
-                >
-                  {model.id}
-                </option>
-              );
-            })}
-          </optgroup>
-        )}
-      </select>
-    </div>
+    <ModelSelectField
+      name="LMStudioModelPref"
+      label={t("provider-fields.chat-model")}
+      status={modelStatus({
+        loading,
+        error: error || (unreachable ? "unreachable" : null),
+        count: customModels.length,
+        needs: basePath ? null : "need-url",
+      })}
+      error={error}
+      errorMessage={t("llm-fields.lmstudio.unreachable")}
+      onRetry={() => setAttempt((n) => n + 1)}
+      defaultValue={settings?.LMStudioModelPref}
+    >
+      <optgroup label={t("llm-fields.common.loaded-models")}>
+        {customModels.map((model) => (
+          <option key={model.id} value={model.id}>
+            {model.id}
+          </option>
+        ))}
+      </optgroup>
+    </ModelSelectField>
   );
 }

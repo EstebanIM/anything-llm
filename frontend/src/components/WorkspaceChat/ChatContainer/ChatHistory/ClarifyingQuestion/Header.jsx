@@ -2,7 +2,7 @@ import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 const NAV_BUTTON_CLASS =
-  "border-none p-0 flex items-center justify-center text-white/70 light:text-slate-700 hover:text-white light:hover:text-slate-900 disabled:opacity-30 disabled:cursor-not-allowed";
+  "border-none p-0 flex items-center justify-center w-11 h-11 md:w-6 md:h-6 rounded-md text-white/70 light:text-slate-700 hover:text-white light:hover:text-slate-900 disabled:opacity-30 disabled:cursor-not-allowed";
 
 function QuestionText({ children }) {
   return (
@@ -23,9 +23,9 @@ function PaginationControls({ index, total, onPrev, onNext, isFirst, isLast }) {
         aria-label={t("chat_window.agent_invocation.clarifying_prev_aria")}
         className={NAV_BUTTON_CLASS}
       >
-        <ChevronLeft strokeWidth={1.5} size={16} />
+        <ChevronLeft strokeWidth={1.5} size={16} aria-hidden="true" />
       </button>
-      <span className="text-xs text-zinc-400 light:text-zinc-400 leading-4 whitespace-nowrap select-none">
+      <span className="text-xs text-zinc-400 light:text-slate-600 leading-4 whitespace-nowrap select-none">
         {t("chat_window.agent_invocation.clarifying_pagination", {
           current: index + 1,
           total,
@@ -38,7 +38,7 @@ function PaginationControls({ index, total, onPrev, onNext, isFirst, isLast }) {
         aria-label={t("chat_window.agent_invocation.clarifying_next_aria")}
         className={NAV_BUTTON_CLASS}
       >
-        <ChevronRight strokeWidth={1.5} size={16} />
+        <ChevronRight strokeWidth={1.5} size={16} aria-hidden="true" />
       </button>
     </div>
   );
@@ -52,9 +52,9 @@ function CloseButton({ disabled, onClick }) {
       onClick={onClick}
       disabled={disabled}
       aria-label={t("chat_window.agent_invocation.clarifying_close_aria")}
-      className="border-none p-0 flex items-center justify-center text-white/70 light:text-slate-700 hover:text-white light:hover:text-slate-900 disabled:opacity-30 shrink-0"
+      className="border-none p-0 flex items-center justify-center w-11 h-11 md:w-6 md:h-6 rounded-md text-white/70 light:text-slate-700 hover:text-white light:hover:text-slate-900 disabled:opacity-30 shrink-0"
     >
-      <X strokeWidth={1.5} size={16} />
+      <X strokeWidth={1.5} size={16} aria-hidden="true" />
     </button>
   );
 }

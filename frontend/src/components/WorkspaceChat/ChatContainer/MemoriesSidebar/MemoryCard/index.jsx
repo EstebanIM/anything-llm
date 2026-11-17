@@ -1,38 +1,24 @@
-import moment from "moment";
-import { useEffect, useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { EllipsisVertical } from "lucide-react";
 import { useMemoriesContext, LIMITS } from "../MemoriesContext";
 import CardMenu from "./CardMenu";
+import { formatDate } from "@/utils/dates";
 
-export default function MemoryCard({ memory }) {
+export default function MemoryCard({ memory, index }) {
+  const { t } = useTranslation();
   const {
     activeTab,
     memories,
     handleDelete,
+    handleMove,
     openEditModal,
-    handlePromote,
-    handleDemote,
+    setPendingFocusIndex,
   } = useMemoriesContext();
 
   const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef(null);
   const buttonRef = useRef(null);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    function handleClickOutside(e) {
-      if (
-        menuRef.current &&
-        !menuRef.current.contains(e.target) &&
-        buttonRef.current &&
-        !buttonRef.current.contains(e.target)
-      ) {
-        setMenuOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [menuOpen]);
+  const contentId = useId();
 
   const isWorkspace = activeTab === "workspace";
   const canMove = isWorkspace
@@ -42,39 +28,54 @@ export default function MemoryCard({ memory }) {
   return (
     <div className="relative shrink-0 bg-zinc-900 light:bg-white light:border light:border-slate-300 rounded-lg p-3 flex gap-0.5 items-start">
       <div className="flex-1 min-w-0">
-        <p className="text-sm leading-5 text-zinc-50 light:text-slate-900">
+        <p
+          id={contentId}
+          className="text-sm leading-5 text-zinc-50 light:text-slate-900 break-words"
+        >
           {memory.content}
         </p>
-        <p className="text-xs leading-4 text-zinc-400 light:text-slate-500 mt-1.5">
-          {moment(memory.createdAt).format("ll")}
+        <p className="text-xs leading-4 text-zinc-400 light:text-slate-600 mt-1.5">
+          {formatDate(memory.createdAt)}
         </p>
       </div>
       <button
         ref={buttonRef}
         type="button"
+        data-memory-menu=""
+        aria-label={t("chat-panels.memories.options")}
+        aria-describedby={contentId}
+        aria-haspopup="menu"
+        aria-expanded={menuOpen}
         onClick={() => setMenuOpen(!menuOpen)}
-        className="shrink-0 border-none bg-transparent cursor-pointer text-zinc-400 light:text-slate-400 hover:text-zinc-50 light:hover:text-slate-900 transition-colors p-0"
+        className="shrink-0 -mr-2 -mt-2 w-11 h-11 md:-mr-1 md:-mt-1 md:w-7 md:h-7 flex items-center justify-center rounded-md border-none bg-transparent cursor-pointer text-zinc-400 light:text-slate-600 hover:text-zinc-50 light:hover:text-slate-900 transition-colors duration-quick"
       >
-        <EllipsisVertical strokeWidth={1.5} size={20} />
+        <EllipsisVertical strokeWidth={1.5} size={20} aria-hidden="true" />
       </button>
       {menuOpen && (
         <CardMenu
-          menuRef={menuRef}
-          buttonRef={buttonRef}
+          triggerRef={buttonRef}
           isWorkspace={isWorkspace}
           canMove={canMove}
+          onClose={() => setMenuOpen(false)}
           onEdit={() => {
             setMenuOpen(false);
+            // The modal hands focus back to whatever had it when it opened.
+            buttonRef.current?.focus();
             openEditModal(memory);
           }}
-          onMove={() => {
+          onMove={async () => {
             setMenuOpen(false);
-            if (isWorkspace) handlePromote(memory.id);
-            else handleDemote(memory.id);
+            buttonRef.current?.focus();
+            if (await handleMove(memory.id)) setPendingFocusIndex(index);
           }}
-          onDelete={() => {
+          onDelete={async () => {
+            const deleted = await handleDelete(memory.id);
+            if (deleted) {
+              setPendingFocusIndex(index);
+              return;
+            }
             setMenuOpen(false);
-            handleDelete(memory.id);
+            buttonRef.current?.focus();
           }}
         />
       )}

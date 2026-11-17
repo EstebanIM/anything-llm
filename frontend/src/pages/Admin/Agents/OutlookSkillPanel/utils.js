@@ -1,5 +1,4 @@
 import { Search, Send, ChartBar, Pencil } from "lucide-react";
-export { filterSkillCategories } from "../utils";
 
 export const getOutlookSkills = (t) => ({
   search: {

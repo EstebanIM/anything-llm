@@ -10,6 +10,8 @@ const escapeStack = [];
 
 function handleEscape(event) {
   if (event.key !== "Escape") return;
+  // A menu or inline editor inside the modal already handled this Escape.
+  if (event.defaultPrevented) return;
   const top = escapeStack[escapeStack.length - 1];
   top?.onClose?.();
 }

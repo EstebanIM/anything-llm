@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useId, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import Sidebar from "@/components/SettingsSidebar";
-import { isMobile } from "react-device-detect";
 import System from "@/models/system";
 import showToast from "@/utils/toast";
-import AnythingLLMIcon from "@/media/logo/anything-llm-icon.png";
+import { serverErrorMessage } from "@/utils/serverErrors";
+import { BUILT_IN_LOGO } from "@/utils/builtInLogos";
 import OpenAiLogo from "@/media/llmprovider/openai.png";
 import AzureOpenAiLogo from "@/media/llmprovider/azure.png";
 import GeminiAiLogo from "@/media/llmprovider/gemini.png";
@@ -35,17 +36,18 @@ import OpenRouterOptions from "@/components/EmbeddingSelection/OpenRouterOptions
 import MistralAiOptions from "@/components/EmbeddingSelection/MistralAiOptions";
 import LemonadeOptions from "@/components/EmbeddingSelection/LemonadeOptions";
 
-import EmbedderItem from "@/components/EmbeddingSelection/EmbedderItem";
 import { useModal } from "@/hooks/useModal";
 import Modal from "@/components/lib/Modal";
 import CTAButton from "@/components/lib/CTAButton";
 import { useTranslation } from "react-i18next";
 import useCustomAppName from "@/hooks/useCustomAppName";
 import ProviderSearchMenu from "@/components/lib/ProviderSearchMenu";
+import ProviderOption from "@/components/lib/ProviderSearchMenu/ProviderOption";
 const EMBEDDERS_EXTRA = [
   {
     name: "OpenAI",
     value: "openai",
+    descriptionKey: "provider-pages.descriptions.embedding.openai",
     logo: OpenAiLogo,
     options: (settings) => <OpenAiOptions settings={settings} />,
     description: "The standard option for most non-commercial use.",
@@ -53,6 +55,7 @@ const EMBEDDERS_EXTRA = [
   {
     name: "Azure OpenAI",
     value: "azure",
+    descriptionKey: "provider-pages.descriptions.embedding.azure",
     logo: AzureOpenAiLogo,
     options: (settings) => <AzureAiOptions settings={settings} />,
     description: "The enterprise option of OpenAI hosted on Azure services.",
@@ -60,6 +63,7 @@ const EMBEDDERS_EXTRA = [
   {
     name: "Gemini",
     value: "gemini",
+    descriptionKey: "provider-pages.descriptions.embedding.gemini",
     logo: GeminiAiLogo,
     options: (settings) => <GeminiOptions settings={settings} />,
     description: "Run powerful embedding models from Google AI.",
@@ -67,6 +71,7 @@ const EMBEDDERS_EXTRA = [
   {
     name: "Local AI",
     value: "localai",
+    descriptionKey: "provider-pages.descriptions.embedding.localai",
     logo: LocalAiLogo,
     options: (settings) => <LocalAiOptions settings={settings} />,
     description: "Run embedding models locally on your own machine.",
@@ -74,6 +79,7 @@ const EMBEDDERS_EXTRA = [
   {
     name: "Ollama",
     value: "ollama",
+    descriptionKey: "provider-pages.descriptions.embedding.ollama",
     logo: OllamaLogo,
     options: (settings) => <OllamaEmbeddingOptions settings={settings} />,
     description: "Run embedding models locally on your own machine.",
@@ -81,6 +87,7 @@ const EMBEDDERS_EXTRA = [
   {
     name: "LM Studio",
     value: "lmstudio",
+    descriptionKey: "provider-pages.descriptions.embedding.lmstudio",
     logo: LMStudioLogo,
     options: (settings) => <LMStudioEmbeddingOptions settings={settings} />,
     description:
@@ -89,6 +96,7 @@ const EMBEDDERS_EXTRA = [
   {
     name: "Lemonade",
     value: "lemonade",
+    descriptionKey: "provider-pages.descriptions.embedding.lemonade",
     logo: LemonadeLogo,
     options: (settings) => <LemonadeOptions settings={settings} />,
     description:
@@ -97,6 +105,7 @@ const EMBEDDERS_EXTRA = [
   {
     name: "OpenRouter",
     value: "openrouter",
+    descriptionKey: "provider-pages.descriptions.embedding.openrouter",
     logo: OpenRouterLogo,
     options: (settings) => <OpenRouterOptions settings={settings} />,
     description: "Run embedding models from OpenRouter.",
@@ -104,6 +113,7 @@ const EMBEDDERS_EXTRA = [
   {
     name: "LiteLLM",
     value: "litellm",
+    descriptionKey: "provider-pages.descriptions.embedding.litellm",
     logo: LiteLLMLogo,
     options: (settings) => <LiteLLMOptions settings={settings} />,
     description: "Run powerful embedding models from LiteLLM.",
@@ -111,6 +121,7 @@ const EMBEDDERS_EXTRA = [
   {
     name: "Cohere",
     value: "cohere",
+    descriptionKey: "provider-pages.descriptions.embedding.cohere",
     logo: CohereLogo,
     options: (settings) => <CohereEmbeddingOptions settings={settings} />,
     description: "Run powerful embedding models from Cohere.",
@@ -118,6 +129,7 @@ const EMBEDDERS_EXTRA = [
   {
     name: "Voyage AI",
     value: "voyageai",
+    descriptionKey: "provider-pages.descriptions.embedding.voyageai",
     logo: VoyageAiLogo,
     options: (settings) => <VoyageAiOptions settings={settings} />,
     description: "Run powerful embedding models from Voyage AI.",
@@ -125,6 +137,7 @@ const EMBEDDERS_EXTRA = [
   {
     name: "Mistral AI",
     value: "mistral",
+    descriptionKey: "provider-pages.descriptions.embedding.mistral",
     logo: MistralAiLogo,
     options: (settings) => <MistralAiOptions settings={settings} />,
     description: "Run powerful embedding models from Mistral AI.",
@@ -132,6 +145,7 @@ const EMBEDDERS_EXTRA = [
   {
     name: "Generic OpenAI",
     value: "generic-openai",
+    descriptionKey: "provider-pages.descriptions.embedding.generic-openai",
     logo: GenericOpenAiLogo,
     options: (settings) => (
       <GenericOpenAiEmbeddingOptions settings={settings} />
@@ -141,11 +155,13 @@ const EMBEDDERS_EXTRA = [
 ];
 export default function GeneralEmbeddingPreference() {
   const { brandName } = useCustomAppName();
+  const { t } = useTranslation();
   const EMBEDDERS = [
     {
-      name: `${brandName} Embedder`,
+      name: t("provider-pages.names.native-embedder"),
       value: "native",
-      logo: AnythingLLMIcon,
+      descriptionKey: "provider-pages.descriptions.embedding.native",
+      logo: BUILT_IN_LOGO,
       options: (settings) => <NativeEmbeddingOptions settings={settings} />,
       description: `Use the built-in embedding provider for ${brandName}. Zero setup!`,
     },
@@ -159,7 +175,9 @@ export default function GeneralEmbeddingPreference() {
   const [loading, setLoading] = useState(true);
   const [selectedEmbedder, setSelectedEmbedder] = useState(null);
   const { isOpen, openModal, closeModal } = useModal();
-  const { t } = useTranslation();
+  const headingRef = useRef(null);
+  const providerHeadingId = useId();
+  const saveButtonId = useId();
 
   function embedderModelChanged(formEl) {
     try {
@@ -178,6 +196,7 @@ export default function GeneralEmbeddingPreference() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (saving) return;
     if (
       (selectedEmbedder !== settings?.EmbeddingEngine ||
         embedderModelChanged(e.target)) &&
@@ -196,34 +215,62 @@ export default function GeneralEmbeddingPreference() {
     const settingsData = {};
     const formData = new FormData(form);
     settingsData.EmbeddingEngine = selectedEmbedder;
-    for (var [key, value] of formData.entries()) settingsData[key] = value;
+    for (const [key, value] of formData.entries()) settingsData[key] = value;
 
     const { error } = await System.updateSystem(settingsData);
     if (error) {
-      showToast(`Failed to save embedding settings: ${error}`, "error");
-      setHasChanges(true);
-    } else {
-      showToast("Embedding preferences saved successfully.", "success");
-      setHasChanges(false);
+      showToast(
+        serverErrorMessage(error, t, "provider-pages.toast.failed"),
+        "error"
+      );
+      flushSync(() => {
+        setSaving(false);
+        closeModal();
+      });
+      restoreFocusAfterSave(false);
+      return;
     }
-    setSaving(false);
-    closeModal();
+
+    showToast(t("provider-pages.toast.saved.embedding"), "success");
+    const freshSettings = await System.keys();
+    flushSync(() => {
+      if (freshSettings) applySettings(freshSettings);
+      setHasChanges(false);
+      setSaving(false);
+      closeModal();
+    });
+    restoreFocusAfterSave(true);
   };
 
+  // Saving disables the button and success removes it, which drops focus on <body>.
+  function restoreFocusAfterSave(saved) {
+    if (document.activeElement && document.activeElement !== document.body)
+      return;
+    if (saved) headingRef.current?.focus();
+    else document.getElementById(saveButtonId)?.focus();
+  }
+
   const updateChoice = (selection) => {
+    if (selection === selectedEmbedder) return;
     setSelectedEmbedder(selection);
     setHasChanges(true);
   };
 
+  function applySettings(_settings) {
+    setSettings(_settings);
+    setHasEmbeddings(_settings?.HasExistingEmbeddings || false);
+    setHasCachedEmbeddings(_settings?.HasCachedEmbeddings || false);
+  }
+
+  async function fetchKeys() {
+    setLoading(true);
+    const _settings = await System.keys();
+    applySettings(_settings);
+    setSelectedEmbedder(_settings?.EmbeddingEngine || "native");
+    setLoading(false);
+  }
+
   useEffect(() => {
-    async function fetchKeys() {
-      const _settings = await System.keys();
-      setSettings(_settings);
-      setSelectedEmbedder(_settings?.EmbeddingEngine || "native");
-      setHasEmbeddings(_settings?.HasExistingEmbeddings || false);
-      setHasCachedEmbeddings(_settings?.HasCachedEmbeddings || false);
-      setLoading(false);
-    }
     fetchKeys();
   }, []);
 
@@ -234,66 +281,71 @@ export default function GeneralEmbeddingPreference() {
   return (
     <div className="w-screen h-screen overflow-hidden bg-zinc-950 light:bg-slate-50 flex">
       <Sidebar />
-      {loading ? (
-        <div
-          style={{
-            height: isMobile ? "100%" : "calc(100% - 32px)",
-          }}
-          className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full overflow-y-scroll p-4 md:p-0"
-        >
-          <div className="w-full h-full flex justify-center items-center">
-            <PreLoader />
+      <main className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full md:h-[calc(100%-32px)] overflow-y-auto p-4 md:p-0">
+        <div className="flex flex-col w-full px-1 md:pl-6 md:pr-[50px] py-16 md:py-6">
+          <div className="w-full flex flex-col gap-y-1 pb-6 border-white light:border-theme-sidebar-border border-b-2 border-opacity-10">
+            <h1
+              ref={headingRef}
+              tabIndex={-1}
+              className="text-lg leading-6 font-bold text-white"
+            >
+              {t("embedding.title")}
+            </h1>
+            <p className="text-xs leading-[18px] text-white text-opacity-60">
+              {t("embedding.desc-start")}
+              <br />
+              {t("embedding.desc-end")}
+            </p>
           </div>
-        </div>
-      ) : (
-        <div
-          style={{
-            height: isMobile ? "100%" : "calc(100% - 32px)",
-          }}
-          className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full overflow-y-scroll p-4 md:p-0"
-        >
-          <form
-            id="embedding-form"
-            onSubmit={handleSubmit}
-            className="flex w-full"
-          >
-            <div className="flex flex-col w-full px-1 md:pl-6 md:pr-[50px] py-16 md:py-6">
-              <div className="w-full flex flex-col gap-y-1 pb-6 border-white light:border-theme-sidebar-border border-b-2 border-opacity-10">
-                <div className="flex gap-x-4 items-center">
-                  <p className="text-lg leading-6 font-bold text-white">
-                    {t("embedding.title")}
-                  </p>
-                </div>
-                <p className="text-xs leading-[18px] font-base text-white text-opacity-60">
-                  {t("embedding.desc-start")}
-                  <br />
-                  {t("embedding.desc-end")}
-                </p>
-              </div>
+          {loading ? (
+            <div className="w-full flex justify-center py-16">
+              <PreLoader />
+            </div>
+          ) : !settings ? (
+            <div className="flex flex-col items-start gap-y-4 py-10">
+              <p role="alert" className="text-sm text-white">
+                {t("provider-pages.load-error")}
+              </p>
+              <CTAButton type="button" onClick={fetchKeys} className="mr-0">
+                {t("provider-fields.retry")}
+              </CTAButton>
+            </div>
+          ) : (
+            <form
+              id="embedding-form"
+              onSubmit={handleSubmit}
+              className="flex flex-col w-full"
+            >
               <div className="w-full justify-end flex">
                 {hasChanges && (
                   <CTAButton
-                    onClick={() => handleSubmit()}
+                    id={saveButtonId}
+                    busy={saving}
                     className="mt-3 mr-0 -mb-14 z-10"
                   >
                     {saving ? t("common.saving") : t("common.save")}
                   </CTAButton>
                 )}
               </div>
-              <div className="text-base font-bold text-white mt-6 mb-4">
+              <h2
+                id={providerHeadingId}
+                className="text-base font-bold text-white mt-6 mb-4"
+              >
                 {t("embedding.provider.title")}
-              </div>
+              </h2>
               <div className="relative">
                 <ProviderSearchMenu
                   items={EMBEDDERS}
+                  labelledBy={providerHeadingId}
                   selected={selectedEmbedderObject}
-                  placeholder="Search all embedding providers"
+                  placeholder={t("provider-pages.search.embedding")}
                   renderItem={(embedder, close) => (
-                    <EmbedderItem
+                    <ProviderOption
                       name={embedder.name}
                       value={embedder.value}
                       image={embedder.logo}
                       description={embedder.description}
+                      descriptionKey={embedder.descriptionKey}
                       checked={selectedEmbedder === embedder.value}
                       onClick={() => {
                         updateChoice(embedder.value);
@@ -307,18 +359,17 @@ export default function GeneralEmbeddingPreference() {
                 onChange={() => setHasChanges(true)}
                 className="mt-4 flex flex-col gap-y-1"
               >
-                {selectedEmbedder &&
-                  EMBEDDERS.find(
-                    (embedder) => embedder.value === selectedEmbedder
-                  )?.options(settings)}
+                {selectedEmbedderObject?.options(settings)}
               </div>
-            </div>
-          </form>
+            </form>
+          )}
         </div>
-      )}
+      </main>
       <Modal isOpen={isOpen} onClose={closeModal} size="lg">
         <ChangeWarningModal
-          warningText="Switching the embedding model will reset all previously embedded documents in all workspaces.\n\nConfirming will clear all embeddings from your vector database and remove all documents from your workspaces. Your uploaded documents will not be deleted, they will be available for re-embedding."
+          warningText={t("provider-pages.change-warning.embedding")}
+          confirmLabel={t("provider-pages.change-warning.confirm-clear")}
+          busy={saving}
           onClose={closeModal}
           onConfirm={handleSaveSettings}
         />

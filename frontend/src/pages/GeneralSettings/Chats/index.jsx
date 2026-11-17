@@ -1,289 +1,200 @@
-import { useEffect, useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
+import { Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import Sidebar from "@/components/SettingsSidebar";
-import { isMobile } from "react-device-detect";
-import * as Skeleton from "react-loading-skeleton";
-import "react-loading-skeleton/dist/skeleton.css";
-import useQuery from "@/hooks/useQuery";
 import useMultiUserMode from "@/hooks/useMultiUserMode";
-import ChatRow from "./ChatRow";
 import showToast from "@/utils/toast";
 import System from "@/models/system";
-import { ChevronDown, Download, Trash2 } from "lucide-react";
-import { saveAs } from "file-saver";
-import { useTranslation } from "react-i18next";
+import TableState from "@/components/lib/TableState";
+import ConfirmModal from "@/components/lib/ConfirmModal";
 import { CanViewChatHistory } from "@/components/CanViewChatHistory";
-
-const exportOptions = {
-  csv: {
-    name: "CSV",
-    mimeType: "text/csv",
-    fileExtension: "csv",
-    filenameFunc: () => {
-      return `anythingllm-chats-${new Date().toLocaleDateString()}`;
-    },
-  },
-  json: {
-    name: "JSON",
-    mimeType: "application/json",
-    fileExtension: "json",
-    filenameFunc: () => {
-      return `anythingllm-chats-${new Date().toLocaleDateString()}`;
-    },
-  },
-  jsonl: {
-    name: "JSONL",
-    mimeType: "application/jsonl",
-    fileExtension: "jsonl",
-    filenameFunc: () => {
-      return `anythingllm-chats-${new Date().toLocaleDateString()}-lines`;
-    },
-  },
-  jsonAlpaca: {
-    name: "JSON (Alpaca)",
-    mimeType: "application/json",
-    fileExtension: "json",
-    filenameFunc: () => {
-      return `anythingllm-chats-${new Date().toLocaleDateString()}-alpaca`;
-    },
-  },
-};
+import ChatRow from "./ChatRow";
+import ExportChatsMenu from "../ChatEmbedWidgets/components/ExportChatsMenu";
+import Pagination from "../ChatEmbedWidgets/components/Pagination";
+import usePagedChats from "../ChatEmbedWidgets/components/usePagedChats";
+import useFocusAfterRemoval from "@/hooks/useFocusAfterRemoval";
 
 export default function WorkspaceChats() {
-  const [showMenu, setShowMenu] = useState(false);
-  const menuRef = useRef();
-  const openMenuButton = useRef();
-  const query = useQuery();
-  const [loading, setLoading] = useState(true);
-  const [chats, setChats] = useState([]);
-  const [offset, setOffset] = useState(Number(query.get("offset") || 0));
-  const [canNext, setCanNext] = useState(false);
   const { t } = useTranslation();
+  const multiUserMode = useMultiUserMode();
+  const headingId = useId();
+  const headingRef = useRef(null);
+  const tbodyRef = useRef(null);
+  const paged = usePagedChats(System.chats);
+  const markRemoved = useFocusAfterRemoval(
+    tbodyRef,
+    headingRef,
+    '[id^="chat-delete-"]'
+  );
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [clearing, setClearing] = useState(false);
+  const columns = multiUserMode ? 7 : 6;
 
-  const handleDumpChats = async (exportType) => {
-    const chats = await System.exportChats(exportType, "workspace");
-    if (!!chats) {
-      const { name, mimeType, fileExtension, filenameFunc } =
-        exportOptions[exportType];
-      const blob = new Blob([chats], { type: mimeType });
-      saveAs(blob, `${filenameFunc()}.${fileExtension}`);
-      showToast(`Chats exported successfully as ${name}.`, "success");
-    } else {
-      showToast("Failed to export chats.", "error");
-    }
-  };
-
-  const handleClearAllChats = async () => {
-    if (
-      !window.confirm(
-        `Are you sure you want to clear all chats?\n\nThis action is irreversible.`
-      )
-    )
+  async function handleDeleteChat(chatId) {
+    const { success } = await System.deleteChat(chatId);
+    if (!success) {
+      showToast(t("embed-pages.toast.chat-delete-failed"), "error", {
+        clear: true,
+      });
       return false;
-    await System.deleteChat(-1);
-    setChats([]);
-    showToast("Cleared all chats.", "success");
-  };
-
-  const toggleMenu = () => {
-    setShowMenu(!showMenu);
-  };
-
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (
-        menuRef.current &&
-        !menuRef.current.contains(event.target) &&
-        !openMenuButton.current.contains(event.target)
-      ) {
-        setShowMenu(false);
-      }
     }
+    markRemoved(paged.chats.findIndex((chat) => chat.id === chatId));
+    paged.removeChat(chatId);
+    showToast(t("embed-pages.toast.chat-deleted"), "success", { clear: true });
+    return true;
+  }
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
-  useEffect(() => {
-    async function fetchChats() {
-      const { chats: _chats = [], hasPages = false } =
-        await System.chats(offset);
-      setChats(_chats);
-      setCanNext(hasPages);
-      setLoading(false);
+  // Deletes every chat of the instance (id -1), not only this page.
+  async function handleClearAll() {
+    setClearing(true);
+    const { success } = await System.deleteChat(-1);
+    setClearing(false);
+    if (!success) {
+      showToast(t("embed-pages.clear.failed"), "error", { clear: true });
+      return;
     }
-    fetchChats();
-  }, [offset]);
+    setConfirmClear(false);
+    // The clear button goes away with the chats: focus moves to the heading.
+    markRemoved(0);
+    paged.clearAll();
+    if (paged.offset > 0) paged.setOffset(0);
+    showToast(t("embed-pages.clear.done"), "success", { clear: true });
+  }
 
   return (
     <CanViewChatHistory>
       <div className="w-screen h-screen overflow-hidden bg-zinc-950 light:bg-slate-50 flex">
         <Sidebar />
-        <div
-          style={{ height: isMobile ? "100%" : "calc(100% - 32px)" }}
-          className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full overflow-y-scroll p-4 md:p-0"
-        >
+        <main className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full md:h-[calc(100%-32px)] overflow-y-auto p-4 md:p-0">
           <div className="flex flex-col w-full px-1 md:pl-6 md:pr-[50px] md:py-6 py-16">
-            <div className="w-full flex flex-col gap-y-1 pb-6 border-white/10 border-b-2">
+            <div className="w-full flex flex-col gap-y-1 pb-6 border-white/10 light:border-theme-sidebar-border border-b-2">
               <div className="flex flex-wrap gap-4 items-center">
-                <p className="text-lg leading-6 font-bold text-theme-text-primary">
+                <h1
+                  id={headingId}
+                  ref={headingRef}
+                  tabIndex={-1}
+                  className="text-lg leading-6 font-bold text-white"
+                >
                   {t("recorded.title")}
-                </p>
-                <div className="relative">
+                </h1>
+                <ExportChatsMenu
+                  chatType="workspace"
+                  filePrefix="iasmar-chats"
+                />
+                {paged.total > 0 && (
                   <button
-                    ref={openMenuButton}
-                    onClick={toggleMenu}
-                    className="flex items-center gap-x-2 px-4 py-1 rounded-lg bg-primary-button hover:light:bg-theme-bg-primary hover:text-theme-text-primary text-xs font-semibold hover:bg-secondary shadow-[0_4px_14px_rgba(0,0,0,0.25)] h-[34px] w-fit"
+                    type="button"
+                    onClick={() => setConfirmClear(true)}
+                    className="flex items-center gap-x-2 px-4 rounded-lg text-xs font-semibold min-h-[44px] md:min-h-0 md:h-[34px] w-fit border border-zinc-500 light:border-slate-500 text-zinc-200 light:text-slate-700 hover:bg-red-600 hover:border-red-600 hover:text-[#ffffff] light:hover:text-[#ffffff] transition-colors duration-quick ease-smooth"
                   >
-                    <Download strokeWidth={1.5} size={18} />
-                    {t("recorded.export")}
-                    <ChevronDown strokeWidth={1.5} size={18} />
-                  </button>
-                  <div
-                    ref={menuRef}
-                    className={`${
-                      showMenu ? "slide-down" : "slide-up hidden"
-                    } z-20 w-fit rounded-lg absolute top-full right-0 bg-secondary light:bg-theme-bg-secondary mt-2 shadow-md`}
-                  >
-                    <div className="py-2">
-                      {Object.entries(exportOptions).map(([key, data]) => (
-                        <button
-                          key={key}
-                          onClick={() => {
-                            handleDumpChats(key);
-                            setShowMenu(false);
-                          }}
-                          className="w-full text-left px-4 py-2 text-white text-sm hover:bg-[#3D4147] light:hover:bg-theme-sidebar-item-hover"
-                        >
-                          {data.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                {chats.length > 0 && (
-                  <button
-                    onClick={handleClearAllChats}
-                    className="flex items-center gap-x-2 px-4 py-1 border hover:border-transparent light:border-theme-sidebar-border border-white/40 text-white/40 light:text-theme-text-secondary rounded-lg bg-transparent hover:light:text-theme-bg-primary hover:text-theme-text-primary text-xs font-semibold hover:bg-red-500 shadow-[0_4px_14px_rgba(0,0,0,0.25)] h-[34px] w-fit"
-                  >
-                    <Trash2 strokeWidth={1.5} size={18} />
-                    Clear Chats
+                    <Trash2 strokeWidth={1.5} size={18} aria-hidden="true" />
+                    {t("embed-pages.clear.button")}
                   </button>
                 )}
               </div>
-              <p className="text-xs leading-[18px] font-base text-theme-text-secondary mt-2">
+              <p className="text-xs leading-[18px] text-theme-text-secondary mt-2">
                 {t("recorded.description")}
               </p>
             </div>
-            <div className="overflow-x-auto">
-              <ChatsContainer
-                loading={loading}
-                chats={chats}
-                setChats={setChats}
-                offset={offset}
-                setOffset={setOffset}
-                canNext={canNext}
-                t={t}
-              />
+            <div
+              role="region"
+              aria-labelledby={headingId}
+              tabIndex={0}
+              className="overflow-x-auto mt-2 rounded-sm"
+            >
+              <table className="w-full text-xs text-left min-w-[640px] border-spacing-0">
+                <thead className="text-theme-text-secondary text-xs leading-[18px] font-bold uppercase border-white/10 light:border-slate-200 border-b">
+                  <tr>
+                    <th scope="col" className="px-6 py-3">
+                      {t("recorded.table.id")}
+                    </th>
+                    {multiUserMode && (
+                      <th scope="col" className="px-6 py-3">
+                        {t("recorded.table.by")}
+                      </th>
+                    )}
+                    <th scope="col" className="px-6 py-3">
+                      {t("recorded.table.workspace")}
+                    </th>
+                    <th scope="col" className="px-6 py-3">
+                      {t("recorded.table.prompt")}
+                    </th>
+                    <th scope="col" className="px-6 py-3">
+                      {t("recorded.table.response")}
+                    </th>
+                    <th scope="col" className="px-6 py-3">
+                      {t("recorded.table.at")}
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-3 sticky right-0 md:static bg-zinc-900 light:bg-white"
+                    >
+                      <span className="sr-only">{t("api.actions")}</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody
+                  ref={tbodyRef}
+                  aria-busy={paged.status === "loading" || undefined}
+                >
+                  {paged.status === "loading" && (
+                    <TableState state="loading" colSpan={columns} />
+                  )}
+                  {paged.status === "error" && (
+                    <TableState
+                      state="error"
+                      colSpan={columns}
+                      onRetry={paged.retry}
+                    />
+                  )}
+                  {paged.status === "ready" && paged.chats.length === 0 && (
+                    <TableState
+                      state="empty"
+                      colSpan={columns}
+                      message={
+                        paged.offset > 0
+                          ? t("embed-pages.history.empty-page")
+                          : t("embed-pages.history.empty-workspace")
+                      }
+                    />
+                  )}
+                  {paged.status === "ready" &&
+                    paged.chats.map((chat) => (
+                      <ChatRow
+                        key={chat.id}
+                        chat={chat}
+                        onDelete={handleDeleteChat}
+                      />
+                    ))}
+                </tbody>
+              </table>
             </div>
-          </div>
-        </div>
-      </div>
-    </CanViewChatHistory>
-  );
-}
-
-function ChatsContainer({
-  loading,
-  chats,
-  setChats,
-  offset,
-  setOffset,
-  canNext,
-  t,
-}) {
-  const multiUserMode = useMultiUserMode();
-  const handlePrevious = () => {
-    setOffset(Math.max(offset - 1, 0));
-  };
-  const handleNext = () => {
-    setOffset(offset + 1);
-  };
-
-  const handleDeleteChat = async (chatId) => {
-    await System.deleteChat(chatId);
-    setChats((prevChats) => prevChats.filter((chat) => chat.id !== chatId));
-  };
-
-  if (loading) {
-    return (
-      <Skeleton.default
-        height="80vh"
-        width="100%"
-        highlightColor="var(--theme-bg-primary)"
-        baseColor="var(--theme-bg-secondary)"
-        count={1}
-        className="w-full p-4 rounded-b-2xl rounded-tr-2xl rounded-tl-sm"
-        containerClassName="flex w-full"
-      />
-    );
-  }
-
-  return (
-    <>
-      <table className="w-full text-xs text-left rounded-lg min-w-[640px] border-spacing-0">
-        <thead className="text-theme-text-secondary text-xs leading-[18px] font-bold uppercase border-white/10 border-b">
-          <tr>
-            <th scope="col" className="px-6 py-3 rounded-tl-lg">
-              {t("recorded.table.id")}
-            </th>
-            {multiUserMode && (
-              <th scope="col" className="px-6 py-3">
-                {t("recorded.table.by")}
-              </th>
+            {(paged.offset > 0 || paged.canNext) && (
+              <Pagination
+                page={paged.offset + 1}
+                canNext={paged.canNext}
+                busy={paged.status === "loading"}
+                onChange={(page) => paged.setOffset(page - 1)}
+                label={t("embed-pages.pagination.label", {
+                  name: t("recorded.title"),
+                })}
+              />
             )}
-            <th scope="col" className="px-6 py-3">
-              {t("recorded.table.workspace")}
-            </th>
-            <th scope="col" className="px-6 py-3">
-              {t("recorded.table.prompt")}
-            </th>
-            <th scope="col" className="px-6 py-3">
-              {t("recorded.table.response")}
-            </th>
-            <th scope="col" className="px-6 py-3">
-              {t("recorded.table.at")}
-            </th>
-            <th scope="col" className="px-6 py-3 rounded-tr-lg">
-              {" "}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {!!chats &&
-            chats.map((chat) => (
-              <ChatRow key={chat.id} chat={chat} onDelete={handleDeleteChat} />
-            ))}
-        </tbody>
-      </table>
-      <div className="flex w-full justify-between items-center mt-6">
-        <button
-          onClick={handlePrevious}
-          className="px-4 py-2 rounded-lg border border-theme-text-secondary text-theme-text-secondary text-sm items-center flex gap-x-2 hover:bg-theme-text-secondary hover:text-theme-bg-secondary disabled:invisible"
-          disabled={offset === 0}
-        >
-          {" "}
-          Previous Page
-        </button>
-        <button
-          onClick={handleNext}
-          className="px-4 py-2 rounded-lg border border-slate-200 text-slate-200 light:text-theme-text-secondary light:border-theme-sidebar-border text-sm items-center flex gap-x-2 hover:bg-slate-200 hover:text-slate-800 disabled:invisible"
-          disabled={!canNext}
-        >
-          Next Page
-        </button>
+          </div>
+        </main>
       </div>
-    </>
+      <ConfirmModal
+        isOpen={confirmClear}
+        title={t("embed-pages.clear.title")}
+        confirmLabel={t("embed-pages.clear.button")}
+        busy={clearing}
+        onConfirm={handleClearAll}
+        onCancel={() => setConfirmClear(false)}
+      >
+        <p>{t("embed-pages.clear.body", { count: paged.total })}</p>
+        <p>{t("embed-pages.clear.export-first")}</p>
+        <p>{t("embed-pages.irreversible")}</p>
+      </ConfirmModal>
+    </CanViewChatHistory>
   );
 }

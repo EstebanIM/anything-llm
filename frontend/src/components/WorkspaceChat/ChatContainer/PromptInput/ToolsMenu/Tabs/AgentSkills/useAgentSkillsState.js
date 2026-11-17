@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import Admin from "@/models/admin";
+import showToast from "@/utils/toast";
 import System from "@/models/system";
 import AgentPlugins from "@/models/experimental/agentPlugins";
 import AgentFlows from "@/models/agentFlows";
@@ -8,11 +10,16 @@ import { getSubSkillPreferenceKeys } from "./skillRegistry";
 import useSubSkillPreferences from "./useSubSkillPreferences";
 import { toggleAgentSessionTool } from "@/utils/chat/agent";
 
+function notifyToggleFailed(t) {
+  showToast(t("chat-input.skill-toggle-failed"), "error", { clear: true });
+}
+
 /**
  * Core hook for managing all agent skill state.
  * Handles fetching, toggling, and persisting skill preferences.
  */
 export default function useAgentSkillsState(defaultSkills) {
+  const { t } = useTranslation();
   // Core skill state
   const [fileSystemAgentAvailable, setFileSystemAgentAvailable] =
     useState(false);
@@ -96,7 +103,8 @@ export default function useAgentSkillsState(defaultSkills) {
     [defaultSkills, disabledDefaults, enabledConfigurable]
   );
 
-  // Toggle functions
+  // Toggle functions. Each one updates the UI optimistically and rolls back
+  // with a toast if the server does not save the change.
   const toggleSkill = useCallback(
     async (key) => {
       const toggleItem = (arr, item) =>
@@ -104,78 +112,113 @@ export default function useAgentSkillsState(defaultSkills) {
       const newEnabled = !isSkillEnabled(key);
 
       if (key in defaultSkills) {
+        const previous = disabledDefaults;
         const updated = toggleItem(disabledDefaults, key);
         setDisabledDefaults(updated);
-        await Admin.updateSystemPreferences({
+        const res = await Admin.updateSystemPreferences({
           disabled_agent_skills: updated.join(","),
           default_agent_skills: enabledConfigurable.join(","),
         });
+        if (!res?.success) {
+          setDisabledDefaults(previous);
+          return notifyToggleFailed(t);
+        }
         toggleAgentSessionTool(key, newEnabled);
         return;
       }
 
+      const previous = enabledConfigurable;
       const updated = toggleItem(enabledConfigurable, key);
       setEnabledConfigurable(updated);
-      await Admin.updateSystemPreferences({
+      const res = await Admin.updateSystemPreferences({
         disabled_agent_skills: disabledDefaults.join(","),
         default_agent_skills: updated.join(","),
       });
+      if (!res?.success) {
+        setEnabledConfigurable(previous);
+        return notifyToggleFailed(t);
+      }
       toggleAgentSessionTool(key, newEnabled);
     },
-    [defaultSkills, disabledDefaults, enabledConfigurable, isSkillEnabled]
+    [defaultSkills, disabledDefaults, enabledConfigurable, isSkillEnabled, t]
   );
 
-  const toggleImportedSkill = useCallback(async (skill) => {
-    const newActive = !skill.active;
-    setImportedSkills((prev) =>
-      prev.map((s) =>
-        s.hubId === skill.hubId ? { ...s, active: newActive } : s
-      )
-    );
-    await AgentPlugins.toggleFeature(skill.hubId, newActive);
-    toggleAgentSessionTool(skill.hubId, newActive);
-  }, []);
+  const toggleImportedSkill = useCallback(
+    async (skill) => {
+      const setActive = (active) =>
+        setImportedSkills((prev) =>
+          prev.map((s) => (s.hubId === skill.hubId ? { ...s, active } : s))
+        );
+      const newActive = !skill.active;
+      setActive(newActive);
+      const saved = await AgentPlugins.toggleFeature(skill.hubId, newActive);
+      if (!saved) {
+        setActive(skill.active);
+        return notifyToggleFailed(t);
+      }
+      toggleAgentSessionTool(skill.hubId, newActive);
+    },
+    [t]
+  );
 
-  const toggleFlow = useCallback(async (flow) => {
-    const newActive = !flow.active;
-    setFlows((prev) =>
-      prev.map((f) => (f.uuid === flow.uuid ? { ...f, active: newActive } : f))
-    );
-    await AgentFlows.toggleFlow(flow.uuid, newActive);
-    toggleAgentSessionTool(`@@flow_${flow.uuid}`, newActive);
-  }, []);
+  const toggleFlow = useCallback(
+    async (flow) => {
+      const setActive = (active) =>
+        setFlows((prev) =>
+          prev.map((f) => (f.uuid === flow.uuid ? { ...f, active } : f))
+        );
+      const newActive = !flow.active;
+      setActive(newActive);
+      const res = await AgentFlows.toggleFlow(flow.uuid, newActive);
+      if (!res?.success) {
+        setActive(flow.active);
+        return notifyToggleFailed(t);
+      }
+      toggleAgentSessionTool(`@@flow_${flow.uuid}`, newActive);
+    },
+    [t]
+  );
 
   const toggleMcpTool = useCallback(
     async (serverName, toolName, currentlyEnabled) => {
       const newEnabled = !currentlyEnabled;
-      setMcpServers((prev) => {
-        return prev.map((server) => {
-          if (server.name !== serverName) return server;
-          const currentSuppressed =
-            server.config?.anythingllm?.suppressedTools || [];
-          const newSuppressed = newEnabled
-            ? currentSuppressed.filter((t) => t !== toolName)
-            : [...currentSuppressed, toolName];
-          return {
-            ...server,
-            config: {
-              ...server.config,
-              anythingllm: {
-                ...server.config?.anythingllm,
-                suppressedTools: newSuppressed,
+      const setToolEnabled = (enabled) =>
+        setMcpServers((prev) => {
+          return prev.map((server) => {
+            if (server.name !== serverName) return server;
+            const currentSuppressed =
+              server.config?.anythingllm?.suppressedTools || [];
+            const withoutTool = currentSuppressed.filter(
+              (name) => name !== toolName
+            );
+            const newSuppressed = enabled
+              ? withoutTool
+              : [...withoutTool, toolName];
+            return {
+              ...server,
+              config: {
+                ...server.config,
+                anythingllm: {
+                  ...server.config?.anythingllm,
+                  suppressedTools: newSuppressed,
+                },
               },
-            },
-          };
+            };
+          });
         });
-      });
-      await MCPServers.toggleTool(serverName, toolName, newEnabled);
+      setToolEnabled(newEnabled);
+      const res = await MCPServers.toggleTool(serverName, toolName, newEnabled);
+      if (!res?.success) {
+        setToolEnabled(currentlyEnabled);
+        return notifyToggleFailed(t);
+      }
       toggleAgentSessionTool(
         `${serverName}-${toolName}`,
         newEnabled,
         serverName
       );
     },
-    []
+    [t]
   );
 
   return {

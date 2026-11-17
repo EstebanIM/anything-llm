@@ -1,11 +1,14 @@
 import Workspace from "@/models/workspace";
 import paths from "@/utils/paths";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import { Plus, LoaderCircle, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import ThreadItem from "./ThreadItem";
 import { useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import useHoverMetaKey from "./hooks";
+import useFocusAfterRemoval from "@/hooks/useFocusAfterRemoval";
 export const THREAD_RENAME_EVENT = "renameThread";
 export const THREAD_FORK_EVENT = "forkToThread";
 
@@ -13,12 +16,18 @@ export default function ThreadContainer({
   workspace,
   isVirtualThread = false,
 }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { threadSlug = null } = useParams();
   const [threads, setThreads] = useState([]);
   const [defaultThreadHasChats, setDefaultThreadHasChats] = useState(false);
   const [loading, setLoading] = useState(true);
   const { containerRef, ctrlPressed } = useHoverMetaKey(setThreads, !loading);
+  const focusAfterRemoval = useFocusAfterRemoval(
+    containerRef,
+    null,
+    "[data-thread-focus]"
+  );
 
   useEffect(() => {
     const chatHandler = (event) => {
@@ -121,8 +130,13 @@ export default function ThreadContainer({
 
   if (loading) {
     return (
-      <div className="flex flex-col bg-pulse w-full h-10 items-center justify-center">
-        <p className="text-xs text-white animate-pulse">loading threads....</p>
+      <div
+        role="status"
+        className="flex flex-col w-full h-10 items-center justify-center"
+      >
+        <p className="text-xs text-theme-text-secondary">
+          {t("sidebar-nav.loading-threads")}
+        </p>
       </div>
     );
   }
@@ -139,7 +153,7 @@ export default function ThreadContainer({
       ref={containerRef}
       className="flex flex-col"
       role="list"
-      aria-label="Threads"
+      aria-label={t("sidebar-nav.threads")}
     >
       {defaultThreadHasChats && (
         <ThreadItem
@@ -147,7 +161,7 @@ export default function ThreadContainer({
           activeIdx={activeThreadIdx}
           isActive={activeThreadIdx === 0}
           workspace={workspace}
-          thread={{ slug: null, name: "default" }}
+          thread={{ slug: null, name: t("sidebar-nav.default-thread") }}
           hasNext={threads.length > 0 || showVirtualThread}
         />
       )}
@@ -160,7 +174,10 @@ export default function ThreadContainer({
           activeIdx={activeThreadIdx}
           isActive={activeThreadIdx === i + (defaultThreadHasChats ? 1 : 0)}
           workspace={workspace}
-          onRemove={removeThread}
+          onRemove={(id) => {
+            focusAfterRemoval(i + (defaultThreadHasChats ? 1 : 0));
+            removeThread(id);
+          }}
           thread={thread}
           hasNext={i !== threads.length - 1 || showVirtualThread}
         />
@@ -171,7 +188,11 @@ export default function ThreadContainer({
           activeIdx={activeThreadIdx}
           isActive={true}
           workspace={workspace}
-          thread={{ slug: null, name: "*New Thread", virtual: true }}
+          thread={{
+            slug: null,
+            name: `*${t("sidebar-nav.new-thread")}`,
+            virtual: true,
+          }}
           hasNext={false}
         />
       )}
@@ -189,13 +210,18 @@ export default function ThreadContainer({
 }
 
 function NewThreadButton({ workspace, onNewThread }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const onClick = async () => {
     setLoading(true);
     const { thread, error } = await Workspace.threads.new(workspace.slug);
     if (!!error) {
-      showToast(`Could not create thread - ${error}`, "error", { clear: true });
+      showToast(
+        serverErrorMessage(error, t, "sidebar-nav.create-thread-failed"),
+        "error",
+        { clear: true }
+      );
       setLoading(false);
       return;
     }
@@ -212,8 +238,10 @@ function NewThreadButton({ workspace, onNewThread }) {
 
   return (
     <button
+      type="button"
       onClick={onClick}
-      className="w-full relative flex h-[40px] items-center border-none hover:bg-[var(--theme-sidebar-thread-selected)] light:hover:bg-slate-300 hover:light:bg-theme-sidebar-subitem-hover rounded-lg"
+      disabled={loading}
+      className="w-full relative flex h-11 md:h-[40px] items-center border-none hover:bg-[var(--theme-sidebar-thread-selected)] light:hover:bg-slate-300 hover:light:bg-theme-sidebar-subitem-hover rounded-lg"
     >
       <div className="flex w-full gap-x-2 items-center pl-4">
         <div className="bg-zinc-800 light:bg-slate-50 p-2 rounded-lg h-[24px] w-[24px] flex items-center justify-center">
@@ -234,11 +262,11 @@ function NewThreadButton({ workspace, onNewThread }) {
 
         {loading ? (
           <p className="text-left text-white light:text-theme-text-primary text-sm">
-            Starting Thread...
+            {t("sidebar-nav.creating-thread")}
           </p>
         ) : (
           <p className="text-left text-white light:text-theme-text-primary text-sm font-semibold">
-            New Thread
+            {t("sidebar-nav.new-thread")}
           </p>
         )}
       </div>
@@ -247,6 +275,7 @@ function NewThreadButton({ workspace, onNewThread }) {
 }
 
 function DeleteAllThreadButton({ ctrlPressed, threads, onDelete }) {
+  const { t } = useTranslation();
   if (!ctrlPressed || threads.filter((t) => t.deleted).length === 0)
     return null;
   return (
@@ -264,7 +293,7 @@ function DeleteAllThreadButton({ ctrlPressed, threads, onDelete }) {
           />
         </div>
         <p className="text-white light:text-theme-text-secondary text-left text-sm group-hover:text-red-400">
-          Delete Selected
+          {t("sidebar-nav.delete-selected")}
         </p>
       </div>
     </button>

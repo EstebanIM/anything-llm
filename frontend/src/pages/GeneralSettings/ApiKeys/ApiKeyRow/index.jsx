@@ -1,74 +1,81 @@
-import moment from "moment";
-import { useEffect, useState } from "react";
 import Admin from "@/models/admin";
 import { Trash2 } from "lucide-react";
 import { userFromStorage } from "@/utils/request";
 import System from "@/models/system";
+import showToast from "@/utils/toast";
+import { formatDateTime } from "@/utils/dates";
+import CopyButton from "@/components/lib/CopyButton";
+import { maskSecret } from "@/components/lib/MaskedSecret";
+import {
+  InlineConfirmButton,
+  ROW_ICON_BUTTON,
+} from "@/components/lib/InlineConfirm";
 import { useTranslation } from "react-i18next";
 
-export default function ApiKeyRow({ apiKey, removeApiKey }) {
+export default function ApiKeyRow({ apiKey, deleteButtonId, onRemoved }) {
   const { t } = useTranslation();
-  const [copied, setCopied] = useState(false);
-  const handleDelete = async () => {
-    if (!window.confirm(t("api.row.deleteConfirm"))) return false;
+  // Unnamed keys are told apart by their masked value.
+  const keyLabel = apiKey.name || maskSecret(apiKey.secret);
 
+  const handleDelete = async () => {
     const user = userFromStorage();
     const Model = !!user ? Admin : System;
-    await Model.deleteApiKey(apiKey.id);
-    removeApiKey(apiKey.id);
-  };
-
-  const copyApiKey = () => {
-    if (!apiKey) return false;
-    window.navigator.clipboard.writeText(apiKey.secret);
-    setCopied(true);
-  };
-
-  useEffect(() => {
-    function resetStatus() {
-      if (!copied) return false;
-      setTimeout(() => {
-        setCopied(false);
-      }, 3000);
+    const ok = await Model.deleteApiKey(apiKey.id);
+    if (!ok) {
+      showToast(t("tools-pages.api-keys.delete-failed"), "error", {
+        clear: true,
+      });
+      return false;
     }
-    resetStatus();
-  }, [copied]);
+    showToast(t("tools-pages.api-keys.deleted"), "success", { clear: true });
+    onRemoved(apiKey.id);
+    return true;
+  };
 
   return (
-    <>
-      <tr className="bg-transparent text-white text-opacity-80 text-xs font-medium border-b border-white/10">
-        <td scope="row" className="px-6 py-3 whitespace-nowrap align-middle">
-          {apiKey.name || t("api.row.unnamed")}
-        </td>
-        <td scope="row" className="px-6 py-3 align-middle">
-          <code className="font-mono text-[11px] break-all text-theme-text-primary">
-            {apiKey.secret}
+    <tr className="bg-transparent text-white text-opacity-80 text-xs font-medium border-b border-white/10 light:border-slate-200">
+      <td className="px-4 md:px-6 py-3 align-middle">
+        <InlineConfirmButton
+          id={deleteButtonId}
+          label={t("tools-pages.api-keys.delete", { name: keyLabel })}
+          icon={Trash2}
+          triggerClassName={ROW_ICON_BUTTON}
+          consequences={t("api.row.deleteConfirm")}
+          confirmLabel={t("settings-pages.delete")}
+          onConfirm={handleDelete}
+        />
+      </td>
+      <th
+        scope="row"
+        className="px-4 md:px-6 py-3 align-middle text-left font-medium"
+      >
+        {apiKey.name || (
+          <span className="text-theme-text-secondary">
+            {t("api.row.unnamed")}
+          </span>
+        )}
+      </th>
+      <td className="px-4 md:px-6 py-3 align-middle">
+        <div className="flex items-center gap-x-1 whitespace-nowrap">
+          <code className="font-mono text-xs text-theme-text-primary">
+            {maskSecret(apiKey.secret)}
           </code>
-        </td>
-        <td className="px-6 py-3 text-left align-middle">
-          {apiKey.createdBy?.username || "--"}
-        </td>
-        <td className="px-6 py-3 whitespace-nowrap align-middle">
-          {moment(apiKey.createdAt).format("lll")}
-        </td>
-        <td className="px-6 py-3 align-middle">
-          <div className="flex items-center gap-x-6">
-            <button
-              onClick={copyApiKey}
-              disabled={copied}
-              className="text-xs font-medium text-blue-300 rounded-lg hover:text-white hover:light:text-blue-500 hover:text-opacity-60 hover:underline"
-            >
-              {copied ? t("api.row.copied") : t("api.row.copy")}
-            </button>
-            <button
-              onClick={handleDelete}
-              className="text-xs font-medium text-white/80 light:text-black/80 hover:light:text-red-500 hover:text-red-300 rounded-lg px-2 py-1 hover:bg-white hover:light:bg-red-50 hover:bg-opacity-10"
-            >
-              <Trash2 strokeWidth={1.5} className="h-5 w-5" />
-            </button>
-          </div>
-        </td>
-      </tr>
-    </>
+          <CopyButton
+            text={apiKey.secret}
+            label={t("tools-pages.api-keys.copy", { name: keyLabel })}
+          />
+        </div>
+      </td>
+      <td className="px-4 md:px-6 py-3 align-middle">
+        {apiKey.createdBy?.username || (
+          <span className="text-theme-text-secondary">
+            {t("tools-pages.api-keys.not-recorded")}
+          </span>
+        )}
+      </td>
+      <td className="px-4 md:px-6 py-3 align-middle whitespace-nowrap">
+        {formatDateTime(apiKey.createdAt)}
+      </td>
+    </tr>
   );
 }

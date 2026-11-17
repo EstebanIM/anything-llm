@@ -1,180 +1,136 @@
-import moment from "moment";
-import truncate from "truncate";
-import Modal, { ModalHeader, ModalBody } from "@/components/lib/Modal";
-import { useModal } from "@/hooks/useModal";
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import paths from "@/utils/paths";
-import Embed from "@/models/embed";
-import MarkdownRenderer from "../MarkdownRenderer";
+import { formatDateTime } from "@/utils/dates";
 import { safeJsonParse } from "@/utils/request";
+import MarkdownRenderer from "../../components/MarkdownRenderer";
+import ChatTextModal from "../../components/ChatTextModal";
+import ChatCellButton from "../../components/ChatCellButton";
+import { Trash2 } from "lucide-react";
+import {
+  InlineConfirmButton,
+  ROW_ICON_BUTTON,
+} from "@/components/lib/InlineConfirm";
 
 export default function ChatRow({ chat, onDelete }) {
-  const {
-    isOpen: isPromptOpen,
-    openModal: openPromptModal,
-    closeModal: closePromptModal,
-  } = useModal();
-  const {
-    isOpen: isResponseOpen,
-    openModal: openResponseModal,
-    closeModal: closeResponseModal,
-  } = useModal();
-  const {
-    isOpen: isConnectionDetailsModalOpen,
-    openModal: openConnectionDetailsModal,
-    closeModal: closeConnectionDetailsModal,
-  } = useModal();
-
-  const handleDelete = async () => {
-    if (
-      !window.confirm(
-        `Are you sure you want to delete this chat?\n\nThis action is irreversible.`
-      )
-    )
-      return false;
-    await Embed.deleteChat(chat.id);
-    onDelete(chat.id);
-  };
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(null); // "session" | "prompt" | "response"
+  const close = () => setOpen(null);
+  const response = safeJsonParse(chat.response, {})?.text ?? "";
+  const ids = { id: chat.id };
 
   return (
     <>
-      <tr className="bg-transparent text-white text-opacity-80 text-xs font-medium border-b border-white/10 h-10">
-        <td className="px-6 font-medium whitespace-nowrap text-white">
-          <a
-            href={paths.settings.embedChatWidgets()}
-            target="_blank"
-            rel="noreferrer"
-            className="text-white flex items-center hover:underline"
+      <tr className="text-theme-text-primary text-xs font-medium border-b border-white/10 light:border-slate-200">
+        <th scope="row" className="px-6 py-3 font-medium whitespace-nowrap">
+          {/* Same page, Widgets tab: no new tab needed. */}
+          <Link
+            to={paths.settings.embedChatWidgets()}
+            className="text-theme-text-primary underline-offset-2 hover:underline"
           >
-            {chat.embed_config.workspace.name}
-          </a>
-        </td>
-        <td
-          onClick={openConnectionDetailsModal}
-          className="px-6 cursor-pointer hover:shadow-lg"
-        >
-          <div className="flex flex-col">
-            <p>{truncate(chat.session_id, 20)}</p>
-          </div>
-        </td>
-        <td
-          onClick={openPromptModal}
-          className="px-6 border-transparent cursor-pointer hover:shadow-lg"
-        >
-          {truncate(chat.prompt, 40)}
-        </td>
-        <td
-          onClick={openResponseModal}
-          className="px-6 cursor-pointer hover:shadow-lg"
-        >
-          {truncate(safeJsonParse(chat.response, {})?.text, 40)}
-        </td>
-        <td className="px-6">{moment(chat.createdAt).format("lll")}</td>
-        <td className="px-6 flex items-center gap-x-6 h-full mt-1">
-          <button
-            onClick={handleDelete}
-            className="group text-xs font-medium text-theme-text-secondary px-2 py-1 rounded-lg hover:bg-theme-button-delete-hover-bg"
-          >
-            <span className="group-hover:text-theme-button-delete-hover-text">
-              Delete
+            {chat.embed_config?.workspace?.name}
+            <span className="sr-only">
+              {" "}
+              {t("embed-pages.chat.go-to-widgets")}
             </span>
-          </button>
+          </Link>
+        </th>
+        <td className="px-6 py-3">
+          <ChatCellButton
+            text={chat.session_id}
+            length={20}
+            label={t("embed-pages.chat.view-session", ids)}
+            onClick={() => setOpen("session")}
+          />
+        </td>
+        <td className="px-6 py-3">
+          <ChatCellButton
+            text={chat.prompt}
+            label={t("embed-pages.chat.view-prompt", ids)}
+            onClick={() => setOpen("prompt")}
+          />
+        </td>
+        <td className="px-6 py-3">
+          <ChatCellButton
+            text={response}
+            label={t("embed-pages.chat.view-response", ids)}
+            onClick={() => setOpen("response")}
+          />
+        </td>
+        <td className="px-6 py-3 whitespace-nowrap text-theme-text-secondary font-normal">
+          <time dateTime={chat.createdAt}>
+            {formatDateTime(chat.createdAt)}
+          </time>
+        </td>
+        <td className="px-2 md:px-6 py-2 sticky right-0 md:static bg-zinc-900 light:bg-white">
+          <InlineConfirmButton
+            id={`embed-chat-delete-${chat.id}`}
+            label={t("embed-pages.chat.delete", ids)}
+            icon={Trash2}
+            triggerClassName={ROW_ICON_BUTTON}
+            question={t("notices.delete-chat-question", ids)}
+            consequences={t("notices.cannot-undo")}
+            confirmLabel={t("settings-pages.delete")}
+            align="end"
+            onConfirm={() => onDelete(chat.id)}
+          />
         </td>
       </tr>
-      <Modal isOpen={isPromptOpen} onClose={closePromptModal}>
-        <TextPreview text={chat.prompt} closeModal={closePromptModal} />
-      </Modal>
-      <Modal isOpen={isResponseOpen} onClose={closeResponseModal}>
-        <TextPreview
-          text={
-            <MarkdownRenderer
-              content={safeJsonParse(chat.response, {})?.text}
-            />
-          }
-          closeModal={closeResponseModal}
-        />
-      </Modal>
-      <Modal
-        isOpen={isConnectionDetailsModalOpen}
-        onClose={closeConnectionDetailsModal}
+      <ChatTextModal
+        isOpen={open === "session"}
+        onClose={close}
+        title={t("embed-pages.chat.session-title", ids)}
       >
-        <TextPreview
-          text={
-            <ConnectionDetails
-              sessionId={chat.session_id}
-              verbose={true}
-              connection_information={chat.connection_information}
-            />
-          }
-          closeModal={closeConnectionDetailsModal}
+        <ConnectionDetails
+          sessionId={chat.session_id}
+          connectionInformation={chat.connection_information}
         />
-      </Modal>
+      </ChatTextModal>
+      <ChatTextModal
+        isOpen={open === "prompt"}
+        onClose={close}
+        title={t("embed-pages.chat.prompt-title", ids)}
+      >
+        {chat.prompt}
+      </ChatTextModal>
+      <ChatTextModal
+        isOpen={open === "response"}
+        onClose={close}
+        title={t("embed-pages.chat.response-title", ids)}
+      >
+        <MarkdownRenderer content={response} />
+      </ChatTextModal>
     </>
   );
 }
 
-const TextPreview = ({ text, closeModal }) => {
-  return (
-    <form className="flex flex-col gap-y-5">
-      <ModalHeader title="Viewing Text" onClose={closeModal} />
-      <ModalBody>
-        <div className="w-full h-[60vh] py-2 px-4 whitespace-pre-line overflow-auto rounded-lg bg-zinc-800 light:bg-white border border-zinc-800 light:border-slate-300 text-zinc-100 light:text-slate-900 text-sm">
-          {text}
-        </div>
-      </ModalBody>
-    </form>
-  );
-};
-
-const ConnectionDetails = ({
-  sessionId,
-  verbose = false,
-  connection_information,
-}) => {
-  const details = safeJsonParse(connection_information, {});
-  if (Object.keys(details).length === 0) return null;
-
-  if (verbose) {
-    return (
-      <>
-        <p className="text-xs text-zinc-400 light:text-slate-500">
-          sessionID: {sessionId}
-        </p>
-        {details.username && (
-          <p className="text-xs text-zinc-400 light:text-slate-500">
-            username: {details.username}
-          </p>
-        )}
-        {details.ip && (
-          <p className="text-xs text-zinc-400 light:text-slate-500">
-            client ip address: {details.ip}
-          </p>
-        )}
-        {details.host && (
-          <p className="text-xs text-zinc-400 light:text-slate-500">
-            client host URL: {details.host}
-          </p>
-        )}
-      </>
-    );
-  }
+/** Session id and whatever the widget recorded about the visitor. */
+function ConnectionDetails({ sessionId, connectionInformation }) {
+  const { t } = useTranslation();
+  const details = safeJsonParse(connectionInformation, {}) || {};
+  const rows = [
+    [t("embed-pages.session.id"), sessionId],
+    [t("embed-pages.session.username"), details.username],
+    [t("embed-pages.session.ip"), details.ip],
+    [t("embed-pages.session.host"), details.host],
+  ].filter(([, value]) => !!value);
 
   return (
-    <>
-      {details.username && (
-        <p className="text-xs text-zinc-400 light:text-slate-500">
-          {details.username}
+    <div className="whitespace-normal flex flex-col gap-y-3">
+      <dl className="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-x-4 gap-y-1">
+        {rows.map(([label, value]) => (
+          <div key={label} className="contents">
+            <dt className="text-zinc-400 light:text-slate-600">{label}</dt>
+            <dd className="font-mono break-all mb-2 sm:mb-0">{value}</dd>
+          </div>
+        ))}
+      </dl>
+      {rows.length <= 1 && (
+        <p className="text-zinc-400 light:text-slate-600">
+          {t("embed-pages.session.no-details")}
         </p>
       )}
-      {details.ip && (
-        <p className="text-xs text-zinc-400 light:text-slate-500">
-          {details.ip}
-        </p>
-      )}
-      {details.host && (
-        <p className="text-xs text-zinc-400 light:text-slate-500">
-          {details.host}
-        </p>
-      )}
-    </>
+    </div>
   );
-};
+}

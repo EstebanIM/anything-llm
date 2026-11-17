@@ -15,6 +15,7 @@ import AgentSessionExited from "./AgentSessionExited";
 import { useManageWorkspaceModal } from "../../../Modals/ManageWorkspace";
 import ManageWorkspace from "../../../Modals/ManageWorkspace";
 import { ArrowDown } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import Chartable from "./Chartable";
 import ModelRouteNotification from "./ModelRouteNotification";
 import Workspace from "@/models/workspace";
@@ -51,6 +52,7 @@ export default forwardRef(function (
   const { showing, hideModal } = useManageWorkspaceModal();
   const { showScrollbar } = Appearance.getSettings();
   const { textSizeClass } = useTextSize();
+  const { t } = useTranslation();
 
   const saveEditedMessage = useCallback(
     async ({
@@ -203,19 +205,19 @@ export default forwardRef(function (
           )}
         </div>
         {!isAtBottom && (
-          <div className="absolute bottom-40 right-10 z-50 cursor-pointer animate-pulse">
-            <div className="flex flex-col items-center">
-              <div
-                className="p-1 rounded-full border border-white/10 bg-white/10 hover:bg-white/20 hover:text-white"
-                onClick={() => scrollToBottom(true)}
-              >
-                <ArrowDown
-                  strokeWidth={1.5}
-                  className="text-white/60 w-5 h-5"
-                />
-              </div>
-            </div>
-          </div>
+          <button
+            type="button"
+            onClick={() => scrollToBottom(true)}
+            aria-label={t("chat-history.scroll-to-bottom")}
+            title={t("chat-history.scroll-to-bottom")}
+            className="absolute bottom-40 right-10 z-50 flex items-center justify-center w-11 h-11 md:w-8 md:h-8 rounded-full border border-white/10 light:border-slate-300 bg-zinc-800/80 light:bg-white/90 text-zinc-300 light:text-slate-600 hover:bg-zinc-700 light:hover:bg-slate-100 hover:text-white light:hover:text-slate-900 shadow-md transition-colors duration-quick animate-in fade-in-0"
+          >
+            <ArrowDown
+              strokeWidth={1.5}
+              aria-hidden="true"
+              className="w-5 h-5"
+            />
+          </button>
         )}
       </ThoughtExpansionProvider>
     </MessageActionsProvider>
@@ -245,9 +247,13 @@ function buildMessages({
   forkThread,
   websocket,
 }) {
+  // A failed reply can be retried when there is a prompt before it to resend.
+  const firstUserIdx = history.findIndex((msg) => msg.role === "user");
   return history.reduce((acc, props, index) => {
     const isLastBotReply =
       index === history.length - 1 && props.role === "assistant";
+    const canRetry =
+      !!props.error && firstUserIdx !== -1 && firstUserIdx < index;
 
     if (props?.type === "statusResponse" && !!props.content) {
       pushActivity(acc, props);
@@ -352,6 +358,11 @@ function buildMessages({
             sources={props.sources}
             error={props.error}
             closed={props.closed}
+            onRetry={
+              canRetry
+                ? () => regenerateAssistantMessage(props.chatId ?? null)
+                : null
+            }
           />
         );
       } else {
@@ -374,6 +385,7 @@ function buildMessages({
             metrics={props.metrics}
             outputs={props.outputs}
             clarifyingQuestions={props.clarifyingQuestions}
+            canRetry={canRetry}
           />
         );
       }

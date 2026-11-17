@@ -1,14 +1,30 @@
+import { useId } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  FIELD_COL,
+  FIELD_INPUT,
+  FIELD_ROW,
+  SECRET_MASK,
+  SecretInput,
+} from "@/components/ProviderFields";
+import { FieldLabel, blurOnWheel } from "@/components/LLMSelection/FormParts";
+
 export default function TextGenWebUIOptions({ settings }) {
+  const { t } = useTranslation();
+  const id = useId();
+
   return (
-    <div className="flex gap-[36px] mt-1.5 flex-wrap">
-      <div className="flex flex-col w-60">
-        <label className="text-white text-sm font-semibold block mb-3">
-          Base URL
-        </label>
+    <div className={`${FIELD_ROW} mt-1.5`}>
+      <div className={FIELD_COL}>
+        <FieldLabel
+          htmlFor={`${id}-url`}
+          label={t("provider-fields.base-url")}
+        />
         <input
+          id={`${id}-url`}
           type="url"
           name="TextGenWebUIBasePath"
-          className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
+          className={FIELD_INPUT}
           placeholder="http://127.0.0.1:5000/v1"
           defaultValue={settings?.TextGenWebUIBasePath}
           required={true}
@@ -16,34 +32,36 @@ export default function TextGenWebUIOptions({ settings }) {
           spellCheck={false}
         />
       </div>
-      <div className="flex flex-col w-60">
-        <label className="text-white text-sm font-semibold block mb-3">
-          Model context window
-        </label>
+      <div className={FIELD_COL}>
+        <FieldLabel
+          htmlFor={`${id}-context`}
+          label={t("provider-fields.context-window")}
+        />
         <input
+          id={`${id}-context`}
           type="number"
           name="TextGenWebUITokenLimit"
-          className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-          placeholder="Content window limit (eg: 4096)"
+          className={FIELD_INPUT}
+          placeholder={t("llm-fields.common.context-window-placeholder", {
+            example: 4096,
+          })}
           min={1}
-          onScroll={(e) => e.target.blur()}
+          onWheel={blurOnWheel}
           defaultValue={settings?.TextGenWebUITokenLimit}
           required={true}
           autoComplete="off"
         />
       </div>
-      <div className="flex flex-col w-60">
-        <label className="text-white text-sm font-semibold block mb-3">
-          API Key (Optional)
-        </label>
-        <input
-          type="password"
+      <div className={FIELD_COL}>
+        <FieldLabel
+          htmlFor={`${id}-key`}
+          label={t("provider-fields.api-key")}
+          optional={true}
+        />
+        <SecretInput
+          id={`${id}-key`}
           name="TextGenWebUIAPIKey"
-          className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-          placeholder="TextGen Web UI API Key"
-          defaultValue={settings?.TextGenWebUIAPIKey ? "*".repeat(20) : ""}
-          autoComplete="off"
-          spellCheck={false}
+          defaultValue={settings?.TextGenWebUIAPIKey ? SECRET_MASK : ""}
         />
       </div>
     </div>
