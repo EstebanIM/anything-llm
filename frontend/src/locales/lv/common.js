@@ -1239,6 +1239,9 @@ const TRANSLATIONS = {
         "Its content stops updating automatically. You can watch it again from the workspace's document manager.",
       unwatched: "{{name}} is no longer watched.",
       "unwatch-failed": "Could not stop watching {{name}}.",
+      disabled:
+        "Live document sync is turned off. Turn it on in Experimental features to watch documents.",
+      "load-failed": "Couldn't load the watched documents.",
     },
   },
   "tools-pages": {

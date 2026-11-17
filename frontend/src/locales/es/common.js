@@ -1271,6 +1271,9 @@ const TRANSLATIONS = {
         "Su contenido dejará de actualizarse automáticamente. Puedes volver a vigilarlo desde el gestor de documentos del espacio.",
       unwatched: "{{name}} ya no se vigila.",
       "unwatch-failed": "No se pudo dejar de vigilar {{name}}.",
+      disabled:
+        "La sincronización en vivo de documentos está desactivada. Actívala en Funciones experimentales para vigilar documentos.",
+      "load-failed": "No se pudieron cargar los documentos vigilados.",
     },
   },
   "tools-pages": {

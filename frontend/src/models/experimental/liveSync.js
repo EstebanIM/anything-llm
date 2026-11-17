@@ -19,18 +19,24 @@ const LiveDocumentSync = {
         return false;
       });
   },
+  /**
+   * Watched documents. A failed load is not an empty list: `disabled` when the
+   * server refuses because the feature flag is off (401), `error` otherwise.
+   * @returns {Promise<{queues: Array, disabled?: boolean, error?: boolean}>}
+   */
   queues: async function () {
     return await fetch(`${API_BASE}/experimental/live-sync/queues`, {
       headers: baseHeaders(),
     })
-      .then((res) => {
-        if (!res.ok) throw new Error("Could not update status.");
-        return res.json();
+      .then(async (res) => {
+        if (res.status === 401) return { queues: [], disabled: true };
+        if (!res.ok) throw new Error(`status-${res.status}`);
+        const data = await res.json();
+        return { queues: data?.queues || [] };
       })
-      .then((res) => res?.queues || [])
       .catch((e) => {
         console.error(e);
-        return [];
+        return { queues: [], error: true };
       });
   },
 

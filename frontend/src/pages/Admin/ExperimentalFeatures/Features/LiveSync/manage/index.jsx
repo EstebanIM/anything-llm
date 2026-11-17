@@ -54,17 +54,21 @@ export default function LiveDocumentSyncManager() {
 
 function WatchedDocumentsContainer({ headingId, headingRef }) {
   const { t } = useTranslation();
-  const [loading, setLoading] = useState(true);
+  // loading | ready | disabled (feature turned off) | error
+  const [status, setStatus] = useState("loading");
   const [queues, setQueues] = useState([]);
   const tbodyRef = useRef(null);
   const focusAfterRemoval = useFocusAfterRemoval(tbodyRef, headingRef);
+  const loading = status === "loading";
+
+  async function fetchData() {
+    setStatus("loading");
+    const result = await System.experimentalFeatures.liveSync.queues();
+    setQueues(result.queues);
+    setStatus(result.disabled ? "disabled" : result.error ? "error" : "ready");
+  }
 
   useEffect(() => {
-    async function fetchData() {
-      const _queues = await System.experimentalFeatures.liveSync.queues();
-      setQueues(_queues);
-      setLoading(false);
-    }
     fetchData();
   }, []);
 
@@ -101,6 +105,27 @@ function WatchedDocumentsContainer({ headingId, headingRef }) {
       <tbody ref={tbodyRef} className={TBODY}>
         {loading ? (
           <TableState state="loading" colSpan={COLUMNS} />
+        ) : status === "disabled" ? (
+          <TableState
+            state="empty"
+            colSpan={COLUMNS}
+            message={t("admin-pages.watched.disabled")}
+            action={
+              <Link
+                to={paths.settings.experimental()}
+                className="inline-flex items-center min-h-[44px] md:min-h-0 text-sm underline text-theme-text-primary"
+              >
+                {t("admin-pages.watched.back")}
+              </Link>
+            }
+          />
+        ) : status === "error" ? (
+          <TableState
+            state="error"
+            colSpan={COLUMNS}
+            message={t("admin-pages.watched.load-failed")}
+            onRetry={fetchData}
+          />
         ) : queues.length === 0 ? (
           <TableState
             state="empty"
