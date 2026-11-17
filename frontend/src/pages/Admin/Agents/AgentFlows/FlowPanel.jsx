@@ -1,115 +1,112 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useId, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
+import { Pencil, Trash2, Workflow } from "lucide-react";
 import AgentFlows from "@/models/agentFlows";
 import showToast from "@/utils/toast";
-import { Workflow, Settings } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import paths from "@/utils/paths";
 import Toggle from "@/components/lib/Toggle";
-
-function ManageFlowMenu({ flow, onDelete }) {
-  const [open, setOpen] = useState(false);
-  const menuRef = useRef(null);
-  const navigate = useNavigate();
-
-  async function deleteFlow() {
-    setOpen(false);
-    if (
-      !window.confirm(
-        "Are you sure you want to delete this flow? This action cannot be undone."
-      )
-    )
-      return;
-    const { success, error } = await AgentFlows.deleteFlow(flow.uuid);
-    if (success) {
-      showToast("Flow deleted successfully.", "success");
-      onDelete(flow.uuid);
-    } else {
-      showToast(error || "Failed to delete flow.", "error");
-    }
-  }
-
-  useEffect(() => {
-    if (!open) return;
-
-    const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [open]);
-
-  return (
-    <div className="relative" ref={menuRef}>
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="p-1.5 rounded-lg text-white hover:bg-theme-action-menu-item-hover transition-colors duration-300"
-      >
-        <Settings strokeWidth={1.5} className="h-5 w-5" />
-      </button>
-      {open && (
-        <div className="absolute min-w-[140px] top-full right-0 mt-1 border-[1.5px] border-white/40 rounded-lg bg-theme-action-menu-bg flex flex-col shadow-[0_4px_14px_rgba(0,0,0,0.25)] text-white z-99 md:z-10">
-          <button
-            type="button"
-            onClick={() => navigate(paths.agents.editAgent(flow.uuid))}
-            className="border-none flex items-center rounded-lg gap-x-2 hover:bg-theme-action-menu-item-hover py-1.5 px-2 transition-colors duration-200 w-full text-left"
-          >
-            <span className="text-sm whitespace-nowrap">Edit Flow</span>
-          </button>
-          <button
-            type="button"
-            onClick={deleteFlow}
-            className="border-none flex items-center rounded-lg gap-x-2 hover:bg-theme-action-menu-item-hover py-1.5 px-2 transition-colors duration-200 w-full text-left"
-          >
-            <span className="text-sm whitespace-nowrap">Delete Flow</span>
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
+import ConfirmModal from "@/components/lib/ConfirmModal";
+import PanelHeader, {
+  InstantNote,
+  PANEL_ACTION,
+  PANEL_DANGER_ACTION,
+} from "../components/PanelHeader";
 
 export default function FlowPanel({ flow, toggleFlow, enabled, onDelete }) {
+  const { t } = useTranslation();
+  const titleId = useId();
+  const noteId = useId();
+  const [toggling, setToggling] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
   const handleToggle = async () => {
-    try {
-      const { success, error } = await AgentFlows.toggleFlow(
-        flow.uuid,
-        !enabled
-      );
-      if (!success) throw new Error(error);
-      toggleFlow(flow.uuid);
-    } catch (error) {
+    if (toggling) return;
+    setToggling(true);
+    const { success, error } = await AgentFlows.toggleFlow(flow.uuid, !enabled);
+    setToggling(false);
+    if (!success) {
       console.error("Failed to toggle flow:", error);
-      showToast("Failed to toggle flow", "error", { clear: true });
+      showToast(t("agent-pages.flows.toggle-failed"), "error", {
+        clear: true,
+      });
+      return;
     }
+    toggleFlow(flow.uuid);
+  };
+
+  const deleteFlow = async () => {
+    setDeleting(true);
+    const { success, error } = await AgentFlows.deleteFlow(flow.uuid);
+    setDeleting(false);
+    if (!success) {
+      showToast(
+        t("agent-pages.flows.delete-failed", { error: error || "-" }),
+        "error",
+        { clear: true }
+      );
+      return;
+    }
+    setConfirmDelete(false);
+    showToast(t("agent-pages.flows.deleted", { name: flow.name }), "success", {
+      clear: true,
+    });
+    onDelete(flow.uuid);
   };
 
   return (
-    <>
-      <div className="p-2">
-        <div className="flex flex-col gap-y-[18px] max-w-[500px]">
-          <div className="flex w-full justify-between items-center">
-            <div className="flex items-center gap-x-2">
-              <Workflow strokeWidth={1.5} size={24} className="text-white" />
-              <label htmlFor="name" className="text-white text-md font-bold">
-                {flow.name}
-              </label>
-            </div>
-            <div className="flex items-center gap-x-2">
-              <Toggle size="lg" enabled={enabled} onChange={handleToggle} />
-              <ManageFlowMenu flow={flow} onDelete={onDelete} />
-            </div>
-          </div>
-          <p className="whitespace-pre-wrap text-white text-opacity-60 text-xs font-medium py-1.5">
-            {flow.description || "No description provided"}
-          </p>
+    <div className="p-2">
+      <div className="flex flex-col gap-y-[18px] max-w-[500px]">
+        <PanelHeader
+          titleId={titleId}
+          title={flow.name}
+          icon={
+            <Workflow
+              strokeWidth={1.5}
+              size={24}
+              aria-hidden="true"
+              className="shrink-0 text-theme-text-primary"
+            />
+          }
+        >
+          <Toggle
+            size="lg"
+            enabled={enabled}
+            ariaLabelledBy={titleId}
+            describedBy={noteId}
+            onChange={handleToggle}
+          />
+        </PanelHeader>
+        <InstantNote id={noteId} />
+        <p className="whitespace-pre-wrap text-theme-text-secondary text-xs font-medium py-1.5">
+          {flow.description || t("agent-pages.flows.no-description")}
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link to={paths.agents.editAgent(flow.uuid)} className={PANEL_ACTION}>
+            <Pencil strokeWidth={1.5} size={16} aria-hidden="true" />
+            {t("agent-pages.flows.edit")}
+          </Link>
+          <button
+            type="button"
+            onClick={() => setConfirmDelete(true)}
+            className={PANEL_DANGER_ACTION}
+          >
+            <Trash2 strokeWidth={1.5} size={16} aria-hidden="true" />
+            {t("agent-pages.flows.delete")}
+          </button>
         </div>
       </div>
-    </>
+      <ConfirmModal
+        isOpen={confirmDelete}
+        title={t("agent-pages.flows.delete-title", { name: flow.name })}
+        confirmLabel={t("settings-pages.delete")}
+        busy={deleting}
+        onConfirm={deleteFlow}
+        onCancel={() => setConfirmDelete(false)}
+      >
+        <p>{t("agent-pages.flows.delete-body")}</p>
+      </ConfirmModal>
+    </div>
   );
 }

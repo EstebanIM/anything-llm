@@ -246,6 +246,438 @@ const TRANSLATIONS = {
     "delete-folder-confirm":
       "Delete this folder? Its workspaces and subfolders move to the top level.",
   },
+  "agent-pages": {
+    builtin: "Built-in skills",
+    "default-badge": "Included by default",
+    "skill-on": "On",
+    "skill-off": "Off",
+    "flow-on": "On",
+    "flow-off": "Off",
+    instant: "Applies right away, without “Save changes”.",
+    select: "Choose a skill, a flow or an MCP server to see its options.",
+    back: "Back to skills",
+    detail: "Selection details",
+    "load-error": "The agent skills could not be loaded.",
+    saved: "Agent preferences saved.",
+    "save-failed": "The agent preferences could not be saved: {{error}}",
+    required: "required",
+    "subskills-load-error":
+      "The current options could not be loaded. Try again before changing them.",
+    flows: {
+      empty: "There are no agent flows yet.",
+      "empty-action": "Create a flow in the builder",
+      "open-builder": "Open the builder",
+      "load-error": "The agent flows could not be loaded.",
+      "toggle-failed": "The flow could not be switched on or off. Try again.",
+      "no-description": "No description",
+      edit: "Edit in the builder",
+      delete: "Delete flow",
+      "delete-title": "Delete the flow “{{name}}”?",
+      "delete-body":
+        "The agent will no longer be able to use it. This cannot be undone.",
+      deleted: "Flow “{{name}}” deleted.",
+      "delete-failed": "The flow could not be deleted: {{error}}",
+    },
+    imported: {
+      empty: "No custom skills have been imported yet.",
+      "empty-action": "Find skills in the Community Hub",
+      author: "Author:",
+      options: "Options",
+      "no-options": "This skill has no options to configure.",
+      save: "Save options",
+      saved: "Skill options saved.",
+      "save-failed": "The skill options could not be saved. Try again.",
+      "required-error": "This field is required.",
+      "number-error": "Enter a number.",
+      "toggle-failed": "The skill could not be switched on or off. Try again.",
+      activated: "Skill “{{name}}” switched on.",
+      deactivated: "Skill “{{name}}” switched off.",
+      delete: "Delete skill",
+      "delete-title": "Delete the skill “{{name}}”?",
+      "delete-body":
+        "Its files are removed from the server and the agent will no longer be able to use it. This cannot be undone.",
+      deleted: "Skill “{{name}}” deleted.",
+      "delete-failed": "The skill could not be deleted. Try again.",
+    },
+    mcp: {
+      "state-running": "Running",
+      "state-stopped": "Stopped",
+      "state-error": "Error",
+      "many-tools": "Many tools enabled",
+      "tools-enabled_one": "{{enabled}}/{{count}} tool enabled",
+      "tools-enabled_other": "{{enabled}}/{{count}} tools enabled",
+      tools: "Tools",
+      "tool-toggle": "Enable {{tool}}",
+      "tool-details": "Details of {{tool}}",
+      "tool-toggle-failed": "The tool {{tool}} could not be changed: {{error}}",
+      "load-error": "The MCP servers could not be loaded.",
+      "load-error-detail": "The MCP servers could not be loaded: {{error}}",
+      "empty-hint":
+        "Add them to the plugins/anythingllm_mcp_servers.json file in the server storage folder and press Refresh.",
+      "reload-title": "Restart every MCP server?",
+      "reload-body":
+        "Every MCP server is stopped and started again, and their tools are reloaded from the configuration file.",
+      "reload-confirm": "Restart all",
+      reloaded: "MCP servers restarted.",
+      "reload-failed": "The MCP servers could not be restarted: {{error}}",
+      started: "MCP server {{name}} started.",
+      stopped: "MCP server {{name}} stopped.",
+      "toggle-failed":
+        "The MCP server {{name}} could not be started or stopped: {{error}}",
+      "stop-title": "Stop the MCP server {{name}}?",
+      "stop-body":
+        "The agent cannot use its tools until you start it again. It starts again when {{brandName}} restarts.",
+      "stop-confirm": "Stop",
+      "delete-title": "Delete the MCP server {{name}}?",
+      "delete-body":
+        "It is removed from the configuration file and you will have to add it back by hand. This cannot be undone.",
+      deleted: "MCP server {{name}} deleted.",
+      "delete-failed":
+        "The MCP server {{name}} could not be deleted: {{error}}",
+      "error-title": "Startup error",
+      "copy-command": "Copy the command",
+      "copy-error": "Copy the error",
+    },
+    settings: {
+      "load-error": "The agent settings could not be loaded.",
+      "min-error": "Enter a whole number of {{min}} or more.",
+      "save-failed": "The setting could not be saved. Try again.",
+    },
+  },
+  "save-bar": {
+    unsaved: "Unsaved changes",
+    cancel: "Discard changes",
+    save: "Save changes",
+  },
+  "unsaved-guard": {
+    title: "Leave without saving?",
+    description:
+      "You have changes that have not been saved. If you leave now, they will be lost.",
+    stay: "Keep editing",
+    leave: "Leave without saving",
+  },
+  "agent-integrations": {
+    "load-error": "Could not load the {{name}} settings.",
+    skills: {
+      title: "Skills",
+      "search-label": "Search skills",
+      "search-placeholder": "Search skills…",
+      results_one: "{{count}} skill",
+      results_other: "{{count}} skills",
+      "no-results": "No skills match your search.",
+    },
+    outlook: {
+      "steps-title": "Set up the app in Azure",
+      "step-register":
+        "Register an app in the <anchor>Azure portal</anchor> (Microsoft Entra ID, App registrations).",
+      "step-redirect":
+        "In Authentication, add a Web platform with the redirect URI below.",
+      "step-permissions":
+        "In API permissions, add these Microsoft Graph delegated permissions: Mail.Read, Mail.ReadWrite, Mail.Send, User.Read and offline_access.",
+      "step-secret":
+        "In Certificates & secrets, create a client secret and copy its value (not its ID).",
+      "step-copy":
+        "Paste the application (client) ID and the secret below. For organization accounts only, also paste the directory (tenant) ID.",
+      "redirect-uri": "Redirect URI",
+      "redirect-uri-help":
+        "Register this exact address in Azure. If you reach {{brandName}} through another address or a proxy, use the server's public address.",
+      "copy-redirect-uri": "Copy the redirect URI",
+      "client-id-required": "Enter the application (client) ID.",
+      "tenant-id-required":
+        "Enter the directory (tenant) ID: organization-only sign-in requires it.",
+      "client-secret-required": "Enter the client secret.",
+      "save-connect": "Save and connect with Microsoft",
+      "save-reconnect": "Save and reconnect",
+      connecting: "Connecting…",
+      "save-note":
+        "These credentials are saved when you connect with Microsoft, not with the page's Save button.",
+      "reconnect-needed":
+        "You changed the credentials. Reconnect with Microsoft to apply them.",
+      "auth-pending":
+        "Finish signing in on the Microsoft tab. When you come back to this tab, the status is checked again.",
+      "auth-success": "Connected with Microsoft Outlook.",
+      "auth-error": "Could not connect with Microsoft: {{error}}",
+      "connect-error":
+        "Could not start the connection with Microsoft: {{error}}",
+      "unknown-error": "unknown error",
+      "popup-blocked": "The browser blocked the Microsoft sign-in window.",
+      "open-sign-in": "Open the Microsoft sign-in",
+      "check-status": "Check status",
+      checking: "Checking…",
+      "not-connected-yet": "The connection with Microsoft is not complete yet.",
+      "status-error": "Could not check the Outlook status.",
+      "revoke-title": "Revoke access to Outlook?",
+      "revoke-consequences":
+        "The server will delete the application (client) ID, the directory (tenant) ID, the client secret and the access tokens.",
+      "revoke-after":
+        "The agent will not be able to use Outlook until you enter the credentials again and connect with Microsoft.",
+      "revoke-error": "Could not revoke access: {{error}}",
+      revoked: "Access revoked. The Outlook credentials were deleted.",
+    },
+    sql: {
+      connections: "Your database connections",
+      "load-error": "Could not load the SQL connections.",
+      empty: "There are no connections yet. Add one so the agent can query it.",
+      pending:
+        "Some connection changes are not applied yet. Save the page to apply them.",
+      new: "New SQL connection",
+      edit: "Edit {{name}}",
+      remove: "Remove {{name}}",
+      "remove-pending": "Will be removed when you save",
+      undo: "Undo",
+      "undo-remove": "Undo removing {{name}}",
+      "new-title": "New SQL connection",
+      "edit-title": "Edit SQL connection",
+      "new-description":
+        "Add your database connection details. The SQL agent can use it once you save the page.",
+      "edit-description": "Update your database connection details.",
+      "read-only-title": "Connect with a read-only user",
+      "read-only-body":
+        "The SQL agent is instructed to run only queries that do not change data, but that does not stop a model error from deleting or changing data.",
+      engine: "Database engine",
+      name: "Connection name",
+      "name-placeholder": "eg: sales-reports",
+      "name-hint":
+        "A unique name to identify this connection. Spaces become hyphens.",
+      "duplicate-name":
+        'There is already a connection named "{{name}}". Choose another name.',
+      "invalid-name": "Use letters or numbers in the name.",
+      username: "Database user",
+      password: "User password",
+      host: "Server",
+      "host-placeholder": "Host name or address of the database server",
+      port: "Port",
+      "port-hint": "If empty, {{port}} is used.",
+      database: "Database",
+      "database-placeholder": "The database the agent will query",
+      schema: "Schema",
+      "schema-hint": "If empty, the default schema (public) is used.",
+      encrypt: "Encrypt the connection",
+      "encrypt-help": "Encrypts the traffic between the agent and SQL Server.",
+      ssl: "Use SSL",
+      "ssl-help":
+        "Encrypts the connection without verifying the server certificate (self-signed certificates work).",
+      preview: "Connection string (preview)",
+      "preview-incomplete":
+        "Fill in the required fields to see the connection string.",
+      "connection-failed": "Could not connect to the database",
+      "unknown-error": "Check the connection details and try again.",
+      "save-page-hint":
+        "The connection is tested now, but it is stored when you save the page.",
+      "save-connection": "Save connection",
+      testing: "Testing connection…",
+    },
+    "web-search": {
+      provider: "Search provider",
+      "search-providers": "Search web-search providers",
+      "load-error":
+        "Could not load the search provider. Saving will not change it.",
+      engine: "Search engine",
+      "searxng-url": "SearXNG API base URL",
+      "searxng-help":
+        "Address of your SearXNG instance. It must allow the JSON format.",
+      intro: {
+        "get-key": "Get an API key from <anchor>{{provider}}</anchor>.",
+        "needs-key":
+          "{{provider}} needs an API key from <anchor>its console</anchor>.",
+        you: "You.com works without an API key, with limits per IP address. For higher limits, get an API key from <anchor>{{provider}}</anchor>.",
+        duckduckgo: "DuckDuckGo is ready to use with no additional setup.",
+        bing: "Get a Bing Web Search API subscription key from the <anchor>Azure portal</anchor>.",
+        crw: "Get an API key from <anchor>fastCRW</anchor> or <anchor2>host it yourself</anchor2>.",
+        keenable:
+          "Keenable works without an API key. To lift the rate limits, add an API key from <anchor>Keenable</anchor>.",
+        deepseek:
+          "DeepSeek search is billed per request and uses your <anchor>DeepSeek API key</anchor>.",
+      },
+      "bing-steps": {
+        title: "To set up a Bing Web Search API subscription:",
+        portal: "Go to the <anchor>Azure portal</anchor>.",
+        account: "Create an Azure account or sign in with an existing one.",
+        resource:
+          'In "Create a resource", search for "Grounding with Bing Search".',
+        subscription:
+          'Select the "Grounding with Bing Search" resource and create a subscription.',
+        tier: "Choose the pricing tier that suits you.",
+        key: "Copy the API key of your Grounding with Bing Search subscription.",
+      },
+    },
+  },
+  "agent-builder": {
+    untitled: "Untitled flow",
+    steps: "Flow steps",
+    "required-note": "Fields marked with * are required.",
+    "result-variable": "Store the result in",
+    header: {
+      back: "Back to Agent Skills",
+      eyebrow: "Flow builder",
+      "switch-flow": "Switch flow (current: {{name}})",
+      "flows-menu": "Saved flows",
+      unsaved: "Unsaved changes",
+      "new-flow": "New flow",
+      publish: "Publish",
+      save: "Save",
+    },
+    "new-flow": {
+      title: "Discard your changes and start a new flow?",
+      description: "The changes you have not saved in this flow will be lost.",
+      confirm: "Discard and start",
+      started: "New blank flow",
+    },
+    load: {
+      "error-title": "The flow could not be loaded",
+      "error-description":
+        "Check your connection and try again. You cannot save until the flow loads.",
+      "flows-failed": "The list of saved flows could not be loaded.",
+    },
+    save: {
+      success: "Flow saved",
+      failed: "The flow could not be saved. Try again.",
+      unsupported:
+        "The flow could not be saved because it includes blocks this installation does not support.",
+    },
+    blocks: {
+      "flow-info": {
+        label: "Flow information",
+        description: "Name and description of the flow",
+      },
+      start: {
+        label: "Flow variables",
+        description: "Values the flow uses and the LLM can fill in",
+        summary_one: "{{count}} variable defined",
+        summary_other: "{{count}} variables defined",
+      },
+      "api-call": {
+        label: "API call",
+        description: "Make an HTTP request",
+        "no-url": "(no URL)",
+      },
+      "llm-instruction": {
+        label: "LLM instruction",
+        description: "Process data with an instruction for the LLM",
+        empty: "No instruction",
+      },
+      "web-scraping": {
+        label: "Web scraping",
+        description: "Extract the content of a web page",
+        empty: "No URL",
+      },
+      finish: {
+        label: "End of flow",
+        description: "End of the agent flow",
+        summary: "The flow ends here",
+        body: "This is the end of your flow. The steps above run in order.",
+      },
+    },
+    block: {
+      "move-up": "Move the {{name}} block up, step {{position}}",
+      "move-down": "Move the {{name}} block down, step {{position}}",
+      delete: "Delete the {{name}} block, step {{position}}",
+      "move-up-short": "Move up",
+      "move-down-short": "Move down",
+      "delete-short": "Delete",
+      moved: "{{name}} block moved to position {{position}} of {{total}}",
+      "delete-confirm": "Delete the {{name}} block and its settings?",
+      deleted: "{{name}} block deleted",
+      "direct-output": "Direct output",
+      "direct-output-help":
+        "The result of this block goes straight to the chat and no other tool runs after it.",
+    },
+    "add-block": {
+      button: "Add block",
+      menu: "Block types",
+      disabled: "Turn off direct output in the last block to add more blocks.",
+    },
+    "flow-info": {
+      name: "Flow name",
+      "name-help":
+        "Use a name an LLM can understand easily, for example SendMessageToDiscord, CheckStockPrice or CheckWeather.",
+      "name-required": "Enter a name for the flow.",
+      description: "Description",
+      "description-help":
+        "Explain what the flow does, when to use it and any other context the LLM needs.",
+      "description-required": "Enter a description for the flow.",
+    },
+    start: {
+      intro:
+        "Define values here and use them in any block below as <chip>${name}</chip>. References are highlighted as you type.",
+      "types-help":
+        "The LLM can fill in required and optional variables when it runs the flow. Fixed variables never reach the LLM.",
+      example: "For example:",
+      add: "Add variable",
+      "variable-n": "Variable {{n}}",
+      name: "Name",
+      type: "Type",
+      "type-required": "Required",
+      "type-optional": "Optional",
+      "type-static": "Fixed",
+      "type-required-help":
+        "The LLM must provide a value when it runs this flow.",
+      "type-optional-help": "It has an initial value the LLM can replace.",
+      "type-static-help": "Fixed value the LLM never sees.",
+      value: "Value",
+      "initial-value": "Initial value",
+      description: "Description for the LLM",
+      "description-placeholder": "What this value is for",
+      delete: "Delete variable {{name}}",
+      "delete-confirm":
+        "Delete the variable {{name}}? Blocks that store their result in it will stop doing so.",
+      "error-duplicate": "Another variable already uses this name.",
+      "error-invalid":
+        "The name cannot contain spaces or the characters $ { } [ ] .",
+    },
+    api: {
+      url: "URL",
+      method: "Method",
+      headers: "Headers",
+      "header-name": "Header name {{n}}",
+      "header-value": "Header value {{n}}",
+      "add-header": "Add header",
+      "remove-header": "Remove header {{name}}",
+      "name-placeholder": "Name",
+      "value-placeholder": "Value",
+      body: "Request body",
+      "body-format": "Format",
+      "body-text": "Raw text",
+      "body-form": "Form data",
+      "body-content": "Content",
+      "json-invalid":
+        "This does not look like valid JSON. You can save it anyway, but the request may fail.",
+      "form-fields": "Form fields",
+      "form-key": "Field name {{n}}",
+      "form-value": "Field value {{n}}",
+      "add-form-field": "Add field",
+      "remove-form-field": "Remove field {{name}}",
+      "response-variable": "Store the response in",
+    },
+    llm: {
+      instruction: "Instruction",
+      "instruction-placeholder": "What the LLM should do with the data…",
+    },
+    scraping: {
+      url: "Page URL",
+      capture: "Capture the content as",
+      "capture-text": "Text only",
+      "capture-html": "Raw HTML",
+      "capture-selector": "CSS selector",
+      selector: "CSS selector",
+      "selector-help":
+        "Enter a valid CSS selector for the part of the page you want, for example .article-content or #content.",
+      summarize: "Summarize the content",
+      "summarize-help":
+        "Long pages are summarized automatically to use fewer tokens. The summary may lose details from the original.",
+    },
+    variables: {
+      insert: "Insert variable",
+      "insert-in": "Insert a variable in {{field}}",
+      "none-defined":
+        "There are no variables yet. Add them in the Flow variables block.",
+      unknown_one: "Undefined variable: {{names}}",
+      unknown_other: "Undefined variables: {{names}}",
+      choose: "Choose a variable",
+      missing: "The variable {{name}} no longer exists. Choose another one.",
+      "missing-option": "{{name}} (no longer exists)",
+    },
+  },
   copy: {
     copied: "Copied",
     failed: "Could not copy. Select the text and copy it by hand.",
@@ -1462,6 +1894,36 @@ const TRANSLATIONS = {
         llmman: "Generate images locally on your own machine using llmman.",
         openrouter: "Generate images from image models on OpenRouter.",
         minimax: "Generate and edit images with MiniMax image models.",
+      },
+      "web-search": {
+        "you-search": "LLM-ready web search that works without an API key.",
+        "duckduckgo-engine":
+          "Web search with DuckDuckGo, with no API key or setup.",
+        "brave-search": "Web search with the Brave Search API.",
+        serpapi:
+          "Results from Google and other search engines through SerpApi.",
+        searchapi:
+          "Structured data from several search engines through SearchApi.",
+        "serper-dot-dev": "Google web search through Serper.dev.",
+        "bing-search": "Web search with the Bing Search API, through Azure.",
+        "baidu-search":
+          "Web search with Baidu Search, suited to Chinese content.",
+        "serply-engine": "Web search through Serply.io.",
+        "searxng-engine":
+          "Open-source metasearch engine that you can host yourself.",
+        "tavily-search": "Web search with the Tavily API.",
+        "exa-search":
+          "Web search API for AI agents that returns the full page contents.",
+        "perplexity-search": "Web search with the Perplexity Search API.",
+        "crw-search":
+          "Open-source alternative to Firecrawl and Tavily that you can host yourself.",
+        "keenable-search":
+          "Web search for AI agents that works without an API key.",
+        "anysearch-search":
+          "Real-time web search for AI agents. Needs an API key.",
+        "firecrawl-search": "Web search API for AI agents. Needs an API key.",
+        "deepseek-search":
+          "DeepSeek's web search tool. Needs a DeepSeek API key.",
       },
     },
   },

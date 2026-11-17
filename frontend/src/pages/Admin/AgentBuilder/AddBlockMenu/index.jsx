@@ -1,6 +1,16 @@
-import React, { useRef, useEffect } from "react";
+import React, { useId, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Plus, ChevronDown } from "lucide-react";
+import useMenu from "@/hooks/useMenu";
+import { FIELD_HELP } from "@/components/ProviderFields";
 import { BLOCK_TYPES, BLOCK_INFO } from "../BlockList";
+
+const ADDABLE_TYPES = Object.keys(BLOCK_INFO).filter(
+  (type) =>
+    type !== BLOCK_TYPES.START &&
+    type !== BLOCK_TYPES.FINISH &&
+    type !== BLOCK_TYPES.FLOW_INFO
+);
 
 /**
  * Check if the last configurable block has direct output disabled or undefined
@@ -17,68 +27,87 @@ function checkIfCanAddBlock(blocks) {
   );
 }
 
-export default function AddBlockMenu({
-  blocks,
-  showBlockMenu,
-  setShowBlockMenu,
-  addBlock,
-}) {
+/**
+ * "Add block" menu button. When direct output is on in the last block nothing
+ * can run after it, so the button stays (focusable) with the reason below.
+ */
+export default function AddBlockMenu({ blocks, onAddBlock }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const triggerRef = useRef(null);
   const menuRef = useRef(null);
+  const menuId = useId();
+  const reasonId = useId();
+  const canAdd = checkIfCanAddBlock(blocks);
 
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setShowBlockMenu(false);
-      }
-    }
+  useMenu({ open, onClose: () => setOpen(false), menuRef, triggerRef });
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [setShowBlockMenu]);
-
-  if (checkIfCanAddBlock(blocks) === false) return null;
   return (
-    <div className="relative mt-4 w-[280px] mx-auto pb-4" ref={menuRef}>
+    <div className="mt-4 w-full sm:max-w-[320px] mx-auto pb-4">
       <button
-        onClick={() => setShowBlockMenu(!showBlockMenu)}
-        className="transition-all duration-300 w-full p-2.5 bg-theme-action-menu-bg hover:bg-theme-action-menu-item-hover border border-white/10 rounded-lg text-white flex items-center justify-center gap-2 text-sm font-medium"
+        ref={triggerRef}
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls={open ? menuId : undefined}
+        aria-disabled={!canAdd || undefined}
+        aria-describedby={canAdd ? undefined : reasonId}
+        onClick={() => canAdd && setOpen((value) => !value)}
+        className="w-full min-h-[44px] md:min-h-[40px] px-3 bg-theme-action-menu-bg hover:bg-theme-action-menu-item-hover border border-zinc-600 light:border-slate-400 rounded-lg text-white flex items-center justify-center gap-2 text-sm font-medium transition-colors duration-quick ease-smooth aria-disabled:opacity-60 aria-disabled:cursor-not-allowed aria-disabled:hover:bg-theme-action-menu-bg"
       >
-        <Plus strokeWidth={1.5} className="w-4 h-4" />
-        Add Block
+        <Plus strokeWidth={1.5} aria-hidden="true" className="w-4 h-4" />
+        {t("agent-builder.add-block.button")}
         <ChevronDown
           strokeWidth={1.5}
-          className={`w-3.5 h-3.5 transition-transform duration-300 ${showBlockMenu ? "rotate-180" : ""}`}
+          aria-hidden="true"
+          className={`w-4 h-4 transition-transform duration-base ease-smooth ${open ? "rotate-180" : ""}`}
         />
       </button>
-      {showBlockMenu && (
-        <div className="absolute left-0 right-0 mt-2 bg-theme-action-menu-bg border border-white/10 rounded-lg shadow-lg overflow-hidden z-10 animate-fadeUpIn">
-          {Object.entries(BLOCK_INFO).map(
-            ([type, info]) =>
-              type !== BLOCK_TYPES.START &&
-              type !== BLOCK_TYPES.FINISH &&
-              type !== BLOCK_TYPES.FLOW_INFO && (
-                <button
-                  key={type}
-                  onClick={() => {
-                    addBlock(type);
-                    setShowBlockMenu(false);
-                  }}
-                  className="w-full p-2.5 flex items-center gap-3 hover:bg-theme-action-menu-item-hover text-white transition-colors duration-300 group"
+      {!canAdd && (
+        <p id={reasonId} className={`${FIELD_HELP} text-center`}>
+          {t("agent-builder.add-block.disabled")}
+        </p>
+      )}
+      {open && (
+        <div
+          ref={menuRef}
+          id={menuId}
+          role="menu"
+          aria-label={t("agent-builder.add-block.menu")}
+          className="mt-2 p-1 rounded-lg bg-zinc-900 light:bg-white border border-zinc-700 light:border-slate-300 shadow-lg animate-in fade-in-0 slide-in-from-top-2"
+        >
+          {ADDABLE_TYPES.map((type) => {
+            const info = BLOCK_INFO[type];
+            return (
+              <button
+                key={type}
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setOpen(false);
+                  onAddBlock(type);
+                }}
+                className="w-full min-h-[44px] p-2 flex items-center gap-3 rounded-md text-left text-zinc-100 light:text-slate-900 hover:bg-zinc-800 light:hover:bg-slate-100 transition-colors duration-quick ease-smooth"
+              >
+                <span
+                  aria-hidden="true"
+                  className="w-7 h-7 shrink-0 rounded-lg bg-zinc-700 light:bg-slate-200 flex items-center justify-center"
                 >
-                  <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center">
-                    <div className="w-fit h-fit text-white">{info.icon}</div>
-                  </div>
-                  <div className="text-left flex-1">
-                    <div className="text-sm font-medium">{info.label}</div>
-                    <div className="text-xs text-white/60">
-                      {info.description}
-                    </div>
-                  </div>
-                </button>
-              )
-          )}
+                  {React.cloneElement(info.icon, {
+                    className: "w-4 h-4 text-zinc-100 light:text-slate-900",
+                  })}
+                </span>
+                <span className="flex-1 min-w-0">
+                  <span className="block text-sm font-medium">
+                    {t(info.labelKey)}
+                  </span>
+                  <span className="block text-xs text-zinc-400 light:text-slate-600">
+                    {t(info.descriptionKey)}
+                  </span>
+                </span>
+              </button>
+            );
+          })}
         </div>
       )}
     </div>

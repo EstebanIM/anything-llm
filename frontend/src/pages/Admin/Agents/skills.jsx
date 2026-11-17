@@ -143,7 +143,7 @@ export const getAppIntegrationSkills = (t) => ({
     component: GMailSkillPanel,
     skill: "gmail-agent",
     Icon: ({ size }) => (
-      <img src={GMailIcon} alt="GMail" width={size} height={size} />
+      <img src={GMailIcon} alt="" width={size} height={size} />
     ),
     mode: ["singleUserOnly"],
   },
@@ -153,12 +153,7 @@ export const getAppIntegrationSkills = (t) => ({
     component: GoogleCalendarSkillPanel,
     skill: "google-calendar-agent",
     Icon: ({ size }) => (
-      <img
-        src={GoogleCalendarIcon}
-        alt="Google Calendar"
-        width={size}
-        height={size}
-      />
+      <img src={GoogleCalendarIcon} alt="" width={size} height={size} />
     ),
     mode: ["singleUserOnly"],
   },
@@ -168,7 +163,7 @@ export const getAppIntegrationSkills = (t) => ({
     component: OutlookSkillPanel,
     skill: "outlook-agent",
     Icon: ({ size }) => (
-      <img src={OutlookIcon} alt="Outlook" width={size} height={size} />
+      <img src={OutlookIcon} alt="" width={size} height={size} />
     ),
     mode: ["singleUserOnly"],
   },

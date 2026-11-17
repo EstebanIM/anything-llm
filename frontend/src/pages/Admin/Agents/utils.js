@@ -1,17 +1,20 @@
 import strDistance from "js-levenshtein";
+import { normalize } from "@/components/lib/ProviderSearchMenu";
 
 const LEVENSHTEIN_THRESHOLD = 3;
 
+/** Case- and accent-insensitive: "busqueda" finds "Búsqueda". */
 function skillMatchesSearch(skill, searchTerm) {
   if (!searchTerm) return true;
 
-  const normalizedSearch = searchTerm.toLowerCase().trim();
-  const titleLower = skill.title.toLowerCase();
-  const descLower = skill.description.toLowerCase();
+  const normalizedSearch = normalize(searchTerm).trim();
+  if (!normalizedSearch) return true;
+  const title = normalize(skill.title);
+  const description = normalize(skill.description);
 
-  if (titleLower.includes(normalizedSearch)) return true;
-  if (descLower.includes(normalizedSearch)) return true;
-  if (strDistance(titleLower, normalizedSearch) <= LEVENSHTEIN_THRESHOLD)
+  if (title.includes(normalizedSearch)) return true;
+  if (description.includes(normalizedSearch)) return true;
+  if (strDistance(title, normalizedSearch) <= LEVENSHTEIN_THRESHOLD)
     return true;
 
   return false;

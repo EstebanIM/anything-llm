@@ -1,46 +1,46 @@
-import { ChevronRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
+import paths from "@/utils/paths";
 import { formatSkillName } from "../formatSkillName";
+import { RowList, RowButton, SectionEmpty } from "../../components/SkillRows";
+
 export default function ImportedSkillList({
   skills = [],
-  selectedSkill = null,
+  labelledBy,
+  isSelected = () => false,
   handleClick = null,
 }) {
+  const { t } = useTranslation();
   if (skills.length === 0)
     return (
-      <div className="text-theme-text-secondary text-center text-xs flex flex-col gap-y-2">
-        <p>No imported skills found</p>
-      </div>
+      <SectionEmpty>
+        <p>{t("agent-pages.imported.empty")}</p>
+        <p>
+          <Link
+            to={paths.communityHub.trending()}
+            className="inline-flex items-center min-h-[44px] md:min-h-0 underline text-theme-text-primary"
+          >
+            {t("agent-pages.imported.empty-action")}
+          </Link>
+        </p>
+      </SectionEmpty>
     );
   return (
-    <div
-      className={`bg-theme-bg-secondary text-white rounded-xl w-full md:min-w-[360px]`}
-    >
-      {skills.map((config, index) => (
-        <div
+    <RowList labelledBy={labelledBy}>
+      {skills.map((config) => (
+        <RowButton
           key={config.hubId}
-          className={`py-3 px-4 flex items-center justify-between ${index === 0 ? "rounded-t-xl" : ""} ${index === Object.keys(skills).length - 1 ? "rounded-b-xl" : "border-b border-white/10"} cursor-pointer transition-all duration-300 hover:bg-theme-bg-primary ${selectedSkill === config.hubId ? "bg-theme-bg-primary" : ""}`}
-          onClick={() =>
-            handleClick?.({
-              ...config,
-              imported: true,
-            })
+          rowKey={`imported:${config.hubId}`}
+          selected={isSelected(config.hubId)}
+          onClick={() => handleClick?.(config)}
+          title={formatSkillName(config.name) || config.hubId}
+          status={
+            config.active
+              ? t("agent-pages.skill-on")
+              : t("agent-pages.skill-off")
           }
-        >
-          <div className="text-sm font-light">
-            {formatSkillName(config.name)}
-          </div>
-          <div className="flex items-center gap-x-2">
-            <div className="text-sm text-theme-text-secondary font-medium">
-              {config.active ? "On" : "Off"}
-            </div>
-            <ChevronRight
-              strokeWidth={1.5}
-              size={14}
-              className="text-theme-text-secondary"
-            />
-          </div>
-        </div>
+        />
       ))}
-    </div>
+    </RowList>
   );
 }

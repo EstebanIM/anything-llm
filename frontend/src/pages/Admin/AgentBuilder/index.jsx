@@ -1,9 +1,15 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { useNavigate, useParams } from "react-router-dom";
-import { Tooltip } from "react-tooltip";
+import { useTranslation } from "react-i18next";
 import { v4 } from "uuid";
 
-import BlockList, { BLOCK_TYPES, BLOCK_INFO } from "./BlockList";
+import BlockList, {
+  BLOCK_TYPES,
+  BLOCK_INFO,
+  blockActionId,
+  blockHeaderId,
+} from "./BlockList";
 import AddBlockMenu from "./AddBlockMenu";
 import showToast from "@/utils/toast";
 import AgentFlows from "@/models/agentFlows";
@@ -11,7 +17,12 @@ import { useTheme } from "@/hooks/useTheme";
 import HeaderMenu from "./HeaderMenu";
 import paths from "@/utils/paths";
 import PublishEntityModal from "@/components/CommunityHub/PublishEntityModal";
+import ConfirmModal from "@/components/lib/ConfirmModal";
+import StatusNote from "@/components/lib/StatusNote";
+import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
+import PreLoader from "@/components/Preloader";
 import { AvailableVariablesProvider } from "./useAvailableVariables";
+import variableIssues from "./nodes/StartNode/variableIssues";
 
 const DEFAULT_BLOCKS = [
   {
@@ -39,94 +50,175 @@ const DEFAULT_BLOCKS = [
   },
 ];
 
+/**
+ * What a save would store: block types and settings, without ids or the
+ * expanded / collapsed state. Comparing it with the last saved (or loaded)
+ * value tells whether there are unsaved changes.
+ * @param {Array} blocks
+ */
+function snapshotOf(blocks) {
+  return JSON.stringify(
+    blocks.map(({ type, config }) => ({ type, config: config || {} }))
+  );
+}
+
+/**
+ * Builder blocks for a stored flow, with the flow info first and the finish
+ * block always last.
+ * @param {{config: {name: string, description: string, steps: Array}}} flow
+ */
+function blocksFromFlow(flow) {
+  const blocks = [
+    {
+      id: "flow_info",
+      type: BLOCK_TYPES.FLOW_INFO,
+      config: {
+        name: flow.config.name,
+        description: flow.config.description,
+      },
+      isExpanded: true,
+    },
+    ...(flow.config.steps || []).map((step, index) => ({
+      id: index === 0 ? "start" : `block_${index}`,
+      type: step.type,
+      config: step.config,
+      isExpanded: true,
+    })),
+  ];
+  if (blocks[blocks.length - 1]?.type !== BLOCK_TYPES.FINISH) {
+    blocks.push({
+      id: "finish",
+      type: BLOCK_TYPES.FINISH,
+      config: {},
+      isExpanded: false,
+    });
+  }
+  return blocks;
+}
+
+/** The steps a save sends: everything except the flow info and finish blocks. */
+function stepsOf(blocks) {
+  return blocks
+    .filter(
+      (block) =>
+        block.type !== BLOCK_TYPES.FINISH &&
+        block.type !== BLOCK_TYPES.FLOW_INFO
+    )
+    .map((block) => ({ type: block.type, config: block.config }));
+}
+
+/** Own message for a failed save; the server text is logged, not shown. */
+function saveErrorKey(error = "") {
+  return /unsupported blocks/i.test(error)
+    ? "agent-builder.save.unsupported"
+    : "agent-builder.save.failed";
+}
+
 export default function AgentBuilder() {
+  const { t } = useTranslation();
   const { flowId } = useParams();
   const { theme } = useTheme();
   const navigate = useNavigate();
-  const [agentName, setAgentName] = useState("");
-  const [_, setAgentDescription] = useState("");
+  const idPrefix = useId();
+  const mainId = `${idPrefix}-main`;
+  const [blocks, setBlocks] = useState(DEFAULT_BLOCKS);
+  const [savedSnapshot, setSavedSnapshot] = useState(() =>
+    snapshotOf(DEFAULT_BLOCKS)
+  );
   const [currentFlowUuid, setCurrentFlowUuid] = useState(null);
   const [active, setActive] = useState(true);
-  const [blocks, setBlocks] = useState(DEFAULT_BLOCKS);
-  const [selectedBlock, setSelectedBlock] = useState("start");
-  const [showBlockMenu, setShowBlockMenu] = useState(false);
+  const [loadState, setLoadState] = useState(flowId ? "loading" : "ready");
+  const [saving, setSaving] = useState(false);
+  const [showErrors, setShowErrors] = useState(false);
   const [availableFlows, setAvailableFlows] = useState([]);
-  const nameRef = useRef(null);
-  const descriptionRef = useRef(null);
   const [showPublishModal, setShowPublishModal] = useState(false);
+  const [confirmNewFlow, setConfirmNewFlow] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState(null);
+  const [announcement, setAnnouncement] = useState("");
+  // uuid of the flow currently in the editor, so a URL change to that same
+  // flow (after the first save) does not load it again.
+  const loadedUuidRef = useRef(null);
+  const loadRequestRef = useRef(0);
+  const savingRef = useRef(false);
+
+  const isDirty = useMemo(
+    () => loadState === "ready" && snapshotOf(blocks) !== savedSnapshot,
+    [blocks, savedSnapshot, loadState]
+  );
 
   useEffect(() => {
     loadAvailableFlows();
   }, []);
 
   useEffect(() => {
-    if (flowId) {
-      loadFlow(flowId);
+    if (!flowId) {
+      if (loadedUuidRef.current) resetToNewFlow();
+      return;
     }
+    if (flowId === loadedUuidRef.current) return;
+    loadFlow(flowId);
   }, [flowId]);
 
+  // Navigate once the page is clean: the unsaved-changes guard reads the
+  // dirty flag from the last render, so navigating in the same handler that
+  // saved (or discarded) would still be blocked.
   useEffect(() => {
-    const flowInfoBlock = blocks.find(
-      (block) => block.type === BLOCK_TYPES.FLOW_INFO
-    );
-    setAgentName(flowInfoBlock?.config?.name || "");
-  }, [blocks]);
+    if (!pendingNavigation || isDirty) return;
+    navigate(pendingNavigation.to, { replace: pendingNavigation.replace });
+    setPendingNavigation(null);
+  }, [pendingNavigation, isDirty]);
 
   const loadAvailableFlows = async () => {
-    try {
-      const { success, error, flows } = await AgentFlows.listFlows();
-      if (!success) throw new Error(error);
-      setAvailableFlows(flows);
-    } catch (error) {
+    const { success, error, flows } = await AgentFlows.listFlows();
+    if (!success) {
       console.error(error);
-      showToast("Failed to load available flows", "error", { clear: true });
+      showToast(t("agent-builder.load.flows-failed"), "error", {
+        clear: true,
+      });
+      return;
     }
+    setAvailableFlows(flows || []);
   };
 
   const loadFlow = async (uuid) => {
-    try {
-      const { success, error, flow } = await AgentFlows.getFlow(uuid);
-      if (!success) throw new Error(error);
-
-      // Convert steps to blocks with IDs, ensuring finish block is at the end
-      const flowBlocks = [
-        {
-          id: "flow_info",
-          type: BLOCK_TYPES.FLOW_INFO,
-          config: {
-            name: flow.config.name,
-            description: flow.config.description,
-          },
-          isExpanded: true,
-        },
-        ...flow.config.steps.map((step, index) => ({
-          id: index === 0 ? "start" : `block_${index}`,
-          type: step.type,
-          config: step.config,
-          isExpanded: true,
-        })),
-      ];
-
-      // Add finish block if not present
-      if (flowBlocks[flowBlocks.length - 1]?.type !== BLOCK_TYPES.FINISH) {
-        flowBlocks.push({
-          id: "finish",
-          type: BLOCK_TYPES.FINISH,
-          config: {},
-          isExpanded: false,
-        });
-      }
-
-      setAgentName(flow.config.name);
-      setAgentDescription(flow.config.description);
-      setActive(flow.config.active ?? true);
-      setCurrentFlowUuid(flow.uuid);
-      setBlocks(flowBlocks);
-    } catch (error) {
+    const request = ++loadRequestRef.current;
+    setLoadState("loading");
+    const { success, error, flow } = await AgentFlows.getFlow(uuid);
+    if (request !== loadRequestRef.current) return;
+    if (!success || !flow) {
       console.error(error);
-      showToast("Failed to load flow", "error", { clear: true });
+      setLoadState("error");
+      return;
     }
+    const flowBlocks = blocksFromFlow(flow);
+    loadedUuidRef.current = flow.uuid;
+    setBlocks(flowBlocks);
+    setSavedSnapshot(snapshotOf(flowBlocks));
+    setActive(flow.config.active ?? true);
+    setCurrentFlowUuid(flow.uuid);
+    setShowErrors(false);
+    setLoadState("ready");
   };
+
+  const resetToNewFlow = () => {
+    loadRequestRef.current++;
+    loadedUuidRef.current = null;
+    setBlocks(DEFAULT_BLOCKS);
+    setSavedSnapshot(snapshotOf(DEFAULT_BLOCKS));
+    setCurrentFlowUuid(null);
+    setActive(true);
+    setShowErrors(false);
+    setLoadState("ready");
+  };
+
+  const startNewFlow = () => {
+    resetToNewFlow();
+    setConfirmNewFlow(false);
+    setAnnouncement(t("agent-builder.new-flow.started"));
+    if (flowId) setPendingNavigation({ to: paths.agents.builder() });
+  };
+
+  const focusById = (id) => document.getElementById(id)?.focus();
 
   const addBlock = (type) => {
     const newBlock = {
@@ -136,15 +228,19 @@ export default function AgentBuilder() {
       isExpanded: true,
     };
     // Insert the new block before the finish block
-    const newBlocks = [...blocks];
-    newBlocks.splice(newBlocks.length - 1, 0, newBlock);
-    setBlocks(newBlocks);
-    setShowBlockMenu(false);
+    flushSync(() =>
+      setBlocks((prev) => {
+        const next = [...prev];
+        next.splice(next.length - 1, 0, newBlock);
+        return next;
+      })
+    );
+    focusById(blockHeaderId(idPrefix, newBlock.id));
   };
 
   const updateBlockConfig = (blockId, config) => {
-    setBlocks(
-      blocks.map((block) =>
+    setBlocks((prev) =>
+      prev.map((block) =>
         block.id === blockId
           ? { ...block, config: { ...block.config, ...config } }
           : block
@@ -154,86 +250,45 @@ export default function AgentBuilder() {
 
   const removeBlock = (blockId) => {
     if (blockId === "start") return;
-    setBlocks(blocks.filter((block) => block.id !== blockId));
-    if (selectedBlock === blockId) {
-      setSelectedBlock("start");
-    }
+    const index = blocks.findIndex((block) => block.id === blockId);
+    if (index === -1) return;
+    const name = t(BLOCK_INFO[blocks[index].type].labelKey);
+    flushSync(() =>
+      setBlocks((prev) => prev.filter((block) => block.id !== blockId))
+    );
+    // The finish block always follows, so there is a next header to land on.
+    const next = blocks[index + 1];
+    if (next) focusById(blockHeaderId(idPrefix, next.id));
+    setAnnouncement(t("agent-builder.block.deleted", { name }));
   };
 
-  const saveFlow = async () => {
-    const flowInfoBlock = blocks.find(
-      (block) => block.type === BLOCK_TYPES.FLOW_INFO
+  const moveBlock = (fromIndex, toIndex) => {
+    const moved = blocks[fromIndex];
+    if (!moved) return;
+    flushSync(() =>
+      setBlocks((prev) => {
+        const next = [...prev];
+        const [block] = next.splice(fromIndex, 1);
+        next.splice(toIndex, 0, block);
+        return next;
+      })
     );
-    const name = flowInfoBlock?.config?.name;
-    const description = flowInfoBlock?.config?.description;
-
-    if (!name?.trim() || !description?.trim()) {
-      // Make sure the flow info block is expanded first
-      if (!flowInfoBlock.isExpanded) {
-        setBlocks(
-          blocks.map((block) =>
-            block.type === BLOCK_TYPES.FLOW_INFO
-              ? { ...block, isExpanded: true }
-              : block
-          )
-        );
-        // Small delay to allow expansion animation to complete
-        await new Promise((resolve) => setTimeout(resolve, 100));
-      }
-
-      if (!name?.trim()) {
-        nameRef.current?.focus();
-      } else if (!description?.trim()) {
-        descriptionRef.current?.focus();
-      }
-      showToast(
-        "Please provide both a name and description for your flow",
-        "error",
-        {
-          clear: true,
-        }
-      );
-      return;
-    }
-
-    const flowConfig = {
-      name,
-      description,
-      active,
-      steps: blocks
-        .filter(
-          (block) =>
-            block.type !== BLOCK_TYPES.FINISH &&
-            block.type !== BLOCK_TYPES.FLOW_INFO
-        )
-        .map((block) => ({
-          type: block.type,
-          config: block.config,
-        })),
-    };
-
-    try {
-      const { success, error, flow } = await AgentFlows.saveFlow(
-        name,
-        flowConfig,
-        currentFlowUuid
-      );
-      if (!success) throw new Error(error);
-
-      setCurrentFlowUuid(flow.uuid);
-      showToast("Agent flow saved successfully!", "success", { clear: true });
-      await loadAvailableFlows();
-    } catch (error) {
-      console.error("Save error details:", error);
-      showToast(`Failed to save agent flow. ${error.message}`, "error", {
-        clear: true,
-      });
-    }
+    // Reordering can detach the focused button: keep focus on the same control.
+    focusById(
+      blockActionId(idPrefix, moved.id, toIndex < fromIndex ? "up" : "down")
+    );
+    setAnnouncement(
+      t("agent-builder.block.moved", {
+        name: t(BLOCK_INFO[moved.type].labelKey),
+        position: toIndex + 1,
+        total: blocks.length,
+      })
+    );
   };
 
   const toggleBlockExpansion = (blockId) => {
-    setBlocks(
-      blocks.map((block) =>
+    setBlocks((prev) =>
+      prev.map((block) =>
         block.id === blockId
           ? { ...block, isExpanded: !block.isExpanded }
           : block
@@ -241,75 +296,99 @@ export default function AgentBuilder() {
     );
   };
 
-  // Get all available variables from the start block
-  const getAvailableVariables = () => {
-    const startBlock = blocks.find((b) => b.type === BLOCK_TYPES.START);
-    return startBlock?.config?.variables?.filter((v) => v.name) || [];
-  };
-
-  const renderVariableSelect = (
-    value,
-    onChange,
-    placeholder = "Select variable"
-  ) => (
-    <select
-      value={value || ""}
-      onChange={(e) => onChange(e.target.value)}
-      className="w-full border-none bg-theme-settings-input-bg text-theme-text-primary text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none p-2.5"
-    >
-      <option value="" className="bg-theme-bg-primary">
-        {placeholder}
-      </option>
-      {getAvailableVariables().map((v) => (
-        <option key={v.name} value={v.name} className="bg-theme-bg-primary">
-          {v.name}
-        </option>
-      ))}
-    </select>
-  );
-
+  // Clear result/response references to a deleted flow variable.
   const deleteVariable = (variableName) => {
-    // Clean up references in other blocks
-    blocks.forEach((block) => {
-      if (block.type === BLOCK_TYPES.START) return;
-
-      let configUpdated = false;
-      const newConfig = { ...block.config };
-
-      // Check and clean responseVariable/resultVariable
-      if (newConfig.responseVariable === variableName) {
-        newConfig.responseVariable = "";
-        configUpdated = true;
-      }
-      if (newConfig.resultVariable === variableName) {
-        newConfig.resultVariable = "";
-        configUpdated = true;
-      }
-
-      if (configUpdated) {
-        updateBlockConfig(block.id, newConfig);
-      }
-    });
+    setBlocks((prev) =>
+      prev.map((block) => {
+        if (block.type === BLOCK_TYPES.START) return block;
+        const config = { ...block.config };
+        let changed = false;
+        if (config.responseVariable === variableName) {
+          config.responseVariable = "";
+          changed = true;
+        }
+        if (config.resultVariable === variableName) {
+          config.resultVariable = "";
+          changed = true;
+        }
+        return changed ? { ...block, config } : block;
+      })
+    );
   };
 
-  const clearFlow = () => {
-    if (!!flowId) navigate(paths.agents.builder());
-    setAgentName("");
-    setAgentDescription("");
-    setCurrentFlowUuid(null);
-    setActive(true);
-    setBlocks(DEFAULT_BLOCKS);
+  /** Blocks with a field that stops the save, in page order. */
+  const invalidBlockIds = () => {
+    const ids = [];
+    for (const block of blocks) {
+      if (
+        block.type === BLOCK_TYPES.FLOW_INFO &&
+        (!block.config?.name?.trim() || !block.config?.description?.trim())
+      )
+        ids.push(block.id);
+      if (
+        block.type === BLOCK_TYPES.START &&
+        variableIssues(block.config?.variables).some(Boolean)
+      )
+        ids.push(block.id);
+    }
+    return ids;
   };
 
-  const moveBlock = (fromIndex, toIndex) => {
-    const newBlocks = [...blocks];
-    const [movedBlock] = newBlocks.splice(fromIndex, 1);
-    newBlocks.splice(toIndex, 0, movedBlock);
-    setBlocks(newBlocks);
-  };
+  const saveFlow = async () => {
+    if (savingRef.current || loadState !== "ready") return;
 
-  const handlePublishFlow = () => {
-    setShowPublishModal(true);
+    const invalid = invalidBlockIds();
+    if (invalid.length > 0) {
+      // Open the blocks with errors and render the messages, then move focus
+      // to the first invalid field (its error is linked to it).
+      flushSync(() => {
+        setShowErrors(true);
+        setBlocks((prev) =>
+          prev.map((block) =>
+            invalid.includes(block.id) ? { ...block, isExpanded: true } : block
+          )
+        );
+      });
+      document
+        .getElementById(mainId)
+        ?.querySelector('[aria-invalid="true"]')
+        ?.focus();
+      return;
+    }
+
+    const flowInfo = blocks.find(
+      (block) => block.type === BLOCK_TYPES.FLOW_INFO
+    );
+    const { name, description } = flowInfo.config;
+    const sentBlocks = blocks;
+    savingRef.current = true;
+    setSaving(true);
+    const { success, error, flow } = await AgentFlows.saveFlow(
+      name,
+      { name, description, active, steps: stepsOf(sentBlocks) },
+      currentFlowUuid
+    );
+    savingRef.current = false;
+    setSaving(false);
+
+    if (!success || !flow?.uuid) {
+      console.error("Failed to save agent flow:", error);
+      showToast(t(saveErrorKey(error)), "error", { clear: true });
+      return;
+    }
+
+    loadedUuidRef.current = flow.uuid;
+    setCurrentFlowUuid(flow.uuid);
+    setSavedSnapshot(snapshotOf(sentBlocks));
+    setShowErrors(false);
+    showToast(t("agent-builder.save.success"), "success", { clear: true });
+    if (flowId !== flow.uuid) {
+      setPendingNavigation({
+        to: paths.agents.editAgent(flow.uuid),
+        replace: true,
+      });
+    }
+    loadAvailableFlows();
   };
 
   const flowInfoBlock = blocks.find(
@@ -318,17 +397,12 @@ export default function AgentBuilder() {
   const flowEntity = {
     name: flowInfoBlock?.config?.name || "",
     description: flowInfoBlock?.config?.description || "",
-    steps: blocks
-      .filter(
-        (block) =>
-          block.type !== BLOCK_TYPES.FINISH &&
-          block.type !== BLOCK_TYPES.FLOW_INFO
-      )
-      .map((block) => ({ type: block.type, config: block.config })),
+    steps: stepsOf(blocks),
   };
 
   return (
     <AvailableVariablesProvider blocks={blocks}>
+      <UnsavedChangesGuard when={isDirty} />
       <div
         style={{
           backgroundImage:
@@ -338,7 +412,7 @@ export default function AgentBuilder() {
           backgroundSize: "15px 15px",
           backgroundPosition: "-7.5px -7.5px",
         }}
-        className="relative w-screen h-screen flex flex-col bg-theme-bg-primary overflow-clip"
+        className="w-full h-dvh flex flex-col bg-theme-bg-primary overflow-clip"
       >
         <PublishEntityModal
           show={showPublishModal}
@@ -346,51 +420,72 @@ export default function AgentBuilder() {
           entityType="agent-flow"
           entity={flowEntity}
         />
-        <HeaderMenu
-          agentName={agentName}
-          availableFlows={availableFlows}
-          onNewFlow={clearFlow}
-          onSaveFlow={saveFlow}
-          onPublishFlow={handlePublishFlow}
-        />
-        <div className="flex-1 min-h-0 p-6 overflow-y-auto">
-          <div
-            className={`max-w-xl mx-auto mt-28 md:mt-14 ${showBlockMenu ? "pb-52" : ""}`}
-          >
-            <BlockList
-              blocks={blocks}
-              updateBlockConfig={updateBlockConfig}
-              removeBlock={removeBlock}
-              toggleBlockExpansion={toggleBlockExpansion}
-              renderVariableSelect={renderVariableSelect}
-              onDeleteVariable={deleteVariable}
-              moveBlock={moveBlock}
-              refs={{ nameRef, descriptionRef }}
-            />
-
-            <AddBlockMenu
-              blocks={blocks}
-              showBlockMenu={showBlockMenu}
-              setShowBlockMenu={setShowBlockMenu}
-              addBlock={addBlock}
-            />
-          </div>
-        </div>
-        <Tooltip
-          id="content-summarization-tooltip"
-          place="top"
-          delayShow={300}
-          className="tooltip !text-xs z-99"
+        <ConfirmModal
+          isOpen={confirmNewFlow}
+          title={t("agent-builder.new-flow.title")}
+          confirmLabel={t("agent-builder.new-flow.confirm")}
+          onConfirm={startNewFlow}
+          onCancel={() => setConfirmNewFlow(false)}
         >
-          <p className="text-sm">
-            When enabled, long webpage content will be automatically summarized
-            to reduce token usage.
-            <br />
-            <br />
-            Note: This may affect data quality and remove specific details from
-            the original content.
+          <p>{t("agent-builder.new-flow.description")}</p>
+        </ConfirmModal>
+        <HeaderMenu
+          flowName={flowInfoBlock?.config?.name}
+          currentFlowUuid={currentFlowUuid}
+          availableFlows={availableFlows}
+          isDirty={isDirty}
+          saving={saving}
+          canSave={loadState === "ready"}
+          onNewFlow={() => (isDirty ? setConfirmNewFlow(true) : startNewFlow())}
+          onSaveFlow={saveFlow}
+          onPublishFlow={() => setShowPublishModal(true)}
+        />
+        <main
+          id={mainId}
+          className="flex-1 min-h-0 overflow-y-auto px-4 py-6 md:p-6"
+        >
+          <p role="status" className="sr-only">
+            {announcement}
           </p>
-        </Tooltip>
+          <div className="max-w-xl mx-auto">
+            {loadState === "loading" && (
+              <div className="flex justify-center py-16">
+                <PreLoader />
+              </div>
+            )}
+            {loadState === "error" && (
+              <StatusNote
+                tone="error"
+                announce
+                title={t("agent-builder.load.error-title")}
+              >
+                <p>{t("agent-builder.load.error-description")}</p>
+                <button
+                  type="button"
+                  onClick={() => loadFlow(flowId)}
+                  className="mt-2 min-h-[44px] md:min-h-[32px] px-3 rounded-md border border-current text-sm font-medium hover:bg-red-500/10 transition-colors duration-quick ease-smooth"
+                >
+                  {t("provider-fields.retry")}
+                </button>
+              </StatusNote>
+            )}
+            {loadState === "ready" && (
+              <>
+                <BlockList
+                  blocks={blocks}
+                  idPrefix={idPrefix}
+                  showErrors={showErrors}
+                  updateBlockConfig={updateBlockConfig}
+                  onRemoveBlock={removeBlock}
+                  onToggleBlock={toggleBlockExpansion}
+                  onMoveBlock={moveBlock}
+                  onDeleteVariable={deleteVariable}
+                />
+                <AddBlockMenu blocks={blocks} onAddBlock={addBlock} />
+              </>
+            )}
+          </div>
+        </main>
       </div>
     </AvailableVariablesProvider>
   );

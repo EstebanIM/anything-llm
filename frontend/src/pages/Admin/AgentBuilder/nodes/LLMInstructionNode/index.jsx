@@ -1,42 +1,40 @@
-import React from "react";
+import { useId } from "react";
+import { useTranslation } from "react-i18next";
+import { FIELD_LABEL } from "@/components/ProviderFields";
 import VariableInput from "../../VariableInput";
+import VariableSelect from "../../VariableSelect";
 
-export default function LLMInstructionNode({
-  config,
-  onConfigChange,
-  renderVariableSelect,
-}) {
+export default function LLMInstructionNode({ config, onConfigChange }) {
+  const { t } = useTranslation();
+  const instructionId = useId();
+  const instructionLabel = t("agent-builder.llm.instruction");
+
   return (
     <div className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-theme-text-primary mb-2">
-          Instruction
+        <label htmlFor={instructionId} className={FIELD_LABEL}>
+          {instructionLabel}
         </label>
         <VariableInput
+          id={instructionId}
+          label={instructionLabel}
           multiline
           rows={3}
           value={config?.instruction || ""}
           onChange={(e) =>
-            onConfigChange({
-              ...config,
-              instruction: e.target.value,
-            })
+            onConfigChange({ ...config, instruction: e.target.value })
           }
-          placeholder="Enter instructions for the LLM..."
+          placeholder={t("agent-builder.llm.instruction-placeholder")}
         />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-theme-text-primary mb-2">
-          Result Variable
-        </label>
-        {renderVariableSelect(
-          config.resultVariable,
-          (value) => onConfigChange({ ...config, resultVariable: value }),
-          "Select or create variable",
-          true
-        )}
-      </div>
+      <VariableSelect
+        label={t("agent-builder.result-variable")}
+        value={config.resultVariable}
+        onChange={(value) =>
+          onConfigChange({ ...config, resultVariable: value })
+        }
+      />
     </div>
   );
 }

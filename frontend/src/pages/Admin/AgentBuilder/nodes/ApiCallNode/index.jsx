@@ -1,283 +1,268 @@
-/* eslint-disable react-hooks/refs */
-import React, { useRef, useState } from "react";
-import { Plus, X, ChevronDown } from "lucide-react";
+import { useId, useRef } from "react";
+import { flushSync } from "react-dom";
+import { useTranslation } from "react-i18next";
+import { Plus, X } from "lucide-react";
+import {
+  FIELD_INPUT,
+  FIELD_LABEL,
+  FIELD_SELECT,
+} from "@/components/ProviderFields";
 import VariableInput from "../../VariableInput";
+import VariableSelect from "../../VariableSelect";
 
-export default function ApiCallNode({
-  config,
-  onConfigChange,
-  renderVariableSelect,
+const METHODS = ["GET", "POST", "DELETE", "PUT", "PATCH"];
+const BODY_METHODS = ["POST", "PUT", "PATCH"];
+
+/**
+ * Whether a JSON body parses once every ${...} reference is swapped for a
+ * placeholder value (references can sit inside a string or stand alone).
+ * Only a warning: the request is still saved as written.
+ * @param {string} body
+ */
+function looksLikeJson(body) {
+  if (!body?.trim()) return true;
+  try {
+    JSON.parse(body.replace(/\$\{[^}]+\}/g, "0"));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const ROW_BUTTON =
+  "w-11 h-11 md:w-10 md:h-10 shrink-0 self-end md:self-start flex items-center justify-center rounded-lg border border-zinc-500 light:border-slate-500 bg-theme-settings-input-bg text-red-400 light:text-red-600 hover:bg-red-500/10 transition-colors duration-quick ease-smooth";
+
+const ADD_BUTTON =
+  "min-h-[44px] md:min-h-[36px] flex items-center justify-center gap-2 px-3 rounded-lg border border-zinc-500 light:border-slate-500 bg-theme-settings-input-bg text-sm text-white hover:bg-theme-action-menu-item-hover transition-colors duration-quick ease-smooth";
+
+/**
+ * Editable list of key/value rows (request headers or form fields): one
+ * fieldset with a legend, named fields, rows stacked on phones, and focus
+ * moved to the new row or to a neighbor after removing one.
+ */
+function KeyValueRows({
+  legend,
+  rows,
+  onChange,
+  addLabel,
+  keyLabel,
+  valueLabel,
+  removeLabel,
 }) {
-  const urlInputRef = useRef(null);
-  const [showVarMenu, setShowVarMenu] = useState(false);
-  const varButtonRef = useRef(null);
+  const { t } = useTranslation();
+  const baseId = useId();
+  const addButtonRef = useRef(null);
+  const keyId = (index) => `${baseId}-${index}-key`;
 
-  const handleHeaderChange = (index, field, value) => {
-    const newHeaders = [...(config.headers || [])];
-    newHeaders[index] = { ...newHeaders[index], [field]: value };
-    onConfigChange({ headers: newHeaders });
+  const updateRow = (index, field, value) => {
+    const next = [...rows];
+    next[index] = { ...next[index], [field]: value };
+    onChange(next);
   };
 
-  const addHeader = () => {
-    const newHeaders = [...(config.headers || []), { key: "", value: "" }];
-    onConfigChange({ headers: newHeaders });
+  const addRow = () => {
+    flushSync(() => onChange([...rows, { key: "", value: "" }]));
+    document.getElementById(keyId(rows.length))?.focus();
   };
 
-  const removeHeader = (index) => {
-    const newHeaders = [...(config.headers || [])].filter(
-      (_, i) => i !== index
-    );
-    onConfigChange({ headers: newHeaders });
+  const removeRow = (index) => {
+    flushSync(() => onChange(rows.filter((_, i) => i !== index)));
+    const next = index < rows.length - 1 ? index : index - 1;
+    (document.getElementById(keyId(next)) || addButtonRef.current)?.focus();
   };
 
-  const insertVariableAtCursor = (variableName) => {
-    if (!urlInputRef.current) return;
+  return (
+    <fieldset className="min-w-0">
+      <legend className={FIELD_LABEL}>{legend}</legend>
+      <div className="space-y-3">
+        {rows.map((row, index) => {
+          const n = index + 1;
+          const valueId = `${baseId}-${index}-value`;
+          return (
+            <div
+              key={index}
+              className="flex flex-col md:flex-row md:items-start gap-2 pb-3 md:pb-0 border-b md:border-0 border-zinc-700 light:border-slate-300"
+            >
+              <div className="md:flex-1 min-w-0">
+                <label htmlFor={keyId(index)} className="sr-only">
+                  {keyLabel(n)}
+                </label>
+                <input
+                  id={keyId(index)}
+                  type="text"
+                  placeholder={t("agent-builder.api.name-placeholder")}
+                  value={row.key}
+                  onChange={(e) => updateRow(index, "key", e.target.value)}
+                  className={FIELD_INPUT}
+                  autoComplete="off"
+                  spellCheck={false}
+                />
+              </div>
+              <div className="md:flex-1 min-w-0">
+                <label htmlFor={valueId} className="sr-only">
+                  {valueLabel(n)}
+                </label>
+                <VariableInput
+                  id={valueId}
+                  label={valueLabel(n)}
+                  placeholder={t("agent-builder.api.value-placeholder")}
+                  value={row.value}
+                  onChange={(e) => updateRow(index, "value", e.target.value)}
+                />
+              </div>
+              <button
+                type="button"
+                aria-label={removeLabel(row.key || n)}
+                onClick={() => removeRow(index)}
+                className={ROW_BUTTON}
+              >
+                <X strokeWidth={1.5} aria-hidden="true" className="w-4 h-4" />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+      <button
+        ref={addButtonRef}
+        type="button"
+        onClick={addRow}
+        className={`${ADD_BUTTON} mt-3`}
+      >
+        <Plus strokeWidth={1.5} aria-hidden="true" className="w-4 h-4" />
+        {addLabel}
+      </button>
+    </fieldset>
+  );
+}
 
-    const input = urlInputRef.current;
-    const start = input.selectionStart;
-    const end = input.selectionEnd;
-    const currentValue = config.url;
-
-    const newValue =
-      currentValue.substring(0, start) +
-      "${" +
-      variableName +
-      "}" +
-      currentValue.substring(end);
-
-    onConfigChange({ url: newValue });
-    setShowVarMenu(false);
-
-    // Set cursor position after the inserted variable
-    setTimeout(() => {
-      const newPosition = start + variableName.length + 3; // +3 for ${}
-      input.setSelectionRange(newPosition, newPosition);
-      input.focus();
-    }, 0);
-  };
+export default function ApiCallNode({ config, onConfigChange }) {
+  const { t } = useTranslation();
+  const urlId = useId();
+  const methodId = useId();
+  const bodyTypeId = useId();
+  const bodyId = useId();
+  const jsonWarningId = useId();
+  const urlLabel = t("agent-builder.api.url");
+  const bodyLabel = t("agent-builder.api.body-content");
+  const bodyType = config.bodyType || "json";
+  const jsonInvalid = bodyType === "json" && !looksLikeJson(config.body);
 
   return (
     <div className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-theme-text-primary mb-2">
-          URL
+        <label htmlFor={urlId} className={FIELD_LABEL}>
+          {urlLabel}
         </label>
-        <div className="flex gap-2">
-          <VariableInput
-            ref={urlInputRef}
-            className="flex-1"
-            placeholder="https://api.example.com/endpoint"
-            value={config.url}
-            onChange={(e) => onConfigChange({ url: e.target.value })}
-          />
-          <div className="relative">
-            <button
-              ref={varButtonRef}
-              onClick={() => setShowVarMenu(!showVarMenu)}
-              className="h-full px-3 rounded-lg border-none bg-theme-settings-input-bg text-theme-text-primary hover:bg-theme-action-menu-item-hover transition-colors duration-300 flex items-center gap-1"
-              title="Insert variable"
-            >
-              <Plus strokeWidth={1.5} className="w-4 h-4" />
-              <ChevronDown strokeWidth={1.5} className="w-3 h-3" />
-            </button>
-            {showVarMenu && (
-              <div className="absolute right-0 top-[calc(100%+4px)] w-48 bg-theme-settings-input-bg border-none rounded-lg shadow-lg z-10">
-                {renderVariableSelect(
-                  "",
-                  insertVariableAtCursor,
-                  "Select variable to insert",
-                  true
-                )}
-              </div>
-            )}
-          </div>
-        </div>
+        <VariableInput
+          id={urlId}
+          label={urlLabel}
+          placeholder="https://api.example.com/endpoint"
+          value={config.url}
+          onChange={(e) => onConfigChange({ url: e.target.value })}
+        />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-theme-text-primary mb-2">
-          Method
+        <label htmlFor={methodId} className={FIELD_LABEL}>
+          {t("agent-builder.api.method")}
         </label>
         <select
+          id={methodId}
           value={config.method}
           onChange={(e) => onConfigChange({ method: e.target.value })}
-          className="w-full border-none bg-theme-settings-input-bg text-theme-text-primary text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none p-2.5"
+          className={FIELD_SELECT}
         >
-          {["GET", "POST", "DELETE", "PUT", "PATCH"].map((method) => (
-            <option
-              key={method}
-              value={method}
-              className="bg-theme-settings-input-bg"
-            >
+          {METHODS.map((method) => (
+            <option key={method} value={method} className="bg-theme-bg-primary">
               {method}
             </option>
           ))}
         </select>
       </div>
 
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <label className="text-sm font-medium text-theme-text-primary">
-            Headers
-          </label>
-          <button
-            onClick={addHeader}
-            className="p-1.5 rounded-lg border-none bg-theme-settings-input-bg text-theme-text-primary hover:bg-theme-action-menu-item-hover transition-colors duration-300"
-            title="Add header"
-          >
-            <Plus strokeWidth={1.5} className="w-3.5 h-3.5" />
-          </button>
-        </div>
-        <div className="space-y-2">
-          {(config.headers || []).map((header, index) => (
-            <div key={index} className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Header name"
-                value={header.key}
-                onChange={(e) =>
-                  handleHeaderChange(index, "key", e.target.value)
-                }
-                className="flex-1 border-none bg-theme-settings-input-bg text-theme-text-primary placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none p-2.5"
-                autoComplete="off"
-                spellCheck={false}
-              />
-              <VariableInput
-                className="flex-1"
-                placeholder="Value"
-                value={header.value}
-                onChange={(e) =>
-                  handleHeaderChange(index, "value", e.target.value)
-                }
-              />
-              <button
-                onClick={() => removeHeader(index)}
-                className="p-2.5 rounded-lg border-none bg-theme-settings-input-bg text-theme-text-primary hover:text-red-500 hover:border-red-500/20 hover:bg-red-500/10 transition-colors duration-300"
-                title="Remove header"
-              >
-                <X strokeWidth={1.5} className="w-4 h-4" />
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
+      <KeyValueRows
+        legend={t("agent-builder.api.headers")}
+        rows={config.headers || []}
+        onChange={(headers) => onConfigChange({ headers })}
+        addLabel={t("agent-builder.api.add-header")}
+        keyLabel={(n) => t("agent-builder.api.header-name", { n })}
+        valueLabel={(n) => t("agent-builder.api.header-value", { n })}
+        removeLabel={(name) => t("agent-builder.api.remove-header", { name })}
+      />
 
-      {["POST", "PUT", "PATCH"].includes(config.method) && (
-        <div>
-          <label className="block text-sm font-medium text-theme-text-primary mb-2">
-            Request Body
-          </label>
-          <div className="space-y-2">
-            <select
-              value={config.bodyType || "json"}
-              onChange={(e) => onConfigChange({ bodyType: e.target.value })}
-              className="w-full p-2.5 text-sm rounded-lg bg-theme-bg-primary border border-white/5 text-theme-text-primary focus:border-primary-button focus:ring-1 focus:ring-primary-button outline-none light:bg-theme-settings-input-bg light:border-black/10"
+      {BODY_METHODS.includes(config.method) && (
+        <fieldset className="min-w-0 space-y-3">
+          <legend className={FIELD_LABEL}>{t("agent-builder.api.body")}</legend>
+          <div>
+            <label
+              htmlFor={bodyTypeId}
+              className="block text-sm text-white mb-2"
             >
-              <option
-                value="json"
-                className="bg-theme-bg-primary light:bg-theme-settings-input-bg"
-              >
+              {t("agent-builder.api.body-format")}
+            </label>
+            <select
+              id={bodyTypeId}
+              value={bodyType}
+              onChange={(e) => onConfigChange({ bodyType: e.target.value })}
+              className={FIELD_SELECT}
+            >
+              <option value="json" className="bg-theme-bg-primary">
                 JSON
               </option>
-              <option
-                value="text"
-                className="bg-theme-bg-primary light:bg-theme-settings-input-bg"
-              >
-                Raw Text
+              <option value="text" className="bg-theme-bg-primary">
+                {t("agent-builder.api.body-text")}
               </option>
-              <option
-                value="form"
-                className="bg-theme-bg-primary light:bg-theme-settings-input-bg"
-              >
-                Form Data
+              <option value="form" className="bg-theme-bg-primary">
+                {t("agent-builder.api.body-form")}
               </option>
             </select>
-            {config.bodyType === "json" ? (
-              <VariableInput
-                multiline
-                mono
-                rows={4}
-                placeholder='{"key": "value"}'
-                value={config.body}
-                onChange={(e) => onConfigChange({ body: e.target.value })}
-              />
-            ) : config.bodyType === "form" ? (
-              <div className="space-y-2">
-                {(config.formData || []).map((item, index) => (
-                  <div key={index} className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Key"
-                      value={item.key}
-                      onChange={(e) => {
-                        const newFormData = [...(config.formData || [])];
-                        newFormData[index] = { ...item, key: e.target.value };
-                        onConfigChange({ formData: newFormData });
-                      }}
-                      className="flex-1 p-2.5 text-sm rounded-lg bg-theme-bg-primary border border-white/5 text-theme-text-primary placeholder:text-theme-text-secondary/20 focus:border-primary-button focus:ring-1 focus:ring-primary-button outline-none light:bg-theme-settings-input-bg light:border-black/10"
-                      autoComplete="off"
-                      spellCheck={false}
-                    />
-                    <VariableInput
-                      className="flex-1"
-                      placeholder="Value"
-                      value={item.value}
-                      onChange={(e) => {
-                        const newFormData = [...(config.formData || [])];
-                        newFormData[index] = { ...item, value: e.target.value };
-                        onConfigChange({ formData: newFormData });
-                      }}
-                    />
-                    <button
-                      onClick={() => {
-                        const newFormData = [...(config.formData || [])].filter(
-                          (_, i) => i !== index
-                        );
-                        onConfigChange({ formData: newFormData });
-                      }}
-                      className="p-2.5 rounded-lg bg-theme-bg-primary border border-white/5 text-theme-text-primary hover:text-red-500 hover:border-red-500/20 hover:bg-red-500/10 transition-colors duration-300 light:bg-theme-settings-input-bg light:border-black/10"
-                      title="Remove field"
-                    >
-                      <X strokeWidth={1.5} className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-                <button
-                  onClick={() => {
-                    const newFormData = [
-                      ...(config.formData || []),
-                      { key: "", value: "" },
-                    ];
-                    onConfigChange({ formData: newFormData });
-                  }}
-                  className="w-full p-2.5 rounded-lg border-none bg-theme-settings-input-bg text-theme-text-primary hover:bg-theme-action-menu-item-hover transition-colors duration-300 text-sm"
-                >
-                  Add Form Field
-                </button>
-              </div>
-            ) : (
-              <VariableInput
-                multiline
-                rows={4}
-                placeholder="Raw request body..."
-                value={config.body}
-                onChange={(e) => onConfigChange({ body: e.target.value })}
-              />
-            )}
           </div>
-        </div>
+          {bodyType === "form" ? (
+            <KeyValueRows
+              legend={t("agent-builder.api.form-fields")}
+              rows={config.formData || []}
+              onChange={(formData) => onConfigChange({ formData })}
+              addLabel={t("agent-builder.api.add-form-field")}
+              keyLabel={(n) => t("agent-builder.api.form-key", { n })}
+              valueLabel={(n) => t("agent-builder.api.form-value", { n })}
+              removeLabel={(name) =>
+                t("agent-builder.api.remove-form-field", { name })
+              }
+            />
+          ) : (
+            <div>
+              <label htmlFor={bodyId} className="block text-sm text-white mb-2">
+                {bodyLabel}
+              </label>
+              <VariableInput
+                id={bodyId}
+                label={bodyLabel}
+                multiline
+                mono={bodyType === "json"}
+                rows={4}
+                placeholder={bodyType === "json" ? '{"key": "value"}' : ""}
+                describedBy={jsonInvalid ? jsonWarningId : undefined}
+                value={config.body}
+                onChange={(e) => onConfigChange({ body: e.target.value })}
+              />
+              {jsonInvalid && (
+                <p
+                  id={jsonWarningId}
+                  className="mt-2 text-xs text-amber-300 light:text-amber-800"
+                >
+                  {t("agent-builder.api.json-invalid")}
+                </p>
+              )}
+            </div>
+          )}
+        </fieldset>
       )}
 
-      <div>
-        <label className="block text-sm font-medium text-theme-text-primary mb-2">
-          Store Response In
-        </label>
-        {renderVariableSelect(
-          config.responseVariable,
-          (value) => onConfigChange({ responseVariable: value }),
-          "Select or create variable"
-        )}
-      </div>
+      <VariableSelect
+        label={t("agent-builder.api.response-variable")}
+        value={config.responseVariable}
+        onChange={(value) => onConfigChange({ responseVariable: value })}
+      />
     </div>
   );
 }

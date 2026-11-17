@@ -4,7 +4,6 @@ import {
   CalendarPlus,
   UserRoundCog,
 } from "lucide-react";
-export { filterSkillCategories } from "../utils";
 
 export const getGoogleCalendarSkills = (t) => ({
   calendars: {

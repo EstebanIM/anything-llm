@@ -41,6 +41,9 @@ const LABEL_STYLES = {
  * @param {string} [props.descriptionClassName] - Additional CSS classes for description
  * @param {string} [props.gapClassName] - Additional CSS classes for gap
  * @param {string} [props.describedBy] - id of a help or warning text tied to the switch
+ * @param {string} [props.ariaLabel] - accessible name when there is no `label`
+ * @param {string} [props.ariaLabelledBy] - id of a visible heading that names the switch
+ * @param {string} [props.id] - id of the underlying checkbox
  */
 export default function Toggle({
   className,
@@ -58,8 +61,14 @@ export default function Toggle({
   descriptionClassName,
   gapClassName,
   describedBy,
+  ariaLabel,
+  ariaLabelledBy,
+  id,
 }) {
   const inputProps = {
+    ...(id ? { id } : {}),
+    ...(ariaLabel ? { "aria-label": ariaLabel } : {}),
+    ...(ariaLabelledBy ? { "aria-labelledby": ariaLabelledBy } : {}),
     ...(enabled !== undefined
       ? { checked: enabled, onChange: (e) => onChange?.(e.target.checked) }
       : { defaultChecked: false }),
@@ -124,8 +133,10 @@ export default function Toggle({
 }
 
 function ToggleSwitch({ name, disabled, size, inputProps, value }) {
+  // The span gives the switch a 44px touch area on phones (the label around it
+  // takes the tap); input and track stay siblings so `peer-*` keeps working.
   return (
-    <>
+    <span className="relative inline-flex shrink-0 items-center justify-center min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0">
       <input
         type="checkbox"
         name={name}
@@ -146,7 +157,7 @@ function ToggleSwitch({ name, disabled, size, inputProps, value }) {
           peer-checked:bg-green-400 light:peer-checked:bg-green-600
         `}
       />
-    </>
+    </span>
   );
 }
 

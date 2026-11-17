@@ -1,160 +1,187 @@
-import React, { useState, useEffect, useRef } from "react";
-import showToast from "@/utils/toast";
-import { ChevronDown, Settings, TriangleAlert } from "lucide-react";
-import MCPLogo from "@/media/agents/mcp-logo.svg";
-import { titleCase } from "text-case";
-import MCPServers from "@/models/mcpServers";
-import { SimpleToggleSwitch } from "@/components/lib/Toggle";
+import { useId, useState } from "react";
+import { ChevronDown, Play, Square, Trash2 } from "lucide-react";
 import { useTranslation, Trans } from "react-i18next";
+import MCPLogo from "@/media/agents/mcp-logo.svg";
+import MCPServers from "@/models/mcpServers";
+import showToast from "@/utils/toast";
+import { SimpleToggleSwitch } from "@/components/lib/Toggle";
+import ConfirmModal from "@/components/lib/ConfirmModal";
+import StatusNote from "@/components/lib/StatusNote";
+import CopyButton from "@/components/lib/CopyButton";
+import PanelHeader, {
+  InstantNote,
+  PANEL_ACTION,
+  PANEL_DANGER_ACTION,
+} from "../components/PanelHeader";
+import {
+  ServerState,
+  enabledToolCount as countEnabledTools,
+  serverTitle,
+} from "./index";
 
-function ManageServerMenu({ server, toggleServer, onDelete }) {
-  const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
-  const [running, setRunning] = useState(server.running);
-  const menuRef = useRef(null);
-
-  async function deleteServer() {
-    if (
-      !window.confirm(
-        "Are you sure you want to delete this MCP server? It will be removed from your config file and you will need to add it back manually."
-      )
-    )
-      return;
-    const { success, error } = await MCPServers.deleteServer(server.name);
-    if (success) {
-      showToast("MCP server deleted successfully.", "success");
-      onDelete(server.name);
-    } else {
-      showToast(error || "Failed to delete MCP server.", "error");
-    }
-  }
-
-  async function handleToggleServer() {
-    if (
-      !window.confirm(
-        running
-          ? "Are you sure you want to stop this MCP server? It will be started automatically when you next start the server."
-          : "Are you sure you want to start this MCP server? It will be started automatically when you next start the server."
-      )
-    )
-      return;
-
-    const { success, error } = await MCPServers.toggleServer(server.name);
-    if (success) {
-      const newState = !running;
-      setRunning(newState);
-      toggleServer(server.name);
-      showToast(
-        `MCP server ${server.name} ${newState ? "started" : "stopped"} successfully.`,
-        "success",
-        { clear: true }
-      );
-    } else {
-      showToast(error || "Failed to toggle MCP server.", "error", {
-        clear: true,
-      });
-    }
-  }
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
-  return (
-    <div className="relative" ref={menuRef}>
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="p-1.5 rounded-lg text-white hover:bg-theme-action-menu-item-hover transition-colors duration-300"
-      >
-        <Settings strokeWidth={1.5} className="h-5 w-5" />
-      </button>
-      {open && (
-        <div className="absolute w-[150px] top-1 left-7 mt-1 border-[1.5px] border-white/40 rounded-lg bg-theme-action-menu-bg flex flex-col shadow-[0_4px_14px_rgba(0,0,0,0.25)] text-white z-99 md:z-10">
-          <button
-            type="button"
-            onClick={handleToggleServer}
-            className="border-none flex items-center rounded-lg gap-x-2 hover:bg-theme-action-menu-item-hover py-1.5 px-2 transition-colors duration-200 w-full text-left"
-          >
-            <span className="text-sm">
-              {running
-                ? t("agent.mcp.stop-server")
-                : t("agent.mcp.start-server")}
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={deleteServer}
-            className="border-none flex items-center rounded-lg gap-x-2 hover:bg-theme-action-menu-item-hover py-1.5 px-2 transition-colors duration-200 w-full text-left"
-          >
-            <span className="text-sm">{t("agent.mcp.delete-server")}</span>
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
+/**
+ * @param {object} props
+ * @param {object} props.server
+ * @param {(name: string) => Promise<void>} props.onServerToggled - after a start/stop succeeded
+ * @param {(name: string) => void} props.onDelete - after the server was deleted
+ * @param {(server: string, tool: string, enabled: boolean) => Promise<void>} props.onToggleTool
+ */
 export default function ServerPanel({
   server,
-  toggleServer,
+  onServerToggled,
   onDelete,
   onToggleTool,
 }) {
   const { t } = useTranslation();
+  const titleId = useId();
   const suppressedTools = server.config?.anythingllm?.suppressedTools || [];
-  const enabledToolCount = server.tools.filter(
-    (tool) => !suppressedTools.includes(tool.name)
-  ).length;
+  const enabledToolCount = countEnabledTools(server);
+  const name = serverTitle(server);
 
   return (
-    <>
-      <div className="p-2">
-        <div className="flex flex-col gap-y-[18px] max-w-[800px]">
-          <ToolCountWarningBanner
-            server={server}
-            enabledToolCount={enabledToolCount}
-          />
-          <div className="flex w-full justify-between">
-            <div className="flex items-center gap-x-2">
-              <img src={MCPLogo} className="w-6 h-6 light:invert" />
-              <label htmlFor="name" className="text-white text-md font-bold">
-                {titleCase(server.name.replace(/[_-]/g, " "))}
-              </label>
-              {server.tools.length > 0 && (
-                <p className="text-theme-text-secondary text-sm">
-                  {enabledToolCount}/{server.tools.length}{" "}
-                  {t("agent.mcp.tools-enabled")}
-                </p>
-              )}
-            </div>
-            <ManageServerMenu
-              key={server.name}
-              server={server}
-              toggleServer={toggleServer}
-              onDelete={onDelete}
+    <div className="p-2">
+      <div className="flex flex-col gap-y-[18px] max-w-[800px]">
+        <ToolCountWarningBanner
+          server={server}
+          enabledToolCount={enabledToolCount}
+        />
+        <PanelHeader
+          titleId={titleId}
+          title={name}
+          icon={
+            <img
+              src={MCPLogo}
+              className="w-6 h-6 shrink-0 light:invert"
+              alt=""
+              aria-hidden="true"
             />
-          </div>
-          <RenderServerConfig config={server.config} />
-          <RenderServerStatus server={server} />
-          <RenderServerTools
-            serverName={server.name}
-            tools={server.tools}
-            suppressedTools={suppressedTools}
-            onToggleTool={onToggleTool}
-          />
+          }
+        />
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+          <ServerState server={server} className="font-medium" />
+          {server.tools.length > 0 && (
+            <p className="text-theme-text-secondary">
+              {t("agent-pages.mcp.tools-enabled", {
+                enabled: enabledToolCount,
+                count: server.tools.length,
+              })}
+            </p>
+          )}
         </div>
+        <ServerActions
+          key={server.name}
+          server={server}
+          name={name}
+          onServerToggled={onServerToggled}
+          onDelete={onDelete}
+        />
+        <RenderServerStatus server={server} />
+        <RenderServerConfig config={server.config} />
+        <RenderServerTools
+          serverName={server.name}
+          tools={server.tools}
+          suppressedTools={suppressedTools}
+          onToggleTool={onToggleTool}
+        />
       </div>
-    </>
+    </div>
+  );
+}
+
+function ServerActions({ server, name, onServerToggled, onDelete }) {
+  const { t } = useTranslation();
+  const [toggling, setToggling] = useState(false);
+  const [confirm, setConfirm] = useState(null); // "stop" | "delete" | null
+  const [deleting, setDeleting] = useState(false);
+  const running = !!server.running;
+
+  async function toggleServer() {
+    if (toggling) return;
+    setToggling(true);
+    const { success, error } = await MCPServers.toggleServer(server.name);
+    if (success) await onServerToggled?.(server.name);
+    setToggling(false);
+    setConfirm(null);
+    if (success) {
+      showToast(
+        running
+          ? t("agent-pages.mcp.stopped", { name })
+          : t("agent-pages.mcp.started", { name }),
+        "success",
+        { clear: true }
+      );
+    } else {
+      showToast(
+        t("agent-pages.mcp.toggle-failed", { name, error: error || "-" }),
+        "error",
+        { clear: true }
+      );
+    }
+  }
+
+  async function deleteServer() {
+    setDeleting(true);
+    const { success, error } = await MCPServers.deleteServer(server.name);
+    setDeleting(false);
+    if (!success) {
+      showToast(
+        t("agent-pages.mcp.delete-failed", { name, error: error || "-" }),
+        "error",
+        { clear: true }
+      );
+      return;
+    }
+    setConfirm(null);
+    showToast(t("agent-pages.mcp.deleted", { name }), "success", {
+      clear: true,
+    });
+    onDelete(server.name);
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        onClick={() => (running ? setConfirm("stop") : toggleServer())}
+        aria-busy={(toggling && !running) || undefined}
+        className={PANEL_ACTION}
+      >
+        {running ? (
+          <Square strokeWidth={1.5} size={16} aria-hidden="true" />
+        ) : (
+          <Play strokeWidth={1.5} size={16} aria-hidden="true" />
+        )}
+        {running ? t("agent.mcp.stop-server") : t("agent.mcp.start-server")}
+      </button>
+      <button
+        type="button"
+        onClick={() => setConfirm("delete")}
+        className={PANEL_DANGER_ACTION}
+      >
+        <Trash2 strokeWidth={1.5} size={16} aria-hidden="true" />
+        {t("agent.mcp.delete-server")}
+      </button>
+      <ConfirmModal
+        isOpen={confirm === "stop"}
+        title={t("agent-pages.mcp.stop-title", { name })}
+        confirmLabel={t("agent-pages.mcp.stop-confirm")}
+        busy={toggling}
+        onConfirm={toggleServer}
+        onCancel={() => setConfirm(null)}
+      >
+        <p>{t("agent-pages.mcp.stop-body")}</p>
+      </ConfirmModal>
+      <ConfirmModal
+        isOpen={confirm === "delete"}
+        title={t("agent-pages.mcp.delete-title", { name })}
+        confirmLabel={t("settings-pages.delete")}
+        busy={deleting}
+        onConfirm={deleteServer}
+        onCancel={() => setConfirm(null)}
+      >
+        <p>{t("agent-pages.mcp.delete-body")}</p>
+      </ConfirmModal>
+    </div>
   );
 }
 
@@ -163,40 +190,47 @@ function ToolCountWarningBanner({ server, enabledToolCount }) {
   if (enabledToolCount <= 10) return null;
 
   return (
-    <div className="flex items-center gap-x-2 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-      <TriangleAlert
-        strokeWidth={1.5}
-        className="h-5 w-5 text-yellow-500 shrink-0"
+    <StatusNote tone="warning">
+      <Trans
+        i18nKey={`agent.mcp.tool-count-warning`}
+        values={{ count: enabledToolCount }}
+        components={{ b: <b />, br: <br /> }}
       />
-      <p className="text-yellow-500 text-sm">
-        <Trans
-          i18nKey={`agent.mcp.tool-count-warning`}
-          values={{ count: enabledToolCount }}
-          components={{ b: <b />, br: <br /> }}
-        />
-      </p>
+    </StatusNote>
+  );
+}
+
+/** Text in a monospace block with a copy button. */
+function CodeBlock({ text, copyLabel, tone = "default" }) {
+  return (
+    <div className="flex items-start gap-x-1 rounded-lg bg-theme-bg-primary light:bg-slate-100 p-2">
+      <pre
+        className={`flex-1 min-w-0 px-2 py-1.5 text-sm font-mono whitespace-pre-wrap break-all ${
+          tone === "error"
+            ? "text-red-300 light:text-red-800"
+            : "text-theme-text-primary"
+        }`}
+      >
+        {text}
+      </pre>
+      <CopyButton text={text} label={copyLabel} />
     </div>
   );
 }
 
 function RenderServerConfig({ config = null }) {
   const { t } = useTranslation();
-  if (!config) return null;
+  if (!config?.command) return null;
+  const commandLine = [config.command, ...(config.args || [])].join(" ");
   return (
     <div className="flex flex-col gap-y-2">
-      <p className="text-theme-text-primary text-sm">
+      <h3 className="text-theme-text-primary text-sm font-semibold">
         {t("agent.mcp.startup-command")}
-      </p>
-      <div className="bg-theme-bg-primary rounded-lg p-4">
-        <p className="text-theme-text-secondary text-sm text-left">
-          <span className="font-bold">{t("agent.mcp.command")}:</span>{" "}
-          {config.command}
-        </p>
-        <p className="text-theme-text-secondary text-sm text-left">
-          <span className="font-bold">{t("agent.mcp.arguments")}:</span>{" "}
-          {config.args ? config.args.join(" ") : t("common.none")}
-        </p>
-      </div>
+      </h3>
+      <CodeBlock
+        text={commandLine}
+        copyLabel={t("agent-pages.mcp.copy-command")}
+      />
     </div>
   );
 }
@@ -206,12 +240,14 @@ function RenderServerStatus({ server }) {
   if (server.running || !server.error) return null;
   return (
     <div className="flex flex-col gap-y-2">
-      <p className="text-theme-text-primary text-sm">
+      <StatusNote tone="error" title={t("agent-pages.mcp.error-title")}>
         {t("agent.mcp.not-running-warning")}
-      </p>
-      <div className="bg-theme-bg-primary rounded-lg p-4">
-        <p className="text-red-500 text-sm font-mono">{server.error}</p>
-      </div>
+      </StatusNote>
+      <CodeBlock
+        text={String(server.error)}
+        copyLabel={t("agent-pages.mcp.copy-error")}
+        tone="error"
+      />
     </div>
   );
 }
@@ -222,10 +258,20 @@ function RenderServerTools({
   suppressedTools = [],
   onToggleTool,
 }) {
+  const { t } = useTranslation();
+  const headingId = useId();
+  const noteId = useId();
   if (tools.length === 0) return null;
   return (
     <div className="flex flex-col gap-y-2">
-      <div className="flex flex-col gap-y-2">
+      <h3
+        id={headingId}
+        className="text-theme-text-primary text-sm font-semibold"
+      >
+        {t("agent-pages.mcp.tools")}
+      </h3>
+      <InstantNote id={noteId} />
+      <ul aria-labelledby={headingId} className="flex flex-col gap-y-2">
         {tools.map((tool) => (
           <ServerTool
             key={tool.name}
@@ -235,7 +281,7 @@ function RenderServerTools({
             onToggle={onToggleTool}
           />
         ))}
-      </div>
+      </ul>
     </div>
   );
 }
@@ -243,76 +289,105 @@ function RenderServerTools({
 function ServerTool({ serverName, tool, enabled, onToggle }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const detailId = useId();
+  const args = Object.entries(tool.inputSchema?.properties || {});
+
+  async function toggle(next) {
+    if (busy) return;
+    setBusy(true);
+    await onToggle?.(serverName, tool.name, next);
+    setBusy(false);
+  }
 
   return (
-    <button
-      type="button"
-      onClick={() => setOpen(!open)}
-      className={`flex flex-col gap-y-2 px-4 py-2 rounded-lg border ${
-        enabled
-          ? "border-theme-text-secondary"
-          : "border-theme-text-secondary/50 opacity-60"
-      }`}
-    >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-x-2 min-w-0 flex-1">
-          <SimpleToggleSwitch
-            size="md"
-            enabled={enabled}
-            onChange={(newEnabled) =>
-              onToggle?.(serverName, tool.name, newEnabled)
-            }
-          />
-          <p className="text-theme-text-primary font-mono font-bold text-sm shrink-0">
-            {tool.name}
+    <li className="rounded-lg border border-zinc-600 light:border-slate-300">
+      <div className="flex items-center gap-x-3 px-3 py-2">
+        <SimpleToggleSwitch
+          size="md"
+          enabled={enabled}
+          ariaLabel={t("agent-pages.mcp.tool-toggle", { tool: tool.name })}
+          onChange={toggle}
+        />
+        <div className="flex flex-col min-w-0 flex-1">
+          <p className="flex flex-wrap items-center gap-x-2 text-sm">
+            <span className="font-mono font-bold text-theme-text-primary break-all">
+              {tool.name}
+            </span>
+            {!enabled && (
+              <span className="text-xs text-theme-text-secondary">
+                {t("agent-pages.skill-off")}
+              </span>
+            )}
           </p>
-          {!open && (
+          {!open && tool.description && (
             <p className="text-theme-text-secondary text-sm truncate">
               {tool.description}
             </p>
           )}
         </div>
-        <div className="flex items-center gap-x-3">
-          <div
-            className={`border-none text-theme-text-secondary hover:text-cta-button transition-transform duration-200 ${
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={detailId}
+          onClick={() => setOpen((prev) => !prev)}
+          className="shrink-0 w-11 h-11 md:w-8 md:h-8 flex items-center justify-center rounded-lg text-theme-text-secondary hover:text-theme-text-primary hover:bg-white/5 light:hover:bg-slate-100 transition-colors duration-quick ease-smooth"
+        >
+          <ChevronDown
+            strokeWidth={1.5}
+            size={16}
+            aria-hidden="true"
+            className={`transition-transform duration-quick ease-smooth ${
               open ? "rotate-180" : ""
             }`}
-          >
-            <ChevronDown strokeWidth={1.5} size={16} />
-          </div>
-        </div>
+          />
+          <span className="sr-only">
+            {t("agent-pages.mcp.tool-details", { tool: tool.name })}
+          </span>
+        </button>
       </div>
-      {open && (
-        <div className="flex flex-col gap-y-2">
-          <div className="flex flex-col gap-y-2">
-            <p className="text-theme-text-secondary text-sm text-left">
-              {tool.description}
-            </p>
-          </div>
-          <div className="flex flex-col gap-y-2">
-            <p className="text-theme-text-primary text-sm text-left">
+      <div
+        id={detailId}
+        hidden={!open}
+        className="px-3 pb-3 flex flex-col gap-y-2"
+      >
+        {tool.description && (
+          <p className="text-theme-text-secondary text-sm">
+            {tool.description}
+          </p>
+        )}
+        {args.length > 0 && (
+          <>
+            <p className="text-theme-text-primary text-sm font-medium">
               {t("agent.mcp.tool-call-arguments")}
             </p>
-            <div className="flex flex-col gap-y-2">
-              {Object.entries(tool.inputSchema?.properties || {}).map(
-                ([key, value]) => (
-                  <div key={key} className="flex items-center gap-x-2">
-                    <p className="text-theme-text-secondary text-sm text-left font-bold">
-                      {key}
-                      {tool.inputSchema?.required?.includes(key) && (
-                        <sup className="text-red-500">*</sup>
-                      )}
-                    </p>
-                    <p className="text-theme-text-secondary text-sm text-left">
-                      {value.type}
-                    </p>
-                  </div>
-                )
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-    </button>
+            <dl className="flex flex-col gap-y-1 text-sm">
+              {args.map(([key, value]) => (
+                <div key={key} className="flex flex-wrap items-center gap-x-2">
+                  <dt className="font-mono font-bold text-theme-text-secondary">
+                    {key}
+                    {tool.inputSchema?.required?.includes(key) && (
+                      <>
+                        <span
+                          aria-hidden="true"
+                          className="ml-0.5 text-red-400 light:text-red-700"
+                        >
+                          *
+                        </span>
+                        <span className="sr-only">
+                          {" "}
+                          ({t("agent-pages.required")})
+                        </span>
+                      </>
+                    )}
+                  </dt>
+                  <dd className="text-theme-text-secondary">{value?.type}</dd>
+                </div>
+              ))}
+            </dl>
+          </>
+        )}
+      </div>
+    </li>
   );
 }
