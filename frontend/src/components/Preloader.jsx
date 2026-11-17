@@ -14,12 +14,18 @@ export default function PreLoader({ size = "16" }) {
 }
 
 export function FullScreenLoader() {
+  const { t } = useTranslation();
   return (
     <div
       id="preloader"
+      role="status"
       className="fixed left-0 top-0 z-999999 flex h-screen w-screen items-center justify-center bg-theme-bg-primary"
     >
-      <div className="h-16 w-16 animate-spin rounded-full border-4 border-solid border-[var(--theme-loader)] border-t-transparent"></div>
+      <div
+        aria-hidden="true"
+        className="h-16 w-16 animate-spin rounded-full border-4 border-solid border-[var(--theme-loader)] border-t-transparent"
+      ></div>
+      <span className="sr-only">{t("common.loading")}</span>
     </div>
   );
 }

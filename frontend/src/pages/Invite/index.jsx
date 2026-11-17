@@ -1,56 +1,94 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { FullScreenLoader } from "@/components/Preloader";
+import {
+  AUTH_PRIMARY_LINK,
+  AuthHeader,
+  AuthSubmitButton,
+  LoginScreen,
+} from "@/components/Modals/Password/AuthUI";
 import Invite from "@/models/invite";
-import NewUserModal from "./NewUserModal";
-import Modal from "@/components/lib/Modal";
+import paths from "@/utils/paths";
+import usePageTitle from "@/hooks/usePageTitle";
+import NewUserForm from "./NewUserModal";
+
+// The server's answers for a used, revoked or unknown code. Anything else
+// (network, server error) is a failed check worth retrying.
+const INVALID_INVITE = /Invite (not found|is no longer valid)/i;
 
 export default function InvitePage() {
   const { code } = useParams();
-  const [result, setResult] = useState({
-    status: "loading",
-    message: null,
-  });
+  const { t } = useTranslation();
+  // "loading" | "valid" | "invalid" | "error"
+  const [status, setStatus] = useState("loading");
+  const [checking, setChecking] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  usePageTitle(
+    status === "invalid"
+      ? t("auth-pages.invite.invalid-title")
+      : t("auth-pages.invite.page-title")
+  );
 
   useEffect(() => {
     async function checkInvite() {
       if (!code) {
-        setResult({
-          status: "invalid",
-          message: "No invite code provided.",
-        });
+        setStatus("invalid");
         return;
       }
+      setChecking(true);
       const { invite, error } = await Invite.checkInvite(code);
-      setResult({
-        status: invite ? "valid" : "invalid",
-        message: error,
-      });
+      setChecking(false);
+      if (invite) setStatus("valid");
+      else if (!error || INVALID_INVITE.test(String(error)))
+        setStatus("invalid");
+      else setStatus("error");
     }
     checkInvite();
-  }, []);
+  }, [code, attempt]);
 
-  if (result.status === "loading") {
+  if (status === "loading") return <FullScreenLoader />;
+
+  if (status === "valid") {
     return (
-      <div className="w-screen h-screen overflow-hidden bg-zinc-950 light:bg-slate-50 flex">
-        <FullScreenLoader />
-      </div>
+      <LoginScreen>
+        <NewUserForm code={code} />
+      </LoginScreen>
     );
   }
 
-  if (result.status === "invalid") {
+  if (status === "error") {
     return (
-      <div className="w-screen h-screen overflow-hidden bg-zinc-950 light:bg-slate-50 flex items-center justify-center">
-        <p className="text-red-400 text-lg">{result.message}</p>
-      </div>
+      <LoginScreen>
+        <AuthHeader
+          title={t("auth-pages.invite.error-title")}
+          description={t("auth-errors.network")}
+        />
+        <div className="mt-5 w-full">
+          {/* Stays on screen (busy) while checking so focus is not lost. */}
+          <AuthSubmitButton
+            type="button"
+            busy={checking}
+            onClick={() => setAttempt((n) => n + 1)}
+          >
+            {t("server-unavailable.retry")}
+          </AuthSubmitButton>
+        </div>
+      </LoginScreen>
     );
   }
 
   return (
-    <div className="w-screen h-screen overflow-hidden bg-zinc-950 light:bg-slate-50 flex items-center justify-center">
-      <Modal isOpen={true}>
-        <NewUserModal />
-      </Modal>
-    </div>
+    <LoginScreen>
+      <AuthHeader
+        title={t("auth-pages.invite.invalid-title")}
+        description={t("auth-pages.invite.invalid-description")}
+      />
+      <div className="mt-5 w-full">
+        <Link to={paths.login()} className={AUTH_PRIMARY_LINK}>
+          {t("auth-pages.go-to-login")}
+        </Link>
+      </div>
+    </LoginScreen>
   );
 }

@@ -32,8 +32,28 @@ function safeUrl(url) {
   }
 }
 
+// The base title (custom browser title or brand) and the current page's own
+// title are kept apart so a late fetch of the base never drops the page part.
+let baseTitle = DEFAULT_TITLE;
+let pageTitle = null;
+
+function renderTitle() {
+  document.title = pageTitle ? `${pageTitle} · ${baseTitle}` : baseTitle;
+}
+
 function applyTitle(title) {
-  document.title = title || DEFAULT_TITLE;
+  baseTitle = title || DEFAULT_TITLE;
+  renderTitle();
+}
+
+/**
+ * Sets the page part of `document.title` ("Iniciar sesión · IASMAR"); null
+ * goes back to the base title. Use it through `hooks/usePageTitle`.
+ * @param {string|null} title
+ */
+export function setPageTitle(title) {
+  pageTitle = title || null;
+  renderTitle();
 }
 
 function applyFavicon(favicon) {

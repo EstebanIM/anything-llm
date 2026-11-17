@@ -18,12 +18,10 @@ const TRANSLATIONS = {
       myTeam: "Моят екип",
       instancePassword: "Парола на инсталацията",
       setPassword: "Искате ли да зададете парола?",
-      passwordReq: "Паролата трябва да е поне 8 символа.",
       passwordWarn:
         "Важно е да запазите тази парола, защото няма начин за възстановяване.",
       adminUsername: "Потребителско име на администратора",
       adminPassword: "Парола на администратора",
-      adminPasswordReq: "Паролата трябва да е поне 8 символа.",
       teamHint:
         "По подразбиране вие ще сте единственият администратор. След приключване на настройката можете да създавате и каните други потребители или администратори. Не губете паролата си — само администратори могат да нулират пароли.",
     },
@@ -34,21 +32,7 @@ const TRANSLATIONS = {
       settingsHint:
         "Тези настройки могат да бъдат променени по всяко време от настройките.",
     },
-    survey: {
-      title: "Добре дошли в AnythingLLM",
-      description:
-        "Помогнете ни да направим AnythingLLM според вашите нужди. По желание.",
-      email: "Какъв е имейлът ви?",
-      useCase: "За какво ще използвате AnythingLLM?",
-      useCaseWork: "За работа",
-      useCasePersonal: "За лична употреба",
-      useCaseOther: "Друго",
-      comment: "Как научихте за AnythingLLM?",
-      commentPlaceholder:
-        "Reddit, Twitter, GitHub, YouTube и т.н. — кажете ни как ни открихте!",
-      skip: "Пропусни анкетата",
-      thankYou: "Благодарим за обратната връзка!",
-    },
+    survey: {},
   },
   common: {
     "workspaces-name": "Име на работното пространство",
@@ -124,13 +108,10 @@ const TRANSLATIONS = {
   },
   login: {
     "multi-user": {
-      welcome: "Добре дошли",
       "placeholder-username": "Потребителско име",
       "placeholder-password": "Парола",
       login: "Вход",
       validating: "Проверка...",
-      "forgot-pass": "Забравена парола",
-      reset: "Нулиране",
     },
     "sign-in":
       "Въведете потребителско име и парола за достъп до вашата инсталация на {{appName}}.",
@@ -138,7 +119,6 @@ const TRANSLATIONS = {
       title: "Нулиране на парола",
       description:
         "Попълнете необходимата информация по-долу, за да нулирате паролата си.",
-      "recovery-codes": "Кодове за възстановяване",
       "back-to-login": "Обратно към входа",
     },
   },
@@ -253,6 +233,141 @@ const TRANSLATIONS = {
     "folder-options": "Options for folder {{name}}",
     "delete-folder-confirm":
       "Delete this folder? Its workspaces and subfolders move to the top level.",
+  },
+  "auth-pages": {
+    login: {
+      title: "Welcome to {{brandName}}",
+      forgot: "Forgot your password?",
+      "reset-link": "Reset it",
+    },
+    recovery: {
+      code: "Recovery code {{number}}",
+      submit: "Check the codes",
+      busy: "Checking the codes…",
+    },
+    reset: {
+      title: "Create a new password",
+      description: "You'll use it to sign in from now on.",
+      "new-password": "New password",
+      "confirm-password": "Repeat the new password",
+      submit: "Save the password",
+      busy: "Saving the password…",
+    },
+    notice: {
+      "password-changed":
+        "Your password has been changed. Sign in with the new one: you'll get new recovery codes to keep.",
+    },
+    errors: {
+      "username-invalid": "Enter a valid username.",
+      "password-short": "The password must be at least 8 characters.",
+      "password-rejected":
+        "The server didn't accept this password. Try a longer one, or mix letters, numbers and symbols.",
+    },
+    single: {
+      description: "Enter this instance's password to continue.",
+      forgot:
+        "Forgot it? Ask whoever runs the server to remind you of it or change it.",
+    },
+    "go-to-login": "Go to sign in",
+    invite: {
+      "page-title": "Invitation",
+      title: "Create your {{brandName}} account",
+      description:
+        "Choose a username and a password. You'll use them to sign in.",
+      submit: "Create the account",
+      busy: "Creating the account…",
+      "username-taken": "That username is taken. Choose another one.",
+      "created-login-failed":
+        "Your account was created, but signing in failed. Sign in from the sign-in page with your username and password.",
+      "invalid-title": "This invitation is no longer valid",
+      "invalid-description":
+        "It may have been used already or turned off. Ask whoever sent it for a new one. If you already have an account, sign in.",
+      "error-title": "The invitation couldn't be checked",
+    },
+    sso: {
+      "page-title": "Sign in",
+      "error-title": "Signing in didn't work",
+      "no-token":
+        "The access link is missing. Go back in from your organization's portal.",
+      invalid:
+        "The access link is invalid or has expired. Go back in from your organization's portal.",
+      contact: "If it keeps happening, tell your administrator.",
+    },
+    "not-found": {
+      "page-title": "Page not found",
+      title: "We couldn't find this page",
+      description: "The link may be mistyped, or the page may no longer exist.",
+      home: "Back to home",
+    },
+  },
+  "onboarding-flow": {
+    "page-title": "Initial setup",
+    "home-description":
+      "Set up {{brandName}} in three steps: AI provider, users and privacy.",
+    "step-of": "Step {{current}} of {{total}}",
+    "step-done": "(completed)",
+    back: "Back",
+    next: "Next",
+    finish: "Go to {{brandName}}",
+    finishing: "Finishing setup…",
+    "finish-failed":
+      "Setup could not be finished. Check the connection to the server and try again.",
+    "change-provider": "Change the AI provider",
+    "choose-audience": "Choose who will use {{brandName}}.",
+    "choose-password": "Choose whether to require a password.",
+    "username-required": "Enter a username.",
+    "username-invalid": "The username doesn't meet the requirements.",
+    "password-required": "Enter a password.",
+    "password-too-short": "The password must be at least 8 characters long.",
+    "confirm-password": "Repeat the password",
+    "confirm-required": "Repeat the password to confirm it.",
+    "no-password-warning":
+      "Without a password, anyone who reaches this address can use {{brandName}} and change its settings. Choose this only if nobody else can access the network it runs on.",
+    "team-done":
+      "Team mode is already on and your administrator account exists. When you finish, you can invite other people from Settings > Users.",
+    "password-done":
+      "{{brandName}} already requires a password to sign in. You can change it later in Settings > Security.",
+    "signin-failed": "Access was saved, but signing in failed. {{error}}",
+    "signin-link": "Sign in to continue the setup",
+  },
+  "recovery-codes": {
+    title: "Save your recovery codes",
+    description:
+      "If you forget your password, you will need two of these codes to set a new one.",
+    warning:
+      "This is the only time they are shown. Copy or download them and keep them somewhere safe before you continue.",
+    list: "Recovery codes",
+    copy: "Copy codes",
+    download: "Download codes",
+    confirm: "I have saved my recovery codes",
+    continue: "Continue",
+    file: {
+      title: "{{brandName}} recovery codes",
+      user: "User: {{username}}",
+      date: "Created: {{date}}",
+      name: "{{brandName}}-recovery-codes.txt",
+    },
+  },
+  "server-unavailable": {
+    title: "Can't reach the server",
+    description:
+      "Check your connection or try again in a moment. If it keeps happening, tell your administrator.",
+    retry: "Try again",
+  },
+  "auth-errors": {
+    "invalid-credentials": "The username or password is incorrect.",
+    "invalid-password": "The password is incorrect.",
+    suspended: "Your account is suspended. Contact an administrator.",
+    "password-login-disabled":
+      "Signing in with a password is turned off on this instance.",
+    "invalid-recovery-codes": "The username or recovery codes are incorrect.",
+    "invalid-reset-token":
+      "This reset has expired. Start again from the sign-in page.",
+    "passwords-mismatch": "The passwords don't match.",
+    "invite-invalid": "This invitation is no longer valid.",
+    "session-expired": "Your session has expired. Sign in again.",
+    network: "Can't reach the server. Check your connection and try again.",
+    generic: "Something went wrong. Try again.",
   },
   "agent-pages": {
     builtin: "Built-in skills",

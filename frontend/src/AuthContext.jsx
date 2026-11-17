@@ -8,6 +8,9 @@ import {
 import System from "./models/system";
 import { useNavigate } from "react-router-dom";
 import { safeJsonParse } from "@/utils/request";
+import { setAuthNotice } from "@/utils/authErrors";
+import { safeRedirectPath } from "@/utils/safeRedirect";
+import paths from "@/utils/paths";
 
 export const AuthContext = createContext(null);
 export function AuthProvider(props) {
@@ -20,24 +23,13 @@ export function AuthProvider(props) {
 
   const navigate = useNavigate();
 
-  /* NOTE:
-   * 1. There's no reason for these helper functions to be stateful. They could
-   * just be regular funcs or methods on a basic object.
-   * 2. These actions are not being invoked anywhere in the
-   * codebase, dead code.
-   */
+  // Used by Admin > Users to keep the signed-in user in step after editing
+  // their own account.
   const [actions] = useState({
     updateUser: (user, authToken = "") => {
       localStorage.setItem(AUTH_USER, JSON.stringify(user));
       localStorage.setItem(AUTH_TOKEN, authToken);
       setStore({ user, authToken });
-    },
-    unsetUser: () => {
-      localStorage.removeItem(AUTH_USER);
-      localStorage.removeItem(AUTH_TOKEN);
-      localStorage.removeItem(AUTH_TIMESTAMP);
-      localStorage.removeItem(USER_PROMPT_INPUT_MAP);
-      setStore({ user: null, authToken: null });
     },
   });
 
@@ -49,16 +41,33 @@ export function AuthProvider(props) {
    */
   useEffect(() => {
     async function refreshUser() {
-      const { success, user: refreshedUser } = await System.refreshUser();
+      const {
+        success,
+        user: refreshedUser,
+        message,
+        unreachable,
+      } = await System.refreshUser();
       if (success && refreshedUser === null) return;
+      // A network blip or a server error says nothing about the session.
+      if (!success && unreachable) return;
 
       if (!success) {
+        // Tell the login page why ("Session expired or invalid.", "User is
+        // suspended.", or a rejected token). No reason when the server could
+        // not be reached: "session expired" would not be true.
+        const reason = String(message || "");
+        setAuthNotice(
+          /suspended/i.test(reason) ? "suspended" : "session-expired"
+        );
         localStorage.removeItem(AUTH_USER);
         localStorage.removeItem(AUTH_TOKEN);
         localStorage.removeItem(AUTH_TIMESTAMP);
         localStorage.removeItem(USER_PROMPT_INPUT_MAP);
         setStore({ user: null, authToken: null });
-        navigate("/login");
+        const { pathname, search } = window.location;
+        navigate(paths.login(false, safeRedirectPath(`${pathname}${search}`)), {
+          replace: true,
+        });
         return;
       }
 

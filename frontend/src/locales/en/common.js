@@ -2,51 +2,35 @@ const TRANSLATIONS = {
   onboarding: {
     home: {
       welcome: "Welcome",
-      getStarted: "Get Started",
+      getStarted: "Get started",
     },
     llm: {
-      title: "LLM Preference",
+      title: "AI provider",
       description:
-        "{{brandName}} can work with many LLM providers. This will be the service which handles chatting.",
+        "Choose the language model (LLM) service that will answer in {{brandName}} chats. You can change it later in Settings.",
     },
     userSetup: {
-      title: "User Setup",
-      description: "Configure your user settings.",
-      howManyUsers: "How many users will be using this instance?",
+      title: "Users and access",
+      description: "Choose who can sign in to {{brandName}} and how.",
+      howManyUsers: "Who will use {{brandName}}?",
       justMe: "Just me",
       myTeam: "My team",
       instancePassword: "Instance Password",
-      setPassword: "Would you like to set up a password?",
-      passwordReq: "Passwords must be at least 8 characters.",
-      passwordWarn:
-        "It's important to save this password because there is no recovery method.",
+      setPassword: "Require a password to sign in?",
+      passwordWarn: "Keep it somewhere safe: this mode has no recovery codes.",
       adminUsername: "Admin account username",
       adminPassword: "Admin account password",
-      adminPasswordReq: "Passwords must be at least 8 characters.",
       teamHint:
-        "By default, you will be the only admin. Once onboarding is completed you can create and invite others to be users or admins. Do not lose your password as only admins can reset passwords.",
+        "You will create the main administrator account. Team mode can't be turned off later. When you finish, you can invite other people from Settings > Users. After creating the account you will see your recovery codes: keep them, you will need them if you forget your password.",
     },
     data: {
-      title: "Data Handling & Privacy",
+      title: "Privacy & Data",
       description:
-        "We are committed to transparency and control when it comes to your personal data.",
+        "Review which services will receive your data with the current setup and decide whether to share anonymous telemetry.",
       settingsHint:
-        "These settings can be reconfigured at any time in the settings.",
+        "You can change these settings at any time in Settings > Privacy & Data.",
     },
-    survey: {
-      title: "Welcome to {{brandName}}",
-      description: "Help us make {{brandName}} built for your needs. Optional.",
-      email: "What's your email?",
-      useCase: "What will you use {{brandName}} for?",
-      useCaseWork: "For work",
-      useCasePersonal: "For personal use",
-      useCaseOther: "Other",
-      comment: "How did you hear about {{brandName}}?",
-      commentPlaceholder:
-        "Reddit, Twitter, GitHub, YouTube, etc. - Let us know how you found us!",
-      skip: "Skip Survey",
-      thankYou: "Thank you for your feedback!",
-    },
+    survey: {},
   },
   common: {
     "workspaces-name": "Workspace Name",
@@ -64,7 +48,7 @@ const TRANSLATIONS = {
     stopped: "Stopped",
     search: "Search",
     username_requirements:
-      "Username must be 2-64 characters, start with a lowercase letter, and only contain lowercase letters, numbers, underscores, hyphens, and periods.",
+      "Username must be 2-64 characters, start with a lowercase letter, and only contain lowercase letters, numbers, underscores, hyphens, periods and @.",
     loading: "Loading",
     refresh: "Refresh",
     noResults: "No results found",
@@ -122,22 +106,18 @@ const TRANSLATIONS = {
   },
   login: {
     "multi-user": {
-      welcome: "Welcome",
       "placeholder-username": "Username",
       "placeholder-password": "Password",
-      login: "Login",
-      validating: "Validating...",
-      "forgot-pass": "Forgot password",
-      reset: "Reset",
+      login: "Sign in",
+      validating: "Signing in…",
     },
     "sign-in":
       "Enter your username and password to access your {{appName}} instance.",
     "password-reset": {
-      title: "Password Reset",
+      title: "Reset your password",
       description:
-        "Provide the necessary information below to reset your password.",
-      "recovery-codes": "Recovery Codes",
-      "back-to-login": "Back to Login",
+        "Enter your username and two of your four recovery codes. If you don't have them, ask an administrator to reset your password.",
+      "back-to-login": "Back to sign in",
     },
   },
   "main-page": {
@@ -253,6 +233,141 @@ const TRANSLATIONS = {
     "folder-options": "Options for folder {{name}}",
     "delete-folder-confirm":
       "Delete this folder? Its workspaces and subfolders move to the top level.",
+  },
+  "auth-pages": {
+    login: {
+      title: "Welcome to {{brandName}}",
+      forgot: "Forgot your password?",
+      "reset-link": "Reset it",
+    },
+    recovery: {
+      code: "Recovery code {{number}}",
+      submit: "Check the codes",
+      busy: "Checking the codes…",
+    },
+    reset: {
+      title: "Create a new password",
+      description: "You'll use it to sign in from now on.",
+      "new-password": "New password",
+      "confirm-password": "Repeat the new password",
+      submit: "Save the password",
+      busy: "Saving the password…",
+    },
+    notice: {
+      "password-changed":
+        "Your password has been changed. Sign in with the new one: you'll get new recovery codes to keep.",
+    },
+    errors: {
+      "username-invalid": "Enter a valid username.",
+      "password-short": "The password must be at least 8 characters.",
+      "password-rejected":
+        "The server didn't accept this password. Try a longer one, or mix letters, numbers and symbols.",
+    },
+    single: {
+      description: "Enter this instance's password to continue.",
+      forgot:
+        "Forgot it? Ask whoever runs the server to remind you of it or change it.",
+    },
+    "go-to-login": "Go to sign in",
+    invite: {
+      "page-title": "Invitation",
+      title: "Create your {{brandName}} account",
+      description:
+        "Choose a username and a password. You'll use them to sign in.",
+      submit: "Create the account",
+      busy: "Creating the account…",
+      "username-taken": "That username is taken. Choose another one.",
+      "created-login-failed":
+        "Your account was created, but signing in failed. Sign in from the sign-in page with your username and password.",
+      "invalid-title": "This invitation is no longer valid",
+      "invalid-description":
+        "It may have been used already or turned off. Ask whoever sent it for a new one. If you already have an account, sign in.",
+      "error-title": "The invitation couldn't be checked",
+    },
+    sso: {
+      "page-title": "Sign in",
+      "error-title": "Signing in didn't work",
+      "no-token":
+        "The access link is missing. Go back in from your organization's portal.",
+      invalid:
+        "The access link is invalid or has expired. Go back in from your organization's portal.",
+      contact: "If it keeps happening, tell your administrator.",
+    },
+    "not-found": {
+      "page-title": "Page not found",
+      title: "We couldn't find this page",
+      description: "The link may be mistyped, or the page may no longer exist.",
+      home: "Back to home",
+    },
+  },
+  "onboarding-flow": {
+    "page-title": "Initial setup",
+    "home-description":
+      "Set up {{brandName}} in three steps: AI provider, users and privacy.",
+    "step-of": "Step {{current}} of {{total}}",
+    "step-done": "(completed)",
+    back: "Back",
+    next: "Next",
+    finish: "Go to {{brandName}}",
+    finishing: "Finishing setup…",
+    "finish-failed":
+      "Setup could not be finished. Check the connection to the server and try again.",
+    "change-provider": "Change the AI provider",
+    "choose-audience": "Choose who will use {{brandName}}.",
+    "choose-password": "Choose whether to require a password.",
+    "username-required": "Enter a username.",
+    "username-invalid": "The username doesn't meet the requirements.",
+    "password-required": "Enter a password.",
+    "password-too-short": "The password must be at least 8 characters long.",
+    "confirm-password": "Repeat the password",
+    "confirm-required": "Repeat the password to confirm it.",
+    "no-password-warning":
+      "Without a password, anyone who reaches this address can use {{brandName}} and change its settings. Choose this only if nobody else can access the network it runs on.",
+    "team-done":
+      "Team mode is already on and your administrator account exists. When you finish, you can invite other people from Settings > Users.",
+    "password-done":
+      "{{brandName}} already requires a password to sign in. You can change it later in Settings > Security.",
+    "signin-failed": "Access was saved, but signing in failed. {{error}}",
+    "signin-link": "Sign in to continue the setup",
+  },
+  "recovery-codes": {
+    title: "Save your recovery codes",
+    description:
+      "If you forget your password, you will need two of these codes to set a new one.",
+    warning:
+      "This is the only time they are shown. Copy or download them and keep them somewhere safe before you continue.",
+    list: "Recovery codes",
+    copy: "Copy codes",
+    download: "Download codes",
+    confirm: "I have saved my recovery codes",
+    continue: "Continue",
+    file: {
+      title: "{{brandName}} recovery codes",
+      user: "User: {{username}}",
+      date: "Created: {{date}}",
+      name: "{{brandName}}-recovery-codes.txt",
+    },
+  },
+  "server-unavailable": {
+    title: "Can't reach the server",
+    description:
+      "Check your connection or try again in a moment. If it keeps happening, tell your administrator.",
+    retry: "Try again",
+  },
+  "auth-errors": {
+    "invalid-credentials": "The username or password is incorrect.",
+    "invalid-password": "The password is incorrect.",
+    suspended: "Your account is suspended. Contact an administrator.",
+    "password-login-disabled":
+      "Signing in with a password is turned off on this instance.",
+    "invalid-recovery-codes": "The username or recovery codes are incorrect.",
+    "invalid-reset-token":
+      "This reset has expired. Start again from the sign-in page.",
+    "passwords-mismatch": "The passwords don't match.",
+    "invite-invalid": "This invitation is no longer valid.",
+    "session-expired": "Your session has expired. Sign in again.",
+    network: "Can't reach the server. Check your connection and try again.",
+    generic: "Something went wrong. Try again.",
   },
   "agent-pages": {
     builtin: "Built-in skills",

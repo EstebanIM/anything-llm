@@ -3,52 +3,36 @@ const TRANSLATIONS = {
   onboarding: {
     home: {
       getStarted: "Comenzar",
-      welcome: "Bienvenido",
+      welcome: "Te damos la bienvenida",
     },
     llm: {
-      title: "Preferencia de LLM",
+      title: "Proveedor de IA",
       description:
-        "{{brandName}} puede funcionar con muchos proveedores de LLM. Este será el servicio que gestionará el chat.",
+        "Elige el servicio de modelos de lenguaje (LLM) que responderá en los chats de {{brandName}}. Podrás cambiarlo después en Ajustes.",
     },
     userSetup: {
-      title: "Configuración de usuario",
-      description: "Configura los ajustes de tu usuario.",
-      howManyUsers: "¿Cuántos usuarios utilizarán esta instancia?",
+      title: "Usuarios y acceso",
+      description: "Elige quién podrá entrar en {{brandName}} y cómo.",
+      howManyUsers: "¿Quién usará {{brandName}}?",
       justMe: "Solo yo",
       myTeam: "Mi equipo",
       instancePassword: "Contraseña de la instancia",
-      setPassword: "¿Deseas establecer una contraseña?",
-      passwordReq: "Las contraseñas deben tener al menos 8 caracteres.",
+      setPassword: "¿Quieres pedir una contraseña para entrar?",
       passwordWarn:
-        "Es importante guardar esta contraseña porque no hay método de recuperación.",
+        "Guárdala en un lugar seguro: en este modo no hay códigos de recuperación.",
       adminUsername: "Nombre de usuario del administrador",
       adminPassword: "Contraseña de la cuenta de administrador",
-      adminPasswordReq: "Las contraseñas deben tener al menos 8 caracteres.",
       teamHint:
-        "Por defecto, serás el único administrador. Una vez completada la incorporación, puedes crear e invitar a otros a ser usuarios o administradores. No pierdas tu contraseña, ya que solo los administradores pueden restablecer las contraseñas.",
+        "Crearás la cuenta de administrador principal. El modo de equipo no se puede desactivar después. Al terminar podrás invitar a otras personas desde Ajustes > Usuarios. Al crear la cuenta verás tus códigos de recuperación: guárdalos, los necesitarás si olvidas la contraseña.",
     },
     data: {
-      title: "Manejo de datos y privacidad",
+      title: "Privacidad y datos",
       description:
-        "Estamos comprometidos con la transparencia y el control en lo que respecta a tus datos personales.",
+        "Revisa qué servicios recibirán tus datos con la configuración actual y decide si compartes telemetría anónima.",
       settingsHint:
-        "Estos ajustes se pueden reconfigurar en cualquier momento en la configuración.",
+        "Puedes cambiar estos ajustes cuando quieras en Ajustes > Privacidad y datos.",
     },
-    survey: {
-      title: "Bienvenido a {{brandName}}",
-      description:
-        "Ayúdanos a hacer que {{brandName}} se adapte a tus necesidades. Opcional.",
-      email: "¿Cuál es tu correo electrónico?",
-      useCase: "¿Para qué usarás {{brandName}}?",
-      useCaseWork: "Para el trabajo",
-      useCasePersonal: "Para uso personal",
-      useCaseOther: "Otro",
-      comment: "¿Cómo te enteraste de {{brandName}}?",
-      commentPlaceholder:
-        "Reddit, Twitter, GitHub, YouTube, etc. - ¡Haznos saber cómo nos encontraste!",
-      skip: "Omitir encuesta",
-      thankYou: "¡Gracias por tus comentarios!",
-    },
+    survey: {},
   },
   common: {
     "workspaces-name": "Nombre del espacio de trabajo",
@@ -63,7 +47,7 @@ const TRANSLATIONS = {
     no: "No",
     search: "Buscar",
     username_requirements:
-      "El nombre de usuario debe tener entre 2 y 64 caracteres, comenzar con una letra minúscula y solo contener letras minúsculas, números, guiones bajos, guiones y puntos.",
+      "El nombre de usuario debe tener entre 2 y 64 caracteres, empezar por una letra minúscula y contener solo letras minúsculas, números, guiones bajos, guiones, puntos y @.",
     on: "Activo",
     none: "Ninguno",
     stopped: "Parado",
@@ -117,20 +101,16 @@ const TRANSLATIONS = {
   },
   login: {
     "multi-user": {
-      welcome: "Bienvenido a",
       "placeholder-username": "Nombre de usuario",
       "placeholder-password": "Contraseña",
       login: "Iniciar sesión",
-      validating: "Validando...",
-      "forgot-pass": "Olvidé mi contraseña",
-      reset: "Restablecer",
+      validating: "Iniciando sesión…",
     },
     "sign-in": "Inicia sesión en tu cuenta de {{appName}}.",
     "password-reset": {
-      title: "Restablecimiento de contraseña",
+      title: "Restablecer la contraseña",
       description:
-        "Proporciona la información necesaria a continuación para restablecer tu contraseña.",
-      "recovery-codes": "Códigos de recuperación",
+        "Escribe tu nombre de usuario y dos de tus cuatro códigos de recuperación. Si no los tienes, pide a un administrador que restablezca tu contraseña.",
       "back-to-login": "Volver al inicio de sesión",
     },
   },
@@ -245,6 +225,146 @@ const TRANSLATIONS = {
     "folder-options": "Opciones de la carpeta {{name}}",
     "delete-folder-confirm":
       "¿Eliminar esta carpeta? Sus espacios de trabajo y subcarpetas pasan a la raíz.",
+  },
+  "auth-pages": {
+    login: {
+      title: "Te damos la bienvenida a {{brandName}}",
+      forgot: "¿Olvidaste tu contraseña?",
+      "reset-link": "Restablécela",
+    },
+    recovery: {
+      code: "Código de recuperación {{number}}",
+      submit: "Comprobar los códigos",
+      busy: "Comprobando los códigos…",
+    },
+    reset: {
+      title: "Crea una contraseña nueva",
+      description: "La usarás a partir de ahora para iniciar sesión.",
+      "new-password": "Contraseña nueva",
+      "confirm-password": "Repite la contraseña nueva",
+      submit: "Guardar la contraseña",
+      busy: "Guardando la contraseña…",
+    },
+    notice: {
+      "password-changed":
+        "Tu contraseña se ha cambiado. Inicia sesión con la nueva: verás códigos de recuperación nuevos que tendrás que guardar.",
+    },
+    errors: {
+      "username-invalid": "Escribe un nombre de usuario válido.",
+      "password-short": "La contraseña debe tener al menos 8 caracteres.",
+      "password-rejected":
+        "El servidor no aceptó esta contraseña. Prueba con una más larga o que combine letras, números y símbolos.",
+    },
+    single: {
+      description: "Escribe la contraseña de esta instancia para entrar.",
+      forgot:
+        "¿La olvidaste? Pide a quien administra el servidor que te la recuerde o la cambie.",
+    },
+    "go-to-login": "Ir a iniciar sesión",
+    invite: {
+      "page-title": "Invitación",
+      title: "Crea tu cuenta en {{brandName}}",
+      description:
+        "Elige un nombre de usuario y una contraseña. Los usarás para iniciar sesión.",
+      submit: "Crear la cuenta",
+      busy: "Creando la cuenta…",
+      "username-taken": "Ese nombre de usuario ya existe. Elige otro.",
+      "created-login-failed":
+        "Tu cuenta se creó, pero no se pudo iniciar sesión. Entra desde la página de inicio de sesión con tu usuario y contraseña.",
+      "invalid-title": "Esta invitación ya no es válida",
+      "invalid-description":
+        "Puede que ya se haya usado o que se haya desactivado. Pide una nueva a quien te la envió. Si ya tienes una cuenta, inicia sesión.",
+      "error-title": "No se pudo comprobar la invitación",
+    },
+    sso: {
+      "page-title": "Inicio de sesión",
+      "error-title": "No se pudo iniciar sesión",
+      "no-token":
+        "Falta el enlace de acceso. Vuelve a entrar desde el portal de tu organización.",
+      invalid:
+        "El enlace de acceso no es válido o ya caducó. Vuelve a entrar desde el portal de tu organización.",
+      contact: "Si sigue pasando, avisa a tu administrador.",
+    },
+    "not-found": {
+      "page-title": "Página no encontrada",
+      title: "No encontramos esta página",
+      description:
+        "Puede que el enlace esté mal escrito o que la página ya no exista.",
+      home: "Volver al inicio",
+    },
+  },
+  "onboarding-flow": {
+    "page-title": "Configuración inicial",
+    "home-description":
+      "Configura {{brandName}} en tres pasos: proveedor de IA, usuarios y privacidad.",
+    "step-of": "Paso {{current}} de {{total}}",
+    "step-done": "(completado)",
+    back: "Atrás",
+    next: "Siguiente",
+    finish: "Ir a {{brandName}}",
+    finishing: "Terminando la configuración…",
+    "finish-failed":
+      "No se pudo terminar la configuración. Comprueba la conexión con el servidor y vuelve a intentarlo.",
+    "change-provider": "Cambiar el proveedor de IA",
+    "choose-audience": "Elige quién usará {{brandName}}.",
+    "choose-password": "Elige si quieres pedir una contraseña.",
+    "username-required": "Escribe un nombre de usuario.",
+    "username-invalid": "El nombre de usuario no cumple los requisitos.",
+    "password-required": "Escribe una contraseña.",
+    "password-too-short": "La contraseña debe tener al menos 8 caracteres.",
+    "confirm-password": "Repite la contraseña",
+    "confirm-required": "Repite la contraseña para confirmarla.",
+    "no-password-warning":
+      "Sin contraseña, cualquier persona que llegue a esta dirección podrá usar {{brandName}} y cambiar sus ajustes. Elige esta opción solo si nadie más tiene acceso a la red donde se ejecuta.",
+    "team-done":
+      "El modo de equipo ya está activo y tu cuenta de administrador existe. Cuando termines, podrás invitar a otras personas desde Ajustes > Usuarios.",
+    "password-done":
+      "{{brandName}} ya pide una contraseña para entrar. Puedes cambiarla después en Ajustes > Seguridad.",
+    "signin-failed":
+      "Se guardó el acceso, pero no se pudo iniciar sesión. {{error}}",
+    "signin-link": "Inicia sesión para continuar la configuración",
+  },
+  "recovery-codes": {
+    title: "Guarda tus códigos de recuperación",
+    description:
+      "Si olvidas tu contraseña, necesitarás dos de estos códigos para crear una nueva.",
+    warning:
+      "Es la única vez que se muestran. Cópialos o descárgalos y guárdalos en un lugar seguro antes de continuar.",
+    list: "Códigos de recuperación",
+    copy: "Copiar los códigos",
+    download: "Descargar los códigos",
+    confirm: "He guardado mis códigos de recuperación",
+    continue: "Continuar",
+    file: {
+      title: "Códigos de recuperación de {{brandName}}",
+      user: "Usuario: {{username}}",
+      date: "Creados: {{date}}",
+      name: "{{brandName}}-codigos-de-recuperacion.txt",
+    },
+  },
+  "server-unavailable": {
+    title: "No se pudo conectar con el servidor",
+    description:
+      "Comprueba tu conexión o vuelve a intentarlo en un momento. Si sigue pasando, avisa a tu administrador.",
+    retry: "Reintentar",
+  },
+  "auth-errors": {
+    "invalid-credentials":
+      "El nombre de usuario o la contraseña no son correctos.",
+    "invalid-password": "La contraseña no es correcta.",
+    suspended: "Tu cuenta está suspendida. Habla con un administrador.",
+    "password-login-disabled":
+      "El acceso con contraseña está desactivado en esta instancia.",
+    "invalid-recovery-codes":
+      "El nombre de usuario o los códigos de recuperación no son correctos.",
+    "invalid-reset-token":
+      "Este restablecimiento ha caducado. Vuelve a empezar desde el inicio de sesión.",
+    "passwords-mismatch": "Las contraseñas no coinciden.",
+    "invite-invalid": "Esta invitación ya no es válida.",
+    "session-expired": "Tu sesión ha caducado. Vuelve a iniciar sesión.",
+    network:
+      "No se pudo conectar con el servidor. Comprueba tu conexión y vuelve a intentarlo.",
+    generic: "Algo salió mal. Vuelve a intentarlo.",
   },
   "agent-pages": {
     builtin: "Habilidades integradas",

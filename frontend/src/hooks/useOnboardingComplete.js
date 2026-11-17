@@ -8,8 +8,8 @@ export default function useRedirectToHomeOnOnboardingComplete() {
   useEffect(() => {
     async function checkOnboardingComplete() {
       const onboardingComplete = await System.isOnboardingComplete();
-      if (onboardingComplete === false) return;
-      navigate(paths.home());
+      if (onboardingComplete !== true) return;
+      navigate(paths.home(), { replace: true });
     }
     checkOnboardingComplete();
   }, []);

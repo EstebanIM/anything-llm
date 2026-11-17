@@ -50,7 +50,7 @@ export default function PrivacyAndDataHandling() {
   );
 }
 
-function TelemetryLogs({ settings }) {
+export function TelemetryLogs({ settings }) {
   const detailsId = useId();
   const [telemetry, setTelemetry] = useState(
     settings?.DisableTelemetry !== "true"

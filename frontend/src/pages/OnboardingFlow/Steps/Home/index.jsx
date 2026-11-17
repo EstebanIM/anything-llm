@@ -1,56 +1,53 @@
-import paths from "@/utils/paths";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import useRedirectToHomeOnOnboardingComplete from "@/hooks/useOnboardingComplete";
-import { OnboardingLogoSVG } from "./components/OnboardingLogoSVG";
+import paths from "@/utils/paths";
 import useCustomAppName from "@/hooks/useCustomAppName";
+import useLogo from "@/hooks/useLogo";
+import usePageTitle from "@/hooks/usePageTitle";
+
+/**
+ * Welcome screen. The card is a light surface in both themes, like the
+ * sign-in panel, because `loginLogo` is the light-theme variant of the logo.
+ */
 export default function OnboardingHome() {
   const navigate = useNavigate();
-  useRedirectToHomeOnOnboardingComplete();
   const { t } = useTranslation();
   const { brandName } = useCustomAppName();
+  const { loginLogo, isCustomLogo } = useLogo();
+  usePageTitle(t("onboarding-flow.page-title"));
+
   return (
-    <div className="relative w-screen h-screen flex flex-col overflow-hidden bg-zinc-950 light:bg-slate-50">
-      {/* Dark mode background gradient */}
-      <div
-        className="absolute inset-0 light:hidden"
-        style={{
-          background:
-            "radial-gradient(ellipse 160% 100% at 50% 0%, rgba(130, 152, 178, 0.45) 0%, rgba(60, 87, 105, 0.25) 45%, transparent 90%)",
-        }}
-      />
-      {/* Light mode background gradient */}
-      <div
-        className="absolute inset-0 hidden light:block"
-        style={{
-          background:
-            "radial-gradient(ellipse 160% 100% at 50% 0%, rgba(176, 200, 224, 0.7) 0%, rgba(195, 213, 230, 0.45) 50%, transparent 90%)",
-        }}
-      />
-
-      <div className="relative z-10 flex justify-center pt-[58px]">
-        <p className="text-white/80 light:text-slate-600 text-3xl font-semibold">
-          {brandName}
-        </p>
-      </div>
-
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-center -mt-8">
-        <div className="absolute flex items-center justify-center w-full px-4 md:px-0 md:max-w-[852px] md:w-[56%]">
-          <OnboardingLogoSVG />
+    <div
+      data-layout="onboarding"
+      className="min-h-dvh flex bg-zinc-950 light:bg-slate-50"
+    >
+      <main className="flex-1 flex items-center justify-center px-4 py-10">
+        {/* The global focus ring is too light on this card in the dark theme. */}
+        <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white px-6 py-10 md:px-10 text-center shadow-sm [--theme-focus-ring:#075ec4]">
+          {isCustomLogo && loginLogo ? (
+            <img
+              src={loginLogo}
+              alt={brandName}
+              className="mx-auto max-h-12 max-w-[200px] object-contain"
+            />
+          ) : (
+            <p className="text-2xl font-semibold text-slate-900">{brandName}</p>
+          )}
+          <h1 className="mt-8 text-3xl md:text-4xl font-semibold tracking-tight text-slate-900">
+            {t("onboarding.home.welcome")}
+          </h1>
+          <p className="mt-3 text-base text-slate-600">
+            {t("onboarding-flow.home-description")}
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate(paths.onboarding.llmPreference())}
+            className="mt-8 w-full min-h-[44px] px-5 rounded-lg border-none bg-primary-button hover:bg-primary-button-hover text-sm font-semibold text-theme-button-primary-text transition-colors duration-quick ease-smooth"
+          >
+            {t("onboarding.home.getStarted")}
+          </button>
         </div>
-
-        <h1 className="relative font-medium text-white light:text-slate-700 text-[64px] md:text-[96px] lg:text-[160px] leading-none tracking-[-0.06em] select-none">
-          {t("onboarding.home.welcome")}
-        </h1>
-
-        <button
-          type="button"
-          onClick={() => navigate(paths.onboarding.llmPreference())}
-          className="relative border-none z-10 h-[36px] w-[300px] py-2.5 px-5 rounded-lg bg-slate-50 hover:bg-slate-300 font-medium text-sm mt-[42px] text-zinc-900 light:text-white light:bg-slate-900 light:hover:bg-slate-800 text-center flex justify-center items-center transition-colors duration-200"
-        >
-          {t("onboarding.home.getStarted")}
-        </button>
-      </div>
+      </main>
     </div>
   );
 }
