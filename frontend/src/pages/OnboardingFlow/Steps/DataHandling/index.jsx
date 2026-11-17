@@ -9,7 +9,7 @@ import CTAButton from "@/components/lib/CTAButton";
 import StatusNote from "@/components/lib/StatusNote";
 import ProviderPrivacy from "@/components/ProviderPrivacy";
 import { FIELD_HELP } from "@/components/ProviderFields";
-import { TelemetryLogs } from "@/pages/GeneralSettings/PrivacyAndData";
+import TelemetryToggle from "@/components/TelemetryToggle";
 import OnboardingLayout from "../OnboardingLayout";
 
 const TEXT_LINK =
@@ -94,7 +94,7 @@ export default function DataHandling() {
               {t("onboarding-flow.change-provider")}
             </Link>
           </div>
-          <TelemetryLogs settings={settings} />
+          <TelemetryToggle settings={settings} />
           <p className={FIELD_HELP}>{t("onboarding.data.settingsHint")}</p>
         </div>
       )}
