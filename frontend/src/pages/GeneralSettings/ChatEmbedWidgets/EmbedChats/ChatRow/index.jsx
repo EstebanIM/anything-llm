@@ -7,7 +7,11 @@ import { safeJsonParse } from "@/utils/request";
 import MarkdownRenderer from "../../components/MarkdownRenderer";
 import ChatTextModal from "../../components/ChatTextModal";
 import ChatCellButton from "../../components/ChatCellButton";
-import RowDeleteButton from "../../components/RowDeleteButton";
+import { Trash2 } from "lucide-react";
+import {
+  InlineConfirmButton,
+  ROW_ICON_BUTTON,
+} from "@/components/lib/InlineConfirm";
 
 export default function ChatRow({ chat, onDelete }) {
   const { t } = useTranslation();
@@ -60,9 +64,15 @@ export default function ChatRow({ chat, onDelete }) {
           </time>
         </td>
         <td className="px-2 md:px-6 py-2 sticky right-0 md:static bg-zinc-900 light:bg-white">
-          <RowDeleteButton
+          <InlineConfirmButton
+            id={`embed-chat-delete-${chat.id}`}
             label={t("embed-pages.chat.delete", ids)}
-            consequence={t("embed-pages.chat.delete-consequence", ids)}
+            icon={Trash2}
+            triggerClassName={ROW_ICON_BUTTON}
+            question={t("notices.delete-chat-question", ids)}
+            consequences={t("notices.cannot-undo")}
+            confirmLabel={t("settings-pages.delete")}
+            align="end"
             onConfirm={() => onDelete(chat.id)}
           />
         </td>

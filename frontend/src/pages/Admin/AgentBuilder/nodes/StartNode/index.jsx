@@ -10,7 +10,7 @@ import {
   FIELD_LABEL,
 } from "@/components/ProviderFields";
 import { VARIABLE_HIGHLIGHT_CLASS } from "../../VariableInput";
-import InlineConfirm from "../../InlineConfirm";
+import InlineConfirm from "@/components/lib/InlineConfirm";
 import variableIssues from "./variableIssues";
 
 /**
@@ -202,9 +202,10 @@ export default function StartNode({
 
             {confirmingIndex === index && (
               <InlineConfirm
-                message={t("agent-builder.start.delete-confirm", {
+                question={t("notices.delete-variable-question", {
                   name: displayName,
                 })}
+                consequences={t("notices.delete-variable-consequences")}
                 confirmLabel={t("settings-pages.delete")}
                 onConfirm={() => deleteVariable(index)}
                 onCancel={() => cancelDelete(index)}

@@ -96,7 +96,7 @@ export default function RunHistoryPage() {
     setTriggering(false);
     if (!success) {
       showToast(
-        translateJobError(t, error) || t("scheduledJobs.toast.triggerFailed"),
+        translateJobError(t, error, "scheduledJobs.toast.triggerFailed"),
         "error"
       );
       return;

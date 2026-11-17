@@ -5,7 +5,9 @@ import Workspace from "@/models/workspace";
 import Embed from "@/models/embed";
 import Toggle from "@/components/lib/Toggle";
 import SegmentedControl from "@/components/lib/SegmentedControl";
+import ServerErrorDetail from "@/components/lib/ServerErrorDetail";
 import { blurOnWheel } from "@/components/ProviderFields";
+import { serverErrorParts } from "@/utils/serverErrors";
 import {
   ModalHeader,
   ModalBody,
@@ -64,7 +66,7 @@ export default function NewEmbedModal({ closeModal, onCreated }) {
     const { embed, error } = await Embed.newEmbed(data);
     setSaving(false);
     if (!embed) {
-      setError(error || t("embed-pages.form.save-failed"));
+      setError(serverErrorParts(error, t, "settings-pages.form-error"));
       return;
     }
     onCreated(embed);
@@ -99,7 +101,8 @@ export default function NewEmbedModal({ closeModal, onCreated }) {
         </p>
         {error && (
           <p role="alert" className={FORM_ERROR}>
-            {t("settings-pages.form-error", { error })}
+            {error.message}
+            <ServerErrorDetail detail={error.detail} />
           </p>
         )}
       </ModalBody>

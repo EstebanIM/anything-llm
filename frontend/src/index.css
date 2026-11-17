@@ -327,7 +327,9 @@ a {
 /* Reduced motion: state changes become instant and loops stop. Spinners keep
    turning because they are the only sign that work is in progress. */
 @media (prefers-reduced-motion: reduce) {
-  *,
+  /* The toast progress bar is excluded: react-toastify closes a toast when that
+     bar's animation ends, so shortening it would close every toast at once. */
+  *:not(.Toastify__progress-bar),
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
@@ -574,8 +576,82 @@ dialog::backdrop {
   @apply !bg-black !text-white !py-2 !px-3 !rounded-md !z-10;
 }
 
+/* Toasts (react-toastify 9): app font, palette tones that pass in both themes
+   (dark: zinc-800 surface, zinc-500 border; light: white, slate-500 border),
+   own icons and close button (components/Toasts), motion tokens. */
+:root {
+  --toastify-font-family: inherit;
+  --toastify-color-dark: #22282e;
+  --toastify-text-color-dark: #ffffff;
+  --toastify-color-light: #ffffff;
+  --toastify-text-color-light: #13191f;
+  --toastify-toast-width: 380px;
+}
+
+.Toastify__toast {
+  border: 1px solid #6e7379;
+  border-radius: 0.75rem;
+  padding: 0.5rem 0.5rem 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.25);
+}
+
 .Toastify__toast-body {
   white-space: pre-line;
+  align-items: flex-start;
+  padding: 0.375rem 0.25rem;
+}
+
+.Toastify__toast-icon {
+  margin-top: 0.0625rem;
+}
+
+.Toastify__close-button.toast-close {
+  opacity: 1;
+}
+
+/* Phones: inset from the edges and below the 64 px top bar, keeping corners. */
+@media only screen and (max-width: 480px) {
+  .Toastify__toast-container--top-center {
+    top: calc(4.25rem + env(safe-area-inset-top));
+    left: 0;
+    width: 100vw;
+    padding: 0 1rem;
+  }
+  .Toastify__toast {
+    margin-bottom: 0.5rem;
+    border-radius: 0.75rem;
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes toast-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.toast-in {
+  animation: toast-in var(--dur-panel) var(--ease-smooth) both;
+}
+
+.toast-out {
+  animation: toast-out var(--dur-base) var(--ease-smooth) both;
 }
 
 @keyframes slideDown {

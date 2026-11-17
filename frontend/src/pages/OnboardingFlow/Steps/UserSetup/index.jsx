@@ -4,14 +4,14 @@ import { useTranslation } from "react-i18next";
 import System from "@/models/system";
 import paths from "@/utils/paths";
 import { AUTH_TIMESTAMP, AUTH_TOKEN, AUTH_USER } from "@/utils/constants";
-import { authErrorMessage } from "@/utils/authErrors";
+import { ACCOUNT_ERRORS, PW_REGEX, authErrorMessage } from "@/utils/authErrors";
 import {
   USERNAME_MIN_LENGTH,
   USERNAME_MAX_LENGTH,
   USERNAME_PATTERN,
   USERNAME_REGEX,
 } from "@/utils/username";
-import { PW_REGEX } from "@/pages/GeneralSettings/Security";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import PreLoader from "@/components/Preloader";
 import CTAButton from "@/components/lib/CTAButton";
 import StatusNote from "@/components/lib/StatusNote";
@@ -179,9 +179,14 @@ export default function UserSetup() {
     if (!success) {
       setSaving(false);
       setFormError({
-        message: t("settings-pages.password-failed", {
-          error: error || t("auth-errors.generic"),
-        }),
+        message: serverErrorMessage(
+          error,
+          t,
+          "settings-pages.password-failed",
+          {
+            known: ACCOUNT_ERRORS,
+          }
+        ),
       });
       return;
     }
@@ -206,9 +211,12 @@ export default function UserSetup() {
     if (!success) {
       setSaving(false);
       setFormError({
-        message: t("settings-pages.multiuser-failed", {
-          error: error || t("auth-errors.generic"),
-        }),
+        message: serverErrorMessage(
+          error,
+          t,
+          "settings-pages.multiuser-failed",
+          { known: ACCOUNT_ERRORS }
+        ),
       });
       return;
     }

@@ -45,7 +45,7 @@ export default function FileUploadWarningModal({
       </ModalBody>
       <ModalFooter>
         <ModalSecondaryButton onClick={onClose} type="button">
-          {t("chat_window.cancel")}
+          {t("settings-pages.cancel")}
         </ModalSecondaryButton>
         <div className="flex items-center gap-x-2">
           <ModalSecondaryButton onClick={onContinue} type="button">

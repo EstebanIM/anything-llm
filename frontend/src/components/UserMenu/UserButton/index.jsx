@@ -2,7 +2,14 @@ import useLoginMode from "@/hooks/useLoginMode";
 import usePfp from "@/hooks/usePfp";
 import useUser from "@/hooks/useUser";
 import paths from "@/utils/paths";
-import { Settings, House, User, LogOut, CircleUserRound } from "lucide-react";
+import {
+  Settings,
+  House,
+  User,
+  LogOut,
+  CircleUserRound,
+  Keyboard,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import AccountModal from "../AccountModal";
 import {
@@ -14,11 +21,20 @@ import {
 } from "@/utils/constants";
 import { useTranslation } from "react-i18next";
 import { Link, useMatch } from "react-router-dom";
+import useIsMobile from "@/hooks/useIsMobile";
+import {
+  ariaKeyShortcuts,
+  showKeyboardShortcutsHelp,
+} from "@/utils/keyboardShortcuts";
+
+const MENU_ITEM =
+  "border-none text-white hover:bg-theme-action-menu-item-hover w-full text-left px-3 py-2 min-h-[44px] md:min-h-0 rounded-lg flex items-center gap-x-2";
 
 export default function UserButton({ className = "" }) {
   const { t } = useTranslation();
   const mode = useLoginMode();
   const { user } = useUser();
+  const isMobile = useIsMobile();
   const inSettingsIndex = useMatch("/settings");
   const inSettingsChild = useMatch("/settings/*");
   const isInSettings = !!inSettingsIndex || !!inSettingsChild;
@@ -45,6 +61,11 @@ export default function UserButton({ className = "" }) {
   const handleOpenAccountModal = () => {
     setShowAccountSettings(true);
     setShowMenu(false);
+  };
+
+  const handleOpenShortcuts = () => {
+    setShowMenu(false);
+    showKeyboardShortcutsHelp(true);
   };
 
   useEffect(() => {
@@ -121,7 +142,7 @@ export default function UserButton({ className = "" }) {
           aria-label={t("profile_settings.account")}
           aria-haspopup="menu"
           aria-expanded={showMenu}
-          className="uppercase transition-all duration-300 w-[35px] h-[35px] text-base font-semibold rounded-full flex items-center bg-theme-action-menu-bg hover:bg-theme-action-menu-item-hover justify-center text-white p-2 hover:border-slate-100 hover:border-opacity-50 border-transparent border"
+          className="uppercase transition-colors duration-quick ease-smooth w-11 h-11 md:w-[35px] md:h-[35px] text-base font-semibold rounded-full flex items-center bg-theme-action-menu-bg hover:bg-theme-action-menu-item-hover justify-center text-white p-2 hover:border-slate-100 hover:border-opacity-50 border-transparent border"
         >
           <User strokeWidth={1.5} size={14} aria-hidden="true" />
         </button>
@@ -143,7 +164,10 @@ export default function UserButton({ className = "" }) {
               to={settingsPath}
               role="menuitem"
               onClick={() => setShowMenu(false)}
-              className="text-white hover:bg-theme-action-menu-item-hover w-full text-left px-3 py-2 rounded-lg flex items-center gap-x-2"
+              aria-keyshortcuts={
+                isInSettings ? undefined : ariaKeyShortcuts("settings")
+              }
+              className={MENU_ITEM}
             >
               {isInSettings ? (
                 <House strokeWidth={1.5} size={16} aria-hidden="true" />
@@ -157,11 +181,26 @@ export default function UserButton({ className = "" }) {
             <button
               type="button"
               role="menuitem"
+              aria-haspopup="dialog"
               onClick={handleOpenAccountModal}
-              className="border-none text-white hover:bg-theme-action-menu-item-hover w-full text-left px-3 py-2 rounded-lg flex items-center gap-x-2"
+              className={MENU_ITEM}
             >
               <CircleUserRound strokeWidth={1.5} size={16} aria-hidden="true" />
               <span>{t("profile_settings.account")}</span>
+            </button>
+          )}
+          {/* Phones rarely have a keyboard: the entry stays on wider screens. */}
+          {!isMobile && (
+            <button
+              type="button"
+              role="menuitem"
+              aria-haspopup="dialog"
+              aria-keyshortcuts={ariaKeyShortcuts("help")}
+              onClick={handleOpenShortcuts}
+              className={MENU_ITEM}
+            >
+              <Keyboard strokeWidth={1.5} size={16} aria-hidden="true" />
+              <span>{t("keyboard-shortcuts.title")}</span>
             </button>
           )}
           <button
@@ -175,7 +214,7 @@ export default function UserButton({ className = "" }) {
             }}
             type="button"
             role="menuitem"
-            className="text-white hover:bg-theme-action-menu-item-hover w-full text-left px-3 py-2 rounded-lg flex items-center gap-x-2"
+            className={MENU_ITEM}
           >
             <LogOut strokeWidth={1.5} size={16} aria-hidden="true" />
             <span>{t("profile_settings.signout")}</span>

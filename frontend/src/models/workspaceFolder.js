@@ -4,15 +4,20 @@ import { baseHeaders } from "@/utils/request";
 const WorkspaceFolder = {
   /**
    * Fetch the full nested folder + workspace tree for the sidebar.
-   * @returns {Promise<{folders: Array, workspaces: Array}>}
+   * @returns {Promise<{folders: Array, workspaces: Array, error?: boolean}>}
+   * `error: true` (with empty lists) when the tree could not be loaded, so
+   * callers can tell a failure from a workspace without folders.
    */
   tree: async function () {
     return fetch(`${API_BASE}/workspace-folders/tree`, {
       method: "GET",
       headers: baseHeaders(),
     })
-      .then((res) => res.json())
-      .catch(() => ({ folders: [], workspaces: [] }));
+      .then((res) => {
+        if (!res.ok) throw new Error(`status-${res.status}`);
+        return res.json();
+      })
+      .catch(() => ({ folders: [], workspaces: [], error: true }));
   },
 
   /**
@@ -78,16 +83,18 @@ const WorkspaceFolder = {
 };
 
 /**
- * Flatten a folder tree into `{ folder, depth }` rows for select inputs.
+ * Folder options with their full path ("Proyectos / Clientes") for select
+ * inputs: a select cannot show nesting, and leading spaces are not read out.
  * @param {Array} folders - nested folders from `WorkspaceFolder.tree()`
- * @returns {Array<{folder: Object, depth: number}>}
+ * @returns {Array<{id: number, path: string}>}
  */
-export function flattenFolderTree(folders = [], depth = 0) {
+export function folderPathOptions(folders = [], parents = []) {
   const result = [];
   for (const folder of folders) {
-    result.push({ folder, depth });
+    const path = [...parents, folder.name];
+    result.push({ id: folder.id, path: path.join(" / ") });
     if (folder.children?.length > 0)
-      result.push(...flattenFolderTree(folder.children, depth + 1));
+      result.push(...folderPathOptions(folder.children, path));
   }
   return result;
 }

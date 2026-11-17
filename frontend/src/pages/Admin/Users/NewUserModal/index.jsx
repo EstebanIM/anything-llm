@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import Admin from "@/models/admin";
 import showToast from "@/utils/toast";
+import { serverErrorParts } from "@/utils/serverErrors";
+import { ACCOUNT_ERRORS } from "@/utils/authErrors";
+import ServerErrorDetail from "@/components/lib/ServerErrorDetail";
 import {
   MessageLimitInput,
   RoleSelect,
@@ -49,7 +52,11 @@ export default function NewUserModal({ currUser, closeModal, onSuccess }) {
     const { user, error } = await Admin.newUser(data);
     setBusy(false);
     if (!user) {
-      setError(error || t("admin-pages.unknown-error"));
+      setError(
+        serverErrorParts(error, t, "settings-pages.form-error", {
+          known: ACCOUNT_ERRORS,
+        })
+      );
       return;
     }
     showToast(
@@ -108,7 +115,8 @@ export default function NewUserModal({ currUser, closeModal, onSuccess }) {
         />
         {error && (
           <p role="alert" className="text-sm text-red-400 light:text-red-700">
-            {t("settings-pages.form-error", { error })}
+            {error.message}
+            <ServerErrorDetail detail={error.detail} />
           </p>
         )}
       </ModalBody>

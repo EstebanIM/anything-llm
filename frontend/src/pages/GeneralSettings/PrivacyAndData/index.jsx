@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from "react";
 import Sidebar from "@/components/SettingsSidebar";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import System from "@/models/system";
 import PreLoader from "@/components/Preloader";
 import { useTranslation } from "react-i18next";
@@ -66,9 +67,13 @@ export function TelemetryLogs({ settings }) {
     });
     setSaving(false);
     if (error) {
-      showToast(t("settings-pages.telemetry-failed", { error }), "error", {
-        clear: true,
-      });
+      showToast(
+        serverErrorMessage(error, t, "settings-pages.telemetry-failed"),
+        "error",
+        {
+          clear: true,
+        }
+      );
       return;
     }
     setTelemetry(next);

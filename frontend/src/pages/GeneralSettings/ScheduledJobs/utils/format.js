@@ -1,38 +1,6 @@
-import i18n from "@/i18n";
+import { rawMessage, serverErrorMessage } from "@/utils/serverErrors";
 
-const locale = () => i18n.resolvedLanguage || i18n.language || "en";
-
-function unit(value, name, fractionDigits = 0) {
-  return new Intl.NumberFormat(locale(), {
-    style: "unit",
-    unit: name,
-    unitDisplay: "short",
-    maximumFractionDigits: fractionDigits,
-  }).format(value);
-}
-
-/**
- * Elapsed time in the UI language: "850 ms", "5,2 s", "3 min 4 s", "1 h 5 min".
- * @param {number} ms
- * @returns {string} "" when the value is not a usable duration
- */
-export function formatElapsed(ms) {
-  if (!Number.isFinite(ms) || ms < 0) return "";
-  if (ms < 1000) return unit(Math.round(ms), "millisecond");
-  const seconds = ms / 1000;
-  if (seconds < 60) return unit(seconds, "second", 1);
-  const totalSeconds = Math.floor(seconds);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const rest = totalSeconds % 60;
-  if (hours > 0)
-    return minutes
-      ? `${unit(hours, "hour")} ${unit(minutes, "minute")}`
-      : unit(hours, "hour");
-  return rest
-    ? `${unit(minutes, "minute")} ${unit(rest, "second")}`
-    : unit(minutes, "minute");
-}
+export { formatElapsed } from "@/utils/dates";
 
 export const isInFlight = (status) =>
   status === "running" || status === "queued";
@@ -56,26 +24,40 @@ export function runDurationMs(run, now = Date.now()) {
   return Number.isFinite(end) && end >= start ? end - start : null;
 }
 
+/** Fixed English messages from the server and the API client. */
+const JOB_ERRORS = [
+  [/^Invalid cron expression/i, "scheduledJobs.modal.cronInvalid"],
+  [/^Job execution timed out/i, "scheduledJobs.errors.timedOut"],
+  [/^Job killed by user/i, "scheduledJobs.errors.killed"],
+  [
+    /^Server restarted during execution/i,
+    "scheduledJobs.errors.serverRestarted",
+  ],
+  [/^Job not found/i, "scheduledJobs.runHistory.jobNotFound"],
+  [/^Run not found/i, "scheduledJobs.runDetail.notFound"],
+  [
+    /^Only running or queued jobs can be killed/i,
+    "scheduledJobs.errors.notKillable",
+  ],
+];
+
 /**
- * The server and the API client report errors as fixed English strings.
- * Show the known ones in the UI language; anything else is passed through.
+ * A job or run error in the UI language: the known server messages, the
+ * generic network and permission errors, and `fallbackKey` for the rest (the
+ * raw text goes to the console; run pages also offer it to copy).
  * @param {(key: string, options?: object) => string} t
- * @param {string} message
+ * @param {unknown} message - string, Error or `{ error }`
+ * @param {string} [fallbackKey]
  * @returns {string}
  */
-export function translateJobError(t, message) {
-  if (!message || typeof message !== "string") return message;
-  const limit = /maximum of (\d+) active scheduled jobs/i.exec(message);
+export function translateJobError(
+  t,
+  message,
+  fallbackKey = "notices.job-run-failed"
+) {
+  const limit = /maximum of (\d+) active scheduled jobs/i.exec(
+    rawMessage(message)
+  );
   if (limit) return t("scheduledJobs.errors.activeLimit", { limit: limit[1] });
-  const known = {
-    "Invalid cron expression": "scheduledJobs.modal.cronInvalid",
-    "Job execution timed out": "scheduledJobs.errors.timedOut",
-    "Job killed by user": "scheduledJobs.errors.killed",
-    "Server restarted during execution": "scheduledJobs.errors.serverRestarted",
-    "Job not found": "scheduledJobs.runHistory.jobNotFound",
-    "Run not found": "scheduledJobs.runDetail.notFound",
-    "Only running or queued jobs can be killed":
-      "scheduledJobs.errors.notKillable",
-  }[message.trim()];
-  return known ? t(known) : message;
+  return serverErrorMessage(message, t, fallbackKey, { known: JOB_ERRORS });
 }

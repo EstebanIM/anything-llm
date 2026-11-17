@@ -173,14 +173,13 @@ const TRANSLATIONS = {
     root: "No folder (root)",
     "max-depth": "Maximum folder depth reached (5 levels).",
     move: "Move",
-    "move-title": "Move folder",
     "move-description": "Choose a destination for this folder.",
     "move-button": "Move",
-    "move-success": "Folder moved",
+    "move-success": "Folder moved.",
     "move-current": "Current",
     "move-cancel": "Cancel",
-    "move-moving": "Moving...",
-    "move-loading": "Loading...",
+    "move-moving": "Moving…",
+    "move-loading": "Loading folders…",
     renamed: "Folder renamed to “{{name}}”.",
     deleted: "Folder “{{name}}” deleted.",
     created: "Folder “{{name}}” created.",
@@ -204,25 +203,21 @@ const TRANSLATIONS = {
     "loading-threads": "Loading threads...",
     "new-thread": "New thread",
     "creating-thread": "Creating thread...",
-    "create-thread-failed": "Could not create the thread: {{error}}",
+    "create-thread-failed": "Could not create the thread.",
     "default-thread": "Default",
     "thread-options": "Options for thread {{name}}",
     "thread-name": "Thread name",
     rename: "Rename",
     "delete-thread": "Delete thread",
-    "delete-thread-confirm":
-      "Delete this thread? All of its chats will be deleted and this cannot be undone.",
     "thread-deleted": "Thread deleted.",
     "thread-delete-failed": "The thread could not be deleted.",
-    "thread-rename-failed": "The thread could not be renamed: {{message}}",
+    "thread-rename-failed": "Could not rename the thread.",
     "deleted-thread": "Deleted thread",
     "restore-thread": "Restore thread",
     "mark-for-deletion": "Mark for deletion",
     "delete-selected": "Delete selected",
     "expand-folder": "Expand folder",
     "collapse-folder": "Collapse folder",
-    "confirm-delete": "Confirm delete",
-    cancel: "Cancel",
     "folder-rename-failed": "Could not rename the folder.",
     "folder-create-failed": "Could not create the subfolder.",
     "folder-delete-failed": "Could not delete the folder.",
@@ -231,8 +226,121 @@ const TRANSLATIONS = {
       "Press Space to pick up the workspace, use the arrow keys to move it and press Space again to drop it. Press Escape to cancel.",
     "default-system-prompt": "Default system prompt",
     "folder-options": "Options for folder {{name}}",
-    "delete-folder-confirm":
-      "Delete this folder? Its workspaces and subfolders move to the top level.",
+  },
+  notices: {
+    "folder-name-invalid": "That folder name isn't valid.",
+    "delete-folder-question": "Delete the folder “{{name}}”?",
+    "delete-folder-consequences":
+      "Its workspaces and subfolders move to the top level; none of them is deleted.",
+    "delete-thread-question": "Delete the thread “{{name}}”?",
+    "delete-thread-consequences":
+      "All of its chats are deleted. This can't be undone.",
+    "move-partial_one":
+      "Moved {{moved}} of {{total}} documents. {{count}} is still embedded in a workspace: remove it from every workspace to move it.",
+    "move-partial_other":
+      "Moved {{moved}} of {{total}} documents. {{count}} are still embedded in a workspace: remove them from every workspace to move them.",
+    "move-partial-generic":
+      "Some documents weren't moved. Documents embedded in a workspace can't be moved until you remove them from every workspace.",
+    "collect-failed": "The collection could not be completed.",
+    "workspace-model-save-failed": "Could not save the workspace model.",
+    "preset-save-failed":
+      "Could not save the command. Check that no other command uses the same name.",
+    "delete-chat-question": "Delete chat {{id}}?",
+    "cannot-undo": "This can't be undone.",
+    "delete-variable-question": "Delete the variable {{name}}?",
+    "delete-variable-consequences":
+      "Blocks that store their result in it will stop doing so.",
+    "delete-memory-question": "Delete this memory?",
+    "auth-instance-password-changed":
+      "The instance password has changed. Sign in with the new one.",
+    "auth-multiuser-enabled":
+      "Multi-user mode is on. Sign in with the administrator account you just created.",
+    "reload-page": "Reload the page",
+    "job-run-failed": "The run ended with an error.",
+    "notifications-failed": "Browser notifications could not be turned on.",
+    "experimental-unlocked": "Experimental feature previews unlocked.",
+    "date-unknown": "Unknown date",
+  },
+  dialogs: {
+    account: {
+      profile: "Profile",
+      "managed-by-admin":
+        "Your administrator manages your username and profile picture.",
+      bio: "Bio",
+      "password-section": "Change password",
+      preferences: "Preferences in this browser",
+      "preferences-hint":
+        "They apply right away and only in this browser; there's nothing to save.",
+      "save-failed": "Couldn't save your account changes.",
+      "photo-upload-failed": "Couldn't upload the profile picture.",
+      "photo-remove-failed": "Couldn't remove the profile picture.",
+      "photo-removed": "Profile picture removed.",
+      "photo-alt": "Your profile picture",
+      "photo-change": "Change photo",
+      "photo-upload": "Upload photo",
+      "photo-hint":
+        "It's saved as soon as you choose it. Square works best, about 800 × 800 px.",
+    },
+    shortcuts: {
+      note: "While you type in a text field, only help (F1) and dictation work. With another dialog open, shortcuts do nothing.",
+      "group-global": "Anywhere",
+      "group-chat": "In the chat",
+      or: "or",
+      sidebar: "Show or hide the sidebar",
+      "note-sidebar": "On the home page and in workspaces, on wide screens.",
+      "note-workspace": "Inside a workspace.",
+      dictation: "Start or stop dictation",
+      "note-dictation": "When dictation is available.",
+      "scroll-top": "Jump to the start of the conversation",
+      "scroll-bottom": "Jump to the end of the conversation",
+      "key-shift": "Shift",
+      "key-up": "Up arrow",
+      "key-down": "Down arrow",
+    },
+    error: {
+      title: "Something went wrong",
+      description:
+        "This screen hit an unexpected error. Try again or reload the page. If it keeps happening, copy the technical details and send them to your administrator.",
+      "update-title": "This screen couldn't load",
+      "update-description":
+        "{{brandName}} may have been updated while you were using it, or the connection dropped. Reload the page to get the new version.",
+      reload: "Reload the page",
+      "reload-update": "Reload to get the new version",
+      details: "Technical details",
+      "copy-details": "Copy the details",
+    },
+    "new-workspace": {
+      hint: "At least 4 characters.",
+      failed: "Couldn't create the workspace.",
+      "folders-failed":
+        "The folders could not be loaded: the workspace will be created at the top level. You can move it later.",
+    },
+    "move-folder": {
+      title: "Move the folder “{{name}}”",
+      failed: "Couldn't move the folder.",
+      "load-failed": "Couldn't load the folders.",
+      "too-deep": "Not available: it would go past the 5-level limit.",
+    },
+    "new-version": {
+      title: "A new version is available",
+      description:
+        "Reload the page to use it. If you have unsaved changes, save them first.",
+      reload: "Reload now",
+    },
+  },
+  toast: {
+    close: "Close notification",
+  },
+  "server-errors": {
+    network: "Can't reach the server. Check your connection and try again.",
+    unauthorized:
+      "The service rejected the credentials. Check the key or sign in again.",
+    forbidden: "You don't have permission to do this.",
+    "not-found": "It no longer exists or was moved.",
+    "too-large": "It's too large to process.",
+    "rate-limited": "Too many requests. Wait a moment and try again.",
+    timeout: "It took too long to respond. Try again.",
+    detail: "Server detail:",
   },
   "auth-pages": {
     login: {
@@ -382,7 +490,7 @@ const TRANSLATIONS = {
     detail: "Selection details",
     "load-error": "The agent skills could not be loaded.",
     saved: "Agent preferences saved.",
-    "save-failed": "The agent preferences could not be saved: {{error}}",
+    "save-failed": "Could not save the agent preferences.",
     required: "required",
     "subskills-load-error":
       "The current options could not be loaded. Try again before changing them.",
@@ -399,7 +507,7 @@ const TRANSLATIONS = {
       "delete-body":
         "The agent will no longer be able to use it. This cannot be undone.",
       deleted: "Flow “{{name}}” deleted.",
-      "delete-failed": "The flow could not be deleted: {{error}}",
+      "delete-failed": "Could not delete the flow.",
     },
     imported: {
       empty: "No custom skills have been imported yet.",
@@ -433,9 +541,9 @@ const TRANSLATIONS = {
       tools: "Tools",
       "tool-toggle": "Enable {{tool}}",
       "tool-details": "Details of {{tool}}",
-      "tool-toggle-failed": "The tool {{tool}} could not be changed: {{error}}",
+      "tool-toggle-failed": "Could not change the tool {{tool}}.",
       "load-error": "The MCP servers could not be loaded.",
-      "load-error-detail": "The MCP servers could not be loaded: {{error}}",
+      "load-error-detail": "Couldn't load the MCP servers.",
       "empty-hint":
         "Add them to the plugins/anythingllm_mcp_servers.json file in the server storage folder and press Refresh.",
       "reload-title": "Restart every MCP server?",
@@ -443,11 +551,10 @@ const TRANSLATIONS = {
         "Every MCP server is stopped and started again, and their tools are reloaded from the configuration file.",
       "reload-confirm": "Restart all",
       reloaded: "MCP servers restarted.",
-      "reload-failed": "The MCP servers could not be restarted: {{error}}",
+      "reload-failed": "Could not restart the MCP servers.",
       started: "MCP server {{name}} started.",
       stopped: "MCP server {{name}} stopped.",
-      "toggle-failed":
-        "The MCP server {{name}} could not be started or stopped: {{error}}",
+      "toggle-failed": "Could not start or stop the MCP server {{name}}.",
       "stop-title": "Stop the MCP server {{name}}?",
       "stop-body":
         "The agent cannot use its tools until you start it again. It starts again when {{brandName}} restarts.",
@@ -456,8 +563,7 @@ const TRANSLATIONS = {
       "delete-body":
         "It is removed from the configuration file and you will have to add it back by hand. This cannot be undone.",
       deleted: "MCP server {{name}} deleted.",
-      "delete-failed":
-        "The MCP server {{name}} could not be deleted: {{error}}",
+      "delete-failed": "Could not delete the MCP server {{name}}.",
       "error-title": "Startup error",
       "copy-command": "Copy the command",
       "copy-error": "Copy the error",
@@ -520,10 +626,8 @@ const TRANSLATIONS = {
       "auth-pending":
         "Finish signing in on the Microsoft tab. When you come back to this tab, the status is checked again.",
       "auth-success": "Connected with Microsoft Outlook.",
-      "auth-error": "Could not connect with Microsoft: {{error}}",
-      "connect-error":
-        "Could not start the connection with Microsoft: {{error}}",
-      "unknown-error": "unknown error",
+      "auth-error": "Couldn't connect to Microsoft.",
+      "connect-error": "Couldn't start the connection with Microsoft.",
       "popup-blocked": "The browser blocked the Microsoft sign-in window.",
       "open-sign-in": "Open the Microsoft sign-in",
       "check-status": "Check status",
@@ -535,7 +639,7 @@ const TRANSLATIONS = {
         "The server will delete the application (client) ID, the directory (tenant) ID, the client secret and the access tokens.",
       "revoke-after":
         "The agent will not be able to use Outlook until you enter the credentials again and connect with Microsoft.",
-      "revoke-error": "Could not revoke access: {{error}}",
+      "revoke-error": "Couldn't revoke access.",
       revoked: "Access revoked. The Outlook credentials were deleted.",
     },
     sql: {
@@ -653,7 +757,7 @@ const TRANSLATIONS = {
       "flows-failed": "The list of saved flows could not be loaded.",
     },
     save: {
-      success: "Flow saved",
+      success: "Flow saved.",
       failed: "The flow could not be saved. Try again.",
       unsupported:
         "The flow could not be saved because it includes blocks this installation does not support.",
@@ -742,8 +846,6 @@ const TRANSLATIONS = {
       description: "Description for the LLM",
       "description-placeholder": "What this value is for",
       delete: "Delete variable {{name}}",
-      "delete-confirm":
-        "Delete the variable {{name}}? Blocks that store their result in it will stop doing so.",
       "error-duplicate": "Another variable already uses this name.",
       "error-invalid":
         "The name cannot contain spaces or the characters $ { } [ ] .",
@@ -812,7 +914,6 @@ const TRANSLATIONS = {
     error: "The list could not be loaded.",
   },
   "admin-pages": {
-    "unknown-error": "Unknown error",
     users: {
       title: "Users",
       description:
@@ -845,9 +946,9 @@ const TRANSLATIONS = {
       "suspended-toast": "{{username}} has been suspended.",
       unsuspended: "{{username}} has been reactivated.",
       deleted: "{{username}} has been deleted.",
-      "suspend-failed": "Could not suspend {{username}}: {{error}}",
-      "unsuspend-failed": "Could not reactivate {{username}}: {{error}}",
-      "delete-failed": "Could not delete {{username}}: {{error}}",
+      "suspend-failed": "Could not suspend {{username}}.",
+      "unsuspend-failed": "Could not reactivate {{username}}.",
+      "delete-failed": "Could not delete {{username}}.",
       "new-title": "Add a user to the instance",
       "initial-password": "Initial password",
       "initial-password-hint":
@@ -906,7 +1007,7 @@ const TRANSLATIONS = {
       "delete-consequences":
         "Its chats, embedded documents and settings are deleted with it. This cannot be undone.",
       deleted: "Workspace {{name}} deleted.",
-      "delete-failed": "Could not delete the workspace {{name}}: {{error}}",
+      "delete-failed": "Could not delete the workspace {{name}}.",
       "new-title": "Create a workspace",
       "new-hint":
         "At least 4 characters. At first only administrators can see it; you can add members once it exists.",
@@ -934,7 +1035,7 @@ const TRANSLATIONS = {
       "revoke-consequences": "The link stops working. This cannot be undone.",
       revoke: "Disable",
       revoked: "Invitation disabled.",
-      "revoke-failed": "Could not disable the invitation: {{error}}",
+      "revoke-failed": "Could not disable the invitation.",
       "new-title": "Create an invitation",
       "new-description":
         "Once it is created you can copy the invitation and send it to a new person. They will create an account with the {{role}} role and join the workspaces you choose automatically.",
@@ -963,7 +1064,7 @@ const TRANSLATIONS = {
       "clear-body_other":
         "The {{total}} event logs of this instance will be deleted. A new entry will record who cleared them. This cannot be undone.",
       cleared: "Event logs cleared.",
-      "clear-failed": "Could not clear the event logs: {{error}}",
+      "clear-failed": "Could not clear the event logs.",
     },
     events: {
       login_event: "Sign-in",
@@ -1047,13 +1148,13 @@ const TRANSLATIONS = {
       "delete-consequences":
         "Prompts that use {{token}} will no longer have it replaced. This cannot be undone.",
       deleted: "Variable {{key}} deleted.",
-      "delete-failed": "Could not delete the variable {{key}}: {{error}}",
+      "delete-failed": "Could not delete the variable {{key}}.",
       "new-title": "Add a variable",
       create: "Create variable",
       created: "Variable {{key}} created.",
-      "create-failed": "Could not create the variable: {{error}}",
+      "create-failed": "Couldn't create the variable.",
       updated: "Variable {{key}} updated.",
-      "update-failed": "Could not update the variable: {{error}}",
+      "update-failed": "Couldn't update the variable.",
       "key-placeholder": "e.g. company_name",
       "value-placeholder": "e.g. Acme Corp",
       "key-hint":
@@ -1075,7 +1176,7 @@ const TRANSLATIONS = {
       "load-failed": "The default system prompt could not be loaded.",
       saved: "Default system prompt updated.",
       restored: "The default system prompt has been restored.",
-      "save-failed": "Could not update the default system prompt: {{error}}",
+      "save-failed": "Could not update the default system prompt.",
       restore: "Restore default",
       "restore-title": "Restore the default system prompt?",
       "restore-body":
@@ -1154,7 +1255,6 @@ const TRANSLATIONS = {
       deleted: "Key deleted.",
       copy: "Copy the key “{{name}}”",
       "not-recorded": "Not recorded",
-      "create-failed": "The key could not be created.",
       "created-title": "API key created",
       "new-key": "Your new key",
       "new-key-hint":
@@ -1182,7 +1282,6 @@ const TRANSLATIONS = {
       "revoke-consequence":
         "Any extension that uses it will stop connecting. This cannot be undone.",
       "copy-label": "Copy the connection string for key {{key}}",
-      "create-failed": "The key could not be created.",
       "modal-title": "New browser extension key",
       "created-title": "Extension key created",
       create: "Create key",
@@ -1199,7 +1298,7 @@ const TRANSLATIONS = {
     },
     telegram: {
       docs: "View documentation",
-      "connect-error": "The bot could not be connected: {{error}}",
+      "connect-error": "Couldn't connect the bot.",
       "show-token": "Show token",
       "token-help": "@BotFather sends it to you when you create the bot.",
       "new-token": "New bot token",
@@ -1271,13 +1370,12 @@ const TRANSLATIONS = {
     },
     irreversible: "This action cannot be undone.",
     toast: {
-      created: "Widget created. Copy its code to publish it on your site.",
       updated: "Widget updated.",
       enabled: "Widget enabled.",
       disabled: "Widget disabled.",
-      "toggle-failed": "The widget status could not be changed. {{error}}",
+      "toggle-failed": "Could not change the widget status.",
       deleted: "Widget deleted.",
-      "delete-failed": "The widget could not be deleted. {{error}}",
+      "delete-failed": "Could not delete the widget.",
       "chat-deleted": "Chat deleted.",
       "chat-delete-failed": "The chat could not be deleted. Try again.",
     },
@@ -1332,7 +1430,6 @@ const TRANSLATIONS = {
       "prompt-override-hint":
         "The site can use its own system prompt instead of the workspace one.",
       creating: "Creating…",
-      "save-failed": "The changes could not be saved.",
     },
     new: {
       title: "Create a chat widget",
@@ -1377,7 +1474,6 @@ const TRANSLATIONS = {
       "response-title": "Response of chat {{id}}",
       "session-title": "Session of chat {{id}}",
       delete: "Delete chat {{id}}",
-      "delete-consequence": "Delete chat {{id}}? This action cannot be undone.",
       "no-text": "No text",
       "go-to-widgets": "(go to the widgets)",
     },
@@ -1443,7 +1539,7 @@ const TRANSLATIONS = {
       "intro-chat": "To use {{name}} as this workspace's LLM, set it up first.",
       "intro-agent":
         "To use {{name}} as this workspace's agent LLM, set it up first.",
-      failed: "Could not save the {{name}} settings: {{error}}",
+      failed: "Could not save the {{name}} settings.",
     },
     agent: {
       "system-default-description":
@@ -1507,7 +1603,7 @@ const TRANSLATIONS = {
       "message-label": "Message text",
       placeholder: "Write the suggested message",
       remove: "Remove the suggested message “{{message}}”",
-      "save-failed": "Could not save the suggested messages: {{error}}",
+      "save-failed": "Could not save the suggested messages.",
       saved: "Suggested messages saved.",
     },
     members: {
@@ -1583,7 +1679,7 @@ const TRANSLATIONS = {
     moving_other: "Moving {{count}} documents…",
     "move-success_one": "{{count}} document moved.",
     "move-success_other": "{{count}} documents moved.",
-    "move-error": "The documents could not be moved. {{error}}",
+    "move-error": "Could not move the documents.",
     deleting_one: "Deleting {{count}} item…",
     deleting_other: "Deleting {{count}} items…",
     "delete-docs-title_one": "Delete {{count}} document?",
@@ -1600,8 +1696,8 @@ const TRANSLATIONS = {
     "drop-folder-only-files":
       "Only files can be dropped on {{folder}}. Drop folders on the upload area to add them as their own folder.",
     "drop-nothing": "Nothing in that drop could be uploaded.",
-    "drop-uploading_one": "Uploading {{count}} file to {{folder}}",
-    "drop-uploading_other": "Uploading {{count}} files to {{folder}}",
+    "drop-uploading_one": "Uploading {{count}} file to {{folder}}…",
+    "drop-uploading_other": "Uploading {{count}} files to {{folder}}…",
     "drop-skipped_one":
       "{{count}} file inside a folder was skipped. Drop the folder on the upload area to add it as its own folder.",
     "drop-skipped_other":
@@ -1632,7 +1728,7 @@ const TRANSLATIONS = {
       "retry-file": "Retry uploading {{name}}",
       "dismiss-file": "Dismiss {{name}}",
       "link-invalid": "Enter a valid link, for example example.com/docs.",
-      "link-error": "The page could not be added. {{error}}",
+      "link-error": "Could not add the page.",
       "link-success": "Page added to your documents.",
     },
     "ws-empty":
@@ -1670,7 +1766,6 @@ const TRANSLATIONS = {
     status: {
       busy: "This may take a while. You can switch to another connector in the meantime.",
     },
-    error: "The collection could not be completed: {{error}}",
     submit: {
       files: "Collect files",
       "files-busy": "Collecting files…",
@@ -1688,7 +1783,7 @@ const TRANSLATIONS = {
       loading: "Loading branches…",
       empty: "No branches found",
       unavailable: "Branches unavailable",
-      error: "Could not load the branches: {{error}}",
+      error: "Couldn't load the branches.",
       wait: "Wait for the branches to finish loading, then submit again.",
       required:
         "Choose a branch to continue. Check the repository URL and the token, then try again.",
@@ -1812,7 +1907,7 @@ const TRANSLATIONS = {
     "models-need-key": "Enter the API key to see the models",
     "models-need-url": "Enter the URL to see the models",
     "models-empty": "No models available",
-    "models-error": "The models could not be loaded: {{error}}",
+    "models-error": "Couldn't load the models.",
     retry: "Retry",
     "opens-new-tab": "(opens in a new tab)",
   },
@@ -1846,8 +1941,7 @@ const TRANSLATIONS = {
     },
     "load-error": "The settings could not be loaded.",
     toast: {
-      failed: "The changes could not be saved: {{error}}",
-      "failed-generic": "The changes could not be saved.",
+      failed: "Could not save the changes.",
       saved: {
         llm: "LLM preferences saved.",
         embedding: "Embedding preferences saved.",
@@ -1862,7 +1956,6 @@ const TRANSLATIONS = {
     "change-warning": {
       title: "Warning: this action cannot be undone",
       question: "Do you want to continue?",
-      cancel: "Cancel",
       confirm: "Confirm",
       "confirm-clear": "Change and clear embeddings",
       "confirm-text-splitter": "Save and clear the cache",
@@ -2098,7 +2191,6 @@ const TRANSLATIONS = {
       "download-error": "The model could not be downloaded.",
       "download-error-status": "The model could not be downloaded: {{status}}",
       "uninstall-error": "The model could not be uninstalled.",
-      cancel: "Cancel",
     },
     anthropic: {
       cache: "Prompt caching",
@@ -2129,7 +2221,7 @@ const TRANSLATIONS = {
       "download-interrupted": "The download ended unexpectedly.",
       downloading: "Downloading {{label}}: {{percentage}}%",
       "cancel-failed": "The download could not be cancelled.",
-      "engine-failed": "The local LLM engine failed to start: {{message}}",
+      "engine-failed": "The local LLM engine couldn't start.",
       "finding-models": "Finding models for your hardware…",
       "hardware-gpu": "{{gb}} GB GPU",
       "hardware-ram": "{{gb}} GB of memory (no supported GPU)",
@@ -2426,7 +2518,7 @@ const TRANSLATIONS = {
     delete: "Delete",
     clear: "Clear",
     uploading: "Uploading…",
-    "form-error": "Error: {{error}}",
+    "form-error": "Couldn't complete the action.",
     "theme-system": "System",
     "theme-light": "Light",
     "theme-dark": "Dark",
@@ -2446,10 +2538,9 @@ const TRANSLATIONS = {
     "identity-needs-auth":
       "The app name and the login footer only appear on the login screen, so you can set them once the instance is protected with a password or multi-user mode. Turn it on in <anchor>Security</anchor>.",
     "app-name-saved": "App name updated.",
-    "app-name-failed": "The app name could not be updated: {{error}}",
+    "app-name-failed": "Could not update the app name.",
     "login-footer-saved": "Login footer text updated.",
-    "login-footer-failed":
-      "The login footer text could not be updated: {{error}}",
+    "login-footer-failed": "Could not update the login footer text.",
     "logo-formats": "Accepted formats: PNG, JPG, SVG or WebP.",
     "logo-variant-dark": "(dark theme)",
     "logo-variant-light": "(light theme)",
@@ -2461,9 +2552,9 @@ const TRANSLATIONS = {
     "logo-remove-title-light": "Remove the light theme logo?",
     "logo-remove-body": "The default logo is shown again for this theme.",
     "logo-uploaded": "Logo uploaded.",
-    "logo-upload-failed": "The logo could not be uploaded: {{error}}",
+    "logo-upload-failed": "Could not upload the logo.",
     "logo-removed": "Logo removed.",
-    "logo-remove-failed": "The logo could not be removed: {{error}}",
+    "logo-remove-failed": "Could not remove the logo.",
     "brand-color-picker": "Pick the brand color",
     "brand-color-format":
       "Hexadecimal format with 6 digits, for example #2563eb.",
@@ -2472,13 +2563,13 @@ const TRANSLATIONS = {
     "brand-color-saved":
       "Brand color updated. The chat embed widget now uses it.",
     "brand-color-cleared": "Brand color cleared.",
-    "brand-color-failed": "The brand color could not be updated: {{error}}",
+    "brand-color-failed": "Could not update the brand color.",
     "site-saved": "Browser settings updated. Reload the page to see them.",
-    "site-failed": "The browser settings could not be updated: {{error}}",
+    "site-failed": "Could not update the browser settings.",
     "favicon-uploaded": "Favicon uploaded.",
-    "favicon-upload-failed": "The favicon could not be uploaded: {{error}}",
+    "favicon-upload-failed": "Could not upload the favicon.",
     "favicon-removed": "Favicon removed.",
-    "favicon-remove-failed": "The favicon could not be removed: {{error}}",
+    "favicon-remove-failed": "Could not remove the favicon.",
     "multiuser-warning":
       "Turning on multi-user mode cannot be undone, and it signs you out: you sign back in with the admin account you create here.",
     "multiuser-confirm-title": "Turn on multi-user mode?",
@@ -2486,7 +2577,7 @@ const TRANSLATIONS = {
       "This cannot be undone. You will be signed out and will need to sign in with the admin account you just created.",
     "multiuser-confirm": "Turn on and sign out",
     "multiuser-enabled": "Multi-user mode is on. Signing you out…",
-    "multiuser-failed": "Multi-user mode could not be turned on: {{error}}",
+    "multiuser-failed": "Could not turn on multi-user mode.",
     "password-min-length": "At least 8 characters.",
     "password-requirements":
       "At least 8 characters. Only unaccented letters, numbers and these symbols: _ - ! @ $ % ^ & * ( ) ;",
@@ -2494,7 +2585,7 @@ const TRANSLATIONS = {
       "The password has characters that are not allowed. Use only unaccented letters, numbers and _ - ! @ $ % ^ & * ( ) ;",
     "password-saved":
       "Password updated. The page will reload in a few seconds.",
-    "password-failed": "The password could not be updated: {{error}}",
+    "password-failed": "Could not update the password.",
     "privacy-title-llm": "LLM provider",
     "privacy-title-embedder": "Embedding provider",
     "privacy-title-vectordb": "Vector database",
@@ -2537,7 +2628,7 @@ const TRANSLATIONS = {
       "It can also be turned off for the whole server with the environment variable DISABLE_TELEMETRY=true.",
     "telemetry-enabled": "Anonymous telemetry turned on.",
     "telemetry-disabled": "Anonymous telemetry turned off.",
-    "telemetry-failed": "The telemetry setting could not be changed: {{error}}",
+    "telemetry-failed": "Could not change the telemetry setting.",
     "router-delete": "Delete {{name}}",
     "router-delete-title": "Delete the {{name}} router?",
     "router-not-found": "Router not found.",
@@ -2608,8 +2699,8 @@ const TRANSLATIONS = {
       "The context window is almost full. Some files may be cut off or left out of the answers. Embed them into the workspace for better results.",
     "context-embed": "Embed files into the workspace",
     "context-embedding": "Embedding {{current}} of {{total}} files…",
-    "context-embed-success_one": "{{count}} file embedded",
-    "context-embed-success_other": "{{count}} files embedded",
+    "context-embed-success_one": "{{count}} file embedded.",
+    "context-embed-success_other": "{{count}} files embedded.",
     "context-embed-failed": "The files could not be embedded. Try again.",
     "context-empty": "No files in context",
     "preset-options": "Options for {{command}}",
@@ -2651,8 +2742,7 @@ const TRANSLATIONS = {
     "provider-setup-required":
       "To use {{provider}} in this workspace, set it up first.",
     "provider-save": "Save settings",
-    "provider-save-failed":
-      "Could not save the {{provider}} settings: {{error}}",
+    "provider-save-failed": "Could not save the {{provider}} settings.",
   },
   "chat-history": {
     error: {
@@ -2759,7 +2849,6 @@ const TRANSLATIONS = {
       close: "Close memories",
       loading: "Loading memories…",
       options: "Memory options",
-      "delete-confirm": "Delete this memory? This cannot be undone.",
       "delete-failed": "Could not delete the memory. Try again.",
       "move-failed": "Could not move the memory. Try again.",
       "save-failed":
@@ -2781,8 +2870,8 @@ const TRANSLATIONS = {
       "remove-failed": "Could not remove the file from the workspace.",
       "embed-failed": "Could not embed the file.",
       "embed-failed-toast": "Some files could not be embedded.",
-      embedded_one: "{{count}} file embedded",
-      embedded_other: "{{count}} files embedded",
+      embedded_one: "{{count}} file embedded.",
+      embedded_other: "{{count}} files embedded.",
       dismiss: "Dismiss notice",
     },
     "context-warning": {
@@ -2957,8 +3046,8 @@ const TRANSLATIONS = {
     reset: {
       reset: "Reset Vector Database",
       resetting: "Clearing vectors...",
-      error: "Workspace vector database could not be reset!",
-      success: "Workspace vector database was reset!",
+      error: "Could not reset the workspace vector database.",
+      success: "The workspace vector database was reset.",
     },
   },
   agent: {
@@ -3523,11 +3612,10 @@ const TRANSLATIONS = {
         "preview-note":
           "Changes preview across the app and are saved when you click Done.",
         done: "Done",
-        cancel: "Cancel",
         enforce: "Enforce the default palette",
         "enforce-description":
           "Everyone on this instance uses the default palette and cannot change it.",
-        "save-failed": "Failed to save color palettes: {{error}}",
+        "save-failed": "Could not save the color palettes.",
       },
       "show-scrollbar": {
         title: "Show Scrollbar",
@@ -3625,11 +3713,10 @@ const TRANSLATIONS = {
     empty: "No API keys found",
     actions: "Actions",
     messages: {
-      error: "Error: {{error}}",
+      error: "Couldn't create the API key.",
     },
     modal: {
       title: "Create new API key",
-      cancel: "Cancel",
       close: "Close",
       create: "Create API Key",
       helper:
@@ -3695,8 +3782,8 @@ const TRANSLATIONS = {
     "new-router-button": "New Router",
     "delete-confirm":
       "This removes all its rules and unlinks any workspaces using it. This action cannot be undone.",
-    "toast-deleted": "Router deleted",
-    "toast-delete-failed": "Failed to delete router: {{error}}",
+    "toast-deleted": "Router deleted.",
+    "toast-delete-failed": "Could not delete the router.",
     "new-router": {
       title: "Create New Model Router",
       name: "Name",
@@ -3711,7 +3798,6 @@ const TRANSLATIONS = {
         "How long a routing decision is cached before re-evaluating rules. Set to 0 to disable caching.",
       "name-required": "Name is required.",
       "fallback-required": "Primary provider and model are required.",
-      cancel: "Cancel",
       create: "Create Router",
     },
     "edit-router": {
@@ -3727,8 +3813,8 @@ const TRANSLATIONS = {
         "Define the rules that determine when and how chat messages go to specific providers and models.",
       "add-rule": "Add Rule",
       "delete-confirm": "Delete the {{title}} rule?",
-      "toast-delete-failed": "Failed to delete rule",
-      "toast-reorder-failed": "Failed to reorder rules",
+      "toast-delete-failed": "Could not delete the rule.",
+      "toast-reorder-failed": "Could not reorder the rules.",
       "no-rules": "No rules yet",
       "empty-description":
         "Add a rule to start routing chat messages to specific providers and models.",
@@ -3775,7 +3861,6 @@ const TRANSLATIONS = {
         "Describe the situation when you want this rule to match. This is evaluated by your LLM to determine if it should be used.",
       "route-to-label": "Route to Provider & Model",
       "route-to-description": "When this rule matches, use this provider/model",
-      cancel: "Cancel",
       saving: "Saving...",
       "update-rule": "Update Rule",
       "create-rule": "Create Rule",
@@ -3827,9 +3912,8 @@ const TRANSLATIONS = {
       "configure-provider": "Configure {{name}}",
       "setup-credentials":
         "Enter the required credentials to use {{name}} as a routing target.",
-      cancel: "Cancel",
       "save-settings": "Save settings",
-      "toast-save-failed": "Failed to save settings: {{error}}",
+      "toast-save-failed": "Could not save the provider settings.",
     },
     "router-selection": {
       "loading-routers": "Loading custom routers...",
@@ -3997,7 +4081,7 @@ const TRANSLATIONS = {
       "voice-text-only": "Text only",
       "voice-mirror": "Mirror (reply with voice when user sends voice)",
       "voice-always": "Always voice (send audio with every reply)",
-      "toast-disconnect-failed": "Failed to disconnect bot.",
+      "toast-disconnect-failed": "Could not disconnect the bot.",
       "toast-reconnect-failed": "Failed to reconnect bot.",
       "toast-voice-failed": "Failed to update voice mode.",
       "toast-approve-failed": "Failed to approve user.",
@@ -4283,10 +4367,10 @@ const TRANSLATIONS = {
     export: "Export chat as...",
     exporting: "Exporting...",
     microphone: "Speak your prompt.",
-    stt_unsupported: "Microphone access is not supported in this browser.",
+    stt_unsupported: "This browser doesn't allow using the microphone.",
     stt_mic_denied:
       "Could not access the microphone. Please grant permission and try again.",
-    stt_transcription_failed: "Transcription failed: {{error}}",
+    stt_transcription_failed: "Could not transcribe the audio.",
     send: "Send prompt message to workspace",
     tts_speak_message: "TTS Speak message",
     copy: "Copy",
@@ -4301,7 +4385,6 @@ const TRANSLATIONS = {
     similarity_match: "match",
     fork: "Fork",
     delete: "Delete",
-    cancel: "Cancel",
     submit: "Submit",
     edit_prompt: "Edit prompt",
     edit_response: "Edit response",
@@ -4439,7 +4522,6 @@ const TRANSLATIONS = {
           "e.g. User's name is Joe, User works on {{brandName}}, etc.",
         create: "Create",
         save: "Save",
-        cancel: "Cancel",
       },
     },
     leave_generating: {
@@ -4452,28 +4534,20 @@ const TRANSLATIONS = {
   },
   profile_settings: {
     current_password: "Current password",
-    current_password_placeholder: "Your current password",
     current_password_hint: "Only needed if you are changing your password.",
-    username_managed_by_admin: "Your administrator manages your username.",
     edit_account: "Edit Account",
-    profile_picture: "Profile Picture",
-    remove_profile_picture: "Remove Profile Picture",
+    remove_profile_picture: "Remove photo",
     username: "Username",
     new_password: "New Password",
-    password_description: "Password must be at least 8 characters long",
+    password_description:
+      "At least 8 characters. Leave it blank to keep your current one.",
     cancel: "Cancel",
     update_account: "Update Account",
-    theme: "Theme Preference",
-    language: "Preferred language",
-    failed_upload: "Failed to upload profile picture: {{error}}",
     upload_success: "Profile picture uploaded.",
-    failed_remove: "Failed to remove profile picture: {{error}}",
     profile_updated: "Profile updated.",
-    failed_update_user: "Failed to update user: {{error}}",
     account: "Account",
     settings: "Settings",
     back_to_workspaces: "Back to workspaces",
-    support: "Support",
     signout: "Sign out",
     roles: {
       superadmin: "Super Admin",
@@ -4486,14 +4560,8 @@ const TRANSLATIONS = {
     title: "Keyboard Shortcuts",
     shortcuts: {
       settings: "Open Settings",
-      workspaceSettings: "Open Current Workspace Settings",
-      home: "Go to Home",
-      workspaces: "Manage Workspaces",
-      apiKeys: "API Keys Settings",
-      llmPreferences: "LLM Preferences",
-      chatSettings: "Chat Settings",
-      help: "Show keyboard shortcuts help",
-      showLLMSelector: "Show workspace LLM Selector",
+      help: "Show keyboard shortcuts",
+      showLLMSelector: "Open the model picker",
     },
   },
   community_hub: {
@@ -4611,14 +4679,14 @@ const TRANSLATIONS = {
       queued: "Queued",
     },
     toast: {
-      deleted: "Job deleted",
-      triggered: "Job triggered successfully",
-      triggerFailed: "Failed to trigger job",
-      triggerSkipped: "A run is already in progress for this job",
-      killed: "Run stopped",
-      killFailed: "Failed to stop run",
-      deleteFailed: "Failed to delete job.",
-      toggleFailed: "Failed to change the job's state.",
+      deleted: "Job deleted.",
+      triggered: "Job started.",
+      triggerFailed: "Could not start the job.",
+      triggerSkipped: "A run is already in progress for this job.",
+      killed: "Run stopped.",
+      killFailed: "Could not stop the run.",
+      deleteFailed: "Could not delete the job.",
+      toggleFailed: "Could not change the job status.",
     },
     row: {
       neverRun: "Never run",
@@ -4651,12 +4719,11 @@ const TRANSLATIONS = {
       toolsNoResults: "No tools match",
       required: "Required",
       requiredFieldsBanner: "Fill in the required fields.",
-      cancel: "Cancel",
       saving: "Saving...",
       updateJob: "Update Job",
       createJob: "Create Job",
-      jobUpdated: "Job updated",
-      jobCreated: "Job created",
+      jobUpdated: "Job updated.",
+      jobCreated: "Job created.",
       modeLabel: "How to set the schedule",
       cronLabel: "Cron expression (UTC)",
       cronHint:
@@ -4743,7 +4810,7 @@ const TRANSLATIONS = {
       duration: "Duration: {{value}}",
       continueInThread: "Continue in Chat",
       creating: "Creating...",
-      threadFailed: "Failed to create thread",
+      threadFailed: "Could not create the chat.",
       stopJob: "Stop run",
       killing: "Stopping...",
       sections: {
@@ -4778,7 +4845,7 @@ const TRANSLATIONS = {
     file: {
       unknown: "Unknown file",
       download: "Download {{name}}",
-      downloadFailed: "Failed to download file",
+      downloadFailed: "Could not download the file.",
       types: {
         powerpoint: "PowerPoint",
         pdf: "PDF Document",

@@ -108,8 +108,7 @@ export default function RunDetailPage() {
 
     if (error || !workspaceSlug || !threadSlug) {
       showToast(
-        translateJobError(t, error) ||
-          t("scheduledJobs.runDetail.threadFailed"),
+        translateJobError(t, error, "scheduledJobs.runDetail.threadFailed"),
         "error"
       );
       setContinuing(false);
@@ -127,7 +126,7 @@ export default function RunDetailPage() {
 
     if (!success) {
       showToast(
-        translateJobError(t, error) || t("scheduledJobs.toast.killFailed"),
+        translateJobError(t, error, "scheduledJobs.toast.killFailed"),
         "error"
       );
       return;

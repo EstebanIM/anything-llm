@@ -2,6 +2,7 @@ import Workspace from "@/models/workspace";
 import WorkspaceFolderModel from "@/models/workspaceFolder";
 import { castToType } from "@/utils/types";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import AutosaveForm from "@/components/AutosaveForm";
@@ -42,9 +43,13 @@ export default function GeneralInfo({
       data
     );
     if (!updatedWorkspace) {
-      showToast(t("provider-pages.toast.failed", { error: message }), "error", {
-        clear: true,
-      });
+      showToast(
+        serverErrorMessage(message, t, "provider-pages.toast.failed"),
+        "error",
+        {
+          clear: true,
+        }
+      );
       return false;
     }
     // Keeps the page title in step with a renamed workspace.

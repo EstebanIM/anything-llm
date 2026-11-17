@@ -1,6 +1,8 @@
+import { ACCOUNT_ERRORS, PW_REGEX, setAuthNotice } from "@/utils/authErrors";
 import { useEffect, useId, useRef, useState } from "react";
 import Sidebar from "@/components/SettingsSidebar";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import System from "@/models/system";
 import paths from "@/utils/paths";
 import { AUTH_TIMESTAMP, AUTH_TOKEN, AUTH_USER } from "@/utils/constants";
@@ -77,6 +79,8 @@ function MultiUserMode() {
     const { success, error } = await System.setupMultiUser(data);
     if (success) {
       showToast(t("settings-pages.multiuser-enabled"), "success");
+      // The sign-in page says it again once this page is gone.
+      setAuthNotice("multiuser-enabled");
       setTimeout(() => {
         window.localStorage.removeItem(AUTH_USER);
         window.localStorage.removeItem(AUTH_TOKEN);
@@ -88,7 +92,12 @@ function MultiUserMode() {
 
     setSaving(false);
     setConfirming(false);
-    showToast(t("settings-pages.multiuser-failed", { error }), "error");
+    showToast(
+      serverErrorMessage(error, t, "settings-pages.multiuser-failed", {
+        known: ACCOUNT_ERRORS,
+      }),
+      "error"
+    );
   };
 
   useEffect(() => {
@@ -220,7 +229,6 @@ function MultiUserMode() {
   );
 }
 
-export const PW_REGEX = new RegExp(/^[a-zA-Z0-9_\-!@$%^&*();]+$/);
 function PasswordProtection() {
   const id = useId();
   const [saving, setSaving] = useState(false);
@@ -253,6 +261,8 @@ function PasswordProtection() {
     if (success) {
       setHasChanges(false);
       showToast(t("settings-pages.password-saved"), "success");
+      // The sign-in page says it again after the reload.
+      if (usePassword) setAuthNotice("instance-password-changed");
       setTimeout(() => {
         window.localStorage.removeItem(AUTH_USER);
         window.localStorage.removeItem(AUTH_TOKEN);
@@ -261,7 +271,12 @@ function PasswordProtection() {
       }, 3_000);
       return;
     }
-    showToast(t("settings-pages.password-failed", { error }), "error");
+    showToast(
+      serverErrorMessage(error, t, "settings-pages.password-failed", {
+        known: ACCOUNT_ERRORS,
+      }),
+      "error"
+    );
     setSaving(false);
   };
 

@@ -1,14 +1,4 @@
-import moment from "moment";
 import { isMac } from "./keyboardShortcuts";
-
-export function formatDateTimeAsMoment(dateString, format = "LLL") {
-  if (!dateString) return moment().format(format);
-  try {
-    return moment(dateString).format(format);
-  } catch {
-    return moment().format(format);
-  }
-}
 
 export function getFileExtension(path) {
   // Only the last path segment can have an extension, a dot in a parent folder does not count.

@@ -2,7 +2,7 @@ import { useId, useRef, useState } from "react";
 import { Check, LoaderCircle, X } from "lucide-react";
 import Telegram from "@/models/telegram";
 import showToast from "@/utils/toast";
-import InlineConfirm from "@/pages/GeneralSettings/ApiKeys/InlineConfirm";
+import { InlineConfirmButton } from "@/components/lib/InlineConfirm";
 import { useTranslation } from "react-i18next";
 
 const ACTION_BUTTON =
@@ -185,27 +185,27 @@ function UserRow({ user, isPending = false, onApprove, onDeny, onRevoke }) {
                 {t("tools-pages.telegram.approve")}
               </button>
             )}
-            <InlineConfirm
+            <InlineConfirmButton
               label={t("tools-pages.telegram.deny-label", {
                 name: displayName,
               })}
               icon={X}
               text={t("tools-pages.telegram.deny")}
               triggerClassName={NEUTRAL_BUTTON}
-              consequence={t("tools-pages.telegram.deny-consequence")}
+              consequences={t("tools-pages.telegram.deny-consequence")}
               confirmLabel={t("tools-pages.telegram.deny")}
               onConfirm={() => onDeny(chatId)}
               onOpenChange={setConfirmingDeny}
             />
           </>
         ) : (
-          <InlineConfirm
+          <InlineConfirmButton
             label={t("tools-pages.telegram.revoke-label", {
               name: displayName,
             })}
             text={t("tools-pages.telegram.revoke")}
             triggerClassName={NEUTRAL_BUTTON}
-            consequence={t("tools-pages.telegram.revoke-consequence")}
+            consequences={t("tools-pages.telegram.revoke-consequence")}
             confirmLabel={t("tools-pages.telegram.revoke")}
             onConfirm={() => onRevoke(chatId)}
           />

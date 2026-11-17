@@ -6,7 +6,10 @@ import showToast from "@/utils/toast";
 import { formatDateTime } from "@/utils/dates";
 import CopyButton from "@/components/lib/CopyButton";
 import { maskSecret } from "@/components/lib/MaskedSecret";
-import InlineConfirm, { ROW_ICON_BUTTON } from "../InlineConfirm";
+import {
+  InlineConfirmButton,
+  ROW_ICON_BUTTON,
+} from "@/components/lib/InlineConfirm";
 import { useTranslation } from "react-i18next";
 
 export default function ApiKeyRow({ apiKey, deleteButtonId, onRemoved }) {
@@ -32,12 +35,12 @@ export default function ApiKeyRow({ apiKey, deleteButtonId, onRemoved }) {
   return (
     <tr className="bg-transparent text-white text-opacity-80 text-xs font-medium border-b border-white/10 light:border-slate-200">
       <td className="px-4 md:px-6 py-3 align-middle">
-        <InlineConfirm
+        <InlineConfirmButton
           id={deleteButtonId}
           label={t("tools-pages.api-keys.delete", { name: keyLabel })}
           icon={Trash2}
           triggerClassName={ROW_ICON_BUTTON}
-          consequence={t("api.row.deleteConfirm")}
+          consequences={t("api.row.deleteConfirm")}
           confirmLabel={t("settings-pages.delete")}
           onConfirm={handleDelete}
         />

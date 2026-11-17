@@ -302,6 +302,18 @@ const NOTICES = {
     icon: CircleCheck,
     className: "border-[#86efac] bg-[#f0fdf4] text-[#14532d]",
   },
+  // Single-user instance password changed in Settings > Security.
+  "instance-password-changed": {
+    key: "notices.auth-instance-password-changed",
+    icon: CircleCheck,
+    className: "border-[#86efac] bg-[#f0fdf4] text-[#14532d]",
+  },
+  // Multi-user mode just turned on in Settings > Security.
+  "multiuser-enabled": {
+    key: "notices.auth-multiuser-enabled",
+    icon: CircleCheck,
+    className: "border-[#86efac] bg-[#f0fdf4] text-[#14532d]",
+  },
 };
 
 /**

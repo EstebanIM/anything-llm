@@ -95,7 +95,7 @@ export default function NewFolderModal({
         </ModalBody>
         <ModalFooter>
           <ModalSecondaryButton type="button" onClick={hideModal}>
-            {t("workspace-folders.move-cancel")}
+            {t("settings-pages.cancel")}
           </ModalSecondaryButton>
           <ModalPrimaryButton
             type="submit"

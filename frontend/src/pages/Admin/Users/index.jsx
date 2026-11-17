@@ -10,7 +10,8 @@ import { useModal } from "@/hooks/useModal";
 import Modal from "@/components/lib/Modal";
 import CTAButton from "@/components/lib/CTAButton";
 import TableState from "@/components/lib/TableState";
-import { TABLE, TBODY, TH, THEAD, focusAfterRemoval } from "./AdminTable";
+import { TABLE, TBODY, TH, THEAD } from "./AdminTable";
+import useFocusAfterRemoval from "@/hooks/useFocusAfterRemoval";
 
 const COLUMNS = 5;
 
@@ -24,6 +25,7 @@ export default function AdminUsers() {
   const headingId = useId();
   const headingRef = useRef(null);
   const tbodyRef = useRef(null);
+  const focusAfterRemoval = useFocusAfterRemoval(tbodyRef, headingRef);
 
   const fetchUsers = async () => {
     const _users = await Admin.users();
@@ -42,9 +44,8 @@ export default function AdminUsers() {
     );
 
   const removeUser = (id) => {
-    const index = users.findIndex((user) => user.id === id);
+    focusAfterRemoval(users.findIndex((user) => user.id === id));
     setUsers((prev) => prev.filter((user) => user.id !== id));
-    focusAfterRemoval(tbodyRef, index, headingRef);
   };
 
   return (

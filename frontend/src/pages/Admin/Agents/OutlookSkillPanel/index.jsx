@@ -9,6 +9,7 @@ import StatusNote from "@/components/lib/StatusNote";
 import CTAButton from "@/components/lib/CTAButton";
 import ConfirmModal from "@/components/lib/ConfirmModal";
 import CopyButton from "@/components/lib/CopyButton";
+import ServerErrorDetail from "@/components/lib/ServerErrorDetail";
 import {
   ExternalLink,
   FIELD_ERROR,
@@ -21,6 +22,7 @@ import {
 } from "@/components/ProviderFields";
 import { API_BASE } from "@/utils/constants";
 import paths from "@/utils/paths";
+import { serverErrorParts } from "@/utils/serverErrors";
 import {
   DANGER_OUTLINE_BUTTON,
   IntegrationConfigCard,
@@ -183,14 +185,12 @@ export default function OutlookSkillPanel({
         text: t("agent-integrations.outlook.auth-success"),
       });
     } else {
-      setNotice({
-        tone: "error",
-        text: t("agent-integrations.outlook.auth-error", {
-          error:
-            params.get("message") ||
-            t("agent-integrations.outlook.unknown-error"),
-        }),
-      });
+      const { message, detail } = serverErrorParts(
+        params.get("message"),
+        t,
+        "agent-integrations.outlook.auth-error"
+      );
+      setNotice({ tone: "error", text: message, detail });
     }
     clearAuthParams(params);
   }, []);
@@ -260,6 +260,7 @@ export default function OutlookSkillPanel({
         {notice && !(enabled && !isMultiUserMode && ready) && (
           <StatusNote tone={notice.tone} announce>
             {notice.text}
+            <ServerErrorDetail detail={notice.detail} />
           </StatusNote>
         )}
 
@@ -451,12 +452,12 @@ function OutlookConnection({
     });
     if (!data?.success || !data.url) {
       setAuthBusy(false);
-      setNotice({
-        tone: "error",
-        text: t("agent-integrations.outlook.connect-error", {
-          error: data?.error || t("agent-integrations.outlook.unknown-error"),
-        }),
-      });
+      const { message, detail } = serverErrorParts(
+        data?.error,
+        t,
+        "agent-integrations.outlook.connect-error"
+      );
+      setNotice({ tone: "error", text: message, detail });
       return;
     }
 
@@ -487,12 +488,12 @@ function OutlookConnection({
     if (!res?.success) {
       setRevokeBusy(false);
       setRevokeOpen(false);
-      setNotice({
-        tone: "error",
-        text: t("agent-integrations.outlook.revoke-error", {
-          error: res?.error || t("agent-integrations.outlook.unknown-error"),
-        }),
-      });
+      const { message, detail } = serverErrorParts(
+        res?.error,
+        t,
+        "agent-integrations.outlook.revoke-error"
+      );
+      setNotice({ tone: "error", text: message, detail });
       return;
     }
     const statusRes = await OutlookAgent.getStatus();
@@ -669,6 +670,7 @@ function OutlookConnection({
       {notice && (
         <StatusNote tone={notice.tone} announce>
           {notice.text}
+          <ServerErrorDetail detail={notice.detail} />
         </StatusNote>
       )}
       {popupUrl && (

@@ -10,7 +10,8 @@ import Modal, {
   ModalSecondaryButton,
 } from "@/components/lib/Modal";
 import { useModal } from "@/hooks/useModal";
-import showToast from "@/utils/toast";
+import StatusNote from "@/components/lib/StatusNote";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import { withEmbeddedLemonade } from "@/components/LLMSelection/EmbeddedLemonadeOptions";
 import { ROUTER_CONTROL, ROUTER_HINT, ROUTER_LABEL } from "../fieldClasses";
 
@@ -33,6 +34,8 @@ export default function LLMProviderModelPicker({
   const [loadingModels, setLoadingModels] = useState(false);
   const [settings, setSettings] = useState(null);
   const { isOpen, openModal, closeModal } = useModal();
+  const [setupError, setSetupError] = useState(null);
+  const [setupSaving, setSetupSaving] = useState(false);
 
   useEffect(() => {
     if (defaultProvider && !selectedProvider)
@@ -94,6 +97,7 @@ export default function LLMProviderModelPicker({
   }
 
   function handleSetupCancel() {
+    setSetupError(null);
     closeModal();
     if (!isConfigured(selectedProvider)) {
       setSelectedProvider(defaultProvider || "");
@@ -104,19 +108,28 @@ export default function LLMProviderModelPicker({
   async function handleSetupSave(e) {
     e.preventDefault();
     e.stopPropagation();
+    if (setupSaving) return;
     const data = {};
     const form = new FormData(e.target);
     for (const [key, value] of form.entries()) data[key] = value;
+    setSetupSaving(true);
+    setSetupError(null);
     const { error } = await System.updateSystem(data);
     if (error) {
-      showToast(
-        t("model-router.provider-picker.toast-save-failed", { error }),
-        "error"
+      setSetupSaving(false);
+      // The dialog stays open: the error goes next to the fields.
+      setSetupError(
+        serverErrorMessage(
+          error,
+          t,
+          "model-router.provider-picker.toast-save-failed"
+        )
       );
       return;
     }
     const _settings = await System.keys();
     setSettings(_settings ?? {});
+    setSetupSaving(false);
     closeModal();
   }
 
@@ -248,12 +261,22 @@ export default function LLMProviderModelPicker({
         settings={settings}
         onSave={handleSetupSave}
         onClose={handleSetupCancel}
+        error={setupError}
+        busy={setupSaving}
       />
     </div>
   );
 }
 
-function ProviderSetupModal({ isOpen, provider, settings, onSave, onClose }) {
+function ProviderSetupModal({
+  isOpen,
+  provider,
+  settings,
+  onSave,
+  onClose,
+  error = null,
+  busy = false,
+}) {
   const { t } = useTranslation();
   if (!isOpen || !provider) return null;
 
@@ -288,12 +311,21 @@ function ProviderSetupModal({ isOpen, provider, settings, onSave, onClose }) {
         />
         <ModalBody>
           <div className="space-y-4">{provider.options(settings ?? {})}</div>
+          {error && (
+            <StatusNote tone="error" announce className="mt-4">
+              {error}
+            </StatusNote>
+          )}
         </ModalBody>
         <ModalFooter>
           <ModalSecondaryButton type="button" onClick={onClose}>
-            {t("model-router.provider-picker.cancel")}
+            {t("settings-pages.cancel")}
           </ModalSecondaryButton>
-          <ModalPrimaryButton type="submit" form="provider-setup-form">
+          <ModalPrimaryButton
+            type="submit"
+            form="provider-setup-form"
+            busy={busy}
+          >
             {t("model-router.provider-picker.save-settings")}
           </ModalPrimaryButton>
         </ModalFooter>

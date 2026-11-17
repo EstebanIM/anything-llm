@@ -1,7 +1,8 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowRightLeft, Pencil, Trash2 } from "lucide-react";
 import useMenu from "@/hooks/useMenu";
+import InlineConfirm from "@/components/lib/InlineConfirm";
 
 const ITEM_CLASS =
   "w-full flex items-center gap-x-2 text-left text-sm font-medium text-zinc-50 light:text-slate-800 border-none bg-transparent cursor-pointer hover:bg-zinc-700 light:hover:bg-slate-200 rounded px-2.5 min-h-[44px] md:min-h-0 md:py-1.5 transition-colors duration-quick";
@@ -30,16 +31,10 @@ export default function CardMenu({
 }) {
   const { t } = useTranslation();
   const menuRef = useRef(null);
-  const confirmId = useId();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   useMenu({ open: true, onClose, menuRef, triggerRef });
-
-  useEffect(() => {
-    if (confirmingDelete)
-      menuRef.current?.querySelector('[role="menuitem"]')?.focus();
-  }, [confirmingDelete]);
 
   async function confirmDelete() {
     if (deleting) return;
@@ -51,41 +46,29 @@ export default function CardMenu({
   return (
     <div
       ref={menuRef}
-      role="menu"
-      aria-label={t("chat-panels.memories.options")}
+      // Once it asks for confirmation it is no longer a menu.
+      role={confirmingDelete ? undefined : "menu"}
+      aria-label={
+        confirmingDelete ? undefined : t("chat-panels.memories.options")
+      }
       className="absolute right-2 top-12 md:top-10 z-20 bg-zinc-800 light:bg-slate-50 border border-zinc-700 light:border-slate-300 rounded-lg p-1.5 flex flex-col shadow-lg w-max min-w-[175px] max-w-[260px]"
     >
       {confirmingDelete ? (
-        <div className="p-1.5 flex flex-col gap-y-2">
-          <p
-            id={confirmId}
-            className="text-sm text-zinc-50 light:text-slate-800"
-          >
-            {t("chat-panels.memories.delete-confirm")}
-          </p>
-          <div className="flex gap-x-2 justify-end">
-            <button
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                onClose();
-                triggerRef.current?.focus();
-              }}
-              className="rounded-md px-2.5 min-h-[44px] md:min-h-0 md:py-1 text-sm text-zinc-50 light:text-slate-800 hover:bg-zinc-700 light:hover:bg-slate-200 transition-colors duration-quick"
-            >
-              {t("chat_window.memories.modal.cancel")}
-            </button>
-            <button
-              type="button"
-              role="menuitem"
-              aria-describedby={confirmId}
-              disabled={deleting}
-              onClick={confirmDelete}
-              className="rounded-md px-2.5 min-h-[44px] md:min-h-0 md:py-1 text-sm font-medium text-red-300 light:text-red-700 hover:bg-red-500/20 transition-colors duration-quick disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {t("chat_window.memories.menu.delete")}
-            </button>
-          </div>
+        // useMenu closes the menu on Tab: moving between Cancel and Delete
+        // must not.
+        <div onKeyDown={(e) => e.key === "Tab" && e.stopPropagation()}>
+          <InlineConfirm
+            className="p-1.5"
+            question={t("notices.delete-memory-question")}
+            consequences={t("notices.cannot-undo")}
+            confirmLabel={t("chat_window.memories.menu.delete")}
+            busy={deleting}
+            onConfirm={confirmDelete}
+            onCancel={() => {
+              onClose();
+              triggerRef.current?.focus();
+            }}
+          />
         </div>
       ) : (
         <>

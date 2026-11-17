@@ -118,8 +118,7 @@ export default function ScheduledJobsPage() {
     setTogglingId(null);
     if (!result?.job) {
       showToast(
-        translateJobError(t, result?.error) ||
-          t("scheduledJobs.toast.toggleFailed"),
+        translateJobError(t, result?.error, "scheduledJobs.toast.toggleFailed"),
         "error",
         { clear: true }
       );
@@ -143,7 +142,7 @@ export default function ScheduledJobsPage() {
     setTriggeringId(null);
     if (!success) {
       showToast(
-        translateJobError(t, error) || t("scheduledJobs.toast.triggerFailed"),
+        translateJobError(t, error, "scheduledJobs.toast.triggerFailed"),
         "error",
         { clear: true }
       );
@@ -343,14 +342,20 @@ function useNotificationPermission(headingRef) {
   );
 
   const request = async () => {
-    await subscribeToPushNotifications();
+    const subscribed = await subscribeToPushNotifications();
     const next = Notification.permission;
     setPermission(next);
     if (next === "default") return;
-    if (next === "granted")
-      showToast(t("scheduledJobs.notificationsEnabled"), "success", {
-        clear: true,
-      });
+    if (next === "granted") {
+      // Permission alone is not enough: the subscription can still fail
+      // (no server key, service worker or network error).
+      if (subscribed)
+        showToast(t("scheduledJobs.notificationsEnabled"), "success", {
+          clear: true,
+        });
+      else
+        showToast(t("notices.notifications-failed"), "error", { clear: true });
+    }
     // The bell disappears once the browser answers: keep focus on the page.
     setTimeout(() => headingRef.current?.focus(), 0);
   };

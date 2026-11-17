@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useDropzone } from "react-dropzone";
 import debounce from "lodash.debounce";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import Workspace from "@/models/workspace";
 import { getFilesFromUploadEvent } from "@/utils/folderUpload";
 import { FIELD_ERROR, FIELD_INPUT } from "@/components/ProviderFields";
@@ -87,7 +88,9 @@ function useLinkUpload(slug, onLinkScraped) {
       showToast(t("workspace-docs.upload.link-success"), "success");
       formEl.reset();
     } else {
-      setLinkError(t("workspace-docs.upload.link-error", { error: message }));
+      setLinkError(
+        serverErrorMessage(message, t, "workspace-docs.upload.link-error")
+      );
     }
     setFetchingUrl(false);
   };

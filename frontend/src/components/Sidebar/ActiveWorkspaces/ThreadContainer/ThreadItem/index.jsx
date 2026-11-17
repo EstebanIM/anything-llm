@@ -2,6 +2,8 @@ import useScrollActiveItemIntoView from "@/hooks/useScrollActiveItemIntoView";
 import Workspace from "@/models/workspace";
 import paths from "@/utils/paths";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
+import InlineConfirm from "@/components/lib/InlineConfirm";
 import { RotateCcw, Ellipsis, Pencil, Trash2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -124,6 +126,7 @@ export default function ThreadItem({
           <Link
             ref={ref}
             to={linkTo}
+            data-thread-focus=""
             data-tooltip-id="workspace-thread-name"
             data-tooltip-content={thread.name}
             className="w-full pl-2 py-1 overflow-hidden rounded-md"
@@ -228,9 +231,11 @@ function RenameThreadInput({ workspace, thread, onDone }) {
       { name }
     );
     if (message) {
-      showToast(t("sidebar-nav.thread-rename-failed", { message }), "error", {
-        clear: true,
-      });
+      showToast(
+        serverErrorMessage(message, t, "sidebar-nav.thread-rename-failed"),
+        "error",
+        { clear: true }
+      );
       return onDone();
     }
     thread.name = name;
@@ -273,6 +278,7 @@ function OptionsMenu({
   const navigate = useNavigate();
   const menuRef = useRef(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     // composedPath() keeps the original path even when the clicked button has
@@ -298,11 +304,15 @@ function OptionsMenu({
   }, []);
 
   useEffect(() => {
+    // The confirmation focuses its own Confirm button.
+    if (confirmingDelete) return;
     menuRef.current?.querySelector("button")?.focus();
   }, [confirmingDelete]);
 
   const handleDelete = async () => {
+    setDeleting(true);
     const success = await Workspace.threads.delete(workspace.slug, thread.slug);
+    setDeleting(false);
     if (!success) {
       showToast(t("sidebar-nav.thread-delete-failed"), "error", {
         clear: true,
@@ -322,38 +332,25 @@ function OptionsMenu({
   return (
     <div
       ref={menuRef}
-      role="menu"
-      aria-label={t("sidebar-nav.thread-options", { name: thread.name })}
-      className="absolute w-max max-w-[220px] z-[20] top-[25px] right-[10px] bg-zinc-900 light:bg-theme-bg-sidebar light:border-[1px] light:border-theme-sidebar-border rounded-lg p-1 animate-in fade-in-0 slide-in-from-top-2"
+      // Once it asks for confirmation it is no longer a menu.
+      role={confirmingDelete ? undefined : "menu"}
+      aria-label={
+        confirmingDelete
+          ? undefined
+          : t("sidebar-nav.thread-options", { name: thread.name })
+      }
+      className="absolute w-max max-w-[260px] z-[20] top-[25px] right-[10px] bg-zinc-900 light:bg-theme-bg-sidebar light:border-[1px] light:border-theme-sidebar-border rounded-lg p-1 animate-in fade-in-0 slide-in-from-top-2"
     >
       {confirmingDelete ? (
-        <div className="p-2 flex flex-col gap-y-2">
-          <p
-            id={`delete-thread-${thread.slug}`}
-            className="text-sm text-theme-text-primary"
-          >
-            {t("sidebar-nav.delete-thread-confirm")}
-          </p>
-          <div className="flex gap-x-2 justify-end">
-            <button
-              type="button"
-              role="menuitem"
-              onClick={() => close({ returnFocus: true })}
-              className="rounded-md px-2 py-1 text-sm text-theme-text-primary hover:bg-slate-500/20"
-            >
-              {t("sidebar-nav.cancel")}
-            </button>
-            <button
-              type="button"
-              role="menuitem"
-              aria-describedby={`delete-thread-${thread.slug}`}
-              onClick={handleDelete}
-              className="rounded-md px-2 py-1 text-sm font-medium text-red-300 light:text-red-700 hover:bg-red-500/20"
-            >
-              {t("sidebar-nav.delete-thread")}
-            </button>
-          </div>
-        </div>
+        <InlineConfirm
+          className="p-2"
+          question={t("notices.delete-thread-question", { name: thread.name })}
+          consequences={t("notices.delete-thread-consequences")}
+          confirmLabel={t("sidebar-nav.delete-thread")}
+          busy={deleting}
+          onConfirm={handleDelete}
+          onCancel={() => close({ returnFocus: true })}
+        />
       ) : (
         <>
           <button

@@ -1,3 +1,4 @@
+import { useId, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { LoaderCircle } from "lucide-react";
 import Modal, {
@@ -35,21 +36,40 @@ export default function ConfirmModal({
   onCancel,
 }) {
   const { t } = useTranslation();
+  const descriptionId = useId();
+  const cancelRef = useRef(null);
   const ConfirmButton = danger ? ModalDangerButton : ModalPrimaryButton;
   const close = busy ? undefined : onCancel;
 
+  // Announced as an alert dialog with its consequences; a destructive choice
+  // opens with focus on Cancel so a stray Enter never confirms it.
   return (
-    <Modal isOpen={isOpen} onClose={close} size="sm">
+    <Modal
+      isOpen={isOpen}
+      onClose={close}
+      size="sm"
+      role="alertdialog"
+      describedBy={children ? descriptionId : undefined}
+      initialFocusRef={danger ? cancelRef : null}
+    >
       <ModalHeader title={title} onClose={close} />
       {children && (
         <ModalBody>
-          <div className="text-sm text-zinc-300 light:text-slate-700 flex flex-col gap-y-2">
+          <div
+            id={descriptionId}
+            className="text-sm text-zinc-300 light:text-slate-700 flex flex-col gap-y-2"
+          >
             {children}
           </div>
         </ModalBody>
       )}
       <ModalFooter>
-        <ModalSecondaryButton type="button" onClick={onCancel} disabled={busy}>
+        <ModalSecondaryButton
+          ref={cancelRef}
+          type="button"
+          onClick={onCancel}
+          disabled={busy}
+        >
           {t("settings-pages.cancel")}
         </ModalSecondaryButton>
         <ConfirmButton

@@ -12,6 +12,8 @@ import {
 } from "../../NewEmbedModal";
 import Embed from "@/models/embed";
 import { safeJsonParse } from "@/utils/request";
+import { serverErrorParts } from "@/utils/serverErrors";
+import ServerErrorDetail from "@/components/lib/ServerErrorDetail";
 import {
   ModalHeader,
   ModalBody,
@@ -34,7 +36,7 @@ export default function EditEmbedModal({ embed, closeModal, onSaved }) {
     const { success, error } = await Embed.updateEmbed(embed.id, data);
     setSaving(false);
     if (!success) {
-      setError(error || t("embed-pages.form.save-failed"));
+      setError(serverErrorParts(error, t, "settings-pages.form-error"));
       return;
     }
     onSaved();
@@ -76,7 +78,8 @@ export default function EditEmbedModal({ embed, closeModal, onSaved }) {
         <OverrideToggles embed={embed} />
         {error && (
           <p role="alert" className={FORM_ERROR}>
-            {t("settings-pages.form-error", { error })}
+            {error.message}
+            <ServerErrorDetail detail={error.detail} />
           </p>
         )}
       </ModalBody>

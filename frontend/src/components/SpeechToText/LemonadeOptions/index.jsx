@@ -13,6 +13,7 @@ import {
   FIELD_LABEL,
   FIELD_ROW,
   FIELD_SELECT,
+  ModelsErrorText,
   SECRET_MASK,
   SecretInput,
 } from "@/components/ProviderFields";
@@ -232,7 +233,7 @@ function LemonadeSTTModelSelection({ settings, basePath = null }) {
       )}
       {status === "error" && (
         <p id={`${id}-model-status`} role="alert" className={FIELD_ERROR}>
-          {t("provider-fields.models-error", { error })}{" "}
+          <ModelsErrorText error={error} />{" "}
           <button
             type="button"
             onClick={() => setAttempt((n) => n + 1)}

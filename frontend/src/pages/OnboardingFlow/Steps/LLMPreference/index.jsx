@@ -1,4 +1,5 @@
 import { useEffect, useId, useState } from "react";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import System from "@/models/system";
@@ -59,7 +60,7 @@ export default function LLMPreference() {
     const { error } = await System.updateSystem(data);
     if (error) {
       setSaving(false);
-      setSaveError(t("provider-pages.toast.failed", { error }));
+      setSaveError(serverErrorMessage(error, t, "provider-pages.toast.failed"));
       return;
     }
     navigate(paths.onboarding.userSetup());

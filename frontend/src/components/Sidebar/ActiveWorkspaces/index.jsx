@@ -13,6 +13,7 @@ import useUser from "@/hooks/useUser";
 import ThreadContainer from "./ThreadContainer";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import {
   LAST_VISITED_WORKSPACE,
   WORKSPACE_FOLDERS_EXPANDED,
@@ -20,6 +21,7 @@ import {
 import { safeJsonParse } from "@/utils/request";
 import { useTranslation } from "react-i18next";
 import FolderItem from "./FolderItem";
+import useFocusAfterRemoval from "@/hooks/useFocusAfterRemoval";
 export const REFETCH_WORKSPACES_EVENT = "refetchWorkspaces";
 export default function ActiveWorkspaces() {
   const { t } = useTranslation();
@@ -37,6 +39,19 @@ export default function ActiveWorkspaces() {
   const isHomePage = !!useMatch("/");
   const dragOverFolderRef = useRef(null);
   const dragExpandTimerRef = useRef(null);
+  const listRef = useRef(null);
+  const focusAfterRemoval = useFocusAfterRemoval(
+    listRef,
+    null,
+    "[data-sidebar-focus]"
+  );
+  const beforeFolderRemoved = (element) => {
+    const rows = [
+      ...(listRef.current?.querySelectorAll("[data-sidebar-focus]") || []),
+    ];
+    const index = rows.indexOf(element);
+    if (index !== -1) focusAfterRemoval(index);
+  };
 
   // Expanded state: { [folderId]: boolean }, default true (expanded)
   const [expandedMap, setExpandedMap] = useState(() => {
@@ -178,7 +193,10 @@ export default function ActiveWorkspaces() {
         folderId
       );
       if (!success) {
-        showToast(message || t("sidebar-nav.move-workspace-failed"), "error");
+        showToast(
+          serverErrorMessage(message, t, "sidebar-nav.move-workspace-failed"),
+          "error"
+        );
         setTree(prevTree);
       }
     }
@@ -228,6 +246,7 @@ export default function ActiveWorkspaces() {
               </div>
               <Link
                 to={paths.workspace.chat(workspace.slug)}
+                data-sidebar-focus=""
                 data-tooltip-id="workspace-name"
                 data-tooltip-content={workspace.name}
                 aria-current={isActive ? "page" : undefined}
@@ -320,6 +339,7 @@ export default function ActiveWorkspaces() {
       dragHandleUsageInstructions={t("sidebar-nav.drag-instructions")}
     >
       <div
+        ref={listRef}
         role="list"
         aria-label={t("sidebar-nav.workspaces")}
         className="flex flex-col gap-y-1"
@@ -336,6 +356,7 @@ export default function ActiveWorkspaces() {
             renderWorkspace={renderWorkspace}
             user={user}
             currentSlug={slug}
+            onBeforeRemove={beforeFolderRemoved}
           />
         ))}
 

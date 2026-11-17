@@ -173,7 +173,7 @@ function EditActionBar({ onCancel, onSave, isUserMessage = false }) {
           onClick={onCancel}
           className="border-none text-white light:text-slate-900 text-sm font-medium px-3 min-w-[70px] h-11 md:h-9 rounded-lg hover:bg-white/5 light:hover:bg-slate-300"
         >
-          {t("chat_window.cancel")}
+          {t("settings-pages.cancel")}
         </button>
         {isUserMessage && (
           <button

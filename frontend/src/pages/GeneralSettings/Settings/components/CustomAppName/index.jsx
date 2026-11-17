@@ -1,6 +1,7 @@
 import Admin from "@/models/admin";
 import System from "@/models/system";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import { useEffect, useId, useState } from "react";
 import { Link } from "react-router-dom";
 import { Info } from "lucide-react";
@@ -50,7 +51,10 @@ export default function CustomAppName() {
     });
     setSaving(false);
     if (!success) {
-      showToast(t("settings-pages.app-name-failed", { error }), "error");
+      showToast(
+        serverErrorMessage(error, t, "settings-pages.app-name-failed"),
+        "error"
+      );
       return;
     }
     showToast(t("settings-pages.app-name-saved"), "success");

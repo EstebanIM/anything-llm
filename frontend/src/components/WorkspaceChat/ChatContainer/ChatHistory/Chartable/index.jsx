@@ -31,6 +31,7 @@ import { Colors, getTremorColor } from "./chart-utils.js";
 import CustomCell from "./CustomCell.jsx";
 import Tooltip from "./CustomTooltip.jsx";
 import { safeJsonParse } from "@/utils/request.js";
+import { formatNumber } from "@/utils/dates";
 import renderMarkdown from "@/utils/chat/markdown.js";
 import DOMPurify from "dompurify";
 import { memo, useCallback, useState } from "react";
@@ -39,9 +40,8 @@ import { saveAs } from "file-saver";
 import { useGenerateImage } from "recharts-to-png";
 import { LoaderCircle, Download } from "lucide-react";
 
-const dataFormatter = (number) => {
-  return Intl.NumberFormat("us").format(number).toString();
-};
+// Axis and tooltip values in the UI language ("1.234,5" in Spanish).
+const dataFormatter = (number) => formatNumber(number);
 
 export function Chartable({ props }) {
   const { t } = useTranslation();

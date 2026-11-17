@@ -1,6 +1,7 @@
 import System from "@/models/system";
 import Workspace from "@/models/workspace";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import { castToType } from "@/utils/types";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -33,9 +34,13 @@ export default function ChatSettings({ workspace }) {
       data
     );
     if (!updatedWorkspace) {
-      showToast(t("provider-pages.toast.failed", { error: message }), "error", {
-        clear: true,
-      });
+      showToast(
+        serverErrorMessage(message, t, "provider-pages.toast.failed"),
+        "error",
+        {
+          clear: true,
+        }
+      );
       // Returning false keeps the fields dirty so the next save retries them.
       return false;
     }

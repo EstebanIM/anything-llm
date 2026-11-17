@@ -5,7 +5,7 @@ import System from "@/models/system";
 import { useModal } from "@/hooks/useModal";
 import AddPresetModal from "./SlashPresets/AddPresetModal";
 import EditPresetModal from "./SlashPresets/EditPresetModal";
-import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import { PROMPT_INPUT_EVENT } from "@/components/WorkspaceChat/ChatContainer/PromptInput";
 import useToolsMenuItems from "../../useToolsMenuItems";
 import SlashCommandRow from "./SlashCommandRow";
@@ -123,15 +123,19 @@ export default function SlashCommandsTab({
     registerItemCount,
   });
 
+  // Errors go back to the open dialog, next to the fields.
+  const presetError = (error) =>
+    serverErrorMessage(error, t, "notices.preset-save-failed", {
+      known: [["matches a system command", "chat-input.preset-reserved"]],
+    });
+
+  /** @returns {Promise<string|null>} translated error, or null when saved */
   const handleSavePreset = async (preset) => {
     const { error } = await System.createSlashCommandPreset(preset);
-    if (error) {
-      showToast(error, "error");
-      return false;
-    }
+    if (error) return presetError(error);
     fetchPresets();
     closeAddModal();
-    return true;
+    return null;
   };
 
   const handleEditPreset = (preset) => {
@@ -139,18 +143,17 @@ export default function SlashCommandsTab({
     openEditModal();
   };
 
+  /** @returns {Promise<string|null>} translated error, or null when saved */
   const handleUpdatePreset = async (updatedPreset) => {
     const { error } = await System.updateSlashCommandPreset(
       updatedPreset.id,
       updatedPreset
     );
-    if (error) {
-      showToast(error, "error");
-      return;
-    }
+    if (error) return presetError(error);
     fetchPresets();
     closeEditModal();
     setSelectedPreset(null);
+    return null;
   };
 
   const handleDeletePreset = async (presetId) => {

@@ -13,6 +13,7 @@ import CTAButton from "@/components/lib/CTAButton";
 import TableState from "@/components/lib/TableState";
 import { ExternalLink } from "@/components/ProviderFields";
 import { useTranslation } from "react-i18next";
+import useFocusAfterRemoval from "@/hooks/useFocusAfterRemoval";
 
 const COLUMNS = 5;
 
@@ -24,7 +25,7 @@ export default function AdminApiKeys() {
   const headingRef = useRef(null);
   const [status, setStatus] = useState("loading");
   const [apiKeys, setApiKeys] = useState([]);
-  const [focusAfterRemove, setFocusAfterRemove] = useState(null);
+  const tbodyRef = useRef(null);
 
   const deleteButtonId = (id) => `${rowIdPrefix}-delete-${id}`;
 
@@ -48,22 +49,15 @@ export default function AdminApiKeys() {
 
   // After a delete, focus moves to the next row's delete button (or the
   // previous one), and to the page title when the list is empty.
+  const focusAfterRemoval = useFocusAfterRemoval(
+    tbodyRef,
+    headingRef,
+    `[id^="${rowIdPrefix}-delete-"]`
+  );
   const removeApiKey = (id) => {
-    const index = apiKeys.findIndex((apiKey) => apiKey.id === id);
-    const next = apiKeys[index + 1] ?? apiKeys[index - 1] ?? null;
+    focusAfterRemoval(apiKeys.findIndex((apiKey) => apiKey.id === id));
     setApiKeys((prevKeys) => prevKeys.filter((apiKey) => apiKey.id !== id));
-    setFocusAfterRemove(next ? next.id : "heading");
   };
-
-  useEffect(() => {
-    if (focusAfterRemove === null) return;
-    const target =
-      focusAfterRemove === "heading"
-        ? null
-        : document.getElementById(deleteButtonId(focusAfterRemove));
-    (target || headingRef.current)?.focus();
-    setFocusAfterRemove(null);
-  }, [focusAfterRemove]);
 
   return (
     <div className="w-screen h-screen overflow-hidden bg-zinc-950 light:bg-slate-50 flex">
@@ -131,7 +125,7 @@ export default function AdminApiKeys() {
                   </th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody ref={tbodyRef}>
                 {status === "loading" ? (
                   <TableState state="loading" colSpan={COLUMNS} />
                 ) : status === "error" ? (

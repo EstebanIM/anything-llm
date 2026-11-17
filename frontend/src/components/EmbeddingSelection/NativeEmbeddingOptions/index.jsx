@@ -5,6 +5,7 @@ import {
   FIELD_ERROR,
   FIELD_LABEL,
   FIELD_SELECT,
+  ModelsErrorText,
 } from "@/components/ProviderFields";
 
 export default function NativeEmbeddingOptions({ settings }) {
@@ -104,7 +105,7 @@ export default function NativeEmbeddingOptions({ settings }) {
           )}
           {status === "error" && (
             <p id={`${id}-model-error`} role="alert" className={FIELD_ERROR}>
-              {t("provider-fields.models-error", { error })}{" "}
+              <ModelsErrorText error={error} />{" "}
               <button
                 type="button"
                 onClick={() => setAttempt((n) => n + 1)}

@@ -2,8 +2,10 @@ import { useEffect, useId, useRef, useState } from "react";
 import Admin from "@/models/admin";
 import paths from "@/utils/paths";
 import { userFromStorage } from "@/utils/request";
+import { serverErrorParts } from "@/utils/serverErrors";
 import System from "@/models/system";
 import CopyButton from "@/components/lib/CopyButton";
+import ServerErrorDetail from "@/components/lib/ServerErrorDetail";
 import { ExternalLink, FIELD_INPUT } from "@/components/ProviderFields";
 import { useTranslation } from "react-i18next";
 import {
@@ -42,7 +44,7 @@ export default function NewApiKeyModal({ closeModal, onSuccess }) {
       onSuccess();
       return;
     }
-    setError(error || t("tools-pages.api-keys.create-failed"));
+    setError(serverErrorParts(error, t, "api.messages.error"));
   };
 
   return (
@@ -58,7 +60,8 @@ export default function NewApiKeyModal({ closeModal, onSuccess }) {
       <ModalBody>
         {error && (
           <p role="alert" className="text-sm text-red-400 light:text-red-700">
-            {t("api.messages.error", { error })}
+            {error.message}
+            <ServerErrorDetail detail={error.detail} />
           </p>
         )}
         {apiKey ? (
@@ -92,7 +95,7 @@ export default function NewApiKeyModal({ closeModal, onSuccess }) {
         {!apiKey ? (
           <>
             <ModalSecondaryButton onClick={closeModal} type="button">
-              {t("api.modal.cancel")}
+              {t("settings-pages.cancel")}
             </ModalSecondaryButton>
             <ModalPrimaryButton type="submit" busy={creating}>
               {creating

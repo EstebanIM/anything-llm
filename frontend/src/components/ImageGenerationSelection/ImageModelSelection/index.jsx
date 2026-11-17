@@ -8,6 +8,7 @@ import {
   FIELD_INPUT,
   FIELD_LABEL,
   FIELD_SELECT,
+  ModelsErrorText,
 } from "@/components/ProviderFields";
 
 /**
@@ -111,7 +112,7 @@ export default function ImageModelSelection({
         />
         {error ? (
           <p id={`${id}-model-help`} role="alert" className={FIELD_ERROR}>
-            {t("provider-fields.models-error", { error })}{" "}
+            <ModelsErrorText error={error} />{" "}
             {t("provider-forms.image-generation.models-manual-short")}{" "}
             <button
               type="button"

@@ -2,7 +2,8 @@ import { useEffect, useId, useRef, useState } from "react";
 import { Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import Admin from "@/models/admin";
-import showToast from "@/utils/toast";
+import StatusNote from "@/components/lib/StatusNote";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import {
   ModalHeader,
   ModalBody,
@@ -35,6 +36,7 @@ export default function AddMemberModal({
   const [initialUsers] = useState(() => workspace?.userIds || []);
   const [selectedUsers, setSelectedUsers] = useState(initialUsers);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
 
   const listedUsers = users.filter(
     (user) => !UNLISTED_ROLES.includes(user.role)
@@ -61,6 +63,7 @@ export default function AddMemberModal({
     e.preventDefault();
     e.stopPropagation();
     if (saving || !workspace) return;
+    setSaveError(null);
     setSaving(true);
     onBusyChange?.(true);
     const { success, error } = await Admin.updateUsersInWorkspace(
@@ -70,11 +73,13 @@ export default function AddMemberModal({
     setSaving(false);
     onBusyChange?.(false);
     if (!success) {
-      showToast(
-        error
-          ? t("workspace-settings.members.save-failed", { error })
-          : t("workspace-settings.members.save-failed-generic"),
-        "error"
+      // The dialog stays open: the error goes above its buttons.
+      setSaveError(
+        serverErrorMessage(
+          error,
+          t,
+          "workspace-settings.members.save-failed-generic"
+        )
       );
       return;
     }
@@ -195,6 +200,11 @@ export default function AddMemberModal({
             ? t("workspace-settings.members.removing", { count: removedCount })
             : ""}
         </p>
+        {saveError && (
+          <StatusNote tone="error" announce>
+            {saveError}
+          </StatusNote>
+        )}
       </ModalBody>
       <ModalFooter>
         <ModalSecondaryButton

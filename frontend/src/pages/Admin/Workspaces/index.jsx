@@ -10,13 +10,8 @@ import { useModal } from "@/hooks/useModal";
 import Modal from "@/components/lib/Modal";
 import CTAButton from "@/components/lib/CTAButton";
 import TableState from "@/components/lib/TableState";
-import {
-  TABLE,
-  TBODY,
-  TH,
-  THEAD,
-  focusAfterRemoval,
-} from "@/pages/Admin/Users/AdminTable";
+import { TABLE, TBODY, TH, THEAD } from "@/pages/Admin/Users/AdminTable";
+import useFocusAfterRemoval from "@/hooks/useFocusAfterRemoval";
 
 const COLUMNS = 5;
 
@@ -30,6 +25,7 @@ export default function AdminWorkspaces() {
   const headingId = useId();
   const headingRef = useRef(null);
   const tbodyRef = useRef(null);
+  const focusAfterRemoval = useFocusAfterRemoval(tbodyRef, headingRef);
 
   const fetchData = async () => {
     const [_workspaces, _settings] = await Promise.all([
@@ -47,9 +43,8 @@ export default function AdminWorkspaces() {
   }, []);
 
   const removeWorkspace = (id) => {
-    const index = workspaces.findIndex((workspace) => workspace.id === id);
+    focusAfterRemoval(workspaces.findIndex((workspace) => workspace.id === id));
     setWorkspaces((prev) => prev.filter((workspace) => workspace.id !== id));
-    focusAfterRemoval(tbodyRef, index, headingRef);
   };
 
   return (

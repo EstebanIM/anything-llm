@@ -16,6 +16,7 @@ import System from "@/models/system";
 import MCPServers from "@/models/mcpServers";
 import AgentFlows from "@/models/agentFlows";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import paths from "@/utils/paths";
 import useIsMobile from "@/hooks/useIsMobile";
 import ContextualSaveBar from "@/components/ContextualSaveBar";
@@ -33,6 +34,7 @@ import AgentSkillSettings from "./AgentSkillSettings";
 import SkillDetail from "./components/SkillDetail";
 import { RowList, RowButton, SectionHeading } from "./components/SkillRows";
 import { LoadError } from "./components/SubSkills";
+import useFocusAfterRemoval from "@/hooks/useFocusAfterRemoval";
 
 const PREFERENCE_FIELDS = [
   "disabled_agent_skills",
@@ -81,6 +83,29 @@ export default function AdminAgents() {
     imported: importedId,
     flow: flowsId,
     mcp: mcpId,
+  };
+  // After a delete: the next row of the same section, else its heading.
+  const sectionHeading = (kind) => ({
+    get current() {
+      return document.getElementById(sectionIds[kind]);
+    },
+  });
+  const focusAfterRowRemoval = {
+    flow: useFocusAfterRemoval(
+      listRef,
+      sectionHeading("flow"),
+      '[data-row-key^="flow:"]'
+    ),
+    imported: useFocusAfterRemoval(
+      listRef,
+      sectionHeading("imported"),
+      '[data-row-key^="imported:"]'
+    ),
+    mcp: useFocusAfterRemoval(
+      listRef,
+      sectionHeading("mcp"),
+      '[data-row-key^="mcp:"]'
+    ),
   };
 
   const [status, setStatus] = useState("loading"); // loading | ready | error
@@ -313,15 +338,17 @@ export default function AdminAgents() {
       Object.keys(data.env).length > 0
         ? await System.updateSystem(data.env)
         : null;
-    const error = !prefsRes?.success
-      ? prefsRes?.error || "-"
-      : envRes?.error || null;
-
-    if (error) {
+    if (!prefsRes?.success || envRes?.error) {
       setSaving(false);
-      showToast(t("agent-pages.save-failed", { error }), "error", {
-        clear: true,
-      });
+      showToast(
+        serverErrorMessage(
+          prefsRes?.error || envRes?.error,
+          t,
+          "agent-pages.save-failed"
+        ),
+        "error",
+        { clear: true }
+      );
       return;
     }
 
@@ -381,16 +408,9 @@ export default function AdminAgents() {
 
   /** After a delete: focus the next row of the section, or its heading. */
   const focusAfterRemoval = (kind, ids, removedId) => {
-    const index = ids.indexOf(removedId);
-    const remaining = ids.filter((id) => id !== removedId);
-    const nextId = remaining[index] ?? remaining[index - 1] ?? null;
+    focusAfterRowRemoval[kind](ids.indexOf(removedId));
     setSelection(null);
     setShowDetail(false);
-    setFocusRequest(
-      nextId
-        ? { target: "row", rowKey: `${kind}:${nextId}`, kind }
-        : { target: "section", kind }
-    );
   };
 
   const handleFlowDelete = (flowId) => {
@@ -448,9 +468,8 @@ export default function AdminAgents() {
 
     if (!success) {
       showToast(
-        t("agent-pages.mcp.tool-toggle-failed", {
-          tool: toolName,
-          error: error || "-",
+        serverErrorMessage(error, t, "agent-pages.mcp.tool-toggle-failed", {
+          values: { tool: toolName },
         }),
         "error",
         { clear: true }

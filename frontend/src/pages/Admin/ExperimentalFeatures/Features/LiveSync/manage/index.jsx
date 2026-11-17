@@ -6,13 +6,8 @@ import Sidebar from "@/components/SettingsSidebar";
 import System from "@/models/system";
 import paths from "@/utils/paths";
 import TableState from "@/components/lib/TableState";
-import {
-  TABLE,
-  TBODY,
-  TH,
-  THEAD,
-  focusAfterRemoval,
-} from "@/pages/Admin/Users/AdminTable";
+import { TABLE, TBODY, TH, THEAD } from "@/pages/Admin/Users/AdminTable";
+import useFocusAfterRemoval from "@/hooks/useFocusAfterRemoval";
 import DocumentSyncQueueRow from "./DocumentSyncQueueRow";
 
 const COLUMNS = 5;
@@ -62,6 +57,7 @@ function WatchedDocumentsContainer({ headingId, headingRef }) {
   const [loading, setLoading] = useState(true);
   const [queues, setQueues] = useState([]);
   const tbodyRef = useRef(null);
+  const focusAfterRemoval = useFocusAfterRemoval(tbodyRef, headingRef);
 
   useEffect(() => {
     async function fetchData() {
@@ -73,9 +69,8 @@ function WatchedDocumentsContainer({ headingId, headingRef }) {
   }, []);
 
   const removeQueue = (id) => {
-    const index = queues.findIndex((queue) => queue.id === id);
+    focusAfterRemoval(queues.findIndex((queue) => queue.id === id));
     setQueues((prev) => prev.filter((queue) => queue.id !== id));
-    focusAfterRemoval(tbodyRef, index, headingRef);
   };
 
   return (

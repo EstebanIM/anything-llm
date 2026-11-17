@@ -13,7 +13,7 @@ import {
  * @param {object} props
  * @param {string} props.warningText - What will be lost. Line breaks are kept (real ones or a literal "\n").
  * @param {string} [props.confirmLabel] - What the confirm button does, e.g. "Change and clear embeddings".
- * @param {boolean} [props.busy] - The change is being saved: the confirm button is disabled.
+ * @param {boolean} [props.busy] - The change is being saved: the confirm button stays focusable but ignores clicks.
  * @param {() => void} props.onClose
  * @param {() => void} props.onConfirm
  */
@@ -50,14 +50,9 @@ export default function ChangeWarningModal({
       </ModalBody>
       <ModalFooter className="justify-end">
         <ModalSecondaryButton onClick={onClose} type="button">
-          {t("provider-pages.change-warning.cancel")}
+          {t("settings-pages.cancel")}
         </ModalSecondaryButton>
-        <ModalDangerButton
-          onClick={onConfirm}
-          type="button"
-          disabled={busy}
-          aria-busy={busy || undefined}
-        >
+        <ModalDangerButton onClick={onConfirm} type="button" busy={busy}>
           {busy
             ? t("common.saving")
             : confirmLabel || t("provider-pages.change-warning.confirm")}

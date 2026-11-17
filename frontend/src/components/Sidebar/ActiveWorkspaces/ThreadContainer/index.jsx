@@ -1,12 +1,14 @@
 import Workspace from "@/models/workspace";
 import paths from "@/utils/paths";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import { Plus, LoaderCircle, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import ThreadItem from "./ThreadItem";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import useHoverMetaKey from "./hooks";
+import useFocusAfterRemoval from "@/hooks/useFocusAfterRemoval";
 export const THREAD_RENAME_EVENT = "renameThread";
 export const THREAD_FORK_EVENT = "forkToThread";
 
@@ -21,6 +23,11 @@ export default function ThreadContainer({
   const [defaultThreadHasChats, setDefaultThreadHasChats] = useState(false);
   const [loading, setLoading] = useState(true);
   const { containerRef, ctrlPressed } = useHoverMetaKey(setThreads, !loading);
+  const focusAfterRemoval = useFocusAfterRemoval(
+    containerRef,
+    null,
+    "[data-thread-focus]"
+  );
 
   useEffect(() => {
     const chatHandler = (event) => {
@@ -167,7 +174,10 @@ export default function ThreadContainer({
           activeIdx={activeThreadIdx}
           isActive={activeThreadIdx === i + (defaultThreadHasChats ? 1 : 0)}
           workspace={workspace}
-          onRemove={removeThread}
+          onRemove={(id) => {
+            focusAfterRemoval(i + (defaultThreadHasChats ? 1 : 0));
+            removeThread(id);
+          }}
           thread={thread}
           hasNext={i !== threads.length - 1 || showVirtualThread}
         />
@@ -207,9 +217,11 @@ function NewThreadButton({ workspace, onNewThread }) {
     setLoading(true);
     const { thread, error } = await Workspace.threads.new(workspace.slug);
     if (!!error) {
-      showToast(t("sidebar-nav.create-thread-failed", { error }), "error", {
-        clear: true,
-      });
+      showToast(
+        serverErrorMessage(error, t, "sidebar-nav.create-thread-failed"),
+        "error",
+        { clear: true }
+      );
       setLoading(false);
       return;
     }

@@ -11,7 +11,9 @@ import { useTranslation } from "react-i18next";
 import MCPLogo from "@/media/agents/mcp-logo.svg";
 import MCPServers from "@/models/mcpServers";
 import showToast from "@/utils/toast";
+import { serverErrorMessage, serverErrorParts } from "@/utils/serverErrors";
 import ConfirmModal from "@/components/lib/ConfirmModal";
+import ServerErrorDetail from "@/components/lib/ServerErrorDetail";
 import {
   RowList,
   RowButton,
@@ -130,7 +132,7 @@ export function MCPServersSection({
       showToast(t("agent-pages.mcp.reloaded"), "success", { clear: true });
     } else {
       showToast(
-        t("agent-pages.mcp.reload-failed", { error: error || "-" }),
+        serverErrorMessage(error, t, "agent-pages.mcp.reload-failed"),
         "error",
         { clear: true }
       );
@@ -203,12 +205,16 @@ function MCPServersList({ headingId, mcp, isSelected, handleClick }) {
   }
 
   if (mcp.status === "error") {
+    const { message, detail } = mcp.error
+      ? serverErrorParts(mcp.error, t, "agent-pages.mcp.load-error-detail")
+      : { message: t("agent-pages.mcp.load-error"), detail: null };
     return (
       <LoadError
         message={
-          mcp.error
-            ? t("agent-pages.mcp.load-error-detail", { error: mcp.error })
-            : t("agent-pages.mcp.load-error")
+          <>
+            {message}
+            <ServerErrorDetail detail={detail} />
+          </>
         }
         onRetry={() => mcp.load()}
       />

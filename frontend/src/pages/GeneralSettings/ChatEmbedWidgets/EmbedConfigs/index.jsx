@@ -8,8 +8,7 @@ import Modal from "@/components/lib/Modal";
 import Embed from "@/models/embed";
 import CTAButton from "@/components/lib/CTAButton";
 import TableState from "@/components/lib/TableState";
-import showToast from "@/utils/toast";
-import useFocusAfterRemoval from "../components/useFocusAfterRemoval";
+import useFocusAfterRemoval from "@/hooks/useFocusAfterRemoval";
 
 const COLUMNS = 6;
 
@@ -41,9 +40,9 @@ export default function EmbedConfigsView() {
 
   async function handleCreated(embed) {
     setCreateOpen(false);
-    // Show the code of the new widget right away: it is what the admin needs next.
+    // Show the code of the new widget right away: it is what the admin needs
+    // next, and the dialog itself says the widget was created.
     setSnippetEmbed(embed);
-    showToast(t("embed-pages.toast.created"), "success", { clear: true });
     await fetchEmbeds({ silent: true });
   }
 

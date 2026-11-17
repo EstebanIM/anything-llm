@@ -3,6 +3,8 @@ import { LoaderCircle } from "lucide-react";
 import { TelegramLogo } from "@phosphor-icons/react";
 import Telegram from "@/models/telegram";
 import CTAButton from "@/components/lib/CTAButton";
+import ServerErrorDetail from "@/components/lib/ServerErrorDetail";
+import { serverErrorParts } from "@/utils/serverErrors";
 import {
   SecretInput,
   FIELD_ERROR,
@@ -23,7 +25,10 @@ export default function SetupView({ onConnected }) {
     e.preventDefault();
     if (connecting) return;
     if (!botToken.trim()) {
-      setError(t("telegram.setup.toast-enter-token"));
+      setError({
+        message: t("telegram.setup.toast-enter-token"),
+        detail: null,
+      });
       return tokenRef.current?.focus();
     }
 
@@ -35,8 +40,8 @@ export default function SetupView({ onConnected }) {
     if (!res.success) {
       setError(
         res.error
-          ? t("tools-pages.telegram.connect-error", { error: res.error })
-          : t("telegram.setup.toast-connect-failed")
+          ? serverErrorParts(res.error, t, "tools-pages.telegram.connect-error")
+          : { message: t("telegram.setup.toast-connect-failed"), detail: null }
       );
       return tokenRef.current?.focus();
     }
@@ -96,6 +101,7 @@ export default function SetupView({ onConnected }) {
 /**
  * Bot token field: SecretInput with a real label, the example format as help
  * and an inline error. Shared with the reconnect form.
+ * @param {{message: string, detail: string|null}|null} props.error
  */
 export function BotTokenField({
   inputRef,
@@ -130,7 +136,8 @@ export function BotTokenField({
       </p>
       {error && (
         <p id={errorId} role="alert" className={FIELD_ERROR}>
-          {error}
+          {error.message}
+          <ServerErrorDetail detail={error.detail} />
         </p>
       )}
     </div>

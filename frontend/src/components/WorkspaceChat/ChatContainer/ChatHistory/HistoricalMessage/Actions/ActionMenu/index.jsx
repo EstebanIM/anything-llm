@@ -84,7 +84,7 @@ function ActionMenu({ chatId, forkThread, isEditing, role }) {
                   onClick={cancelDelete}
                   className="border-none rounded-md px-3 min-h-[44px] md:min-h-0 md:py-1 text-sm text-white hover:bg-theme-action-menu-item-hover transition-colors duration-quick"
                 >
-                  {t("chat_window.cancel")}
+                  {t("settings-pages.cancel")}
                 </button>
                 <button
                   type="button"

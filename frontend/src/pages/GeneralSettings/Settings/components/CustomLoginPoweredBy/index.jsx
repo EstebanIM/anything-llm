@@ -1,6 +1,7 @@
 import Admin from "@/models/admin";
 import System from "@/models/system";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import { useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FIELD_INPUT } from "@/components/ProviderFields";
@@ -52,7 +53,10 @@ export default function CustomLoginPoweredBy() {
     setSaving(false);
 
     if (!success) {
-      showToast(t("settings-pages.login-footer-failed", { error }), "error");
+      showToast(
+        serverErrorMessage(error, t, "settings-pages.login-footer-failed"),
+        "error"
+      );
       return;
     }
 

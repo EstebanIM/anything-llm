@@ -5,7 +5,7 @@ import { Brain } from "lucide-react";
 import AgentAnimation from "@/media/animations/agent-animation.webm";
 import AgentStatic from "@/media/animations/agent-static.png";
 import { renderThoughtMarkdown } from "@/utils/chat/markdown";
-import { formatDuration } from "@/utils/numbers";
+import { formatElapsed } from "@/utils/dates";
 import {
   THOUGHT_REGEX_CLOSE,
   THOUGHT_REGEX_OPEN,
@@ -134,7 +134,7 @@ export default function StatusResponse({
                   isActiveStep && start ? (
                     <ElapsedTime since={start} />
                   ) : seconds ? (
-                    formatDuration(seconds)
+                    formatElapsed(seconds * 1000)
                   ) : undefined
                 }
               />
@@ -220,7 +220,7 @@ function ElapsedTime({ since }) {
     return () => clearInterval(id);
   }, []);
   const seconds = Math.max(0, Math.floor((now - since) / 1000));
-  return seconds < 60 ? `${seconds}s` : formatDuration(seconds);
+  return formatElapsed(seconds * 1000);
 }
 
 const ThoughtNode = memo(function ThoughtNode({ content }) {

@@ -2,6 +2,7 @@ import PreLoader from "@/components/Preloader";
 import CTAButton from "@/components/lib/CTAButton";
 import Workspace from "@/models/workspace";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import { useEffect, useId, useRef, useState } from "react";
 import { Plus, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -68,7 +69,11 @@ export default function SuggestedChatMessages({ slug }) {
     setSaving(false);
     if (!success) {
       showToast(
-        t("workspace-settings.suggested.save-failed", { error }),
+        serverErrorMessage(
+          error,
+          t,
+          "workspace-settings.suggested.save-failed"
+        ),
         "error"
       );
       return;

@@ -15,6 +15,7 @@ import Workspace from "@/models/workspace";
 import System from "@/models/system";
 import ModelRouterAPI from "@/models/modelRouter";
 import { SIDEBAR_TOGGLE_EVENT } from "@/components/Sidebar/SidebarToggle";
+import { ariaKeyShortcuts } from "@/utils/keyboardShortcuts";
 
 async function resolveModelName(workspace, systemSettings, t) {
   const effectiveProvider =
@@ -151,7 +152,7 @@ export default function WorkspaceModelPicker({ workspaceSlug = null }) {
           aria-haspopup="dialog"
           aria-expanded={showSelector}
           aria-controls={showSelector ? dialogId : undefined}
-          aria-keyshortcuts="Control+Shift+L Meta+Shift+L"
+          aria-keyshortcuts={ariaKeyShortcuts("llmSelector")}
           onClick={() =>
             showSelector ? closeSelector() : setShowSelector(true)
           }

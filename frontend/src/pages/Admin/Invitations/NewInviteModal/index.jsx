@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import Admin from "@/models/admin";
 import Workspace from "@/models/workspace";
 import CopyButton from "@/components/lib/CopyButton";
+import ServerErrorDetail from "@/components/lib/ServerErrorDetail";
+import { serverErrorParts } from "@/utils/serverErrors";
 import {
   ModalHeader,
   ModalBody,
@@ -34,7 +36,7 @@ export default function NewInviteModal({ closeModal, onSuccess }) {
     });
     setBusy(false);
     if (!newInvite) {
-      setError(error || t("admin-pages.unknown-error"));
+      setError(serverErrorParts(error, t, "settings-pages.form-error"));
       return;
     }
     setInvite(newInvite);
@@ -118,7 +120,8 @@ export default function NewInviteModal({ closeModal, onSuccess }) {
         )}
         {error && (
           <p role="alert" className="text-sm text-red-400 light:text-red-700">
-            {t("settings-pages.form-error", { error })}
+            {error.message}
+            <ServerErrorDetail detail={error.detail} />
           </p>
         )}
       </ModalBody>

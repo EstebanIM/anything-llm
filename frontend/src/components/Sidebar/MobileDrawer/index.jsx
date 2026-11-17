@@ -1,16 +1,18 @@
 import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
-
-const FOCUSABLE =
-  'a[href], button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])';
+import { useDialogFocus } from "@/components/lib/Modal";
+import { useModalEscape } from "@/hooks/useModalEscape";
 
 /**
  * Off-canvas navigation panel for phones, shared by the workspace sidebar and
  * the settings sidebar.
- * - Closed: removed from the tab order with `inert`.
- * - Open: focus moves inside and stays there, Escape or the backdrop closes
- *   it, and focus goes back to the button that opened it.
+ * - Closed: removed from the tab order with `inert`, and without
+ *   `data-app-dialog` so it never counts as an open dialog.
+ * - Open: a modal dialog (shared focus trap and Escape stack with the app's
+ *   modals): focus moves to the first link of the panel and stays inside,
+ *   Escape or the backdrop closes it only when it is the top layer, and focus
+ *   goes back to the button that opened it.
  */
 export default function MobileDrawer({
   open,
@@ -21,46 +23,22 @@ export default function MobileDrawer({
 }) {
   const { t } = useTranslation();
   const dialogRef = useRef(null);
-  const panelRef = useRef(null);
   const wasOpen = useRef(false);
 
+  useDialogFocus(open, dialogRef);
+  useModalEscape(open, () => {
+    // A menu open inside the drawer closes first (it also prevents default).
+    if (dialogRef.current?.querySelector('[role="menu"]')) return;
+    onClose();
+  });
+
   useEffect(() => {
-    if (!open) {
-      if (wasOpen.current) returnFocusRef?.current?.focus();
-      wasOpen.current = false;
+    if (open) {
+      wasOpen.current = true;
       return;
     }
-    wasOpen.current = true;
-    panelRef.current?.querySelector(FOCUSABLE)?.focus();
-
-    // Only the top layer reacts: a menu open inside the drawer, or a modal
-    // opened from it, handles its own Escape and Tab first.
-    const ownsFocus = () =>
-      document.activeElement === document.body ||
-      dialogRef.current?.contains(document.activeElement);
-    const onKeyDown = (e) => {
-      if (e.defaultPrevented || !ownsFocus()) return;
-      if (e.key === "Escape") {
-        if (dialogRef.current?.querySelector('[role="menu"]')) return;
-        return onClose();
-      }
-      if (e.key !== "Tab" || !dialogRef.current) return;
-      const focusable = [
-        ...dialogRef.current.querySelectorAll(FOCUSABLE),
-      ].filter((el) => el.offsetParent !== null);
-      if (focusable.length === 0) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    };
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
+    if (wasOpen.current) returnFocusRef?.current?.focus();
+    wasOpen.current = false;
   }, [open]);
 
   return (
@@ -69,8 +47,9 @@ export default function MobileDrawer({
       role="dialog"
       aria-modal="true"
       aria-label={label}
-      className={`fixed inset-0 z-99 ${open ? "" : "pointer-events-none"}`}
-      {...(!open && { inert: "" })}
+      tabIndex={-1}
+      className={`fixed inset-0 z-99 focus:outline-none ${open ? "" : "pointer-events-none"}`}
+      {...(open ? { "data-app-dialog": "" } : { inert: "" })}
     >
       <div
         aria-hidden="true"
@@ -79,6 +58,16 @@ export default function MobileDrawer({
           open ? "opacity-100 duration-panel" : "opacity-0 duration-base"
         }`}
       />
+      {/* The panel comes first in the DOM so focus lands on its first link. */}
+      <div
+        className={`relative h-[100vh] supports-[height:100dvh]:h-[100dvh] w-[80%] max-w-[340px] rounded-r-[26px] bg-zinc-925 light:bg-slate-200 p-[18px] transition-transform ease-drawer ${
+          open
+            ? "translate-x-0 duration-panel"
+            : "-translate-x-full duration-base"
+        }`}
+      >
+        {children}
+      </div>
       <button
         type="button"
         onClick={onClose}
@@ -89,16 +78,6 @@ export default function MobileDrawer({
       >
         <X strokeWidth={1.5} size={22} aria-hidden="true" />
       </button>
-      <div
-        ref={panelRef}
-        className={`relative h-[100vh] supports-[height:100dvh]:h-[100dvh] w-[80%] max-w-[340px] rounded-r-[26px] bg-zinc-925 light:bg-slate-200 p-[18px] transition-transform ease-drawer ${
-          open
-            ? "translate-x-0 duration-panel"
-            : "-translate-x-full duration-base"
-        }`}
-      >
-        {children}
-      </div>
     </div>
   );
 }

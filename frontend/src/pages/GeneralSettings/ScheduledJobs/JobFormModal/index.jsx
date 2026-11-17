@@ -142,15 +142,12 @@ export default function JobFormModal({ job = null, onClose, onSaved }) {
         showScheduleError(t("scheduledJobs.modal.cronInvalid"));
         return;
       }
-      // The API client reports a failed request with this fixed text.
-      const generic =
-        !result?.error || result.error === "Failed to create scheduled job";
       setSubmitError(
-        generic
-          ? t("scheduledJobs.modal.saveFailedGeneric")
-          : t("scheduledJobs.modal.saveFailed", {
-              error: translateJobError(t, result.error),
-            })
+        translateJobError(
+          t,
+          result?.error,
+          "scheduledJobs.modal.saveFailedGeneric"
+        )
       );
       return;
     }

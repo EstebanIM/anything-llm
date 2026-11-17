@@ -6,6 +6,7 @@ import { LoaderCircle, Pencil, X } from "lucide-react";
 import ModelRouter from "@/models/modelRouter";
 import { useModal } from "@/hooks/useModal";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import paths from "@/utils/paths";
 import ConfirmModal from "@/components/lib/ConfirmModal";
 import NewRouterModal from "./NewRouterModal";
@@ -53,7 +54,10 @@ export default function ModelRouters() {
     setDeleting(false);
     setPendingDelete(null);
     if (!success) {
-      showToast(t("model-router.toast-delete-failed", { error }), "error");
+      showToast(
+        serverErrorMessage(error, t, "model-router.toast-delete-failed"),
+        "error"
+      );
       return;
     }
     setRouters((prev) => prev.filter((r) => r.id !== router.id));

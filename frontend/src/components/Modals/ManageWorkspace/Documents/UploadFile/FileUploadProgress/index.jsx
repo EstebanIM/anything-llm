@@ -2,7 +2,9 @@ import { memo, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CircleCheck, CircleX, LoaderCircle, RotateCw, X } from "lucide-react";
 import Workspace from "@/models/workspace";
-import { humanFileSize, milliToHms } from "@/utils/numbers";
+import { humanFileSize } from "@/utils/numbers";
+import { formatElapsed } from "@/utils/dates";
+import { serverErrorMessage } from "@/utils/serverErrors";
 
 /** How long a finished upload stays in the list before it leaves. */
 const COMPLETE_LINGER_MS = 5000;
@@ -104,10 +106,17 @@ function FileUploadProgress({
   const detail = failed
     ? rejected
       ? t("workspace-docs.upload.rejected")
-      : error || t("workspace-docs.upload.failed")
+      : serverErrorMessage(error, t, "workspace-docs.upload.failed", {
+          known: [
+            [
+              /not supported|unsupported|no .*parser/i,
+              "workspace-docs.upload.rejected",
+            ],
+          ],
+        })
     : status === "complete"
       ? t("workspace-docs.upload.done")
-      : `${humanFileSize(file?.size ?? 0)} · ${milliToHms(timerMs)}`;
+      : `${humanFileSize(file?.size ?? 0)} · ${formatElapsed(timerMs)}`;
 
   return (
     <li

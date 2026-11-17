@@ -13,7 +13,8 @@ import Modal, {
 } from "@/components/lib/Modal";
 import { ROUTER_CONTROL } from "../../fieldClasses";
 import ModelRouterAPI from "@/models/modelRouter";
-import showToast from "@/utils/toast";
+import StatusNote from "@/components/lib/StatusNote";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import LLMProviderModelPicker from "../../LLMProviderModelPicker";
 import CalculatedFields from "./CalculatedFields";
 import LLMDescriptionField from "./LLMDescriptionField";
@@ -58,6 +59,10 @@ export default function RuleForm({
   const isEditing = !!existingRule;
   const fieldId = useId();
   const [loading, setLoading] = useState(false);
+  const [titleError, setTitleError] = useState(null);
+  // Incomplete conditions or a failed save: shown above the buttons, the
+  // dialog stays open.
+  const [formError, setFormError] = useState(null);
   const [titleInput, setTitleInput] = useState(existingRule?.title || "");
   const [ruleType, setRuleType] = useState(existingRule?.type || "calculated");
   const [conditionLogic, setConditionLogic] = useState(
@@ -71,14 +76,15 @@ export default function RuleForm({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    if (loading) return;
+    setFormError(null);
 
     const formData = new FormData(e.target);
     const title = slugify(formData.get("title") || "");
 
     if (!title) {
-      showToast(t("model-router.rule-form.title-required"), "error");
-      setLoading(false);
+      setTitleError(t("model-router.rule-form.title-required"));
+      document.getElementById(`${fieldId}-title`)?.focus();
       return;
     }
 
@@ -95,13 +101,11 @@ export default function RuleForm({
         (c) => !c.property || !c.comparator || !String(c.value ?? "").trim()
       );
       if (incomplete !== -1) {
-        showToast(
+        setFormError(
           t("model-router.rule-form.conditions-incomplete", {
             index: incomplete + 1,
-          }),
-          "error"
+          })
         );
-        setLoading(false);
         return;
       }
       data.condition_logic = conditionLogic;
@@ -113,6 +117,7 @@ export default function RuleForm({
       data.conditions = null;
     }
 
+    setLoading(true);
     let result;
     if (isEditing) {
       result = await ModelRouterAPI.updateRule(routerId, existingRule.id, data);
@@ -125,9 +130,12 @@ export default function RuleForm({
       onSaved();
       closeModal();
     } else {
-      showToast(
-        result.error || t("model-router.rule-form.toast-save-failed"),
-        "error"
+      setFormError(
+        serverErrorMessage(
+          result.error,
+          t,
+          "model-router.rule-form.toast-save-failed"
+        )
       );
     }
   };
@@ -153,7 +161,11 @@ export default function RuleForm({
                 id={`${fieldId}-title`}
                 name="title"
                 defaultValue={existingRule?.title || ""}
-                onChange={(e) => setTitleInput(e.target.value)}
+                onChange={(e) => {
+                  setTitleInput(e.target.value);
+                  setTitleError(null);
+                }}
+                error={titleError}
                 placeholder={t("settings-pages.rule-title-placeholder")}
                 aria-describedby={`${fieldId}-title-help`}
                 autoComplete="off"
@@ -208,16 +220,16 @@ export default function RuleForm({
             defaultModel={existingRule?.route_model || ""}
           />
         </ModalBody>
+        {formError && (
+          <StatusNote tone="error" announce>
+            {formError}
+          </StatusNote>
+        )}
         <ModalFooter>
           <ModalSecondaryButton type="button" onClick={closeModal}>
-            {t("model-router.rule-form.cancel")}
+            {t("settings-pages.cancel")}
           </ModalSecondaryButton>
-          <ModalPrimaryButton
-            type="submit"
-            disabled={loading}
-            aria-busy={loading || undefined}
-            className="gap-x-2"
-          >
+          <ModalPrimaryButton type="submit" busy={loading} className="gap-x-2">
             {loading ? (
               <>
                 <LoaderCircle

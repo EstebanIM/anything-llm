@@ -3,6 +3,8 @@ import { Info, LoaderCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import paths from "@/utils/paths";
+import { serverErrorParts } from "@/utils/serverErrors";
+import ServerErrorDetail from "@/components/lib/ServerErrorDetail";
 import { FIELD_COL, FIELD_HELP, FIELD_LABEL, FIELD_SELECT } from "./classes";
 import InfoTip from "./InfoTip";
 
@@ -80,17 +82,39 @@ export function modelStatus({
 }
 
 /**
+ * Content of a "could not load the models" error, from the raw server error:
+ * the translated sentence (or a recognised cause) and, under it, the server's
+ * own text when it was not recognised. Render it inside the element with
+ * role="alert" so both are announced together.
+ */
+export function ModelsErrorText({
+  error,
+  fallbackKey = "provider-fields.models-error",
+}) {
+  const { t } = useTranslation();
+  const { message, detail } = serverErrorParts(error, t, fallbackKey);
+  return (
+    <>
+      {message}
+      <ServerErrorDetail detail={detail} />
+    </>
+  );
+}
+
+/**
  * Model <select> with explicit states, so a list that cannot load never shows
  * an endless "loading". The ready <select> is keyed apart from the placeholder
  * one so `defaultValue` applies to the options that just arrived.
- * Pass `value` + `onChange` for a controlled select, and `errorMessage` to
- * replace the generic "could not load" text.
+ * Pass `value` + `onChange` for a controlled select. `error` is the raw error
+ * from the server: it shows `errorKey` (or a recognised cause) and the
+ * server's own text apart. `errorMessage` replaces all of it with a fixed text.
  */
 export function ModelSelectField({
   name,
   label,
   status,
   error = null,
+  errorKey = "provider-fields.models-error",
   errorMessage = null,
   onRetry = null,
   defaultValue,
@@ -177,7 +201,9 @@ export function ModelSelectField({
               role="alert"
               className="text-xs text-red-400 light:text-red-700"
             >
-              {errorMessage ?? t("provider-fields.models-error", { error })}
+              {errorMessage ?? (
+                <ModelsErrorText error={error} fallbackKey={errorKey} />
+              )}
             </p>
           )}
           {showRetry && (

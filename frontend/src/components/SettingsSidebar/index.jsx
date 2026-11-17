@@ -406,48 +406,49 @@ const SidebarOptions = ({ user = null, t }) => (
     )}
   </CanViewChatHistoryProvider>
 );
+const EXPERIMENTAL_UNLOCKED =
+  "anythingllm_experimental_feature_preview_unlocked";
+
+/** Holding Ctrl (or Cmd) for `holdForMs` reveals the experimental features. */
 function HoldToReveal({ children, holdForMs = 3_000 }) {
-  let timeout = null;
+  const { t } = useTranslation();
+  const timer = useRef(null);
   const [showing, setShowing] = useState(
-    window.localStorage.getItem(
-      "anythingllm_experimental_feature_preview_unlocked"
-    )
+    () => !!window.localStorage.getItem(EXPERIMENTAL_UNLOCKED)
   );
+
   useEffect(() => {
+    if (showing) return;
+    const cancel = () => {
+      clearTimeout(timer.current);
+      timer.current = null;
+    };
     const onPress = (e) => {
-      if (!["Control", "Meta"].includes(e.key) || timeout !== null) return;
-      timeout = setTimeout(() => {
+      // Held keys repeat keydown: only the first press starts the timer.
+      if (!["Control", "Meta"].includes(e.key) || timer.current !== null)
+        return;
+      timer.current = setTimeout(() => {
+        timer.current = null;
+        window.localStorage.setItem(EXPERIMENTAL_UNLOCKED, "enabled");
         setShowing(true);
-        // Setting toastId prevents hook spam from holding control too many times or the event not detaching
-        showToast("Experimental feature previews unlocked!");
-        window.localStorage.setItem(
-          "anythingllm_experimental_feature_preview_unlocked",
-          "enabled"
-        );
-        window.removeEventListener("keypress", onPress);
-        window.removeEventListener("keyup", onRelease);
-        clearTimeout(timeout);
+        showToast(t("notices.experimental-unlocked"), "success");
       }, holdForMs);
     };
     const onRelease = (e) => {
-      if (!["Control", "Meta"].includes(e.key)) return;
-      if (showing) {
-        window.removeEventListener("keypress", onPress);
-        window.removeEventListener("keyup", onRelease);
-        clearTimeout(timeout);
-        return;
-      }
-      clearTimeout(timeout);
+      if (["Control", "Meta"].includes(e.key)) cancel();
     };
-    if (!showing) {
-      window.addEventListener("keydown", onPress);
-      window.addEventListener("keyup", onRelease);
-    }
+    window.addEventListener("keydown", onPress);
+    window.addEventListener("keyup", onRelease);
+    // Releasing the key in another window never fires keyup here.
+    window.addEventListener("blur", cancel);
     return () => {
+      cancel();
       window.removeEventListener("keydown", onPress);
       window.removeEventListener("keyup", onRelease);
+      window.removeEventListener("blur", cancel);
     };
-  }, []);
+  }, [showing]);
+
   if (!showing) return null;
   return children;
 }

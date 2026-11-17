@@ -66,7 +66,7 @@ export default function BranchSelect({ state, help, blocked = false }) {
         label={t("data-connectors.branch.label")}
         status={status === "idle" ? "ready" : status}
         error={error}
-        errorMessage={t("data-connectors.branch.error", { error })}
+        errorKey="data-connectors.branch.error"
         onRetry={retry}
         help={help}
         messages={{

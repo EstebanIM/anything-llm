@@ -42,9 +42,9 @@ export function authErrorMessage(message, t) {
 const NOTICE_KEY = "iasmar_auth_notice";
 
 /**
- * Remembers why the person was sent to the sign-in page ("session-expired",
- * "suspended", "password-changed") so the login can say it once.
- * @param {"session-expired"|"suspended"|"password-changed"} reason
+ * Remembers why the person was sent to the sign-in page so the login can say
+ * it once (the texts live in `NOTICES` of `components/Modals/Password/AuthUI.jsx`).
+ * @param {"session-expired"|"suspended"|"password-changed"|"instance-password-changed"|"multiuser-enabled"} reason
  */
 export function setAuthNotice(reason) {
   try {
@@ -64,3 +64,17 @@ export function takeAuthNotice() {
     return null;
   }
 }
+
+/**
+ * Server messages when an account or password is rejected ("Username must…",
+ * "A user with that username already exists", password complexity), as
+ * `known` pairs for `serverErrorMessage`. Used by Security, the onboarding and the user modals.
+ */
+export const ACCOUNT_ERRORS = [
+  [/already exists/i, "auth-pages.invite.username-taken"],
+  [/^username /i, "common.username_requirements"],
+  [/password/i, "auth-pages.errors.password-rejected"],
+];
+
+/** Characters allowed in the single-user instance password. */
+export const PW_REGEX = new RegExp(/^[a-zA-Z0-9_\-!@$%^&*();]+$/);

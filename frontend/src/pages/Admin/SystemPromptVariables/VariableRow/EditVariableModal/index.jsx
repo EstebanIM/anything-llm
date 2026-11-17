@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import System from "@/models/system";
 import showToast from "@/utils/toast";
+import { serverErrorParts } from "@/utils/serverErrors";
+import ServerErrorDetail from "@/components/lib/ServerErrorDetail";
 import {
   ModalHeader,
   ModalBody,
@@ -10,7 +12,6 @@ import {
   ModalSecondaryButton,
 } from "@/components/lib/Modal";
 import VariableFields, {
-  errorMessage,
   focusFirstError,
   readVariableForm,
 } from "../../VariableFields";
@@ -41,9 +42,7 @@ export default function EditVariableModal({ variable, closeModal, onRefresh }) {
     setBusy(false);
     if (!success) {
       setError(
-        t("admin-pages.variables.update-failed", {
-          error: errorMessage(error, t("admin-pages.unknown-error")),
-        })
+        serverErrorParts(error, t, "admin-pages.variables.update-failed")
       );
       return;
     }
@@ -68,7 +67,8 @@ export default function EditVariableModal({ variable, closeModal, onRefresh }) {
         <VariableFields variable={variable} errors={fieldErrors} />
         {error && (
           <p role="alert" className="text-sm text-red-400 light:text-red-700">
-            {error}
+            {error.message}
+            <ServerErrorDetail detail={error.detail} />
           </p>
         )}
       </ModalBody>

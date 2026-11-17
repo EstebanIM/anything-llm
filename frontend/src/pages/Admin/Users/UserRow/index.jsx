@@ -1,12 +1,14 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import Admin from "@/models/admin";
 import EditUserModal from "./EditUserModal";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import { formatDateTime } from "@/utils/dates";
 import { useModal } from "@/hooks/useModal";
 import Modal from "@/components/lib/Modal";
-import InlineConfirm, {
+import { InlineConfirmButton } from "@/components/lib/InlineConfirm";
+import {
   CELL,
   MOBILE_LABEL,
   ROW,
@@ -15,7 +17,6 @@ import InlineConfirm, {
   ROW_ACTION_WARNING,
   ROW_ACTIONS,
   ROW_HEADER,
-  useConfirmFocusReturn,
 } from "../AdminTable";
 import { MANAGEABLE_ROLES, useRoleLabel } from "../UserFields";
 
@@ -29,11 +30,11 @@ export default function UserRow({
   const { t } = useTranslation();
   const roleLabel = useRoleLabel();
   const { isOpen, openModal, closeModal } = useModal();
-  const [confirming, setConfirming] = useState(null);
-  const [busy, setBusy] = useState(false);
-  const suspendRef = useRef(null);
-  const deleteRef = useRef(null);
-  useConfirmFocusReturn(confirming, { suspend: suspendRef, delete: deleteRef });
+  // While one action asks for confirmation, the other actions step aside.
+  const [openAction, setOpenAction] = useState(null);
+  const trackOpen = (key) => (open) =>
+    setOpenAction((current) => (open ? key : current === key ? null : current));
+  const shows = (key) => !openAction || openAction === key;
 
   const canModify = (
     MANAGEABLE_ROLES[currUser?.role || "default"] ?? []
@@ -42,25 +43,26 @@ export default function UserRow({
   const suspended = user.suspended === 1;
   const username = user.username;
 
+  // Resolves to false either way: the row stays, so the panel closes and
+  // focus goes back to the (relabelled) button.
   const handleSuspend = async () => {
-    setBusy(true);
     const { success, error } = await Admin.updateUser(user.id, {
       suspended: suspended ? 0 : 1,
     });
-    setBusy(false);
-    setConfirming(null);
     if (!success) {
       showToast(
-        t(
+        serverErrorMessage(
+          error,
+          t,
           suspended
             ? "admin-pages.users.unsuspend-failed"
             : "admin-pages.users.suspend-failed",
-          { username, error: error || t("admin-pages.unknown-error") }
+          { values: { username } }
         ),
         "error",
         { clear: true }
       );
-      return;
+      return false;
     }
     showToast(
       t(
@@ -73,36 +75,33 @@ export default function UserRow({
       { clear: true }
     );
     onUpdated({ suspended: suspended ? 0 : 1 });
+    return false;
   };
 
   const handleDelete = async () => {
-    setBusy(true);
     const { success, error } = await Admin.deleteUser(user.id);
-    setBusy(false);
     if (!success) {
-      setConfirming(null);
       showToast(
-        t("admin-pages.users.delete-failed", {
-          username,
-          error: error || t("admin-pages.unknown-error"),
+        serverErrorMessage(error, t, "admin-pages.users.delete-failed", {
+          values: { username },
         }),
         "error",
-        {
-          clear: true,
-        }
+        { clear: true }
       );
-      return;
+      return false;
     }
     showToast(t("admin-pages.users.deleted", { username }), "success", {
       clear: true,
     });
     onDeleted();
+    return true;
   };
 
   return (
     <>
       <tr data-row="" className={ROW}>
-        <th scope="row" className={ROW_HEADER}>
+        {/* Focus lands here when the previous row is deleted. */}
+        <th scope="row" tabIndex={-1} data-row-focus="" className={ROW_HEADER}>
           {username}
           {isSelf && (
             <span className="ml-1 font-normal text-theme-text-secondary">
@@ -129,41 +128,9 @@ export default function UserRow({
           {formatDateTime(user.createdAt)}
         </td>
         <td className={`${CELL} pt-2`}>
-          {confirming === "suspend" ? (
-            <InlineConfirm
-              question={t(
-                suspended
-                  ? "admin-pages.users.unsuspend-question"
-                  : "admin-pages.users.suspend-question",
-                { username }
-              )}
-              consequences={t(
-                suspended
-                  ? "admin-pages.users.unsuspend-consequences"
-                  : "admin-pages.users.suspend-consequences"
-              )}
-              confirmLabel={t(
-                suspended
-                  ? "admin-pages.users.unsuspend"
-                  : "admin-pages.users.suspend"
-              )}
-              danger={!suspended}
-              busy={busy}
-              onConfirm={handleSuspend}
-              onCancel={() => setConfirming(null)}
-            />
-          ) : confirming === "delete" ? (
-            <InlineConfirm
-              question={t("admin-pages.users.delete-question", { username })}
-              consequences={t("admin-pages.users.delete-consequences")}
-              confirmLabel={t("settings-pages.delete")}
-              busy={busy}
-              onConfirm={handleDelete}
-              onCancel={() => setConfirming(null)}
-            />
-          ) : (
-            canModify && (
-              <div className={ROW_ACTIONS}>
+          {canModify && (
+            <div className={ROW_ACTIONS}>
+              {!openAction && (
                 <button
                   type="button"
                   onClick={openModal}
@@ -172,41 +139,59 @@ export default function UserRow({
                 >
                   {t("admin-pages.users.edit")}
                 </button>
-                {!isSelf && (
-                  <>
-                    <button
-                      ref={suspendRef}
-                      type="button"
-                      onClick={() => setConfirming("suspend")}
-                      aria-label={t(
-                        suspended
-                          ? "admin-pages.users.unsuspend-user"
-                          : "admin-pages.users.suspend-user",
-                        { username }
-                      )}
-                      className={suspended ? ROW_ACTION : ROW_ACTION_WARNING}
-                    >
-                      {t(
-                        suspended
-                          ? "admin-pages.users.unsuspend"
-                          : "admin-pages.users.suspend"
-                      )}
-                    </button>
-                    <button
-                      ref={deleteRef}
-                      type="button"
-                      onClick={() => setConfirming("delete")}
-                      aria-label={t("admin-pages.users.delete-user", {
-                        username,
-                      })}
-                      className={ROW_ACTION_DANGER}
-                    >
-                      {t("settings-pages.delete")}
-                    </button>
-                  </>
-                )}
-              </div>
-            )
+              )}
+              {!isSelf && shows("suspend") && (
+                <InlineConfirmButton
+                  label={t(
+                    suspended
+                      ? "admin-pages.users.unsuspend-user"
+                      : "admin-pages.users.suspend-user",
+                    { username }
+                  )}
+                  text={t(
+                    suspended
+                      ? "admin-pages.users.unsuspend"
+                      : "admin-pages.users.suspend"
+                  )}
+                  triggerClassName={suspended ? ROW_ACTION : ROW_ACTION_WARNING}
+                  question={t(
+                    suspended
+                      ? "admin-pages.users.unsuspend-question"
+                      : "admin-pages.users.suspend-question",
+                    { username }
+                  )}
+                  consequences={t(
+                    suspended
+                      ? "admin-pages.users.unsuspend-consequences"
+                      : "admin-pages.users.suspend-consequences"
+                  )}
+                  confirmLabel={t(
+                    suspended
+                      ? "admin-pages.users.unsuspend"
+                      : "admin-pages.users.suspend"
+                  )}
+                  danger={!suspended}
+                  align="end"
+                  onConfirm={handleSuspend}
+                  onOpenChange={trackOpen("suspend")}
+                />
+              )}
+              {!isSelf && shows("delete") && (
+                <InlineConfirmButton
+                  label={t("admin-pages.users.delete-user", { username })}
+                  text={t("settings-pages.delete")}
+                  triggerClassName={ROW_ACTION_DANGER}
+                  question={t("admin-pages.users.delete-question", {
+                    username,
+                  })}
+                  consequences={t("admin-pages.users.delete-consequences")}
+                  confirmLabel={t("settings-pages.delete")}
+                  align="end"
+                  onConfirm={handleDelete}
+                  onOpenChange={trackOpen("delete")}
+                />
+              )}
+            </div>
           )}
         </td>
       </tr>

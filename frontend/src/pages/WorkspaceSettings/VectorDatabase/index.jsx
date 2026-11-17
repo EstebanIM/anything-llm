@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import Workspace from "@/models/workspace";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import { castToType } from "@/utils/types";
 import AutosaveForm from "@/components/AutosaveForm";
 import VectorDBIdentifier from "./VectorDBIdentifier";
@@ -25,9 +26,13 @@ export default function VectorDatabase({ workspace }) {
       data
     );
     if (!updatedWorkspace)
-      showToast(t("provider-pages.toast.failed", { error: message }), "error", {
-        clear: true,
-      });
+      showToast(
+        serverErrorMessage(message, t, "provider-pages.toast.failed"),
+        "error",
+        {
+          clear: true,
+        }
+      );
     return !!updatedWorkspace;
   };
 

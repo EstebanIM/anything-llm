@@ -7,6 +7,7 @@ import {
   FIELD_LABEL,
   FIELD_ROW,
   FIELD_SELECT,
+  ModelsErrorText,
   SECRET_MASK,
   SecretInput,
 } from "@/components/ProviderFields";
@@ -135,7 +136,7 @@ function ElevenLabsModelSelection({ apiKey, settings }) {
       )}
       {status === "error" && (
         <p id={`${id}-model-error`} role="alert" className={FIELD_ERROR}>
-          {t("provider-fields.models-error", { error })}{" "}
+          <ModelsErrorText error={error} />{" "}
           <button
             type="button"
             onClick={() => setAttempt((n) => n + 1)}

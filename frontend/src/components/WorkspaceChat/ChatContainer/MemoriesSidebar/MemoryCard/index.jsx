@@ -1,9 +1,9 @@
-import moment from "moment";
 import { useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EllipsisVertical } from "lucide-react";
 import { useMemoriesContext, LIMITS } from "../MemoriesContext";
 import CardMenu from "./CardMenu";
+import { formatDate } from "@/utils/dates";
 
 export default function MemoryCard({ memory, index }) {
   const { t } = useTranslation();
@@ -35,7 +35,7 @@ export default function MemoryCard({ memory, index }) {
           {memory.content}
         </p>
         <p className="text-xs leading-4 text-zinc-400 light:text-slate-600 mt-1.5">
-          {moment(memory.createdAt).format("ll")}
+          {formatDate(memory.createdAt)}
         </p>
       </div>
       <button

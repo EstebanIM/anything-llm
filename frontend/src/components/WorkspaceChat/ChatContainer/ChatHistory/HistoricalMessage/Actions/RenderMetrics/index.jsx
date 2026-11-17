@@ -1,5 +1,4 @@
-import { formatDateTimeAsMoment } from "@/utils/directories";
-import { formatDuration, numberWithCommas } from "@/utils/numbers";
+import { formatDateTime, formatElapsed, formatNumber } from "@/utils/dates";
 import React, { useEffect, useState, useContext } from "react";
 import { isMobile } from "react-device-detect";
 import useUser from "@/hooks/useUser";
@@ -14,13 +13,12 @@ const SHOW_METRICS_EVENT = "anythingllm_show_metrics_change";
  * @returns {string}
  */
 function formatTps(outputTps) {
-  try {
-    return outputTps < 1000
-      ? outputTps.toFixed(2)
-      : numberWithCommas(outputTps.toFixed(0));
-  } catch {
-    return "";
-  }
+  if (!Number.isFinite(outputTps)) return "";
+  const digits = outputTps < 1000 ? 2 : 0;
+  return formatNumber(outputTps, {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  });
 }
 
 /**
@@ -42,9 +40,14 @@ function getAutoShowMetrics() {
 function buildMetricsString(metrics = {}) {
   return [
     metrics?.model ? metrics.model : "",
-    `${formatDuration(metrics.duration)} (${formatTps(metrics.outputTps)} tok/s)`,
+    `${formatElapsed(metrics.duration * 1000)} (${formatTps(metrics.outputTps)} tok/s)`,
     metrics?.timestamp
-      ? formatDateTimeAsMoment(metrics.timestamp, "MMM D, h:mm A")
+      ? formatDateTime(metrics.timestamp, {
+          month: "short",
+          day: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        })
       : "",
   ]
     .filter(Boolean)

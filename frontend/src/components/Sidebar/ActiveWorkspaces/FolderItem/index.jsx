@@ -6,14 +6,14 @@ import {
   Pencil,
   Plus,
   Trash2,
-  Check,
-  X,
   Move,
   Ellipsis,
 } from "lucide-react";
 import { Droppable } from "react-beautiful-dnd";
 import WorkspaceFolder from "@/models/workspaceFolder";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
+import InlineConfirm from "@/components/lib/InlineConfirm";
 import { useTranslation } from "react-i18next";
 import MoveFolderModal, {
   useMoveFolderModal,
@@ -33,6 +33,8 @@ import NewFolderModal from "@/components/Modals/NewFolderModal";
  * @param {Function} props.renderWorkspace - (workspace, index) => JSX
  * @param {Object} props.user
  * @param {string} props.currentSlug - slug of the active workspace
+ * @param {(element: HTMLElement) => void} [props.onBeforeRemove] - called with the
+ *   folder's name button before a confirmed delete refreshes the tree
  */
 export default function FolderItem({
   folder,
@@ -43,6 +45,7 @@ export default function FolderItem({
   renderWorkspace,
   user,
   currentSlug,
+  onBeforeRemove,
 }) {
   const { t } = useTranslation();
   const [isRenaming, setIsRenaming] = useState(false);
@@ -55,7 +58,6 @@ export default function FolderItem({
   const wasRenaming = useRef(false);
   const deleteButtonRef = useRef(null);
   const wasConfirmingDelete = useRef(false);
-  const confirmDescId = `folder-${folder.id}-delete-desc`;
 
   // The trash button is swapped for confirm / cancel: when the user cancels,
   // focus returns to it instead of dropping to <body>.
@@ -104,9 +106,13 @@ export default function FolderItem({
       });
       onFolderChange();
     } else {
-      showToast(message || t("sidebar-nav.folder-rename-failed"), "error", {
-        clear: true,
-      });
+      showToast(
+        serverErrorMessage(message, t, "sidebar-nav.folder-rename-failed", {
+          known: [["Invalid folder name", "notices.folder-name-invalid"]],
+        }),
+        "error",
+        { clear: true }
+      );
     }
     setIsRenaming(false);
   };
@@ -129,25 +135,32 @@ export default function FolderItem({
     onFolderChange();
   };
 
+  /** @returns {Promise<boolean>} true when the server deleted the folder */
   const handleDelete = async () => {
     setIsDeleting(true);
     const { success, message } = await WorkspaceFolder.delete(folder.id);
     setIsDeleting(false);
-    setShowConfirmDelete(false);
-    if (success) {
+    if (!success) {
+      setShowConfirmDelete(false);
       showToast(
-        t("workspace-folders.deleted", { name: folder.name }),
-        "success",
-        {
-          clear: true,
-        }
+        serverErrorMessage(message, t, "sidebar-nav.folder-delete-failed"),
+        "error",
+        { clear: true }
       );
-      onFolderChange();
-    } else {
-      showToast(message || t("sidebar-nav.folder-delete-failed"), "error", {
-        clear: true,
-      });
+      return false;
     }
+    showToast(
+      t("workspace-folders.deleted", { name: folder.name }),
+      "success",
+      {
+        clear: true,
+      }
+    );
+    // The row goes away with the refreshed tree: focus moves to the row that
+    // takes its place.
+    onBeforeRemove?.(nameButtonRef.current);
+    onFolderChange();
+    return true;
   };
 
   return (
@@ -197,6 +210,7 @@ export default function FolderItem({
           <button
             ref={nameButtonRef}
             type="button"
+            data-sidebar-focus=""
             onClick={() => toggleExpanded(folder.id)}
             aria-expanded={isExpanded}
             className="flex flex-grow items-center gap-x-2 py-[5px] min-w-0 rounded-md"
@@ -283,67 +297,41 @@ export default function FolderItem({
                 className="text-white/70 hover:text-white light:text-slate-600 light:hover:text-slate-900"
               />
             </button>
-            {!showConfirmDelete ? (
-              <button
-                ref={deleteButtonRef}
-                type="button"
-                onClick={() => setShowConfirmDelete(true)}
-                title={t("workspace-folders.delete")}
-                aria-label={`${t("workspace-folders.delete")}: ${folder.name}`}
-                className="rounded-full p-[3px] hover:bg-red-500/20 light:hover:bg-red-500/15"
-              >
-                <Trash2
-                  size={14}
-                  strokeWidth={1.5}
-                  className="text-white/70 hover:text-red-400 light:text-slate-600 light:hover:text-red-600"
-                />
-              </button>
-            ) : (
-              <>
-                <span id={confirmDescId} className="sr-only">
-                  {t("sidebar-nav.delete-folder-confirm")}
-                </span>
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  disabled={isDeleting}
-                  // Takes focus from the trash button it replaces.
-                  autoFocus
-                  title={t("sidebar-nav.delete-folder-confirm")}
-                  aria-label={`${t("sidebar-nav.confirm-delete")}: ${folder.name}`}
-                  aria-describedby={confirmDescId}
-                  className="rounded-full p-[3px] hover:bg-red-500/40 light:hover:bg-red-500/20"
-                >
-                  <Check
-                    size={14}
-                    strokeWidth={1.5}
-                    className="text-red-400 light:text-red-600"
-                  />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmDelete(false)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Escape") {
-                      e.preventDefault();
-                      setShowConfirmDelete(false);
-                    }
-                  }}
-                  title={t("sidebar-nav.cancel")}
-                  aria-label={`${t("sidebar-nav.cancel")}: ${folder.name}`}
-                  className="rounded-full p-[3px] hover:bg-white/10 light:hover:bg-slate-300/70"
-                >
-                  <X
-                    size={14}
-                    strokeWidth={1.5}
-                    className="text-white/70 light:text-slate-600"
-                  />
-                </button>
-              </>
-            )}
+            <button
+              ref={deleteButtonRef}
+              type="button"
+              onClick={() => setShowConfirmDelete(true)}
+              title={t("workspace-folders.delete")}
+              aria-label={`${t("workspace-folders.delete")}: ${folder.name}`}
+              aria-expanded={showConfirmDelete}
+              className="rounded-full p-[3px] hover:bg-red-500/20 light:hover:bg-red-500/15"
+            >
+              <Trash2
+                size={14}
+                strokeWidth={1.5}
+                className="text-white/70 hover:text-red-400 light:text-slate-600 light:hover:text-red-600"
+              />
+            </button>
           </div>
         )}
       </div>
+
+      {/* Desktop delete confirmation, under the row: the row is too narrow
+          for the question, the consequences and two buttons. */}
+      {showConfirmDelete && (
+        <div className="pr-1 pb-1" style={{ paddingLeft: `${indent + 28}px` }}>
+          <InlineConfirm
+            question={t("notices.delete-folder-question", {
+              name: folder.name,
+            })}
+            consequences={t("notices.delete-folder-consequences")}
+            confirmLabel={t("workspace-folders.delete")}
+            busy={isDeleting}
+            onConfirm={handleDelete}
+            onCancel={() => setShowConfirmDelete(false)}
+          />
+        </div>
+      )}
 
       {showSubfolderModal && (
         <NewFolderModal
@@ -387,6 +375,7 @@ export default function FolderItem({
                   renderWorkspace={renderWorkspace}
                   user={user}
                   currentSlug={currentSlug}
+                  onBeforeRemove={onBeforeRemove}
                 />
               ))}
 
@@ -426,7 +415,8 @@ function FolderActionsMenu({
   };
 
   useEffect(() => {
-    if (!open) return;
+    // The confirmation focuses its own Confirm button.
+    if (!open || confirmingDelete) return;
     menuRef.current?.querySelector("button")?.focus();
   }, [open, confirmingDelete]);
 
@@ -470,35 +460,29 @@ function FolderActionsMenu({
       {open && (
         <div
           ref={menuRef}
-          role="menu"
-          aria-label={t("sidebar-nav.folder-options", { name: folderName })}
+          // Once it asks for confirmation it is no longer a menu.
+          role={confirmingDelete ? undefined : "menu"}
+          aria-label={
+            confirmingDelete
+              ? undefined
+              : t("sidebar-nav.folder-options", { name: folderName })
+          }
           className="absolute z-20 right-1 top-full w-max max-w-[240px] rounded-lg p-1 bg-zinc-900 light:bg-theme-bg-sidebar light:border light:border-theme-sidebar-border shadow-lg animate-in fade-in-0 slide-in-from-top-2"
         >
           {confirmingDelete ? (
-            <div className="p-2 flex flex-col gap-y-2">
-              <p className="text-sm text-theme-text-primary">
-                {t("sidebar-nav.delete-folder-confirm")}
-              </p>
-              <div className="flex gap-x-2 justify-end">
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => close({ returnFocus: true })}
-                  className="rounded-md min-h-[44px] px-3 text-sm text-theme-text-primary hover:bg-slate-500/20"
-                >
-                  {t("sidebar-nav.cancel")}
-                </button>
-                <button
-                  type="button"
-                  role="menuitem"
-                  disabled={isDeleting}
-                  onClick={run(onDelete)}
-                  className="rounded-md min-h-[44px] px-3 text-sm font-medium text-red-300 light:text-red-700 hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {t("workspace-folders.delete")}
-                </button>
-              </div>
-            </div>
+            <InlineConfirm
+              className="p-2"
+              question={t("notices.delete-folder-question", {
+                name: folderName,
+              })}
+              consequences={t("notices.delete-folder-consequences")}
+              confirmLabel={t("workspace-folders.delete")}
+              busy={isDeleting}
+              onConfirm={async () => {
+                if (!(await onDelete())) close({ returnFocus: true });
+              }}
+              onCancel={() => close({ returnFocus: true })}
+            />
           ) : (
             <>
               <button

@@ -13,6 +13,7 @@ import {
   FIELD_ERROR,
   FIELD_INPUT,
   FIELD_ROW,
+  ModelsErrorText,
 } from "@/components/ProviderFields";
 import { FieldLabel, blurOnWheel } from "@/components/LLMSelection/FormParts";
 
@@ -210,7 +211,7 @@ function FoundryModelSelection({
         <div className="flex flex-col w-full gap-y-2 mt-4">
           {error ? (
             <p role="alert" className={FIELD_ERROR}>
-              {t("provider-fields.models-error", { error })}
+              <ModelsErrorText error={error} />
             </p>
           ) : (
             <p className="text-theme-text-secondary text-sm">

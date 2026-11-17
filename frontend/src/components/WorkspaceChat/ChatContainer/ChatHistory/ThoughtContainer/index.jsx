@@ -1,5 +1,5 @@
 import { useState, createContext, useContext, useCallback } from "react";
-import { formatDuration } from "@/utils/numbers";
+import { formatElapsed } from "@/utils/dates";
 
 /**
  * Context to persist activity-chain expansion state across component
@@ -59,7 +59,7 @@ export function thoughtLabel(t, isThinking, duration) {
   if (isThinking) return t("chat_window.thought_in_progress");
   if (duration)
     return t("chat-history.thought-for", {
-      duration: formatDuration(duration),
+      duration: formatElapsed(duration * 1000),
     });
   return t("chat_window.thoughts");
 }

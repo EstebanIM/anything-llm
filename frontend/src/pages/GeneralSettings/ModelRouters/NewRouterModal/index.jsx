@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { LoaderCircle } from "lucide-react";
 import ModelRouter from "@/models/modelRouter";
 import System from "@/models/system";
+import { serverErrorParts } from "@/utils/serverErrors";
+import ServerErrorDetail from "@/components/lib/ServerErrorDetail";
 import Modal, {
   ModalHeader,
   ModalBody,
@@ -47,13 +49,19 @@ export default function NewRouterModal({
     };
 
     if (!data.name) {
-      setError(t("model-router.new-router.name-required"));
+      setError({
+        message: t("model-router.new-router.name-required"),
+        detail: null,
+      });
       setLoading(false);
       return;
     }
 
     if (!data.fallback_provider || !data.fallback_model) {
-      setError(t("model-router.new-router.fallback-required"));
+      setError({
+        message: t("model-router.new-router.fallback-required"),
+        detail: null,
+      });
       setLoading(false);
       return;
     }
@@ -68,10 +76,13 @@ export default function NewRouterModal({
       closeModal();
     } else {
       setError(
-        apiError ||
-          (isEdit
-            ? t("model-router.edit-router.toast-update-failed")
-            : t("settings-pages.router-create-failed"))
+        serverErrorParts(
+          apiError,
+          t,
+          isEdit
+            ? "model-router.edit-router.toast-update-failed"
+            : "settings-pages.router-create-failed"
+        )
       );
     }
   };
@@ -141,13 +152,14 @@ export default function NewRouterModal({
               role="alert"
               className="text-xs leading-4 text-red-400 light:text-red-700"
             >
-              {t("settings-pages.form-error", { error })}
+              {error.message}
+              <ServerErrorDetail detail={error.detail} />
             </p>
           )}
         </ModalBody>
         <ModalFooter>
           <ModalSecondaryButton onClick={closeModal} type="button">
-            {t("model-router.new-router.cancel")}
+            {t("settings-pages.cancel")}
           </ModalSecondaryButton>
           <ModalPrimaryButton
             type="submit"

@@ -1,4 +1,14 @@
 import showToast from "../toast";
+import i18n from "@/i18n";
+import { serverErrorMessage } from "@/utils/serverErrors";
+
+// Worker errors are English: show the translated sentence, log the detail.
+const voiceError = (error) =>
+  serverErrorMessage(
+    error,
+    (key, options) => i18n.t(key, options),
+    "chat-history.tts.failed"
+  );
 
 /**
  * Strips <think>...</think> reasoning blocks (including an unterminated
@@ -174,11 +184,7 @@ export default class PiperTTSClient {
       if (data?.streamId && data.streamId !== streamId) return;
       if (data?.type === "error") {
         primaryWorker.removeEventListener("message", handleMessage);
-        showToast(
-          `Could not generate voice prediction. Error: ${data.message}`,
-          "error",
-          { clear: true }
-        );
+        showToast(voiceError(data.message), "error", { clear: true });
         onError?.(data.message);
         return;
       }
@@ -243,11 +249,7 @@ export default class PiperTTSClient {
 
     const { blobURL, error } = await this.waitForBlobResponse(onProgress);
     if (!!error) {
-      showToast(
-        `Could not generate voice prediction. Error: ${error}`,
-        "error",
-        { clear: true }
-      );
+      showToast(voiceError(error), "error", { clear: true });
       return;
     }
 

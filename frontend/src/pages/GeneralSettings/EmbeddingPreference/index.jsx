@@ -3,6 +3,7 @@ import { flushSync } from "react-dom";
 import Sidebar from "@/components/SettingsSidebar";
 import System from "@/models/system";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import { BUILT_IN_LOGO } from "@/utils/builtInLogos";
 import OpenAiLogo from "@/media/llmprovider/openai.png";
 import AzureOpenAiLogo from "@/media/llmprovider/azure.png";
@@ -218,7 +219,10 @@ export default function GeneralEmbeddingPreference() {
 
     const { error } = await System.updateSystem(settingsData);
     if (error) {
-      showToast(t("provider-pages.toast.failed", { error }), "error");
+      showToast(
+        serverErrorMessage(error, t, "provider-pages.toast.failed"),
+        "error"
+      );
       flushSync(() => {
         setSaving(false);
         closeModal();

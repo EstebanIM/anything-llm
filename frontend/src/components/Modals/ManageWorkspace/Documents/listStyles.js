@@ -1,3 +1,4 @@
+import i18n from "@/i18n";
 import { formatDate } from "@/utils/dates";
 
 /**
@@ -37,5 +38,8 @@ export function rowChip(accent) {
  */
 export function displayDate(value) {
   if (!value) return "";
+  // The collector writes "unknown" when it cannot read the file date.
+  if (/^unknown$/i.test(String(value).trim()))
+    return i18n.t("notices.date-unknown");
   return formatDate(value) || String(value);
 }

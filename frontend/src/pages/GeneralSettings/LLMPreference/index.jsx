@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import Sidebar from "@/components/SettingsSidebar";
 import System from "@/models/system";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import { MODEL_ROUTER_LOGO } from "@/utils/builtInLogos";
 import i18n from "@/i18n";
 import OpenAiLogo from "@/media/llmprovider/openai.png";
@@ -509,7 +510,10 @@ export default function GeneralLLMPreference() {
 
     const { error } = await System.updateSystem(data);
     if (error) {
-      showToast(t("provider-pages.toast.failed", { error }), "error");
+      showToast(
+        serverErrorMessage(error, t, "provider-pages.toast.failed"),
+        "error"
+      );
       flushSync(() => setSaving(false));
       restoreFocusAfterSave(false);
       return;

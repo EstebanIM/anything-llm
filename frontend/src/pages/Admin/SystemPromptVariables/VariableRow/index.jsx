@@ -1,14 +1,15 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import System from "@/models/system";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import { useModal } from "@/hooks/useModal";
 import Modal from "@/components/lib/Modal";
 import EditVariableModal from "./EditVariableModal";
-import { errorMessage } from "../VariableFields";
 import truncate from "truncate";
 import { Pencil, Trash2 } from "lucide-react";
-import InlineConfirm, {
+import { InlineConfirmButton } from "@/components/lib/InlineConfirm";
+import {
   CELL,
   MOBILE_LABEL,
   ROW,
@@ -16,7 +17,6 @@ import InlineConfirm, {
   ROW_ACTION_DANGER,
   ROW_ACTIONS,
   ROW_HEADER,
-  useConfirmFocusReturn,
 } from "@/pages/Admin/Users/AdminTable";
 
 const TYPE_STYLES = {
@@ -36,42 +36,42 @@ const TYPE_STYLES = {
 export default function VariableRow({ variable, onRefresh, onDeleted }) {
   const { t } = useTranslation();
   const { isOpen, openModal, closeModal } = useModal();
-  const [confirming, setConfirming] = useState(null);
-  const [busy, setBusy] = useState(false);
-  const deleteRef = useRef(null);
-  useConfirmFocusReturn(confirming, { delete: deleteRef });
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const type = variable?.type ?? "static";
   const key = variable.key;
   const value =
     typeof variable.value === "function" ? variable.value() : variable.value;
 
   const handleDelete = async () => {
-    if (!variable.id) return;
-    setBusy(true);
+    if (!variable.id) return false;
     const { success, error } = await System.promptVariables.delete(variable.id);
-    setBusy(false);
     if (!success) {
-      setConfirming(null);
       showToast(
-        t("admin-pages.variables.delete-failed", {
-          key,
-          error: errorMessage(error, t("admin-pages.unknown-error")),
+        serverErrorMessage(error, t, "admin-pages.variables.delete-failed", {
+          values: { key },
         }),
         "error",
         { clear: true }
       );
-      return;
+      return false;
     }
     showToast(t("admin-pages.variables.deleted", { key }), "success", {
       clear: true,
     });
     onDeleted?.();
+    return true;
   };
 
   return (
     <>
       <tr data-row="" className={ROW}>
-        <th scope="row" className={`${ROW_HEADER} font-mono`}>
+        {/* Focus lands here when the previous row is deleted. */}
+        <th
+          scope="row"
+          tabIndex={-1}
+          data-row-focus=""
+          className={`${ROW_HEADER} font-mono`}
+        >
           {key}
         </th>
         <td className={CELL} title={value}>
@@ -105,20 +105,9 @@ export default function VariableRow({ variable, onRefresh, onDeleted }) {
           </span>
         </td>
         <td className={`${CELL} pt-2`}>
-          {confirming === "delete" ? (
-            <InlineConfirm
-              question={t("admin-pages.variables.delete-question", { key })}
-              consequences={t("admin-pages.variables.delete-consequences", {
-                token: `{${key}}`,
-              })}
-              confirmLabel={t("settings-pages.delete")}
-              busy={busy}
-              onConfirm={handleDelete}
-              onCancel={() => setConfirming(null)}
-            />
-          ) : (
-            type === "static" && (
-              <div className={ROW_ACTIONS}>
+          {type === "static" && (
+            <div className={ROW_ACTIONS}>
+              {!deleteOpen && (
                 <button
                   type="button"
                   onClick={openModal}
@@ -132,22 +121,21 @@ export default function VariableRow({ variable, onRefresh, onDeleted }) {
                     aria-hidden="true"
                   />
                 </button>
-                <button
-                  ref={deleteRef}
-                  type="button"
-                  onClick={() => setConfirming("delete")}
-                  aria-label={t("admin-pages.variables.delete", { key })}
-                  title={t("admin-pages.variables.delete", { key })}
-                  className={ROW_ACTION_DANGER}
-                >
-                  <Trash2
-                    strokeWidth={1.5}
-                    className="h-4 w-4"
-                    aria-hidden="true"
-                  />
-                </button>
-              </div>
-            )
+              )}
+              <InlineConfirmButton
+                label={t("admin-pages.variables.delete", { key })}
+                icon={Trash2}
+                triggerClassName={ROW_ACTION_DANGER}
+                question={t("admin-pages.variables.delete-question", { key })}
+                consequences={t("admin-pages.variables.delete-consequences", {
+                  token: `{${key}}`,
+                })}
+                confirmLabel={t("settings-pages.delete")}
+                align="end"
+                onConfirm={handleDelete}
+                onOpenChange={setDeleteOpen}
+              />
+            </div>
           )}
         </td>
       </tr>

@@ -4,6 +4,7 @@ import { useTranslation, Trans } from "react-i18next";
 import MCPLogo from "@/media/agents/mcp-logo.svg";
 import MCPServers from "@/models/mcpServers";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import { SimpleToggleSwitch } from "@/components/lib/Toggle";
 import ConfirmModal from "@/components/lib/ConfirmModal";
 import StatusNote from "@/components/lib/StatusNote";
@@ -112,7 +113,9 @@ function ServerActions({ server, name, onServerToggled, onDelete }) {
       );
     } else {
       showToast(
-        t("agent-pages.mcp.toggle-failed", { name, error: error || "-" }),
+        serverErrorMessage(error, t, "agent-pages.mcp.toggle-failed", {
+          values: { name },
+        }),
         "error",
         { clear: true }
       );
@@ -125,7 +128,9 @@ function ServerActions({ server, name, onServerToggled, onDelete }) {
     setDeleting(false);
     if (!success) {
       showToast(
-        t("agent-pages.mcp.delete-failed", { name, error: error || "-" }),
+        serverErrorMessage(error, t, "agent-pages.mcp.delete-failed", {
+          values: { name },
+        }),
         "error",
         { clear: true }
       );

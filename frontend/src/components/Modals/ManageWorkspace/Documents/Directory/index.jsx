@@ -23,6 +23,7 @@ import { FIELD_INPUT } from "@/components/ProviderFields";
 import System from "@/models/system";
 import Document from "@/models/document";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import { useModal } from "@/hooks/useModal";
 import { getFilesFromUploadEvent } from "@/utils/folderUpload";
 import {
@@ -352,16 +353,31 @@ export default function Directory({
     );
     if (!success) {
       setPickerError(
-        t("workspace-docs.move-error", { error: message || error || "" })
+        serverErrorMessage(message || error, t, "workspace-docs.move-error")
       );
       setBusy(null);
       focusList();
       return;
     }
 
-    // A partial success returns a message explaining which files were skipped.
-    if (message) showToast(message, "info");
-    else
+    // A partial success returns "2/5 files not moved. Unembed them…": files
+    // embedded in a workspace stay where they were.
+    if (message) {
+      const [, notMoved, total] =
+        String(message).match(/^(\d+)\/(\d+)\b/) || [];
+      showToast(
+        notMoved
+          ? t("notices.move-partial", {
+              count: Number(notMoved),
+              moved: Number(total) - Number(notMoved),
+              total: Number(total),
+            })
+          : t("notices.move-partial-generic"),
+        "warning",
+        // Says what to do next: it stays until it is closed.
+        { autoClose: false }
+      );
+    } else
       showToast(
         t("workspace-docs.move-success", { count: toMove.length }),
         "success"
@@ -387,6 +403,7 @@ export default function Directory({
       const dropped = await getFilesFromUploadEvent(event.nativeEvent ?? event);
       const { queued, skipped } = enqueueIntoFolder(dropped, folderName);
 
+      // These say what to do instead, so they stay until they are closed.
       if (queued === 0)
         return showToast(
           skipped > 0
@@ -394,7 +411,8 @@ export default function Directory({
                 folder: folderName,
               })
             : t("workspace-docs.drop-nothing"),
-          "warning"
+          "warning",
+          skipped > 0 ? { autoClose: false } : {}
         );
 
       // The progress list lives in the uploader below the picker, which may be
@@ -410,7 +428,8 @@ export default function Directory({
       if (skipped > 0)
         showToast(
           t("workspace-docs.drop-skipped", { count: skipped }),
-          "warning"
+          "warning",
+          { autoClose: false }
         );
     },
     [enqueueIntoFolder, t]

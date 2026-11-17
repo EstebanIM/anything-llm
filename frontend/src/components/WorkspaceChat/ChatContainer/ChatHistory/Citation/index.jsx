@@ -16,7 +16,7 @@ import {
 import GmailLogo from "@/pages/Admin/Agents/GMailSkillPanel/gmail.png";
 import GoogleCalendarLogo from "@/pages/Admin/Agents/GoogleCalendarSkillPanel/google-calendar.png";
 import OutlookLogo from "@/pages/Admin/Agents/OutlookSkillPanel/outlook.png";
-import { toPercentString } from "@/utils/numbers";
+import { formatPercent } from "@/utils/dates";
 import { useTranslation } from "react-i18next";
 import { useSourcesSidebar } from "../../ChatSidebar";
 
@@ -233,7 +233,7 @@ export function CitationDetailModal({ source, onClose }) {
                     >
                       <Info strokeWidth={1.5} size={14} aria-hidden="true" />
                       <p>
-                        {toPercentString(score)}{" "}
+                        {formatPercent(score)}{" "}
                         {t("chat_window.similarity_match")}
                       </p>
                     </div>

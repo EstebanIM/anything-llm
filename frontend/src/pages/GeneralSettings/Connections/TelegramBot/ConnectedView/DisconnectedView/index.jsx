@@ -3,6 +3,7 @@ import { LoaderCircle } from "lucide-react";
 import { TelegramLogo } from "@phosphor-icons/react";
 import Telegram from "@/models/telegram";
 import CTAButton from "@/components/lib/CTAButton";
+import { serverErrorParts } from "@/utils/serverErrors";
 import { BotTokenField } from "../../SetupView";
 import { useTranslation } from "react-i18next";
 
@@ -21,7 +22,10 @@ export default function DisconnectedView({
     e.preventDefault();
     if (reconnecting) return;
     if (!newToken.trim()) {
-      setError(t("telegram.setup.toast-enter-token"));
+      setError({
+        message: t("telegram.setup.toast-enter-token"),
+        detail: null,
+      });
       return tokenRef.current?.focus();
     }
     setError(null);
@@ -34,8 +38,11 @@ export default function DisconnectedView({
     if (!res.success) {
       setError(
         res.error
-          ? t("tools-pages.telegram.connect-error", { error: res.error })
-          : t("telegram.connected.toast-reconnect-failed")
+          ? serverErrorParts(res.error, t, "tools-pages.telegram.connect-error")
+          : {
+              message: t("telegram.connected.toast-reconnect-failed"),
+              detail: null,
+            }
       );
       return tokenRef.current?.focus();
     }

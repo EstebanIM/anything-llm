@@ -172,7 +172,6 @@ const TRANSLATIONS = {
     root: "No folder (root)",
     "max-depth": "Maximum folder depth reached (5 levels).",
     move: "Move",
-    "move-title": "Move folder",
     "move-description": "Choose a destination for this folder.",
     "move-button": "Move",
     "move-success": "Folder moved",
@@ -209,8 +208,6 @@ const TRANSLATIONS = {
     "thread-name": "Thread name",
     rename: "Rename",
     "delete-thread": "Delete thread",
-    "delete-thread-confirm":
-      "Delete this thread? All of its chats will be deleted and this cannot be undone.",
     "thread-deleted": "Thread deleted.",
     "thread-delete-failed": "The thread could not be deleted.",
     "thread-rename-failed": "The thread could not be renamed: {{message}}",
@@ -220,8 +217,6 @@ const TRANSLATIONS = {
     "delete-selected": "Delete selected",
     "expand-folder": "Expand folder",
     "collapse-folder": "Collapse folder",
-    "confirm-delete": "Confirm delete",
-    cancel: "Cancel",
     "folder-rename-failed": "Could not rename the folder.",
     "folder-create-failed": "Could not create the subfolder.",
     "folder-delete-failed": "Could not delete the folder.",
@@ -230,8 +225,121 @@ const TRANSLATIONS = {
       "Press Space to pick up the workspace, use the arrow keys to move it and press Space again to drop it. Press Escape to cancel.",
     "default-system-prompt": "Default system prompt",
     "folder-options": "Options for folder {{name}}",
-    "delete-folder-confirm":
-      "Delete this folder? Its workspaces and subfolders move to the top level.",
+  },
+  notices: {
+    "folder-name-invalid": "That folder name isn't valid.",
+    "delete-folder-question": "Delete the folder “{{name}}”?",
+    "delete-folder-consequences":
+      "Its workspaces and subfolders move to the top level; none of them is deleted.",
+    "delete-thread-question": "Delete the thread “{{name}}”?",
+    "delete-thread-consequences":
+      "All of its chats are deleted. This can't be undone.",
+    "move-partial_one":
+      "Moved {{moved}} of {{total}} documents. {{count}} is still embedded in a workspace: remove it from every workspace to move it.",
+    "move-partial_other":
+      "Moved {{moved}} of {{total}} documents. {{count}} are still embedded in a workspace: remove them from every workspace to move them.",
+    "move-partial-generic":
+      "Some documents weren't moved. Documents embedded in a workspace can't be moved until you remove them from every workspace.",
+    "collect-failed": "The collection could not be completed.",
+    "workspace-model-save-failed": "Could not save the workspace model.",
+    "preset-save-failed":
+      "Could not save the command. Check that no other command uses the same name.",
+    "delete-chat-question": "Delete chat {{id}}?",
+    "cannot-undo": "This can't be undone.",
+    "delete-variable-question": "Delete the variable {{name}}?",
+    "delete-variable-consequences":
+      "Blocks that store their result in it will stop doing so.",
+    "delete-memory-question": "Delete this memory?",
+    "auth-instance-password-changed":
+      "The instance password has changed. Sign in with the new one.",
+    "auth-multiuser-enabled":
+      "Multi-user mode is on. Sign in with the administrator account you just created.",
+    "reload-page": "Reload the page",
+    "job-run-failed": "The run ended with an error.",
+    "notifications-failed": "Browser notifications could not be turned on.",
+    "experimental-unlocked": "Experimental feature previews unlocked.",
+    "date-unknown": "Unknown date",
+  },
+  dialogs: {
+    account: {
+      profile: "Profile",
+      "managed-by-admin":
+        "Your administrator manages your username and profile picture.",
+      bio: "Bio",
+      "password-section": "Change password",
+      preferences: "Preferences in this browser",
+      "preferences-hint":
+        "They apply right away and only in this browser; there's nothing to save.",
+      "save-failed": "Couldn't save your account changes.",
+      "photo-upload-failed": "Couldn't upload the profile picture.",
+      "photo-remove-failed": "Couldn't remove the profile picture.",
+      "photo-removed": "Profile picture removed.",
+      "photo-alt": "Your profile picture",
+      "photo-change": "Change photo",
+      "photo-upload": "Upload photo",
+      "photo-hint":
+        "It's saved as soon as you choose it. Square works best, about 800 × 800 px.",
+    },
+    shortcuts: {
+      note: "While you type in a text field, only help (F1) and dictation work. With another dialog open, shortcuts do nothing.",
+      "group-global": "Anywhere",
+      "group-chat": "In the chat",
+      or: "or",
+      sidebar: "Show or hide the sidebar",
+      "note-sidebar": "On the home page and in workspaces, on wide screens.",
+      "note-workspace": "Inside a workspace.",
+      dictation: "Start or stop dictation",
+      "note-dictation": "When dictation is available.",
+      "scroll-top": "Jump to the start of the conversation",
+      "scroll-bottom": "Jump to the end of the conversation",
+      "key-shift": "Shift",
+      "key-up": "Up arrow",
+      "key-down": "Down arrow",
+    },
+    error: {
+      title: "Something went wrong",
+      description:
+        "This screen hit an unexpected error. Try again or reload the page. If it keeps happening, copy the technical details and send them to your administrator.",
+      "update-title": "This screen couldn't load",
+      "update-description":
+        "{{brandName}} may have been updated while you were using it, or the connection dropped. Reload the page to get the new version.",
+      reload: "Reload the page",
+      "reload-update": "Reload to get the new version",
+      details: "Technical details",
+      "copy-details": "Copy the details",
+    },
+    "new-workspace": {
+      hint: "At least 4 characters.",
+      failed: "Couldn't create the workspace.",
+      "folders-failed":
+        "The folders could not be loaded: the workspace will be created at the top level. You can move it later.",
+    },
+    "move-folder": {
+      title: "Move the folder “{{name}}”",
+      failed: "Couldn't move the folder.",
+      "load-failed": "Couldn't load the folders.",
+      "too-deep": "Not available: it would go past the 5-level limit.",
+    },
+    "new-version": {
+      title: "A new version is available",
+      description:
+        "Reload the page to use it. If you have unsaved changes, save them first.",
+      reload: "Reload now",
+    },
+  },
+  toast: {
+    close: "Close notification",
+  },
+  "server-errors": {
+    network: "Can't reach the server. Check your connection and try again.",
+    unauthorized:
+      "The service rejected the credentials. Check the key or sign in again.",
+    forbidden: "You don't have permission to do this.",
+    "not-found": "It no longer exists or was moved.",
+    "too-large": "It's too large to process.",
+    "rate-limited": "Too many requests. Wait a moment and try again.",
+    timeout: "It took too long to respond. Try again.",
+    detail: "Server detail:",
   },
   "auth-pages": {
     login: {
@@ -522,7 +630,6 @@ const TRANSLATIONS = {
       "auth-error": "Could not connect with Microsoft: {{error}}",
       "connect-error":
         "Could not start the connection with Microsoft: {{error}}",
-      "unknown-error": "unknown error",
       "popup-blocked": "The browser blocked the Microsoft sign-in window.",
       "open-sign-in": "Open the Microsoft sign-in",
       "check-status": "Check status",
@@ -741,8 +848,6 @@ const TRANSLATIONS = {
       description: "Description for the LLM",
       "description-placeholder": "What this value is for",
       delete: "Delete variable {{name}}",
-      "delete-confirm":
-        "Delete the variable {{name}}? Blocks that store their result in it will stop doing so.",
       "error-duplicate": "Another variable already uses this name.",
       "error-invalid":
         "The name cannot contain spaces or the characters $ { } [ ] .",
@@ -811,7 +916,6 @@ const TRANSLATIONS = {
     error: "The list could not be loaded.",
   },
   "admin-pages": {
-    "unknown-error": "Unknown error",
     users: {
       title: "Users",
       description:
@@ -1153,7 +1257,6 @@ const TRANSLATIONS = {
       deleted: "Key deleted.",
       copy: "Copy the key “{{name}}”",
       "not-recorded": "Not recorded",
-      "create-failed": "The key could not be created.",
       "created-title": "API key created",
       "new-key": "Your new key",
       "new-key-hint":
@@ -1181,7 +1284,6 @@ const TRANSLATIONS = {
       "revoke-consequence":
         "Any extension that uses it will stop connecting. This cannot be undone.",
       "copy-label": "Copy the connection string for key {{key}}",
-      "create-failed": "The key could not be created.",
       "modal-title": "New browser extension key",
       "created-title": "Extension key created",
       create: "Create key",
@@ -1270,7 +1372,6 @@ const TRANSLATIONS = {
     },
     irreversible: "This action cannot be undone.",
     toast: {
-      created: "Widget created. Copy its code to publish it on your site.",
       updated: "Widget updated.",
       enabled: "Widget enabled.",
       disabled: "Widget disabled.",
@@ -1331,7 +1432,6 @@ const TRANSLATIONS = {
       "prompt-override-hint":
         "The site can use its own system prompt instead of the workspace one.",
       creating: "Creating…",
-      "save-failed": "The changes could not be saved.",
     },
     new: {
       title: "Create a chat widget",
@@ -1376,7 +1476,6 @@ const TRANSLATIONS = {
       "response-title": "Response of chat {{id}}",
       "session-title": "Session of chat {{id}}",
       delete: "Delete chat {{id}}",
-      "delete-consequence": "Delete chat {{id}}? This action cannot be undone.",
       "no-text": "No text",
       "go-to-widgets": "(go to the widgets)",
     },
@@ -1669,7 +1768,6 @@ const TRANSLATIONS = {
     status: {
       busy: "This may take a while. You can switch to another connector in the meantime.",
     },
-    error: "The collection could not be completed: {{error}}",
     submit: {
       files: "Collect files",
       "files-busy": "Collecting files…",
@@ -1846,7 +1944,6 @@ const TRANSLATIONS = {
     "load-error": "The settings could not be loaded.",
     toast: {
       failed: "The changes could not be saved: {{error}}",
-      "failed-generic": "The changes could not be saved.",
       saved: {
         llm: "LLM preferences saved.",
         embedding: "Embedding preferences saved.",
@@ -1861,7 +1958,6 @@ const TRANSLATIONS = {
     "change-warning": {
       title: "Warning: this action cannot be undone",
       question: "Do you want to continue?",
-      cancel: "Cancel",
       confirm: "Confirm",
       "confirm-clear": "Change and clear embeddings",
       "confirm-text-splitter": "Save and clear the cache",
@@ -2097,7 +2193,6 @@ const TRANSLATIONS = {
       "download-error": "The model could not be downloaded.",
       "download-error-status": "The model could not be downloaded: {{status}}",
       "uninstall-error": "The model could not be uninstalled.",
-      cancel: "Cancel",
     },
     anthropic: {
       cache: "Prompt caching",
@@ -2758,7 +2853,6 @@ const TRANSLATIONS = {
       close: "Close memories",
       loading: "Loading memories…",
       options: "Memory options",
-      "delete-confirm": "Delete this memory? This cannot be undone.",
       "delete-failed": "Could not delete the memory. Try again.",
       "move-failed": "Could not move the memory. Try again.",
       "save-failed":
@@ -3609,7 +3703,6 @@ const TRANSLATIONS = {
         "preview-note":
           'Ändringar förhandsgranskas i hela appen och sparas när du klickar på "Klar".',
         done: "Klar",
-        cancel: "Avbryt",
         enforce: "Tillämpa standardpaletten",
         "enforce-description":
           "Alla på den här instansen använder standardpaletten och kan inte ändra den.",
@@ -3630,7 +3723,6 @@ const TRANSLATIONS = {
     },
     modal: {
       title: "Skapa ny API-nyckel",
-      cancel: "Avbryt",
       close: "Stäng",
       create: "Skapa API-nyckel",
       helper:
@@ -3712,7 +3804,6 @@ const TRANSLATIONS = {
         "Hur länge ett routningsbeslut lagras i cache innan reglerna utvärderas igen. Ange 0 för att stänga av cachelagring.",
       "name-required": "Namn krävs.",
       "fallback-required": "Primär leverantör och modell krävs.",
-      cancel: "Avbryt",
       create: "Skapa router",
     },
     "edit-router": {
@@ -3777,7 +3868,6 @@ const TRANSLATIONS = {
       "route-to-label": "Dirigera till leverantör och modell",
       "route-to-description":
         "När regeln matchar används denna leverantör/modell",
-      cancel: "Avbryt",
       saving: "Sparar …",
       "update-rule": "Uppdatera regel",
       "create-rule": "Skapa regel",
@@ -3829,7 +3919,6 @@ const TRANSLATIONS = {
       "configure-provider": "Konfigurera {{name}}",
       "setup-credentials":
         "Ange de autentiseringsuppgifter som krävs för att använda {{name}} som routningsmål.",
-      cancel: "Avbryt",
       "save-settings": "Spara inställningar",
       "toast-save-failed": "Det gick inte att spara inställningarna: {{error}}",
     },
@@ -4302,7 +4391,6 @@ const TRANSLATIONS = {
     similarity_match: "träff",
     fork: "Förgrena",
     delete: "Ta bort",
-    cancel: "Avbryt",
     submit: "Skicka",
     edit_prompt: "Redigera prompt",
     edit_response: "Redigera svar",
@@ -4438,7 +4526,6 @@ const TRANSLATIONS = {
           "t.ex. Användaren heter Kim, användaren arbetar med AnythingLLM osv.",
         create: "Skapa",
         save: "Spara",
-        cancel: "Avbryt",
       },
     },
     leave_generating: {
@@ -4459,38 +4546,23 @@ const TRANSLATIONS = {
       default: "User",
     },
     current_password: "Current password",
-    current_password_placeholder: "Your current password",
     current_password_hint: "Only needed if you are changing your password.",
-    username_managed_by_admin: "Your administrator manages your username.",
     edit_account: "Redigera konto",
-    profile_picture: "Profilbild",
     remove_profile_picture: "Ta bort profilbild",
     username: "Användarnamn",
     new_password: "Nytt lösenord",
     password_description: "Lösenordet måste innehålla minst 8 tecken",
     cancel: "Avbryt",
     update_account: "Uppdatera konto",
-    theme: "Temainställning",
-    language: "Föredraget språk",
-    failed_upload: "Det gick inte att ladda upp profilbilden: {{error}}",
     upload_success: "Profilbilden har laddats upp.",
-    failed_remove: "Det gick inte att ta bort profilbilden: {{error}}",
     profile_updated: "Profilen har uppdaterats.",
-    failed_update_user: "Det gick inte att uppdatera användaren: {{error}}",
     account: "Konto",
-    support: "Support",
     signout: "Logga ut",
   },
   "keyboard-shortcuts": {
     title: "Tangentbordsgenvägar",
     shortcuts: {
       settings: "Öppna inställningar",
-      workspaceSettings: "Öppna inställningar för aktuell arbetsyta",
-      home: "Gå till startsidan",
-      workspaces: "Hantera arbetsytor",
-      apiKeys: "Inställningar för API-nycklar",
-      llmPreferences: "LLM-inställningar",
-      chatSettings: "Chattinställningar",
       help: "Visa hjälp för tangentbordsgenvägar",
       showLLMSelector: "Visa LLM-väljare för arbetsytan",
     },
@@ -4654,7 +4726,6 @@ const TRANSLATIONS = {
       required: "Krävs",
       requiredFieldsBanner:
         "Fyll i alla obligatoriska fält för att skapa jobbet.",
-      cancel: "Avbryt",
       saving: "Sparar …",
       updateJob: "Uppdatera jobb",
       createJob: "Skapa jobb",

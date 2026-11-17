@@ -5,6 +5,7 @@ import PreLoader from "@/components/Preloader";
 import CTAButton from "@/components/lib/CTAButton";
 import Admin from "@/models/admin";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import { useTranslation } from "react-i18next";
 import { useModal } from "@/hooks/useModal";
 import Modal from "@/components/lib/Modal";
@@ -93,9 +94,7 @@ export default function EmbeddingTextSplitterPreference() {
       (await Admin.updateSystemPreferences(updates)) ?? {};
     if (!success) {
       showToast(
-        error
-          ? t("provider-pages.toast.failed", { error })
-          : t("provider-pages.toast.failed-generic"),
+        serverErrorMessage(error, t, "provider-pages.toast.failed"),
         "error"
       );
       flushSync(() => {

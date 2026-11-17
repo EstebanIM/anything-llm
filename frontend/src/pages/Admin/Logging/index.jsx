@@ -6,6 +6,7 @@ import { useEffect, useId, useState } from "react";
 import { Trash2 } from "lucide-react";
 import LogRow from "./LogRow";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import { ModalDangerButton } from "@/components/lib/Modal";
 import ConfirmModal from "@/components/lib/ConfirmModal";
 import TableState from "@/components/lib/TableState";
@@ -60,9 +61,7 @@ export default function AdminLogs() {
     setConfirmOpen(false);
     if (!success) {
       showToast(
-        t("admin-pages.logs.clear-failed", {
-          error: error || t("admin-pages.unknown-error"),
-        }),
+        serverErrorMessage(error, t, "admin-pages.logs.clear-failed"),
         "error"
       );
       return;

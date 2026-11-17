@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { Volume2, CirclePause, LoaderCircle } from "lucide-react";
 import Workspace from "@/models/workspace";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import { useTranslation } from "react-i18next";
 import { ACTION_BUTTON_CLASS } from "../constants";
 
@@ -36,7 +37,13 @@ export default function AsyncTTSMessage({ slug, chatId }) {
             audioUrlRef.current = audioUrl;
             setAudioSrc(audioUrl);
           })
-          .catch((e) => showToast(e.message, "error", { clear: true }))
+          .catch((e) =>
+            showToast(
+              serverErrorMessage(e, t, "chat-history.tts.failed"),
+              "error",
+              { clear: true }
+            )
+          )
           .finally(() => setLoading(false));
       } else {
         playerRef.current.play();

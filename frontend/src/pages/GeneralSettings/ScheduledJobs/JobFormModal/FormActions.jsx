@@ -11,7 +11,7 @@ export default function FormActions({ isEditing, saving, onClose }) {
   return (
     <ModalFooter>
       <ModalSecondaryButton type="button" onClick={onClose}>
-        {t("scheduledJobs.modal.cancel")}
+        {t("settings-pages.cancel")}
       </ModalSecondaryButton>
       <ModalPrimaryButton type="submit" busy={saving}>
         {saving

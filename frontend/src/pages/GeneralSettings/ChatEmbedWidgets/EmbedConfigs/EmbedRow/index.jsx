@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import Modal from "@/components/lib/Modal";
 import ConfirmModal from "@/components/lib/ConfirmModal";
 import { ExternalLink } from "@/components/ProviderFields";
@@ -51,7 +52,7 @@ export default function EmbedRow({ embed, onToggled, onDeleted, onUpdated }) {
     setBusy(false);
     if (!success) {
       showToast(
-        t("embed-pages.toast.toggle-failed", { error: error || "" }),
+        serverErrorMessage(error, t, "embed-pages.toast.toggle-failed"),
         "error",
         { clear: true }
       );
@@ -74,7 +75,7 @@ export default function EmbedRow({ embed, onToggled, onDeleted, onUpdated }) {
     if (!success || error) {
       setBusy(false);
       showToast(
-        t("embed-pages.toast.delete-failed", { error: error || "" }),
+        serverErrorMessage(error, t, "embed-pages.toast.delete-failed"),
         "error",
         { clear: true }
       );

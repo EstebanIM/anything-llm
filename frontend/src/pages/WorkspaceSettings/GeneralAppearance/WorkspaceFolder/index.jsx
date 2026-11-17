@@ -1,5 +1,5 @@
+import { folderPathOptions } from "@/models/workspaceFolder";
 import { useTranslation } from "react-i18next";
-import { flattenFolderTree } from "@/models/workspaceFolder";
 import { FIELD_SELECT } from "@/components/ProviderFields";
 import SettingsField from "../../components/SettingsField";
 
@@ -17,9 +17,9 @@ export default function WorkspaceFolder({ workspace, folders = [] }) {
           className={`${FIELD_SELECT} cursor-pointer`}
         >
           <option value="">{t("workspace-folders.root")}</option>
-          {flattenFolderTree(folders).map(({ folder, depth }) => (
-            <option key={folder.id} value={folder.id}>
-              {"   ".repeat(depth) + folder.name}
+          {folderPathOptions(folders).map(({ id, path }) => (
+            <option key={id} value={id}>
+              {path}
             </option>
           ))}
         </select>

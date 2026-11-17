@@ -3,6 +3,12 @@ import { Mic, LoaderCircle } from "lucide-react";
 import { Tooltip } from "react-tooltip";
 import { useTranslation } from "react-i18next";
 import { PROMPT_INPUT_EVENT } from "../../../PromptInput";
+import {
+  ariaKeyShortcuts,
+  isShortcutBlocked,
+  matchesShortcut,
+  shortcutText,
+} from "@/utils/keyboardShortcuts";
 
 /**
  * Shared microphone button for all speech-to-text providers. Owns the Ctrl+M
@@ -31,8 +37,11 @@ export default function MicButton({
 
   useEffect(() => {
     const onKey = (event) => {
-      // CTRL + m on Mac and Windows to toggle STT listening
-      if (event.ctrlKey && event.key?.toLowerCase() === "m") toggle();
+      // Ctrl+M (also on Mac) works while typing in the prompt, never over a dialog.
+      if (isShortcutBlocked(event, { allowInFields: true })) return;
+      if (!matchesShortcut(event, "dictation")) return;
+      event.preventDefault();
+      toggle();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
@@ -63,9 +72,9 @@ export default function MicButton({
         aria-pressed={listening}
         aria-label={label}
         aria-disabled={processing || undefined}
-        aria-keyshortcuts="Control+M"
+        aria-keyshortcuts={ariaKeyShortcuts("dictation")}
         data-tooltip-id="tooltip-microphone-btn"
-        data-tooltip-content={`${label} (Ctrl + M)`}
+        data-tooltip-content={`${label} (${shortcutText("dictation", t)})`}
         className={`group border-none relative flex justify-center items-center w-11 h-11 md:w-8 md:h-8 rounded-full transition-colors duration-quick hover:bg-zinc-700 light:hover:bg-slate-200 ${
           active ? "bg-zinc-700 light:bg-slate-200" : ""
         } ${processing ? "cursor-wait" : "cursor-pointer"}`}

@@ -1,18 +1,19 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Trash2 } from "lucide-react";
 import Admin from "@/models/admin";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import { formatDateTime } from "@/utils/dates";
 import CopyButton from "@/components/lib/CopyButton";
-import InlineConfirm, {
+import { InlineConfirmButton } from "@/components/lib/InlineConfirm";
+import {
   CELL,
   MOBILE_LABEL,
   ROW,
   ROW_ACTION_DANGER,
   ROW_ACTIONS,
   ROW_HEADER,
-  useConfirmFocusReturn,
 } from "@/pages/Admin/Users/AdminTable";
 
 const STATUS_STYLES = {
@@ -27,36 +28,31 @@ export function inviteLink(invite) {
 
 export default function InviteRow({ invite, onUpdated, onRevoked }) {
   const { t } = useTranslation();
-  const [confirming, setConfirming] = useState(null);
-  const [busy, setBusy] = useState(false);
-  const revokeRef = useRef(null);
-  useConfirmFocusReturn(confirming, { revoke: revokeRef });
+  const [revokeOpen, setRevokeOpen] = useState(false);
   const created = formatDateTime(invite.createdAt);
   const status = invite.status;
 
   const handleRevoke = async () => {
-    setBusy(true);
     const { success, error } = await Admin.disableInvite(invite.id);
-    setBusy(false);
-    setConfirming(null);
     if (!success) {
       showToast(
-        t("admin-pages.invites.revoke-failed", {
-          error: error || t("admin-pages.unknown-error"),
-        }),
+        serverErrorMessage(error, t, "admin-pages.invites.revoke-failed"),
         "error",
         { clear: true }
       );
-      return;
+      return false;
     }
     showToast(t("admin-pages.invites.revoked"), "success", { clear: true });
-    onUpdated({ status: "disabled" });
+    // The row stays ("Disabled") without actions: focus moves on.
     onRevoked?.();
+    onUpdated({ status: "disabled" });
+    return true;
   };
 
   return (
     <tr data-row="" className={ROW}>
-      <th scope="row" className={ROW_HEADER}>
+      {/* Focus lands here when the previous row is revoked. */}
+      <th scope="row" tabIndex={-1} data-row-focus="" className={ROW_HEADER}>
         <span
           className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
             STATUS_STYLES[status] ?? STATUS_STYLES.disabled
@@ -86,42 +82,26 @@ export default function InviteRow({ invite, onUpdated, onRevoked }) {
         {created}
       </td>
       <td className={`${CELL} pt-2`}>
-        {confirming === "revoke" ? (
-          <InlineConfirm
-            question={t("admin-pages.invites.revoke-question")}
-            consequences={t("admin-pages.invites.revoke-consequences")}
-            confirmLabel={t("admin-pages.invites.revoke")}
-            busy={busy}
-            onConfirm={handleRevoke}
-            onCancel={() => setConfirming(null)}
-          />
-        ) : (
-          status === "pending" && (
-            <div className={ROW_ACTIONS}>
+        {status === "pending" && (
+          <div className={ROW_ACTIONS}>
+            {!revokeOpen && (
               <CopyButton
                 text={inviteLink(invite)}
                 label={t("admin-pages.invites.copy-link", { date: created })}
               />
-              <button
-                ref={revokeRef}
-                type="button"
-                onClick={() => setConfirming("revoke")}
-                aria-label={t("admin-pages.invites.revoke-invite", {
-                  date: created,
-                })}
-                title={t("admin-pages.invites.revoke-invite", {
-                  date: created,
-                })}
-                className={ROW_ACTION_DANGER}
-              >
-                <Trash2
-                  strokeWidth={1.5}
-                  className="h-4 w-4"
-                  aria-hidden="true"
-                />
-              </button>
-            </div>
-          )
+            )}
+            <InlineConfirmButton
+              label={t("admin-pages.invites.revoke-invite", { date: created })}
+              icon={Trash2}
+              triggerClassName={ROW_ACTION_DANGER}
+              question={t("admin-pages.invites.revoke-question")}
+              consequences={t("admin-pages.invites.revoke-consequences")}
+              confirmLabel={t("admin-pages.invites.revoke")}
+              align="end"
+              onConfirm={handleRevoke}
+              onOpenChange={setRevokeOpen}
+            />
+          </div>
         )}
       </td>
     </tr>

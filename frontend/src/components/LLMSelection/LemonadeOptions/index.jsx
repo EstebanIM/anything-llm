@@ -11,12 +11,14 @@ import ModelTable, { DOWNLOADED_GROUP } from "@/components/lib/ModelTable";
 import ModelTableLayout from "@/components/lib/ModelTable/layout";
 import ModelTableLoadingSkeleton from "@/components/lib/ModelTable/loading";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import LemonadeUtils from "@/models/utils/lemonadeUtils";
 import {
   FIELD_COL,
   FIELD_ERROR,
   FIELD_INPUT,
   FIELD_ROW,
+  ModelsErrorText,
   SECRET_MASK,
   SecretInput,
 } from "@/components/ProviderFields";
@@ -226,9 +228,11 @@ function LemonadeModelSelection({
       setSearchQuery("");
     } catch (e) {
       console.error("Error uninstalling model:", e);
-      showToast(e.message || t("llm-fields.common.uninstall-error"), "error", {
-        clear: true,
-      });
+      showToast(
+        serverErrorMessage(e, t, "llm-fields.common.uninstall-error"),
+        "error",
+        { clear: true }
+      );
     } finally {
       setLoading(false);
     }
@@ -256,9 +260,11 @@ function LemonadeModelSelection({
       }
     } catch (e) {
       console.error("Error downloading model:", e);
-      showToast(e.message || t("llm-fields.common.download-error"), "error", {
-        clear: true,
-      });
+      showToast(
+        serverErrorMessage(e, t, "llm-fields.common.download-error"),
+        "error",
+        { clear: true }
+      );
     } finally {
       setLoading(false);
     }
@@ -350,7 +356,7 @@ function LemonadeModelSelection({
         <div className="flex flex-col w-full gap-y-2 mt-4">
           {error ? (
             <p role="alert" className={FIELD_ERROR}>
-              {t("provider-fields.models-error", { error })}
+              <ModelsErrorText error={error} />
             </p>
           ) : (
             <p className="text-theme-text-secondary text-sm">

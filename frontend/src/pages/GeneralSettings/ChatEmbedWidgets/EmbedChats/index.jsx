@@ -7,7 +7,7 @@ import TableState from "@/components/lib/TableState";
 import ExportChatsMenu from "../components/ExportChatsMenu";
 import Pagination from "../components/Pagination";
 import usePagedChats from "../components/usePagedChats";
-import useFocusAfterRemoval from "../components/useFocusAfterRemoval";
+import useFocusAfterRemoval from "@/hooks/useFocusAfterRemoval";
 
 const COLUMNS = 6;
 
@@ -18,7 +18,11 @@ export default function EmbedChatsView() {
   const tbodyRef = useRef(null);
   const { status, chats, canNext, offset, setOffset, retry, removeChat } =
     usePagedChats(Embed.chats);
-  const markRemoved = useFocusAfterRemoval(tbodyRef, headingRef);
+  const markRemoved = useFocusAfterRemoval(
+    tbodyRef,
+    headingRef,
+    '[id^="embed-chat-delete-"]'
+  );
 
   async function handleDeleteChat(chatId) {
     const { success } = await Embed.deleteChat(chatId);

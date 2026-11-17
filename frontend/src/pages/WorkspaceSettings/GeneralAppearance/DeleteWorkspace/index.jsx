@@ -1,6 +1,8 @@
 import { useId, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Workspace from "@/models/workspace";
 import paths from "@/utils/paths";
+import { REFETCH_WORKSPACES_EVENT } from "@/components/Sidebar/ActiveWorkspaces";
 import { useTranslation } from "react-i18next";
 import showToast from "@/utils/toast";
 import ConfirmModal from "@/components/lib/ConfirmModal";
@@ -12,6 +14,7 @@ import {
 
 export default function DeleteWorkspace({ workspace, visible = true }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const headingId = useId();
   const helpId = useId();
   const [confirming, setConfirming] = useState(false);
@@ -29,8 +32,15 @@ export default function DeleteWorkspace({ workspace, visible = true }) {
       setConfirming(false);
       return;
     }
-    // Full load so the sidebar drops the deleted workspace.
-    window.location = paths.home();
+    // No full reload: it would wipe the confirmation before it is read. The
+    // sidebar refetches its list instead.
+    showToast(
+      t("admin-pages.workspaces.deleted", { name: workspace.name }),
+      "success",
+      { clear: true }
+    );
+    window.dispatchEvent(new CustomEvent(REFETCH_WORKSPACES_EVENT));
+    navigate(paths.home(), { replace: true });
   };
 
   if (!visible) return null;

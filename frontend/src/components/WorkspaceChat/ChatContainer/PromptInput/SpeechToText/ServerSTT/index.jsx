@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import Appearance from "@/models/appearance";
 import System from "@/models/system";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import MicButton from "../MicButton";
 import useSilenceDetector from "../useSilenceDetector";
 
@@ -134,9 +135,13 @@ async function uploadAndDispatch(
   setProcessing(false);
 
   if (error) {
-    showToast(t("chat_window.stt_transcription_failed", { error }), "error", {
-      clear: true,
-    });
+    showToast(
+      serverErrorMessage(error, t, "chat_window.stt_transcription_failed"),
+      "error",
+      {
+        clear: true,
+      }
+    );
     return;
   }
   if (!text) return;

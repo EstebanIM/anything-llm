@@ -3,6 +3,7 @@ import { flushSync } from "react-dom";
 import Sidebar from "@/components/SettingsSidebar";
 import System from "@/models/system";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import PreLoader from "@/components/Preloader";
 import OpenAiLogo from "@/media/llmprovider/openai.png";
 import GenericOpenAiLogo from "@/media/llmprovider/generic-openai.png";
@@ -68,7 +69,10 @@ export default function TranscriptionModelPreference() {
 
     const { error } = await System.updateSystem(data);
     if (error) {
-      showToast(t("provider-pages.toast.failed", { error }), "error");
+      showToast(
+        serverErrorMessage(error, t, "provider-pages.toast.failed"),
+        "error"
+      );
       flushSync(() => setSaving(false));
       restoreFocusAfterSave(false);
       return;

@@ -3,6 +3,7 @@ import { flushSync } from "react-dom";
 import Sidebar from "@/components/SettingsSidebar";
 import System from "@/models/system";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import OpenAiLogo from "@/media/llmprovider/openai.png";
 import OllamaLogo from "@/media/llmprovider/ollama.png";
 import LemonadeLogo from "@/media/llmprovider/lemonade.png";
@@ -117,7 +118,10 @@ export default function ImageGenerationPreference() {
 
     const { error } = await System.updateSystem(settingsData);
     if (error) {
-      showToast(t("provider-pages.toast.failed", { error }), "error");
+      showToast(
+        serverErrorMessage(error, t, "provider-pages.toast.failed"),
+        "error"
+      );
       flushSync(() => setSaving(false));
       restoreFocusAfterSave(false);
       return;

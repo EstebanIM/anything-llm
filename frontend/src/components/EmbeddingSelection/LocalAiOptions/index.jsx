@@ -13,6 +13,7 @@ import {
   FIELD_LABEL,
   FIELD_ROW,
   FIELD_SELECT,
+  ModelsErrorText,
   SECRET_MASK,
   SecretInput,
 } from "@/components/ProviderFields";
@@ -297,11 +298,13 @@ function LocalAIModelSelection({ settings, apiKey = null, basePath = null }) {
       )}
       {hasProblem && (
         <p id={`${id}-model-error`} role="alert" className={FIELD_ERROR}>
-          {status === "error"
-            ? t("provider-fields.models-error", { error })
-            : t("provider-forms.shared.models-unreachable", {
-                provider: PROVIDER_NAME,
-              })}{" "}
+          {status === "error" ? (
+            <ModelsErrorText error={error} />
+          ) : (
+            t("provider-forms.shared.models-unreachable", {
+              provider: PROVIDER_NAME,
+            })
+          )}{" "}
           <button
             type="button"
             onClick={() => setAttempt((n) => n + 1)}

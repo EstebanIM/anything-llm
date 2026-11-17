@@ -14,6 +14,7 @@ import {
 import LLMSelectorSidePanel from "./LLMSelector";
 import { NoSetupWarning } from "./SetupProvider";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import Workspace from "@/models/workspace";
 import System from "@/models/system";
 import { withEmbeddedLemonade } from "@/components/LLMSelection/EmbeddedLemonadeOptions";
@@ -107,7 +108,10 @@ export default function LLMSelectorModal({
 
       const { message } = await Workspace.update(slug, updateData);
 
-      if (!!message) throw new Error(message);
+      if (!!message)
+        throw new Error(
+          serverErrorMessage(message, t, "notices.workspace-model-save-failed")
+        );
       // Only hide "save" once it worked, so a failed save can be retried.
       setHasChanges(false);
       window.dispatchEvent(new Event(SAVE_LLM_SELECTOR_EVENT));

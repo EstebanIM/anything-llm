@@ -34,7 +34,7 @@ export default function RunRow({ run, jobId, onKilled }) {
   const unread = !run.readAt && !isInFlight(run.status);
   const startedLabel = formatDateTime(run.startedAt);
   const duration = runDurationMs(run);
-  const error = translateJobError(t, run.error);
+  const error = run.error ? translateJobError(t, run.error) : null;
 
   const handleKill = async () => {
     if (killing) return;
@@ -44,7 +44,7 @@ export default function RunRow({ run, jobId, onKilled }) {
 
     if (!success) {
       showToast(
-        translateJobError(t, error) || t("scheduledJobs.toast.killFailed"),
+        translateJobError(t, error, "scheduledJobs.toast.killFailed"),
         "error"
       );
       return;

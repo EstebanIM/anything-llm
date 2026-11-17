@@ -13,11 +13,14 @@ import MonoProviderIcon from "@/components/lib/MonoProviderIcon";
 import ModelTableLayout from "@/components/lib/ModelTable/layout";
 import ModelTableLoadingSkeleton from "@/components/lib/ModelTable/loading";
 import showToast from "@/utils/toast";
+import { serverErrorMessage, serverErrorParts } from "@/utils/serverErrors";
+import ServerErrorDetail from "@/components/lib/ServerErrorDetail";
 import { BUILT_IN_LOGO } from "@/utils/builtInLogos";
 import { LLM_PREFERENCE_CHANGED_EVENT } from "@/pages/GeneralSettings/LLMPreference";
 import {
   AdvancedSection,
   FIELD_COL,
+  FIELD_ERROR,
   FIELD_HELP,
   FIELD_INPUT,
   FIELD_ROW,
@@ -137,8 +140,12 @@ export default function EmbeddedLemonadeOptions({
       showToast(
         cancelled
           ? t("llm-fields.embedded-lemonade.download-cancelled", { label })
-          : error ||
-              t("llm-fields.embedded-lemonade.download-failed", { label }),
+          : serverErrorMessage(
+              error,
+              t,
+              "llm-fields.embedded-lemonade.download-failed",
+              { values: { label } }
+            ),
         cancelled ? "info" : "error",
         { clear: true }
       );
@@ -153,9 +160,11 @@ export default function EmbeddedLemonadeOptions({
   async function uninstallModel(modelId) {
     const { success, error } = await EmbeddedLemonadeUtils.removeModel(modelId);
     if (!success) {
-      showToast(error || t("llm-fields.common.uninstall-error"), "error", {
-        clear: true,
-      });
+      showToast(
+        serverErrorMessage(error, t, "llm-fields.common.uninstall-error"),
+        "error",
+        { clear: true }
+      );
       return;
     }
     await fetchModels();
@@ -277,14 +286,19 @@ function EngineStatus() {
 
   if (!status || status.state === "ready" || status.state === "idle")
     return null;
-  if (status.state === "error")
+  if (status.state === "error") {
+    const { message, detail } = serverErrorParts(
+      status.message,
+      t,
+      "llm-fields.embedded-lemonade.engine-failed"
+    );
     return (
       <p role="alert" className="text-red-400 light:text-red-700 text-sm">
-        {t("llm-fields.embedded-lemonade.engine-failed", {
-          message: status.message,
-        })}
+        {message}
+        <ServerErrorDetail detail={detail} />
       </p>
     );
+  }
   return (
     <div className="flex items-center gap-x-2 text-theme-text-secondary text-sm">
       <LoaderCircle
@@ -331,7 +345,7 @@ function DownloadStatus({ download }) {
         }}
         className="border-none transition-colors duration-quick ease-smooth min-h-[44px] md:min-h-0 px-2 py-1 rounded-lg text-white text-sm hover:bg-red-500"
       >
-        {t("llm-fields.common.cancel")}
+        {t("settings-pages.cancel")}
       </button>
     </div>
   );
@@ -580,17 +594,18 @@ function PullFromHuggingFace({ onPull }) {
   const id = useId();
   const [showInput, setShowInput] = useState(false);
   const [repo, setRepo] = useState("");
+  const [invalid, setInvalid] = useState(false);
 
   function handlePull() {
     const checkpoint = normalizeCheckpoint(repo);
-    if (!checkpoint)
-      return showToast(
-        t("llm-fields.embedded-lemonade.pull-invalid"),
-        "error",
-        { clear: true }
-      );
+    if (!checkpoint) {
+      setInvalid(true);
+      document.getElementById(`${id}-repo`)?.focus();
+      return;
+    }
     setShowInput(false);
     setRepo("");
+    setInvalid(false);
     onPull(checkpoint);
   }
 
@@ -626,13 +641,19 @@ function PullFromHuggingFace({ onPull }) {
         <input
           id={`${id}-repo`}
           value={repo}
-          onChange={(e) => setRepo(e.target.value)}
+          onChange={(e) => {
+            setRepo(e.target.value);
+            setInvalid(false);
+          }}
           onKeyDown={(e) => {
             if (e.key !== "Enter") return;
             e.preventDefault();
             handlePull();
           }}
-          aria-describedby={`${id}-repo-help`}
+          aria-describedby={
+            invalid ? `${id}-repo-error ${id}-repo-help` : `${id}-repo-help`
+          }
+          aria-invalid={invalid || undefined}
           className={`${FIELD_INPUT} md:w-[360px]`}
           type="text"
           placeholder="unsloth/Qwen3-4B-GGUF:Q4_K_M"
@@ -653,13 +674,23 @@ function PullFromHuggingFace({ onPull }) {
             onClick={() => {
               setShowInput(false);
               setRepo("");
+              setInvalid(false);
             }}
             className="border-none transition-colors duration-quick ease-smooth min-h-[44px] md:min-h-0 p-2 rounded-lg text-white text-sm items-center flex gap-x-2 hover:bg-red-500"
           >
-            {t("llm-fields.common.cancel")}
+            {t("settings-pages.cancel")}
           </button>
         </div>
       </div>
+      {invalid && (
+        <p
+          id={`${id}-repo-error`}
+          role="alert"
+          className={`${FIELD_ERROR} !mt-0 max-w-[600px]`}
+        >
+          {t("llm-fields.embedded-lemonade.pull-invalid")}
+        </p>
+      )}
       <p id={`${id}-repo-help`} className={`${FIELD_HELP} max-w-[600px]`}>
         {t("llm-fields.embedded-lemonade.pull-help-before")}{" "}
         <ExternalLink

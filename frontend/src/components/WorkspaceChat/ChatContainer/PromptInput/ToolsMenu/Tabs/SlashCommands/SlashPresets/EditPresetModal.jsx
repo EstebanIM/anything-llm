@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useId } from "react";
 import { useTranslation } from "react-i18next";
 import Modal, {
   ModalHeader,
@@ -11,9 +11,14 @@ import Modal, {
   ModalTextarea,
 } from "@/components/lib/Modal";
 import { CMD_REGEX, isReservedCommand } from "./constants";
-import showToast from "@/utils/toast";
 import ConfirmModal from "@/components/lib/ConfirmModal";
+import StatusNote from "@/components/lib/StatusNote";
 
+/**
+ * @param {object} props
+ * @param {(preset: object) => Promise<string|null>} props.onSave - resolves to
+ *   a translated error, or null once saved
+ */
 export default function EditPresetModal({
   isOpen,
   onClose,
@@ -24,32 +29,45 @@ export default function EditPresetModal({
   const { t } = useTranslation();
   const [command, setCommand] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [commandError, setCommandError] = useState(null);
+  const [formError, setFormError] = useState(null);
+  const commandId = useId();
 
   useEffect(() => {
     if (preset && isOpen) {
       setCommand(preset.command?.slice(1) || "");
+      setCommandError(null);
+      setFormError(null);
     }
   }, [preset, isOpen]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (saving) return;
+    setFormError(null);
     const form = new FormData(e.target);
     const sanitizedCommand = command.replace(CMD_REGEX, "");
     if (isReservedCommand(`/${sanitizedCommand}`)) {
-      showToast(t("chat-input.preset-reserved"), "error");
+      setCommandError(t("chat-input.preset-reserved"));
+      document.getElementById(commandId)?.focus();
       return;
     }
-    onSave({
+    setSaving(true);
+    const error = await onSave({
       id: preset.id,
       command: `/${sanitizedCommand}`,
       prompt: form.get("prompt"),
       description: form.get("description"),
     });
+    setSaving(false);
+    if (error) setFormError(error);
   };
 
   const handleCommandChange = (e) => {
     const value = e.target.value.replace(CMD_REGEX, "");
     setCommand(value);
+    setCommandError(null);
   };
 
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -70,18 +88,18 @@ export default function EditPresetModal({
           <ModalInput
             label={t("chat_window.command")}
             name="command"
-            id="command"
+            id={commandId}
             leading="/"
             placeholder={t("chat_window.your_command")}
             value={command}
             onChange={handleCommandChange}
             autoComplete="off"
             required={true}
+            error={commandError}
           />
           <ModalTextarea
             label={t("chat-input.preset-prompt-label")}
             name="prompt"
-            id="prompt"
             autoComplete="off"
             placeholder={t("chat_window.placeholder_prompt")}
             defaultValue={preset.prompt}
@@ -90,16 +108,20 @@ export default function EditPresetModal({
           <ModalInput
             label={t("chat_window.description")}
             name="description"
-            id="description"
             defaultValue={preset.description}
             placeholder={t("chat_window.placeholder_description")}
             autoComplete="off"
             required={true}
           />
+          {formError && (
+            <StatusNote tone="error" announce>
+              {formError}
+            </StatusNote>
+          )}
         </ModalBody>
         <ModalFooter>
           <ModalDangerButton
-            disabled={deleting}
+            busy={deleting}
             onClick={() => setConfirmingDelete(true)}
             type="button"
           >
@@ -109,9 +131,9 @@ export default function EditPresetModal({
           </ModalDangerButton>
           <div className="flex gap-x-2">
             <ModalSecondaryButton onClick={onClose} type="button">
-              {t("chat_window.cancel")}
+              {t("settings-pages.cancel")}
             </ModalSecondaryButton>
-            <ModalPrimaryButton type="submit">
+            <ModalPrimaryButton type="submit" busy={saving}>
               {t("chat_window.save")}
             </ModalPrimaryButton>
           </div>

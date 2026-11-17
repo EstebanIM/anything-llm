@@ -5,9 +5,10 @@ import { Trash2, Plug } from "lucide-react";
 import { POPUP_BROWSER_EXTENSION_EVENT } from "@/utils/constants";
 import CopyButton from "@/components/lib/CopyButton";
 import { maskSecret } from "@/components/lib/MaskedSecret";
-import InlineConfirm, {
+import {
+  InlineConfirmButton,
   ROW_ICON_BUTTON,
-} from "@/pages/GeneralSettings/ApiKeys/InlineConfirm";
+} from "@/components/lib/InlineConfirm";
 import { useTranslation } from "react-i18next";
 
 export default function BrowserExtensionApiKeyRow({
@@ -60,12 +61,12 @@ export default function BrowserExtensionApiKeyRow({
             <Plug strokeWidth={1.5} className="h-4 w-4" aria-hidden="true" />
             {t("tools-pages.extension.connect")}
           </button>
-          <InlineConfirm
+          <InlineConfirmButton
             id={revokeButtonId}
             label={t("tools-pages.extension.revoke-label", { key: keyLabel })}
             icon={Trash2}
             triggerClassName={ROW_ICON_BUTTON}
-            consequence={t("tools-pages.extension.revoke-consequence")}
+            consequences={t("tools-pages.extension.revoke-consequence")}
             confirmLabel={t("tools-pages.extension.revoke")}
             onConfirm={handleRevoke}
           />

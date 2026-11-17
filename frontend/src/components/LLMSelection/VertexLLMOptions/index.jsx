@@ -8,6 +8,7 @@ import {
   FIELD_INPUT,
   FIELD_ROW,
   FIELD_SELECT,
+  ModelsErrorText,
   SECRET_MASK,
   SecretInput,
 } from "@/components/ProviderFields";
@@ -251,7 +252,7 @@ function VertexModelSelection({ settings }) {
         />
         {error && (
           <p id={`${id}-model-error`} role="alert" className={FIELD_ERROR}>
-            {t("provider-fields.models-error", { error })}
+            <ModelsErrorText error={error} />
           </p>
         )}
         {Object.keys(groupedModels).length > 0 && (

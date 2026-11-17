@@ -5,9 +5,11 @@ import Modal, {
   ModalPrimaryButton,
   ModalSecondaryButton,
 } from "@/components/lib/Modal";
+import { useEffect, useState } from "react";
 import { CircleAlert } from "lucide-react";
 import System from "@/models/system";
-import showToast from "@/utils/toast";
+import StatusNote from "@/components/lib/StatusNote";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import { useTranslation } from "react-i18next";
 
 export default function SetupProvider({
@@ -18,22 +20,30 @@ export default function SetupProvider({
   llmProvider,
 }) {
   const { t } = useTranslation();
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+  useEffect(() => {
+    if (isOpen) setError(null);
+  }, [isOpen]);
   if (!isOpen) return null;
 
   async function handleUpdate(e) {
     e.preventDefault();
     e.stopPropagation();
+    if (saving) return;
     const data = {};
     const form = new FormData(e.target);
     for (var [key, value] of form.entries()) data[key] = value;
-    const { error } = await System.updateSystem(data);
-    if (error) {
-      showToast(
-        t("chat-input.provider-save-failed", {
-          provider: llmProvider.name,
-          error,
-        }),
-        "error"
+    setSaving(true);
+    setError(null);
+    const { error: saveError } = await System.updateSystem(data);
+    setSaving(false);
+    if (saveError) {
+      // The dialog stays open: the error goes next to the fields.
+      setError(
+        serverErrorMessage(saveError, t, "chat-input.provider-save-failed", {
+          values: { provider: llmProvider.name },
+        })
       );
       return;
     }
@@ -66,13 +76,18 @@ export default function SetupProvider({
             <div>
               {llmProvider.options(settings, { credentialsOnly: true })}
             </div>
+            {error && (
+              <StatusNote tone="error" announce>
+                {error}
+              </StatusNote>
+            )}
           </div>
         </ModalBody>
         <ModalFooter>
           <ModalSecondaryButton type="button" onClick={closeModal}>
-            {t("chat_window.cancel")}
+            {t("settings-pages.cancel")}
           </ModalSecondaryButton>
-          <ModalPrimaryButton type="submit" form="provider-form">
+          <ModalPrimaryButton type="submit" form="provider-form" busy={saving}>
             {t("chat-input.provider-save")}
           </ModalPrimaryButton>
         </ModalFooter>

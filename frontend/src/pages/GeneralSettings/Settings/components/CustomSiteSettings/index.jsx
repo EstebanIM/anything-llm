@@ -2,10 +2,12 @@ import { useEffect, useId, useRef, useState } from "react";
 import Admin from "@/models/admin";
 import System from "@/models/system";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import { useTranslation } from "react-i18next";
 import { DEFAULT_APP_NAME } from "@/utils/constants/brand";
 import { LoaderCircle, Plus } from "lucide-react";
 import { FIELD_INPUT } from "@/components/ProviderFields";
+import StatusNote from "@/components/lib/StatusNote";
 import { BRAND_SECONDARY_BUTTON, BRAND_TEXT_BUTTON } from "../brandButtons";
 const INTERNAL_FAVICON_PATH = "/api/system/favicon";
 function isUploadedFaviconUrl(url = null) {
@@ -26,6 +28,9 @@ export default function CustomSiteSettings() {
   const id = useId();
   const [hasChanges, setHasChanges] = useState(false);
   const [saving, setSaving] = useState(false);
+  // Counts saves: the "reload to see them" note stays (and is announced
+  // again) instead of a toast that fades before the reload.
+  const [savedCount, setSavedCount] = useState(0);
   const [faviconUrlInput, setFaviconUrlInput] = useState("");
   const [isUploadingFavicon, setIsUploadingFavicon] = useState(false);
   const [settings, setSettings] = useState({
@@ -72,7 +77,10 @@ export default function CustomSiteSettings() {
         faviconUrl: previousFaviconUrl,
       }));
       setFaviconUrlInput(previousFaviconUrlInput);
-      showToast(t("settings-pages.site-failed", { error }), "error");
+      showToast(
+        serverErrorMessage(error, t, "settings-pages.site-failed"),
+        "error"
+      );
       return;
     }
     setSettings((prev) => ({
@@ -83,9 +91,7 @@ export default function CustomSiteSettings() {
       isUploadedFaviconUrl(nextFaviconUrl) ? "" : nextFaviconUrl || ""
     );
     clearBrowserAppearanceCache();
-    showToast(t("settings-pages.site-saved"), "success", {
-      clear: true,
-    });
+    setSavedCount((count) => count + 1);
     setHasChanges(false);
     return;
   }
@@ -113,7 +119,10 @@ export default function CustomSiteSettings() {
       }));
       setFaviconUrlInput(previousFaviconUrlInput);
       setIsUploadingFavicon(false);
-      showToast(t("settings-pages.favicon-upload-failed", { error }), "error");
+      showToast(
+        serverErrorMessage(error, t, "settings-pages.favicon-upload-failed"),
+        "error"
+      );
       return;
     }
     setSettings((prev) => ({
@@ -141,7 +150,10 @@ export default function CustomSiteSettings() {
         faviconUrl: previousFaviconUrl,
       }));
       setFaviconUrlInput(previousFaviconUrlInput);
-      showToast(t("settings-pages.favicon-remove-failed", { error }), "error");
+      showToast(
+        serverErrorMessage(error, t, "settings-pages.favicon-remove-failed"),
+        "error"
+      );
       return;
     }
     setHasChanges(false);
@@ -296,6 +308,23 @@ export default function CustomSiteSettings() {
         >
           {saving ? t("common.saving") : t("common.save")}
         </button>
+      )}
+      {savedCount > 0 && (
+        <StatusNote
+          key={savedCount}
+          tone="success"
+          announce
+          className="mt-3 max-w-[600px]"
+        >
+          {t("settings-pages.site-saved")}{" "}
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="inline-flex items-center min-h-[44px] md:min-h-0 underline font-medium hover:no-underline"
+          >
+            {t("notices.reload-page")}
+          </button>
+        </StatusNote>
       )}
     </form>
   );

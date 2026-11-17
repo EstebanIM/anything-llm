@@ -2,6 +2,8 @@ import { useState } from "react";
 import BrowserExtensionApiKey from "@/models/browserExtensionApiKey";
 import { fullApiUrl, POPUP_BROWSER_EXTENSION_EVENT } from "@/utils/constants";
 import { NewKeyField } from "@/pages/GeneralSettings/ApiKeys/NewApiKeyModal";
+import { serverErrorParts } from "@/utils/serverErrors";
+import ServerErrorDetail from "@/components/lib/ServerErrorDetail";
 import { useTranslation } from "react-i18next";
 import {
   ModalHeader,
@@ -44,7 +46,7 @@ export default function NewBrowserExtensionApiKeyModal({
       );
       return;
     }
-    setError(error || t("tools-pages.extension.create-failed"));
+    setError(serverErrorParts(error, t, "api.messages.error"));
   };
 
   return (
@@ -60,7 +62,8 @@ export default function NewBrowserExtensionApiKeyModal({
       <ModalBody>
         {error && (
           <p role="alert" className="text-sm text-red-400 light:text-red-700">
-            {t("api.messages.error", { error })}
+            {error.message}
+            <ServerErrorDetail detail={error.detail} />
           </p>
         )}
         {apiKey && (
@@ -86,7 +89,7 @@ export default function NewBrowserExtensionApiKeyModal({
         {!apiKey ? (
           <>
             <ModalSecondaryButton onClick={closeModal} type="button">
-              {t("api.modal.cancel")}
+              {t("settings-pages.cancel")}
             </ModalSecondaryButton>
             <ModalPrimaryButton type="submit" busy={creating}>
               {creating

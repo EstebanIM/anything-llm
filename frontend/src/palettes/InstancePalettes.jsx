@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import Admin from "@/models/admin";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import { useTheme } from "@/hooks/useTheme";
 import {
   PALETTE_SEEDS,
@@ -15,7 +16,7 @@ import AutosaveForm, {
   SavedIndicator,
   useAutosaveForm,
 } from "@/components/AutosaveForm";
-import { FIELD_INPUT } from "@/components/ProviderFields";
+import { FIELD_ERROR, FIELD_INPUT } from "@/components/ProviderFields";
 import ConfirmModal from "@/components/lib/ConfirmModal";
 import { PaletteButton, PaletteRadioGroup, paletteName } from "./PalettePicker";
 
@@ -40,7 +41,11 @@ export default function InstancePalettes() {
     });
     if (!success) {
       showToast(
-        t("customization.items.instance-palettes.save-failed", { error }),
+        serverErrorMessage(
+          error,
+          t,
+          "customization.items.instance-palettes.save-failed"
+        ),
         "error"
       );
       setDraft(paletteStore.getSnapshot().instance);
@@ -111,14 +116,9 @@ function PaletteSettings({ draft, setDraft }) {
     setEditing({ ...draft.palettes.find(({ id }) => id === key) });
   }
 
+  // PaletteEditor only calls this with a name (it shows the error itself).
   function finishEditing() {
-    if (!editing.name.trim()) {
-      showToast(
-        t("customization.items.instance-palettes.name-required"),
-        "error"
-      );
-      return;
-    }
+    if (!editing.name.trim()) return;
     const exists = draft.palettes.some(({ id }) => id === editing.id);
     commit("palettes", {
       ...draft,
@@ -296,6 +296,16 @@ function IconButton({ label, onClick, danger = false, children, ...props }) {
 function PaletteEditor({ palette, onChange, onDone, onCancel }) {
   const { t } = useTranslation();
   const id = useId();
+  const [nameMissing, setNameMissing] = useState(false);
+
+  const done = () => {
+    if (!palette.name.trim()) {
+      setNameMissing(true);
+      document.getElementById(`${id}-name-input`)?.focus();
+      return;
+    }
+    onDone();
+  };
 
   // The palette saves on Done, so keep its inputs out of the form's autosave.
   const isolate = (e) => e.stopPropagation();
@@ -329,14 +339,28 @@ function PaletteEditor({ palette, onChange, onDone, onCancel }) {
           maxLength={40}
           autoFocus
           autoComplete="off"
-          onChange={(e) => onChange({ ...palette, name: e.target.value })}
+          onChange={(e) => {
+            onChange({ ...palette, name: e.target.value });
+            setNameMissing(false);
+          }}
           onKeyDown={(e) => {
             if (e.key !== "Enter") return;
             e.preventDefault();
-            onDone();
+            done();
           }}
+          aria-invalid={nameMissing || undefined}
+          aria-describedby={nameMissing ? `${id}-name-error` : undefined}
           className={`${FIELD_INPUT} md:w-60`}
         />
+        {nameMissing && (
+          <p
+            id={`${id}-name-error`}
+            role="alert"
+            className={`${FIELD_ERROR} !mt-0`}
+          >
+            {t("customization.items.instance-palettes.name-required")}
+          </p>
+        )}
       </div>
       <div className="flex flex-col gap-y-2">
         {PALETTE_SEEDS.map((seed) => (
@@ -362,7 +386,7 @@ function PaletteEditor({ palette, onChange, onDone, onCancel }) {
       <div className="flex gap-x-2">
         <button
           type="button"
-          onClick={onDone}
+          onClick={done}
           className="min-h-[44px] md:min-h-0 border border-zinc-500 light:border-slate-500 px-4 py-2 rounded-lg text-white text-sm hover:bg-slate-200 hover:text-slate-800 transition-colors duration-quick ease-smooth"
         >
           {t("customization.items.instance-palettes.done")}
@@ -372,7 +396,7 @@ function PaletteEditor({ palette, onChange, onDone, onCancel }) {
           onClick={onCancel}
           className="min-h-[44px] md:min-h-0 px-4 py-2 rounded-lg text-white/60 text-sm hover:text-white transition-colors duration-quick ease-smooth"
         >
-          {t("customization.items.instance-palettes.cancel")}
+          {t("settings-pages.cancel")}
         </button>
       </div>
     </div>

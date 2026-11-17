@@ -76,7 +76,7 @@ export default function ConnectorForm({
         </div>
         {!busy && outcome?.type === "error" && (
           <p role="alert" className={`${FIELD_ERROR} !mt-0`}>
-            {t("data-connectors.error", { error: outcome.message })}
+            {outcome.message}
           </p>
         )}
       </div>

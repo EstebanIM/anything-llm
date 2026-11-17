@@ -106,7 +106,7 @@ export default function MemoryModal({
       </ModalBody>
       <ModalFooter>
         <ModalSecondaryButton type="button" onClick={onClose}>
-          {t("chat_window.memories.modal.cancel")}
+          {t("settings-pages.cancel")}
         </ModalSecondaryButton>
         <ModalPrimaryButton
           type="button"

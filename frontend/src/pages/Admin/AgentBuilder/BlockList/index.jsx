@@ -22,7 +22,7 @@ import LLMInstructionNode from "../nodes/LLMInstructionNode";
 import FinishNode from "../nodes/FinishNode";
 import WebScrapingNode from "../nodes/WebScrapingNode";
 import FlowInfoNode from "../nodes/FlowInfoNode";
-import InlineConfirm from "../InlineConfirm";
+import InlineConfirm from "@/components/lib/InlineConfirm";
 
 const BLOCK_TYPES = {
   FLOW_INFO: "flowInfo",
@@ -344,7 +344,7 @@ function BlockItem({
         {confirmingDelete && (
           <div className="px-3 pb-3">
             <InlineConfirm
-              message={t("agent-builder.block.delete-confirm", { name })}
+              question={t("agent-builder.block.delete-confirm", { name })}
               confirmLabel={t("settings-pages.delete")}
               onConfirm={() => {
                 setConfirmingDelete(false);

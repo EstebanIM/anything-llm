@@ -61,3 +61,47 @@ export function formatNumber(value, options) {
   if (!Number.isFinite(number)) return String(value ?? "");
   return new Intl.NumberFormat(currentLocale(), options).format(number);
 }
+
+function unit(value, name, fractionDigits = 0) {
+  return new Intl.NumberFormat(currentLocale(), {
+    style: "unit",
+    unit: name,
+    unitDisplay: "short",
+    maximumFractionDigits: fractionDigits,
+  }).format(value);
+}
+
+/**
+ * Elapsed time in the UI language: "850 ms", "5,2 s", "3 min 4 s", "1 h 5 min".
+ * @param {number} ms
+ * @returns {string} "" when the value is not a usable duration
+ */
+export function formatElapsed(ms) {
+  if (!Number.isFinite(ms) || ms < 0) return "";
+  if (ms < 1000) return unit(Math.round(ms), "millisecond");
+  const seconds = ms / 1000;
+  if (seconds < 60) return unit(seconds, "second", 1);
+  const totalSeconds = Math.floor(seconds);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const rest = totalSeconds % 60;
+  if (hours > 0)
+    return minutes
+      ? `${unit(hours, "hour")} ${unit(minutes, "minute")}`
+      : unit(hours, "hour");
+  return rest
+    ? `${unit(minutes, "minute")} ${unit(rest, "second")}`
+    : unit(minutes, "minute");
+}
+
+/**
+ * A ratio as a percentage in the UI language: 0.426 → "43 %" (Spanish).
+ * @param {number} ratio - 0..1
+ * @param {number} [fractionDigits=0]
+ */
+export function formatPercent(ratio, fractionDigits = 0) {
+  return formatNumber(ratio, {
+    style: "percent",
+    maximumFractionDigits: fractionDigits,
+  });
+}

@@ -8,6 +8,7 @@ import {
   FIELD_HELP,
   FIELD_INPUT,
   FIELD_ROW,
+  ModelsErrorText,
   SECRET_MASK,
   SecretInput,
 } from "@/components/ProviderFields";
@@ -147,7 +148,7 @@ function CometApiModelSelection({ settings }) {
       </datalist>
       {error && (
         <p id={`${id}-model-error`} role="alert" className={FIELD_ERROR}>
-          {t("provider-fields.models-error", { error })}
+          <ModelsErrorText error={error} />
         </p>
       )}
       <p id={`${id}-model-help`} className={FIELD_HELP}>

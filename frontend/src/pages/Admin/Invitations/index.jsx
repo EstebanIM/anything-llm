@@ -9,13 +9,8 @@ import { useModal } from "@/hooks/useModal";
 import Modal from "@/components/lib/Modal";
 import CTAButton from "@/components/lib/CTAButton";
 import TableState from "@/components/lib/TableState";
-import {
-  TABLE,
-  TBODY,
-  TH,
-  THEAD,
-  focusAfterRemoval,
-} from "@/pages/Admin/Users/AdminTable";
+import { TABLE, TBODY, TH, THEAD } from "@/pages/Admin/Users/AdminTable";
+import useFocusAfterRemoval from "@/hooks/useFocusAfterRemoval";
 
 const COLUMNS = 5;
 
@@ -28,6 +23,7 @@ export default function AdminInvites() {
   const headingId = useId();
   const headingRef = useRef(null);
   const tbodyRef = useRef(null);
+  const focusAfterRemoval = useFocusAfterRemoval(tbodyRef, headingRef);
 
   const fetchInvites = async () => {
     const _invites = await Admin.invites();
@@ -50,8 +46,7 @@ export default function AdminInvites() {
   // The revoked row stays (now "Disabled") but loses its buttons: move on to
   // the next row's actions, or to the heading.
   const focusAfterRevoke = (id) => {
-    const index = invites.findIndex((invite) => invite.id === id);
-    focusAfterRemoval(tbodyRef, index + 1, headingRef);
+    focusAfterRemoval(invites.findIndex((invite) => invite.id === id) + 1);
   };
 
   return (

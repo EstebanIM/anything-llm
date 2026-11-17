@@ -1,13 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { ModalInput } from "@/components/lib/Modal";
 
-/** Message from an error that may be a string, an Error or missing. */
-export function errorMessage(error, fallback) {
-  if (!error) return fallback;
-  if (typeof error === "string") return error;
-  return error.message || fallback;
-}
-
 /** Reads the form and checks the required fields after trimming. */
 export function readVariableForm(form, t) {
   const data = {};

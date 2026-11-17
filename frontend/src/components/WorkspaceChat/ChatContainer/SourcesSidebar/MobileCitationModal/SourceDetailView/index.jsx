@@ -4,7 +4,7 @@ import { decode as HTMLDecode } from "he";
 import truncate from "truncate";
 import { useTranslation } from "react-i18next";
 import { omitChunkHeader } from "../../../ChatHistory/Citation";
-import { toPercentString } from "@/utils/numbers";
+import { formatPercent } from "@/utils/dates";
 
 const ICON_BUTTON =
   "w-11 h-11 shrink-0 flex items-center justify-center rounded-md text-zinc-300 light:text-slate-600 hover:text-white light:hover:text-slate-900 transition-colors duration-quick";
@@ -56,7 +56,7 @@ export default function SourceDetailView({ source, onBack, onClose }) {
                 <div className="flex items-center text-xs text-zinc-300 light:text-slate-600 gap-x-1">
                   <Info strokeWidth={1.5} size={14} aria-hidden="true" />
                   <p>
-                    {toPercentString(score)} {t("chat_window.similarity_match")}
+                    {formatPercent(score)} {t("chat_window.similarity_match")}
                   </p>
                 </div>
               )}

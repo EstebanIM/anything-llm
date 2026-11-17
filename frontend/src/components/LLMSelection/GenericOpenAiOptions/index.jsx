@@ -6,6 +6,7 @@ import {
   FIELD_ERROR,
   FIELD_INPUT,
   FIELD_ROW,
+  ModelsErrorText,
   SECRET_MASK,
   SecretInput,
 } from "@/components/ProviderFields";
@@ -191,7 +192,7 @@ function GenericOpenAiModelSelection({
         />
         {error && (
           <p id={`${id}-model-error`} role="alert" className={FIELD_ERROR}>
-            {t("provider-fields.models-error", { error })}
+            <ModelsErrorText error={error} />
           </p>
         )}
       </div>

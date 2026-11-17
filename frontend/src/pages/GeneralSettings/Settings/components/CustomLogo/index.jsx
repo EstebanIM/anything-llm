@@ -1,6 +1,7 @@
 import { REFETCH_LOGO_EVENT } from "@/LogoContext";
 import System from "@/models/system";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import { useEffect, useId, useRef, useState } from "react";
 import { LoaderCircle, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -69,7 +70,10 @@ export default function CustomLogo() {
     event.target.value = "";
     setUploading((prev) => ({ ...prev, [theme]: false }));
     if (!success) {
-      showToast(t("settings-pages.logo-upload-failed", { error }), "error");
+      showToast(
+        serverErrorMessage(error, t, "settings-pages.logo-upload-failed"),
+        "error"
+      );
       const { logoURL } = await System.fetchLogo(theme);
       setLogos((prev) => ({ ...prev, [theme]: logoURL || "" }));
       focusUploadButton(theme);
@@ -99,7 +103,10 @@ export default function CustomLogo() {
 
     if (!success) {
       console.error("Failed to remove logo:", error);
-      showToast(t("settings-pages.logo-remove-failed", { error }), "error");
+      showToast(
+        serverErrorMessage(error, t, "settings-pages.logo-remove-failed"),
+        "error"
+      );
       return;
     }
 

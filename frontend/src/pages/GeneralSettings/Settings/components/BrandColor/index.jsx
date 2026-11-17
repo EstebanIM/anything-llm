@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from "react";
 import Admin from "@/models/admin";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import { useTranslation } from "react-i18next";
 import { FIELD_ERROR, FIELD_INPUT } from "@/components/ProviderFields";
 import { BRAND_SECONDARY_BUTTON, BRAND_TEXT_BUTTON } from "../brandButtons";
@@ -30,7 +31,7 @@ export default function BrandColor() {
     setSaving(false);
     if (!success) {
       showToast(
-        t("settings-pages.brand-color-failed", { error: apiError }),
+        serverErrorMessage(apiError, t, "settings-pages.brand-color-failed"),
         "error",
         { clear: true }
       );

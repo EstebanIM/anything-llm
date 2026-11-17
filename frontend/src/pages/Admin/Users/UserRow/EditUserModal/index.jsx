@@ -3,6 +3,9 @@ import Admin from "@/models/admin";
 import showToast from "@/utils/toast";
 import { AuthContext } from "@/AuthContext";
 import ConfirmModal from "@/components/lib/ConfirmModal";
+import ServerErrorDetail from "@/components/lib/ServerErrorDetail";
+import { serverErrorParts } from "@/utils/serverErrors";
+import { ACCOUNT_ERRORS } from "@/utils/authErrors";
 import {
   MessageLimitInput,
   ROLE_RANK,
@@ -51,7 +54,11 @@ export default function EditUserModal({
     setBusy(false);
     setPendingData(null);
     if (!success) {
-      setError(error || t("admin-pages.unknown-error"));
+      setError(
+        serverErrorParts(error, t, "settings-pages.form-error", {
+          known: ACCOUNT_ERRORS,
+        })
+      );
       return;
     }
     if (isSelf) {
@@ -149,7 +156,8 @@ export default function EditUserModal({
           />
           {error && (
             <p role="alert" className="text-sm text-red-400 light:text-red-700">
-              {t("settings-pages.form-error", { error })}
+              {error.message}
+              <ServerErrorDetail detail={error.detail} />
             </p>
           )}
         </ModalBody>

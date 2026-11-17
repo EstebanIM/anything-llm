@@ -11,6 +11,7 @@ import { useModal } from "@/hooks/useModal";
 import useMultiUserMode from "@/hooks/useMultiUserMode";
 import { fullApiUrl } from "@/utils/constants";
 import { useTranslation } from "react-i18next";
+import useFocusAfterRemoval from "@/hooks/useFocusAfterRemoval";
 
 export default function BrowserExtensionApiKeys() {
   const { t } = useTranslation();
@@ -19,7 +20,7 @@ export default function BrowserExtensionApiKeys() {
   const headingRef = useRef(null);
   const [status, setStatus] = useState("loading");
   const [apiKeys, setApiKeys] = useState([]);
-  const [focusAfterRemove, setFocusAfterRemove] = useState(null);
+  const tbodyRef = useRef(null);
   const { isOpen, openModal, closeModal } = useModal();
   const isMultiUser = useMultiUserMode();
   const columns = isMultiUser ? 4 : 3;
@@ -45,22 +46,15 @@ export default function BrowserExtensionApiKeys() {
 
   // After a revoke, focus moves to the next row's revoke button (or the
   // previous one), and to the page title when the list is empty.
+  const focusAfterRemoval = useFocusAfterRemoval(
+    tbodyRef,
+    headingRef,
+    `[id^="${rowIdPrefix}-revoke-"]`
+  );
   const removeApiKey = (id) => {
-    const index = apiKeys.findIndex((apiKey) => apiKey.id === id);
-    const next = apiKeys[index + 1] ?? apiKeys[index - 1] ?? null;
+    focusAfterRemoval(apiKeys.findIndex((apiKey) => apiKey.id === id));
     setApiKeys((prevKeys) => prevKeys.filter((apiKey) => apiKey.id !== id));
-    setFocusAfterRemove(next ? next.id : "heading");
   };
-
-  useEffect(() => {
-    if (focusAfterRemove === null) return;
-    const target =
-      focusAfterRemove === "heading"
-        ? null
-        : document.getElementById(revokeButtonId(focusAfterRemove));
-    (target || headingRef.current)?.focus();
-    setFocusAfterRemove(null);
-  }, [focusAfterRemove]);
 
   return (
     <div className="w-screen h-screen overflow-hidden bg-zinc-950 light:bg-slate-50 flex">
@@ -121,7 +115,7 @@ export default function BrowserExtensionApiKeys() {
                   </th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody ref={tbodyRef}>
                 {status === "loading" ? (
                   <TableState state="loading" colSpan={columns} />
                 ) : status === "error" ? (

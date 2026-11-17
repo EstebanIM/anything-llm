@@ -8,8 +8,9 @@ import Modal, {
   ModalSecondaryButton,
 } from "@/components/lib/Modal";
 import PreLoader from "@/components/Preloader";
+import StatusNote from "@/components/lib/StatusNote";
 import System from "@/models/system";
-import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 
 /**
  * Credentials dialog of an LLM provider, shared by the workspace chat and agent
@@ -32,12 +33,14 @@ export default function ProviderSetupModal({
   const isOpen = !!provider;
   const [settings, setSettings] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
 
   // Fresh settings on every open: the fields only read their initial values.
   useEffect(() => {
     if (!isOpen) return;
     let cancelled = false;
     setSettings(null);
+    setError(null);
     System.keys().then((keys) => {
       if (!cancelled) setSettings(keys ?? {});
     });
@@ -54,15 +57,18 @@ export default function ProviderSetupModal({
     for (const [key, value] of new FormData(e.target).entries())
       data[key] = value;
     setSaving(true);
-    const { error } = await System.updateSystem(data);
+    setError(null);
+    const { error: saveError } = await System.updateSystem(data);
     setSaving(false);
-    if (error) {
-      showToast(
-        t("workspace-settings.provider-setup.failed", {
-          name: provider.name,
-          error,
-        }),
-        "error"
+    if (saveError) {
+      // The dialog stays open: the error goes next to the fields.
+      setError(
+        serverErrorMessage(
+          saveError,
+          t,
+          "workspace-settings.provider-setup.failed",
+          { values: { name: provider.name } }
+        )
       );
       return;
     }
@@ -94,6 +100,11 @@ export default function ProviderSetupModal({
               <div className="flex justify-center py-6">
                 <PreLoader size="8" />
               </div>
+            )}
+            {error && (
+              <StatusNote tone="error" announce className="mt-4">
+                {error}
+              </StatusNote>
             )}
           </ModalBody>
           <ModalFooter>

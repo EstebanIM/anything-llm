@@ -1,8 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { PanelLeft } from "lucide-react";
 import paths from "@/utils/paths";
 import { Tooltip } from "react-tooltip";
 import { useTranslation } from "react-i18next";
+import {
+  ariaKeyShortcuts,
+  isShortcutBlocked,
+  matchesShortcut,
+  shortcutText,
+} from "@/utils/keyboardShortcuts";
 const SIDEBAR_TOGGLE_STORAGE_KEY = "anythingllm_sidebar_toggle";
 export const SIDEBAR_TOGGLE_EVENT = "sidebar-toggle";
 
@@ -22,6 +28,11 @@ function previousSidebarState() {
 export function useSidebarToggle() {
   const [showSidebar, setShowSidebar] = useState(previousSidebarState());
   const [canToggleSidebar, setCanToggleSidebar] = useState(true);
+  // The keydown listener is registered once: it reads the latest value here.
+  const canToggleRef = useRef(canToggleSidebar);
+  useEffect(() => {
+    canToggleRef.current = canToggleSidebar;
+  }, [canToggleSidebar]);
 
   useEffect(() => {
     function checkPath() {
@@ -36,22 +47,12 @@ export function useSidebarToggle() {
   }, [window.location.pathname]);
 
   useEffect(() => {
+    // Registered in utils/keyboardShortcuts (id "sidebar") for the help list.
     function toggleSidebar(e) {
-      if (!canToggleSidebar) return;
-      if (
-        (e.ctrlKey || e.metaKey) &&
-        e.shiftKey &&
-        e.key.toLowerCase() === "s"
-      ) {
-        setShowSidebar((prev) => {
-          const newState = !prev;
-          window.localStorage.setItem(
-            SIDEBAR_TOGGLE_STORAGE_KEY,
-            newState ? "open" : "closed"
-          );
-          return newState;
-        });
-      }
+      if (!canToggleRef.current || !matchesShortcut(e, "sidebar")) return;
+      if (isShortcutBlocked(e)) return;
+      e.preventDefault();
+      setShowSidebar((prev) => !prev);
     }
     window.addEventListener("keydown", toggleSidebar);
     return () => {
@@ -76,11 +77,9 @@ export function useSidebarToggle() {
 
 export function ToggleSidebarButton({ showSidebar, setShowSidebar }) {
   const { t } = useTranslation();
-  const isMac = navigator.userAgent.includes("Mac");
-  const shortcut = isMac ? "⌘ + Shift + S" : "Ctrl + Shift + S";
-  const label = `${
-    showSidebar ? t("sidebar-nav.hide-sidebar") : t("sidebar-nav.show-sidebar")
-  } (${shortcut})`;
+  const label = showSidebar
+    ? t("sidebar-nav.hide-sidebar")
+    : t("sidebar-nav.show-sidebar");
 
   return (
     <>
@@ -89,8 +88,9 @@ export function ToggleSidebarButton({ showSidebar, setShowSidebar }) {
         className={`hidden md:block border-none bg-transparent rounded-md absolute transition-[top,left] duration-base ease-smooth z-10 ${showSidebar ? "top-[18px] left-[248px]" : "top-[20px] left-[30px]"}`}
         onClick={() => setShowSidebar((prev) => !prev)}
         data-tooltip-id="sidebar-toggle"
-        data-tooltip-content={label}
+        data-tooltip-content={`${label} (${shortcutText("sidebar", t)})`}
         aria-label={label}
+        aria-keyshortcuts={ariaKeyShortcuts("sidebar")}
         aria-expanded={showSidebar}
       >
         <PanelLeft

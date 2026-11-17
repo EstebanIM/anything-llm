@@ -3,6 +3,7 @@ import { flushSync } from "react-dom";
 import { useTranslation } from "react-i18next";
 import System from "@/models/system";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import ProviderOption from "@/components/lib/ProviderSearchMenu/ProviderOption";
 import CTAButton from "@/components/lib/CTAButton";
 import OpenAiLogo from "@/media/llmprovider/openai.png";
@@ -100,7 +101,10 @@ export default function TextToSpeechProvider({ settings, onSaved }) {
 
     const { error } = await System.updateSystem(data);
     if (error) {
-      showToast(t("provider-pages.toast.failed", { error }), "error");
+      showToast(
+        serverErrorMessage(error, t, "provider-pages.toast.failed"),
+        "error"
+      );
       flushSync(() => setSaving(false));
       restoreFocusAfterSave(false);
       return;

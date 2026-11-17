@@ -13,8 +13,19 @@ import { useTranslation } from "react-i18next";
 import { useModalEscape } from "@/hooks/useModalEscape";
 import PasswordInput from "@/components/lib/PasswordInput";
 
-const FOCUSABLE =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+const NOT_SKIPPED = ':not([tabindex="-1"])';
+const FOCUSABLE = [
+  "a[href]",
+  "button:not([disabled])",
+  "input:not([disabled]):not([type=hidden])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  "summary",
+  '[contenteditable="true"]',
+  "[tabindex]",
+]
+  .map((selector) => `${selector}${NOT_SKIPPED}`)
+  .join(", ");
 
 /** Lets `ModalHeader` give its title the id the dialog is labelled by. */
 const ModalTitleContext = createContext(null);
@@ -53,13 +64,15 @@ function findOpener(node) {
  * role="dialog", aria-modal, a name, tabIndex={-1} and data-app-dialog="" so
  * the Tab trap knows it is the top-most layer.
  */
-export function useDialogFocus(isOpen, dialogRef) {
+export function useDialogFocus(isOpen, dialogRef, initialFocusRef = null) {
   useEffect(() => {
     if (!isOpen) return;
     const opener = findOpener(dialogRef.current);
     const timer = setTimeout(() => {
       const node = dialogRef.current;
       if (!node || node.contains(document.activeElement)) return;
+      const preferred = initialFocusRef?.current;
+      if (preferred && node.contains(preferred)) return preferred.focus();
       (node.querySelector(FOCUSABLE) || node).focus();
     }, 0);
 
@@ -128,7 +141,10 @@ const SIZE_CLASSES = {
  * @param {boolean} [props.closeOnEsc=true] - Whether pressing Escape calls `onClose`. Some modals require a forced choice and should opt out.
  * @param {boolean} [props.noPortal=false] - Render inline instead of portaling to #root. Used for sub-DOM modals that must render as a child element.
  *   Note: this can impact the backdrop presentation due to conflicting DOM positions, so double check it renders as desired.
- * @param {string} [props.ariaLabel] - Accessible name when the modal has no `ModalHeader` title (e.g. `variant="bare"`)
+ * @param {string} [props.ariaLabel] - Accessible name when the modal has no `ModalHeader` title. Required with `variant="bare"` unless the children render a `ModalHeader`.
+ * @param {string} [props.describedBy] - id(s) of the text that explains the dialog (consequences of a confirmation)
+ * @param {"dialog"|"alertdialog"} [props.role="dialog"] - `alertdialog` for confirmations that need an answer
+ * @param {import("react").RefObject<HTMLElement>} [props.initialFocusRef] - element focused on open (e.g. Cancel in a destructive confirmation)
  */
 export default function Modal({
   children,
@@ -140,32 +156,43 @@ export default function Modal({
   closeOnEsc = true,
   noPortal = false,
   ariaLabel,
+  describedBy,
+  role = "dialog",
+  initialFocusRef = null,
 }) {
   const titleId = useId();
   const dialogRef = useRef(null);
   useModalEscape(isOpen && closeOnEsc, onClose);
-  useDialogFocus(isOpen, dialogRef);
+  useDialogFocus(isOpen, dialogRef, initialFocusRef);
 
   if (!isOpen) return null;
 
+  if (import.meta.env.DEV && variant === "bare" && !ariaLabel)
+    console.warn(
+      'Modal: variant="bare" needs `ariaLabel` (or a ModalHeader inside) to name the dialog.'
+    );
+
   const backdrop =
-    `bg-black/60 backdrop-blur-sm fixed top-0 left-0 outline-none w-screen h-screen flex items-center justify-center z-99 ${className}`.trim();
+    `bg-black/60 backdrop-blur-sm fixed top-0 left-0 outline-none w-screen h-dvh flex items-center justify-center z-99 animate-in fade-in-0 [animation-duration:var(--dur-quick)] ${className}`.trim();
 
   const dialogProps = {
     ref: dialogRef,
-    role: "dialog",
+    role,
     "aria-modal": "true",
     tabIndex: -1,
     "data-app-dialog": "",
     ...(ariaLabel
       ? { "aria-label": ariaLabel }
       : { "aria-labelledby": titleId }),
+    ...(describedBy ? { "aria-describedby": describedBy } : {}),
   };
 
   if (variant === "bare") {
     const bare = (
       <div {...dialogProps} className={`${backdrop} focus:outline-none`}>
-        {children}
+        <ModalTitleContext.Provider value={titleId}>
+          {children}
+        </ModalTitleContext.Provider>
       </div>
     );
     if (noPortal) return bare;
@@ -176,7 +203,7 @@ export default function Modal({
     <div className={backdrop}>
       <div
         {...dialogProps}
-        className={`relative w-full ${SIZE_CLASSES[size] || SIZE_CLASSES.md} mx-4 flex flex-col gap-y-5 p-6 rounded-lg shadow-xs max-h-[90vh] overflow-y-auto bg-zinc-900 light:bg-white border border-zinc-800 light:border-slate-300 focus:outline-none`}
+        className={`relative w-full ${SIZE_CLASSES[size] || SIZE_CLASSES.md} mx-4 flex flex-col gap-y-5 p-6 rounded-lg shadow-xs max-h-[90dvh] overflow-y-auto overscroll-contain bg-zinc-900 light:bg-white border border-zinc-700 light:border-slate-300 focus:outline-none animate-in fade-in-0 [--tw-enter-translate-y:6px] [animation-duration:var(--dur-base)] [animation-timing-function:var(--ease-smooth)]`}
       >
         <ModalTitleContext.Provider value={titleId}>
           {children}
@@ -204,18 +231,18 @@ export function ModalHeader({ title, subtitle, onClose, children }) {
   return (
     <div className="flex flex-col gap-y-1 w-full">
       <div className="flex items-start justify-between gap-x-2 w-full">
-        <h3
+        <h2
           id={titleId || undefined}
           className="min-w-0 text-base font-semibold text-slate-50 light:text-slate-900 break-words"
         >
           {title}
-        </h3>
+        </h2>
         {onClose && (
           <button
             onClick={onClose}
             type="button"
             aria-label={t("api.modal.close")}
-            className="border-none bg-transparent p-1 -m-1 rounded-lg shrink-0 text-slate-50 light:text-slate-900 hover:bg-zinc-800 light:hover:bg-slate-100 transition-colors duration-quick"
+            className="border-none bg-transparent inline-flex items-center justify-center w-11 h-11 -my-3 -mr-3 md:w-8 md:h-8 md:-my-1.5 md:-mr-1.5 rounded-lg shrink-0 text-slate-50 light:text-slate-900 hover:bg-zinc-800 light:hover:bg-slate-100 transition-colors duration-quick"
           >
             <X strokeWidth={1.5} size={16} aria-hidden="true" />
           </button>

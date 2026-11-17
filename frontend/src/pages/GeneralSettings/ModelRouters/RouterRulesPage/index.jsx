@@ -5,6 +5,7 @@ import Sidebar from "@/components/SettingsSidebar";
 import { ArrowLeft, LoaderCircle } from "lucide-react";
 import ModelRouter from "@/models/modelRouter";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import paths from "@/utils/paths";
 import RuleBuilder from "../RuleBuilder";
 
@@ -18,7 +19,12 @@ export default function RouterRulesPage() {
   const fetchRouter = async () => {
     const { router: found, error } = await ModelRouter.get(id);
     if (!found) {
-      showToast(error || t("settings-pages.router-not-found"), "error");
+      showToast(
+        serverErrorMessage(error, t, "settings-pages.router-not-found", {
+          known: [[/not found/i, "settings-pages.router-not-found"]],
+        }),
+        "error"
+      );
       navigate(paths.settings.modelRouters());
       return;
     }

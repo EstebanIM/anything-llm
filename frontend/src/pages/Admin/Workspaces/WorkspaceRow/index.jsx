@@ -1,19 +1,19 @@
-import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ExternalLink, Trash2 } from "lucide-react";
 import Admin from "@/models/admin";
 import paths from "@/utils/paths";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import { formatDateTime } from "@/utils/dates";
-import InlineConfirm, {
+import { InlineConfirmButton } from "@/components/lib/InlineConfirm";
+import {
   CELL,
   MOBILE_LABEL,
   ROW,
   ROW_ACTION_DANGER,
   ROW_ACTIONS,
   ROW_HEADER,
-  useConfirmFocusReturn,
 } from "@/pages/Admin/Users/AdminTable";
 
 const LINK =
@@ -25,38 +25,32 @@ export default function WorkspaceRow({
   onDeleted,
 }) {
   const { t } = useTranslation();
-  const [confirming, setConfirming] = useState(null);
-  const [busy, setBusy] = useState(false);
-  const deleteRef = useRef(null);
-  useConfirmFocusReturn(confirming, { delete: deleteRef });
   const name = workspace.name;
   const memberCount = workspace.userIds?.length ?? 0;
 
   const handleDelete = async () => {
-    setBusy(true);
     const { success, error } = await Admin.deleteWorkspace(workspace.id);
-    setBusy(false);
     if (!success) {
-      setConfirming(null);
       showToast(
-        t("admin-pages.workspaces.delete-failed", {
-          name,
-          error: error || t("admin-pages.unknown-error"),
+        serverErrorMessage(error, t, "admin-pages.workspaces.delete-failed", {
+          values: { name },
         }),
         "error",
         { clear: true }
       );
-      return;
+      return false;
     }
     showToast(t("admin-pages.workspaces.deleted", { name }), "success", {
       clear: true,
     });
     onDeleted();
+    return true;
   };
 
   return (
     <tr data-row="" className={ROW}>
-      <th scope="row" className={ROW_HEADER}>
+      {/* Focus lands here when the previous row is deleted. */}
+      <th scope="row" tabIndex={-1} data-row-focus="" className={ROW_HEADER}>
         {name}
       </th>
       <td className={CELL}>
@@ -100,34 +94,19 @@ export default function WorkspaceRow({
         {formatDateTime(workspace.createdAt)}
       </td>
       <td className={`${CELL} pt-2`}>
-        {confirming === "delete" ? (
-          <InlineConfirm
-            question={t("admin-pages.workspaces.delete-question", { name })}
-            consequences={t("admin-pages.workspaces.delete-consequences")}
-            confirmLabel={t("settings-pages.delete")}
-            busy={busy}
-            onConfirm={handleDelete}
-            onCancel={() => setConfirming(null)}
-          />
-        ) : (
-          !deletionProtected && (
-            <div className={ROW_ACTIONS}>
-              <button
-                ref={deleteRef}
-                type="button"
-                onClick={() => setConfirming("delete")}
-                aria-label={t("admin-pages.workspaces.delete", { name })}
-                title={t("admin-pages.workspaces.delete", { name })}
-                className={ROW_ACTION_DANGER}
-              >
-                <Trash2
-                  strokeWidth={1.5}
-                  className="h-4 w-4"
-                  aria-hidden="true"
-                />
-              </button>
-            </div>
-          )
+        {!deletionProtected && (
+          <div className={ROW_ACTIONS}>
+            <InlineConfirmButton
+              label={t("admin-pages.workspaces.delete", { name })}
+              icon={Trash2}
+              triggerClassName={ROW_ACTION_DANGER}
+              question={t("admin-pages.workspaces.delete-question", { name })}
+              consequences={t("admin-pages.workspaces.delete-consequences")}
+              confirmLabel={t("settings-pages.delete")}
+              align="end"
+              onConfirm={handleDelete}
+            />
+          </div>
         )}
       </td>
     </tr>

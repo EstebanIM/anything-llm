@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState, Fragment } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import System from "@/models/system";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import * as Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import SystemPromptVariable from "@/models/systemPromptVariable";
@@ -80,9 +81,11 @@ export default function DefaultSystemPrompt() {
     if (!success) {
       setForm((prev) => ({ ...prev, saving: false }));
       showToast(
-        t("admin-pages.default-prompt.save-failed", {
-          error: message || t("admin-pages.unknown-error"),
-        }),
+        serverErrorMessage(
+          message,
+          t,
+          "admin-pages.default-prompt.save-failed"
+        ),
         "error"
       );
       return;
@@ -109,9 +112,11 @@ export default function DefaultSystemPrompt() {
     setConfirmReset(false);
     if (!success) {
       showToast(
-        t("admin-pages.default-prompt.save-failed", {
-          error: message || t("admin-pages.unknown-error"),
-        }),
+        serverErrorMessage(
+          message,
+          t,
+          "admin-pages.default-prompt.save-failed"
+        ),
         "error"
       );
       return;

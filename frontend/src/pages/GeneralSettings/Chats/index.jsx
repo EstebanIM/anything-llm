@@ -12,7 +12,7 @@ import ChatRow from "./ChatRow";
 import ExportChatsMenu from "../ChatEmbedWidgets/components/ExportChatsMenu";
 import Pagination from "../ChatEmbedWidgets/components/Pagination";
 import usePagedChats from "../ChatEmbedWidgets/components/usePagedChats";
-import useFocusAfterRemoval from "../ChatEmbedWidgets/components/useFocusAfterRemoval";
+import useFocusAfterRemoval from "@/hooks/useFocusAfterRemoval";
 
 export default function WorkspaceChats() {
   const { t } = useTranslation();
@@ -21,7 +21,11 @@ export default function WorkspaceChats() {
   const headingRef = useRef(null);
   const tbodyRef = useRef(null);
   const paged = usePagedChats(System.chats);
-  const markRemoved = useFocusAfterRemoval(tbodyRef, headingRef);
+  const markRemoved = useFocusAfterRemoval(
+    tbodyRef,
+    headingRef,
+    '[id^="chat-delete-"]'
+  );
   const [confirmClear, setConfirmClear] = useState(false);
   const [clearing, setClearing] = useState(false);
   const columns = multiUserMode ? 7 : 6;

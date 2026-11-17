@@ -1,6 +1,7 @@
 import System from "@/models/system";
 import Workspace from "@/models/workspace";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import { castToType } from "@/utils/types";
 import { useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -63,9 +64,13 @@ export default function WorkspaceAgentConfiguration({ workspace }) {
     await System.updateSystem(data.env);
 
     if (!updatedWorkspace)
-      showToast(t("provider-pages.toast.failed", { error: message }), "error", {
-        clear: true,
-      });
+      showToast(
+        serverErrorMessage(message, t, "provider-pages.toast.failed"),
+        "error",
+        {
+          clear: true,
+        }
+      );
     return !!updatedWorkspace;
   };
 

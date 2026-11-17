@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import Admin from "@/models/admin";
 import showToast from "@/utils/toast";
+import { serverErrorParts } from "@/utils/serverErrors";
+import ServerErrorDetail from "@/components/lib/ServerErrorDetail";
 import { useTranslation } from "react-i18next";
 import {
   ModalHeader,
@@ -25,7 +27,7 @@ export default function NewWorkspaceModal({ closeModal, onSuccess }) {
     const { workspace, error } = await Admin.newWorkspace(form.get("name"));
     setBusy(false);
     if (!workspace) {
-      setError(error || t("admin-pages.unknown-error"));
+      setError(serverErrorParts(error, t, "settings-pages.form-error"));
       return;
     }
     showToast(
@@ -51,7 +53,14 @@ export default function NewWorkspaceModal({ closeModal, onSuccess }) {
           minLength={4}
           required={true}
           autoComplete="off"
-          error={error ? t("settings-pages.form-error", { error }) : null}
+          error={
+            error ? (
+              <>
+                {error.message}
+                <ServerErrorDetail detail={error.detail} />
+              </>
+            ) : null
+          }
           hint={t("admin-pages.workspaces.new-hint")}
         />
       </ModalBody>

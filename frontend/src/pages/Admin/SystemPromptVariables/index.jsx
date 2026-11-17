@@ -9,13 +9,8 @@ import Modal from "@/components/lib/Modal";
 import AddVariableModal from "./AddVariableModal";
 import { useModal } from "@/hooks/useModal";
 import TableState from "@/components/lib/TableState";
-import {
-  TABLE,
-  TBODY,
-  TH,
-  THEAD,
-  focusAfterRemoval,
-} from "@/pages/Admin/Users/AdminTable";
+import { TABLE, TBODY, TH, THEAD } from "@/pages/Admin/Users/AdminTable";
+import useFocusAfterRemoval from "@/hooks/useFocusAfterRemoval";
 
 const COLUMNS = 5;
 
@@ -28,6 +23,7 @@ export default function SystemPromptVariables() {
   const headingId = useId();
   const headingRef = useRef(null);
   const tbodyRef = useRef(null);
+  const focusAfterRemoval = useFocusAfterRemoval(tbodyRef, headingRef);
 
   useEffect(() => {
     fetchVariables();
@@ -48,9 +44,8 @@ export default function SystemPromptVariables() {
   };
 
   const removeVariable = (id) => {
-    const index = variables.findIndex((variable) => variable.id === id);
+    focusAfterRemoval(variables.findIndex((variable) => variable.id === id));
     setVariables((prev) => prev.filter((variable) => variable.id !== id));
-    focusAfterRemoval(tbodyRef, index, headingRef);
   };
 
   return (

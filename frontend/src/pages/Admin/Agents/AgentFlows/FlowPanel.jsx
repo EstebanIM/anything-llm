@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Pencil, Trash2, Workflow } from "lucide-react";
 import AgentFlows from "@/models/agentFlows";
 import showToast from "@/utils/toast";
+import { serverErrorMessage } from "@/utils/serverErrors";
 import paths from "@/utils/paths";
 import Toggle from "@/components/lib/Toggle";
 import ConfirmModal from "@/components/lib/ConfirmModal";
@@ -42,7 +43,7 @@ export default function FlowPanel({ flow, toggleFlow, enabled, onDelete }) {
     setDeleting(false);
     if (!success) {
       showToast(
-        t("agent-pages.flows.delete-failed", { error: error || "-" }),
+        serverErrorMessage(error, t, "agent-pages.flows.delete-failed"),
         "error",
         { clear: true }
       );
