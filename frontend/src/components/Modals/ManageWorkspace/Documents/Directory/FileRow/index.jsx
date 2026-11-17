@@ -1,63 +1,60 @@
-import React, { memo, useMemo } from "react";
-import {
-  formatDateTimeAsMoment,
-  getFileExtension,
-  middleTruncate,
-} from "@/utils/directories";
+import { memo } from "react";
+import { useTranslation } from "react-i18next";
 import { File } from "lucide-react";
+import { getFileExtension } from "@/utils/directories";
+import SelectionCheckbox from "../../SelectionCheckbox";
+import {
+  ROW_ACCENT,
+  ROW_BASE,
+  ROW_IDLE,
+  displayDate,
+  rowChip,
+  rowSecondaryText,
+} from "../../listStyles";
 
+/**
+ * A file in the document picker. The checkbox is the keyboard path; a click
+ * anywhere else on the row toggles it too (and shift-click selects a range).
+ */
 function FileRow({ item, selected, folderName, toggleSelection }) {
-  const tooltipContent = useMemo(
-    () =>
-      JSON.stringify({
-        title: item.title,
-        date: formatDateTimeAsMoment(item?.published),
-        extension: getFileExtension(item.url),
-      }),
-    [item.title, item.published, item.url]
-  );
+  const { t } = useTranslation();
+  const secondary = rowSecondaryText(selected);
+  const toggle = (event) => toggleSelection(item, folderName, event);
 
   return (
-    <tr
-      onClick={(event) => toggleSelection(item, folderName, event)}
-      className={`text-theme-text-primary text-xs grid grid-cols-12 py-2 pl-8 pr-8 hover:bg-theme-file-picker-hover cursor-pointer file-row ${
-        selected ? "selected light:text-white" : ""
+    <li
+      onClick={toggle}
+      className={`flex items-center gap-x-2 pl-7 pr-3 min-h-[36px] text-xs cursor-pointer ${ROW_BASE} ${
+        selected ? ROW_ACCENT : ROW_IDLE
       }`}
     >
-      <div
-        data-tooltip-id="directory-item"
-        className="col-span-10 w-fit flex gap-x-[4px] items-center relative"
-        data-tooltip-content={tooltipContent}
-      >
-        <div
-          className={`shrink-0 w-3 h-3 rounded border-[1px] border-solid border-white ${
-            selected ? "text-white" : "text-theme-text-primary light:invert"
-          } flex justify-center items-center cursor-pointer`}
-          role="checkbox"
-          aria-checked={selected}
-          tabIndex={0}
-        >
-          {selected && <div className="w-2 h-2 bg-white rounded-[2px]" />}
-        </div>
-        <File
-          strokeWidth={1.5}
-          className="shrink-0 text-base font-bold w-4 h-4 mr-[3px]"
-        />
-        <p className="whitespace-nowrap overflow-hidden text-ellipsis max-w-[400px]">
-          {middleTruncate(item.title, 55)}
-        </p>
-      </div>
-      <div className="col-span-2 flex justify-end items-center">
-        {item?.cached && (
-          <div className="bg-theme-settings-input-active rounded-3xl">
-            <p className="text-xs px-2 py-0.5">Cached</p>
-          </div>
-        )}
-      </div>
-    </tr>
+      <SelectionCheckbox
+        state={selected ? "all" : "none"}
+        label={t("workspace-docs.select-item", { name: item.title })}
+        onToggle={toggle}
+        onAccent={selected}
+      />
+      <File strokeWidth={1.5} aria-hidden="true" className="shrink-0 w-4 h-4" />
+      <span className="flex-1 min-w-0 truncate" title={item.title}>
+        {item.title}
+      </span>
+      {item?.cached && (
+        <span className={rowChip(selected)}>{t("workspace-docs.cached")}</span>
+      )}
+      <span className={`shrink-0 w-12 text-right ${secondary}`}>
+        {getFileExtension(item.url)}
+      </span>
+      <span className={`shrink-0 w-24 text-right tabular-nums ${secondary}`}>
+        {displayDate(item.published)}
+      </span>
+    </li>
   );
 }
 
 export default memo(FileRow, (prev, next) => {
-  return prev.item.id === next.item.id && prev.selected === next.selected;
+  return (
+    prev.item.id === next.item.id &&
+    prev.selected === next.selected &&
+    prev.toggleSelection === next.toggleSelection
+  );
 });

@@ -75,62 +75,74 @@ export default function StatusResponse({
     : workingActive
       ? (lastStatusNode?.content ?? t("chat_window.thought_in_progress"))
       : totalDuration
-        ? thoughtLabel(false, totalDuration)
+        ? thoughtLabel(t, false, totalDuration)
         : t("chat_window.thoughts");
   const hasStatusNodes = messages.some((m) => m.type !== "thoughtChain");
 
   return (
-    <ChainOfThought open={isExpanded} onOpenChange={setIsExpanded}>
-      <ChainOfThoughtHeader
-        icon={
-          <ActivityIcon
-            active={active}
-            thinking={thinkingActive || !hasStatusNodes}
-            hasStatusNodes={hasStatusNodes}
-          />
-        }
-        pending={active}
-        trailing={
-          active && clock ? (
-            <>
-              · <ElapsedTime since={clock.start} />
-            </>
-          ) : null
-        }
-      >
-        {headerLabel}
-      </ChainOfThoughtHeader>
-      <ChainOfThoughtContent>
-        {messages.map((node, index) => {
-          const isActiveStep = active && index === messages.length - 1;
-          const start = arrivalOf(node);
-          const end = arrivalOf(messages[index + 1]) ?? settledAt;
-          const seconds =
-            start && end && end > start ? (end - start) / 1000 : null;
-          return (
-            <ChainOfThoughtStep
-              key={node.uuid || `activity-${index}`}
-              icon={node.type === "thoughtChain" ? Brain : undefined}
-              status={isActiveStep ? "active" : "complete"}
-              label={
-                node.type === "thoughtChain" ? (
-                  <ThoughtNode content={node.content} />
-                ) : (
-                  node.content
-                )
-              }
-              description={
-                isActiveStep && start ? (
-                  <ElapsedTime since={start} />
-                ) : seconds ? (
-                  formatDuration(seconds)
-                ) : undefined
-              }
+    <>
+      {/*
+        Polite region for the live chain only: it speaks each new status as it
+        arrives. The header button keeps a stable name (no ticking timer).
+        Kept outside the chain so it does not take part in its spacing.
+      */}
+      {isLastGroup && (
+        <span className="sr-only" role="status">
+          {active ? headerLabel : ""}
+        </span>
+      )}
+      <ChainOfThought open={isExpanded} onOpenChange={setIsExpanded}>
+        <ChainOfThoughtHeader
+          icon={
+            <ActivityIcon
+              active={active}
+              thinking={thinkingActive || !hasStatusNodes}
+              hasStatusNodes={hasStatusNodes}
             />
-          );
-        })}
-      </ChainOfThoughtContent>
-    </ChainOfThought>
+          }
+          pending={active}
+          trailing={
+            active && clock ? (
+              <>
+                · <ElapsedTime since={clock.start} />
+              </>
+            ) : null
+          }
+        >
+          {headerLabel}
+        </ChainOfThoughtHeader>
+        <ChainOfThoughtContent>
+          {messages.map((node, index) => {
+            const isActiveStep = active && index === messages.length - 1;
+            const start = arrivalOf(node);
+            const end = arrivalOf(messages[index + 1]) ?? settledAt;
+            const seconds =
+              start && end && end > start ? (end - start) / 1000 : null;
+            return (
+              <ChainOfThoughtStep
+                key={node.uuid || `activity-${index}`}
+                icon={node.type === "thoughtChain" ? Brain : undefined}
+                status={isActiveStep ? "active" : "complete"}
+                label={
+                  node.type === "thoughtChain" ? (
+                    <ThoughtNode content={node.content} />
+                  ) : (
+                    node.content
+                  )
+                }
+                description={
+                  isActiveStep && start ? (
+                    <ElapsedTime since={start} />
+                  ) : seconds ? (
+                    formatDuration(seconds)
+                  ) : undefined
+                }
+              />
+            );
+          })}
+        </ChainOfThoughtContent>
+      </ChainOfThought>
+    </>
   );
 }
 
@@ -222,33 +234,51 @@ const ThoughtNode = memo(function ThoughtNode({ content }) {
 });
 
 function ActivityIcon({ active, thinking, hasStatusNodes }) {
+  // Decorative: the header label says what the agent is doing.
   // Thought states use the same brain glyph as the expanded thought nodes;
   // the shimmering header label already signals activity while thinking.
   if (active && thinking)
-    return <Brain strokeWidth={1.5} className="size-5 flex-shrink-0" />;
+    return (
+      <Brain
+        strokeWidth={1.5}
+        aria-hidden="true"
+        className="size-5 flex-shrink-0"
+      />
+    );
 
-  if (active)
+  // The CSS motion guard cannot stop an autoplaying video.
+  if (active && !prefersReducedMotion())
     return (
       <video
         autoPlay
         loop
         muted
         playsInline
+        aria-hidden="true"
         className="w-5 h-5 flex-shrink-0 scale-[165%] light:invert light:opacity-50"
-        aria-label="Agent is thinking..."
       >
         <source src={AgentAnimation} type="video/webm" />
       </video>
     );
 
-  if (hasStatusNodes)
+  if (active || hasStatusNodes)
     return (
       <img
         src={AgentStatic}
-        alt="Agent complete"
+        alt=""
         className="w-5 h-5 flex-shrink-0 light:invert light:opacity-50"
       />
     );
 
-  return <Brain strokeWidth={1.5} className="size-5 flex-shrink-0" />;
+  return (
+    <Brain
+      strokeWidth={1.5}
+      aria-hidden="true"
+      className="size-5 flex-shrink-0"
+    />
+  );
+}
+
+function prefersReducedMotion() {
+  return !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 }

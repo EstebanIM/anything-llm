@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import ModelRouter from "@/models/modelRouter";
 
 export default function RouterPickerSelection({
+  labelledBy,
   selectedRouterId,
   setSelectedRouterId,
   setHasChanges,
@@ -24,7 +25,9 @@ export default function RouterPickerSelection({
     return (
       <select
         disabled
-        className="bg-zinc-900 light:bg-white text-white light:text-slate-900 text-sm rounded-lg h-8 w-full px-2.5 outline-none border border-zinc-900 light:border-slate-400 cursor-not-allowed"
+        aria-labelledby={labelledBy}
+        aria-busy="true"
+        className="bg-zinc-900 light:bg-white text-white light:text-slate-900 text-sm rounded-lg h-8 w-full px-2.5 border border-zinc-900 light:border-slate-400 cursor-not-allowed"
       >
         <option>{t("model-router.router-selection.loading-routers")}</option>
       </select>
@@ -33,7 +36,7 @@ export default function RouterPickerSelection({
 
   if (routers.length === 0) {
     return (
-      <p className="text-xs text-zinc-400 light:text-slate-500">
+      <p className="text-xs text-zinc-400 light:text-slate-600">
         {t("model-router.router-selection.no-routers-chat")}
       </p>
     );
@@ -41,12 +44,13 @@ export default function RouterPickerSelection({
 
   return (
     <select
+      aria-labelledby={labelledBy}
       value={selectedRouterId || ""}
       onChange={(e) => {
         setSelectedRouterId(Number(e.target.value));
         setHasChanges(true);
       }}
-      className="bg-zinc-900 light:bg-white text-white light:text-slate-900 text-sm rounded-lg h-8 w-full px-2.5 outline-none border border-zinc-900 light:border-slate-400 cursor-pointer"
+      className="bg-zinc-900 light:bg-white text-white light:text-slate-900 text-sm rounded-lg h-8 w-full px-2.5 border border-zinc-900 light:border-slate-400 cursor-pointer"
     >
       <option value="">
         {t("model-router.router-selection.select-router")}

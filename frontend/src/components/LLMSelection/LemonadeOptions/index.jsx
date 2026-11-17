@@ -1,22 +1,40 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useId } from "react";
+import { useTranslation } from "react-i18next";
+import { Tooltip } from "react-tooltip";
+import strDistance from "js-levenshtein";
 import System from "@/models/system";
 import useProviderEndpointAutoDiscovery from "@/hooks/useProviderEndpointAutoDiscovery";
-import { LoaderCircle, Info } from "lucide-react";
-import strDistance from "js-levenshtein";
 import { LLM_PREFERENCE_CHANGED_EVENT } from "@/pages/GeneralSettings/LLMPreference";
 import { LEMONADE_COMMON_URLS } from "@/utils/constants";
 import { originOnly } from "@/utils/url";
-import { Tooltip } from "react-tooltip";
-import { Link } from "react-router-dom";
-import ModelTable from "@/components/lib/ModelTable";
+import ModelTable, { DOWNLOADED_GROUP } from "@/components/lib/ModelTable";
 import ModelTableLayout from "@/components/lib/ModelTable/layout";
 import ModelTableLoadingSkeleton from "@/components/lib/ModelTable/loading";
 import showToast from "@/utils/toast";
 import LemonadeUtils from "@/models/utils/lemonadeUtils";
+import {
+  FIELD_COL,
+  FIELD_ERROR,
+  FIELD_INPUT,
+  FIELD_ROW,
+  SECRET_MASK,
+  SecretInput,
+} from "@/components/ProviderFields";
+import {
+  AutoDetectButton,
+  AutoDetectStatus,
+  ExternalLink,
+  FieldLabel,
+  blurOnWheel,
+} from "@/components/LLMSelection/FormParts";
 
 export default function LemonadeOptions({ settings }) {
+  const { t } = useTranslation();
+  const id = useId();
   const {
     autoDetecting: loading,
+    autoDetectStatus,
+    detectedEndpoint,
     basePath,
     basePathValue,
     handleAutoDetectClick,
@@ -35,173 +53,84 @@ export default function LemonadeOptions({ settings }) {
 
   return (
     <div className="w-full flex flex-col gap-y-7">
-      <div className="flex gap-[36px] mt-1.5 flex-wrap">
-        <div className="flex flex-col w-60">
-          <div className="flex items-center gap-1 mb-3">
-            <div className="flex justify-between items-center gap-x-2">
-              <label className="text-white text-sm font-semibold">
-                Base URL
-              </label>
-              {loading ? (
-                <LoaderCircle
-                  strokeWidth={1.5}
-                  className="w-4 h-4 text-theme-text-secondary animate-spin"
-                />
-              ) : (
-                <>
-                  {!basePathValue.value && (
-                    <button
-                      onClick={handleAutoDetectClick}
-                      className="border-none bg-primary-button text-xs font-medium px-2 py-1 rounded-lg hover:bg-secondary hover:text-white shadow-[0_4px_14px_rgba(0,0,0,0.25)]"
-                    >
-                      Auto-Detect
-                    </button>
-                  )}
-                </>
-              )}
-            </div>
-            <Tooltip
-              id="lemonade-base-url"
-              place="top"
-              delayShow={300}
-              delayHide={800}
-              clickable={true}
-              className="tooltip !text-xs !opacity-100 z-99"
-              style={{
-                maxWidth: "250px",
-                whiteSpace: "normal",
-                wordWrap: "break-word",
-              }}
-            >
-              Enter the URL where the Lemonade is running.
-              <br />
-              <br />
-              You <b>must</b> have enabled the Lemonade TCP support for this to
-              work.
-              <br />
-              <br />
-              <Link
-                to="https://lemonade-server.ai/docs"
-                target="_blank"
-                className="text-blue-500 hover:underline"
-              >
-                Learn more &rarr;
-              </Link>
-            </Tooltip>
-            <div
-              className="text-theme-text-secondary cursor-pointer hover:bg-theme-bg-primary flex items-center justify-center rounded-full"
-              data-tooltip-id="lemonade-base-url"
-              data-tooltip-place="top"
-              data-tooltip-delay-hide={800}
-            >
-              <Info
-                strokeWidth={1.5}
-                size={18}
-                className="text-theme-text-secondary"
-              />
-            </div>
-          </div>
-
+      <div className={`${FIELD_ROW} mt-1.5`}>
+        <div className={FIELD_COL}>
+          <FieldLabel
+            htmlFor={`${id}-url`}
+            label={t("provider-fields.base-url")}
+            tipClickable={true}
+            tip={
+              <>
+                {t("llm-fields.common.base-url-tip", { provider: "Lemonade" })}
+                <br />
+                <br />
+                {t("llm-fields.lemonade.tcp-required")}
+                <br />
+                <br />
+                <ExternalLink
+                  href="https://lemonade-server.ai/docs"
+                  className="underline"
+                >
+                  {t("llm-fields.common.learn-more")}
+                </ExternalLink>
+              </>
+            }
+          >
+            <AutoDetectButton busy={loading} onClick={handleAutoDetectClick} />
+          </FieldLabel>
           <input
+            id={`${id}-url`}
             type="url"
             name="LemonadeLLMBasePath"
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
+            className={FIELD_INPUT}
             placeholder="http://localhost:13305"
             value={basePathValue.value}
             required={true}
             autoComplete="off"
             spellCheck={false}
+            aria-describedby={`${id}-url-status`}
             onChange={basePath.onChange}
             onBlur={basePath.onBlur}
           />
-        </div>
-        <div className="flex flex-col w-60">
-          <div className="flex items-center gap-1 mb-3">
-            <label className="text-white text-sm font-semibold block">
-              Model context window
-            </label>
-            <Tooltip
-              id="lemonade-model-context-window"
-              place="top"
-              delayShow={300}
-              delayHide={800}
-              clickable={true}
-              className="tooltip !text-xs !opacity-100 z-99"
-              style={{
-                maxWidth: "350px",
-                whiteSpace: "normal",
-                wordWrap: "break-word",
-              }}
-            >
-              The maximum number of tokens that can be used for a model context
-              window. This must be set to a value that is supported by the
-              model.
-            </Tooltip>
-            <div
-              className="text-theme-text-secondary cursor-pointer hover:bg-theme-bg-primary flex items-center justify-center rounded-full"
-              data-tooltip-id="lemonade-model-context-window"
-              data-tooltip-place="top"
-              data-tooltip-delay-hide={800}
-            >
-              <Info
-                strokeWidth={1.5}
-                size={18}
-                className="text-theme-text-secondary"
-              />
-            </div>
+          <div id={`${id}-url-status`} className="mt-1">
+            <AutoDetectStatus
+              status={autoDetectStatus}
+              provider="Lemonade"
+              endpoint={detectedEndpoint}
+            />
           </div>
+        </div>
+        <div className={FIELD_COL}>
+          <FieldLabel
+            htmlFor={`${id}-context`}
+            label={t("provider-fields.context-window")}
+            tip={t("llm-fields.lemonade.context-window-tip")}
+          />
           <input
+            id={`${id}-context`}
             type="number"
             name="LemonadeLLMModelTokenLimit"
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
+            className={FIELD_INPUT}
             placeholder="8192"
             min={1}
             value={maxTokens}
             onChange={(e) => setMaxTokens(Number(e.target.value))}
-            onScroll={(e) => e.target.blur()}
+            onWheel={blurOnWheel}
             required={true}
             autoComplete="off"
           />
         </div>
-        <div className="flex flex-col w-60">
-          <div className="flex items-center gap-1 mb-3">
-            <label className="text-white text-sm font-semibold block">
-              API Key (optional)
-            </label>
-            <Tooltip
-              id="lemonade-api-key"
-              place="top"
-              delayShow={300}
-              delayHide={800}
-              clickable={true}
-              className="tooltip !text-xs !opacity-100 z-99"
-              style={{
-                maxWidth: "350px",
-                whiteSpace: "normal",
-                wordWrap: "break-word",
-              }}
-            >
-              The API key for your Lemonade server
-            </Tooltip>
-            <div
-              className="text-theme-text-secondary cursor-pointer hover:bg-theme-bg-primary flex items-center justify-center rounded-full"
-              data-tooltip-id="lemonade-api-key"
-              data-tooltip-place="top"
-              data-tooltip-delay-hide={800}
-            >
-              <Info
-                strokeWidth={1.5}
-                size={18}
-                className="text-theme-text-secondary"
-              />
-            </div>
-          </div>
-          <input
-            type="password"
+        <div className={FIELD_COL}>
+          <FieldLabel
+            htmlFor={`${id}-key`}
+            label={t("provider-fields.api-key")}
+            optional={true}
+            tip={t("llm-fields.lemonade.api-key-tip")}
+          />
+          <SecretInput
+            id={`${id}-key`}
             name="LemonadeLLMApiKey"
-            defaultValue={settings?.LemonadeLLMApiKey ? "*".repeat(20) : ""}
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-            autoComplete="off"
+            defaultValue={settings?.LemonadeLLMApiKey ? SECRET_MASK : ""}
           />
         </div>
         <LemonadeModelSelection
@@ -219,23 +148,31 @@ function LemonadeModelSelection({
   setSelectedModelId,
   basePath = null,
 }) {
+  const { t } = useTranslation();
   const [customModels, setCustomModels] = useState([]);
   const [filteredModels, setFilteredModels] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   async function fetchModels() {
     if (!basePath) {
       setCustomModels([]);
       setFilteredModels([]);
+      setError(null);
       setLoading(false);
       setSearchQuery("");
       return;
     }
     setLoading(true);
-    const { models } = await System.customModels("lemonade", null, basePath);
+    const { models, error } = await System.customModels(
+      "lemonade",
+      null,
+      basePath
+    );
     setCustomModels(models || []);
     setFilteredModels(models || []);
+    setError(error || null);
     setSearchQuery("");
     setLoading(false);
   }
@@ -270,23 +207,16 @@ function LemonadeModelSelection({
     setFilteredModels(Array.from(filteredModels.values()));
   }, [searchQuery]);
 
+  // ModelTable asks for confirmation before calling these.
   async function uninstallModel(modelId) {
     try {
-      if (
-        !window.confirm(
-          `Are you sure you want to uninstall this model? You will need to download it again to use it.`
-        )
-      )
-        return;
       const { success, error } = await LemonadeUtils.deleteModel(
         modelId,
         basePath
       );
 
       if (!success)
-        throw new Error(
-          error || "An error occurred while uninstalling the model"
-        );
+        throw new Error(error || t("llm-fields.common.uninstall-error"));
 
       const updatedModels = customModels.map((model) =>
         model.id === modelId ? { ...model, downloaded: false } : model
@@ -296,33 +226,23 @@ function LemonadeModelSelection({
       setSearchQuery("");
     } catch (e) {
       console.error("Error uninstalling model:", e);
-      showToast(
-        e.message || "An error occurred while uninstalling the model",
-        "error",
-        { clear: true }
-      );
+      showToast(e.message || t("llm-fields.common.uninstall-error"), "error", {
+        clear: true,
+      });
     } finally {
       setLoading(false);
     }
   }
 
-  async function downloadModel(modelId, fileSize, progressCallback) {
+  async function downloadModel(modelId, _fileSize, progressCallback) {
     try {
-      if (
-        !window.confirm(
-          `Are you sure you want to download this model? It is ${fileSize} in size and may take a while to download.`
-        )
-      )
-        return;
       const { success, error } = await LemonadeUtils.downloadModel(
         modelId,
         basePath,
         progressCallback
       );
       if (!success)
-        throw new Error(
-          error || "An error occurred while downloading the model"
-        );
+        throw new Error(error || t("llm-fields.common.download-error"));
       progressCallback(100);
       handleSetActiveModel(modelId);
 
@@ -336,11 +256,9 @@ function LemonadeModelSelection({
       }
     } catch (e) {
       console.error("Error downloading model:", e);
-      showToast(
-        e.message || "An error occurred while downloading the model",
-        "error",
-        { clear: true }
-      );
+      showToast(e.message || t("llm-fields.common.download-error"), "error", {
+        clear: true,
+      });
     } finally {
       setLoading(false);
     }
@@ -363,8 +281,8 @@ function LemonadeModelSelection({
         const installedModels = models.filter((model) => model.downloaded);
         mapping
           .get("installed")
-          .set("Downloaded Models", [
-            ...(mapping.get("installed").get("Downloaded Models") || []),
+          .set(DOWNLOADED_GROUP, [
+            ...(mapping.get("installed").get(DOWNLOADED_GROUP) || []),
             ...installedModels,
           ]);
       }
@@ -424,14 +342,23 @@ function LemonadeModelSelection({
       <input
         type="hidden"
         name="LemonadeLLMModelPref"
-        id="LemonadeLLMModelPref"
         value={selectedModelId}
       />
       {loading ? (
         <ModelTableLoadingSkeleton />
       ) : filteredModels.length === 0 ? (
         <div className="flex flex-col w-full gap-y-2 mt-4">
-          <p className="text-theme-text-secondary text-sm">No models found!</p>
+          {error ? (
+            <p role="alert" className={FIELD_ERROR}>
+              {t("provider-fields.models-error", { error })}
+            </p>
+          ) : (
+            <p className="text-theme-text-secondary text-sm">
+              {basePath
+                ? t("provider-fields.models-empty")
+                : t("provider-fields.models-need-url")}
+            </p>
+          )}
         </div>
       ) : (
         Object.entries(groupedModels).map(([alias, models]) => (

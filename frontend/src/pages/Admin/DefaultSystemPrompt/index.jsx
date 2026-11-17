@@ -1,270 +1,280 @@
 import SettingsSidebar from "@/components/SettingsSidebar";
-import { useEffect, useState, Fragment } from "react";
-import { isMobile } from "react-device-detect";
+import { useEffect, useId, useRef, useState, Fragment } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import System from "@/models/system";
 import showToast from "@/utils/toast";
 import * as Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
-import Highlighter from "react-highlight-words";
 import SystemPromptVariable from "@/models/systemPromptVariable";
 import { Link } from "react-router-dom";
 import paths from "@/utils/paths";
+import CTAButton from "@/components/lib/CTAButton";
+import ConfirmModal from "@/components/lib/ConfirmModal";
+
+const LINK =
+  "text-sky-400 light:text-sky-700 underline hover:text-sky-300 light:hover:text-sky-800";
+
+const SECONDARY_BUTTON =
+  "min-h-[44px] md:min-h-0 md:h-[34px] px-4 rounded-lg border border-zinc-500 light:border-slate-500 text-xs font-semibold text-white light:text-slate-900 hover:bg-white/10 light:hover:bg-slate-100 aria-disabled:opacity-50 aria-disabled:cursor-not-allowed transition-colors duration-quick ease-smooth";
 
 export default function DefaultSystemPrompt() {
-  const [systemPromptForm, setSystemPromptForm] = useState({
+  const { t } = useTranslation();
+  const textareaId = useId();
+  const helpId = useId();
+  const variablesId = useId();
+  const textareaRef = useRef(null);
+  const [form, setForm] = useState({
     value: "",
-    default: "",
-    isDirty: false,
-    isSubmitting: false,
-    isLoading: true,
-    isEditing: false,
+    saved: "",
+    loading: true,
+    loadError: false,
+    saving: false,
   });
-  const [saneDefaultSystemPrompt, setSaneDefaultSystemPrompt] = useState("");
-  const [availableVariables, setAvailableVariables] = useState([]);
-  useEffect(() => {
-    async function setupVariableHighlighting() {
-      const { variables } = await SystemPromptVariable.getAll();
-      setAvailableVariables(variables);
-    }
-    setupVariableHighlighting();
-  }, []);
+  const [saneDefault, setSaneDefault] = useState("");
+  const [variables, setVariables] = useState([]);
+  const [confirmReset, setConfirmReset] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   useEffect(() => {
-    async function fetchDefaultSystemPrompt() {
-      setSystemPromptForm((prev) => ({
-        ...prev,
-        isLoading: true,
-      }));
-      const { defaultSystemPrompt, saneDefaultSystemPrompt } =
-        await System.fetchDefaultSystemPrompt();
-      setSaneDefaultSystemPrompt(saneDefaultSystemPrompt);
-      if (!defaultSystemPrompt)
-        return setSystemPromptForm((prev) => ({
-          ...prev,
-          isLoading: false,
-        }));
-
-      setSystemPromptForm((prev) => ({
-        ...prev,
-        default: defaultSystemPrompt,
-        value: defaultSystemPrompt,
-        isLoading: false,
-      }));
-    }
-    fetchDefaultSystemPrompt();
+    SystemPromptVariable.getAll().then(({ variables }) =>
+      setVariables(Array.isArray(variables) ? variables : [])
+    );
   }, []);
 
-  const handleChange = (e) => {
-    const value = e.target.value;
-    const isDirty = value !== systemPromptForm.default;
-
-    setSystemPromptForm((prev) => ({
+  const loadPrompt = async () => {
+    setForm((prev) => ({ ...prev, loading: true, loadError: false }));
+    const { defaultSystemPrompt, saneDefaultSystemPrompt } =
+      await System.fetchDefaultSystemPrompt();
+    // The model resolves to empty values when the request fails.
+    if (!saneDefaultSystemPrompt) {
+      setForm((prev) => ({ ...prev, loading: false, loadError: true }));
+      return;
+    }
+    setSaneDefault(saneDefaultSystemPrompt);
+    const current = defaultSystemPrompt || saneDefaultSystemPrompt;
+    setForm((prev) => ({
       ...prev,
-      value,
-      isDirty,
-      isSubmitting: false,
+      value: current,
+      saved: current,
+      loading: false,
     }));
   };
+
+  useEffect(() => {
+    loadPrompt();
+  }, []);
+
+  const isDirty = form.value !== form.saved;
+  const isDefault = form.value === saneDefault && form.saved === saneDefault;
+
+  // The save button turns disabled once the change is stored: keep keyboard
+  // users in the editor instead of dropping focus to <body>.
+  const refocusEditor = () => setTimeout(() => textareaRef.current?.focus(), 0);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSystemPromptForm((prev) => ({
-      ...prev,
-      isSubmitting: true,
-    }));
-    const newSystemPrompt = systemPromptForm.value.trim();
-    await System.updateDefaultSystemPrompt(newSystemPrompt)
-      .then(({ success, message }) => {
-        if (!success) throw new Error(message);
-
-        // If the user has set the default system prompt to the sane default, reset the value to the sane default.
-        if (
-          !newSystemPrompt ||
-          newSystemPrompt.trim() === saneDefaultSystemPrompt
-        ) {
-          return setSystemPromptForm((prev) => ({
-            ...prev,
-            value: saneDefaultSystemPrompt,
-          }));
-        }
-
-        showToast("Default system prompt updated successfully.", "success");
-        setSystemPromptForm((prev) => ({
-          ...prev,
-          default: newSystemPrompt,
-          isDirty: false,
-          isSubmitting: false,
-        }));
-      })
-      .catch((error) => {
-        showToast(
-          `Failed to update default system prompt: ${error.message}`,
-          "error"
-        );
-        setSystemPromptForm((prev) => ({
-          ...prev,
-          isSubmitting: false,
-        }));
-      });
+    if (form.saving || !isDirty) return;
+    const next = form.value.trim();
+    setForm((prev) => ({ ...prev, saving: true }));
+    const { success, message } = await System.updateDefaultSystemPrompt(next);
+    if (!success) {
+      setForm((prev) => ({ ...prev, saving: false }));
+      showToast(
+        t("admin-pages.default-prompt.save-failed", {
+          error: message || t("admin-pages.unknown-error"),
+        }),
+        "error"
+      );
+      return;
+    }
+    // An empty prompt, or the default text itself, means "use the default".
+    const restored = !next || next === saneDefault;
+    const value = restored ? saneDefault : next;
+    setForm((prev) => ({ ...prev, value, saved: value, saving: false }));
+    showToast(
+      t(
+        restored
+          ? "admin-pages.default-prompt.restored"
+          : "admin-pages.default-prompt.saved"
+      ),
+      "success"
+    );
+    refocusEditor();
   };
+
+  const handleReset = async () => {
+    setResetting(true);
+    const { success, message } = await System.updateDefaultSystemPrompt("");
+    setResetting(false);
+    setConfirmReset(false);
+    if (!success) {
+      showToast(
+        t("admin-pages.default-prompt.save-failed", {
+          error: message || t("admin-pages.unknown-error"),
+        }),
+        "error"
+      );
+      return;
+    }
+    setForm((prev) => ({ ...prev, value: saneDefault, saved: saneDefault }));
+    showToast(t("admin-pages.default-prompt.restored"), "success");
+  };
+
+  const shownVariables = variables.slice(0, 3);
+  const hiddenCount = variables.length - shownVariables.length;
 
   return (
     <div className="w-screen h-screen overflow-hidden bg-zinc-950 light:bg-slate-50 flex">
       <SettingsSidebar />
-      <div
-        style={{ height: isMobile ? "100%" : "calc(100% - 32px)" }}
-        className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full overflow-y-scroll p-4 md:p-0"
-      >
+      <main className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full md:h-[calc(100%-32px)] overflow-y-auto p-4 md:p-0">
         <div className="flex flex-col w-full px-1 md:pl-6 md:pr-[50px] md:py-6 py-16">
           <div className="w-full flex flex-col gap-y-1 pb-6 border-white/10 border-b-2">
-            <div className="items-center flex gap-x-4">
-              <p className="text-lg leading-6 font-bold text-theme-text-primary">
-                Default System Prompt
-              </p>
-            </div>
-            <p className="text-xs leading-[18px] font-base text-theme-text-secondary">
-              This is the default system prompt that will be used for new
-              workspaces.
+            <h1
+              tabIndex={-1}
+              className="text-lg leading-6 font-bold text-theme-text-primary"
+            >
+              {t("admin-pages.default-prompt.title")}
+            </h1>
+            <p className="text-xs leading-[18px] text-theme-text-secondary">
+              {t("admin-pages.default-prompt.description")}
             </p>
           </div>
-          <div>
-            {systemPromptForm.isLoading ? (
-              <div className="mt-8 flex flex-col gap-y-4">
-                <Skeleton.default
-                  height={20}
-                  width={160}
-                  highlightColor="var(--theme-bg-primary)"
-                  baseColor="var(--theme-bg-secondary)"
-                />
-                <Skeleton.default
-                  height={120}
-                  width="100%"
-                  highlightColor="var(--theme-bg-primary)"
-                  baseColor="var(--theme-bg-secondary)"
-                  className="rounded-lg"
-                />
-                <Skeleton.default
-                  height={36}
-                  width={140}
-                  highlightColor="var(--theme-bg-primary)"
-                  baseColor="var(--theme-bg-secondary)"
-                />
-              </div>
-            ) : (
-              <div className="mt-6">
-                <form onSubmit={handleSubmit} className="space-y-3">
-                  <label
-                    htmlFor="default-system-prompt"
-                    className=" text-base font-bold text-white"
-                  >
-                    System Prompt
-                  </label>
-                  <div className="space-y-1">
-                    <p className="text-white text-opacity-60 text-xs font-medium">
-                      A system prompt provides instructions that shape the AI’s
-                      responses and behavior. This prompt will be automatically
-                      applied to all newly created workspaces. To change the
-                      system prompt of a{" "}
-                      <span className="font-bold">specific workspace</span>,
-                      edit the prompt in the{" "}
-                      <span className="font-bold">workspace settings</span>. To
-                      restore the system prompt to our sane default, leave this
-                      field empty and save changes.
-                    </p>
-                    <p className="text-white text-opacity-60 text-xs font-medium mb-2">
-                      You can insert{" "}
-                      <Link
-                        to={paths.settings.systemPromptVariables()}
-                        className="text-primary-button"
-                      >
-                        system prompt variables
-                      </Link>{" "}
-                      like:{" "}
-                      {availableVariables.slice(0, 3).map((v, i) => (
-                        <Fragment key={v.key}>
-                          <span className="bg-theme-settings-input-bg px-1 py-0.5 rounded">
-                            {`{${v.key}}`}
-                          </span>
-                          {i < availableVariables.length - 1 && ", "}
-                        </Fragment>
-                      ))}
-                      {availableVariables.length > 3 && (
+          {form.loading ? (
+            <div role="status" className="mt-8 flex flex-col gap-y-4">
+              <span className="sr-only">{t("common.loading")}</span>
+              <Skeleton.default
+                height={20}
+                width={160}
+                highlightColor="var(--theme-bg-primary)"
+                baseColor="var(--theme-bg-secondary)"
+              />
+              <Skeleton.default
+                height={120}
+                width="100%"
+                highlightColor="var(--theme-bg-primary)"
+                baseColor="var(--theme-bg-secondary)"
+                className="rounded-lg"
+              />
+              <Skeleton.default
+                height={36}
+                width={140}
+                highlightColor="var(--theme-bg-primary)"
+                baseColor="var(--theme-bg-secondary)"
+              />
+            </div>
+          ) : form.loadError ? (
+            <div
+              role="alert"
+              className="mt-8 flex flex-col items-start gap-y-3 text-sm text-red-400 light:text-red-700"
+            >
+              <p>{t("admin-pages.default-prompt.load-failed")}</p>
+              <button
+                type="button"
+                onClick={loadPrompt}
+                className={SECONDARY_BUTTON}
+              >
+                {t("provider-fields.retry")}
+              </button>
+            </div>
+          ) : (
+            <form
+              onSubmit={handleSubmit}
+              className="mt-6 flex flex-col gap-y-3 max-w-[800px]"
+            >
+              <label
+                htmlFor={textareaId}
+                className="text-base font-bold text-white"
+              >
+                {t("admin-pages.default-prompt.label")}
+              </label>
+              <p id={helpId} className="text-xs text-theme-text-secondary">
+                {t("admin-pages.default-prompt.help")}
+              </p>
+              {variables.length > 0 && (
+                <p
+                  id={variablesId}
+                  className="text-xs text-theme-text-secondary"
+                >
+                  <Trans
+                    i18nKey="admin-pages.default-prompt.variables-help"
+                    components={{
+                      anchor: (
                         <Link
                           to={paths.settings.systemPromptVariables()}
-                          className="text-primary-button"
-                        >
-                          +{availableVariables.length - 3} more...
-                        </Link>
-                      )}
-                    </p>
-                  </div>
-
-                  {systemPromptForm.isEditing ? (
-                    <textarea
-                      autoFocus={true}
-                      value={systemPromptForm.value}
-                      onChange={handleChange}
-                      onBlur={() =>
-                        setSystemPromptForm((prev) => ({
-                          ...prev,
-                          isEditing: false,
-                        }))
-                      }
-                      placeholder={
-                        systemPromptForm.isLoading
-                          ? "Loading..."
-                          : "You are an AI assistant that can answer questions and help with tasks."
-                      }
-                      rows={5}
-                      style={{
-                        resize: "vertical",
-                        overflowY: "scroll",
-                        minHeight: "150px",
-                      }}
-                      className="w-full border-none bg-theme-settings-input-bg placeholder:text-theme-settings-input-placeholder text-white text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block p-2.5"
-                    />
-                  ) : (
-                    <div
-                      onClick={() =>
-                        setSystemPromptForm((prev) => ({
-                          ...prev,
-                          isEditing: true,
-                        }))
-                      }
-                      style={{
-                        resize: "vertical",
-                        overflowY: "scroll",
-                        minHeight: "150px",
-                      }}
-                      className="w-full border-none bg-theme-settings-input-bg text-white text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block p-2.5 cursor-text"
-                    >
-                      <Highlighter
-                        className="whitespace-pre-wrap"
-                        highlightClassName="bg-cta-button p-0.5 rounded-md"
-                        searchWords={availableVariables.map(
-                          (v) => `{${v.key}}`
-                        )}
-                        autoEscape={true}
-                        caseSensitive={true}
-                        textToHighlight={systemPromptForm.value || ""}
-                      />
-                    </div>
+                          className={LINK}
+                        />
+                      ),
+                    }}
+                  />{" "}
+                  {shownVariables.map((variable, i) => (
+                    <Fragment key={variable.key}>
+                      {i > 0 && ", "}
+                      <code className="bg-sky-400/20 px-1 py-0.5 rounded font-mono">
+                        {`{${variable.key}}`}
+                      </code>
+                    </Fragment>
+                  ))}
+                  {hiddenCount > 0 && (
+                    <>
+                      {" "}
+                      <Link
+                        to={paths.settings.systemPromptVariables()}
+                        className={LINK}
+                      >
+                        {t("admin-pages.default-prompt.more-variables", {
+                          count: hiddenCount,
+                        })}
+                      </Link>
+                    </>
                   )}
-                  <button
-                    disabled={
-                      !systemPromptForm.isDirty || systemPromptForm.isSubmitting
-                    }
-                    className={`enabled:hover:bg-secondary enabled:hover:text-white rounded-lg bg-primary-button w-fit py-2 px-4 font-semibold text-xs disabled:opacity-20 disabled:cursor-not-allowed`}
-                    type="submit"
-                  >
-                    Save Changes
-                  </button>
-                </form>
+                </p>
+              )}
+              <textarea
+                ref={textareaRef}
+                id={textareaId}
+                aria-describedby={
+                  variables.length > 0 ? `${helpId} ${variablesId}` : helpId
+                }
+                value={form.value}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, value: e.target.value }))
+                }
+                placeholder={t("admin-pages.default-prompt.placeholder")}
+                rows={10}
+                className="w-full min-h-[200px] resize-y rounded-lg border border-zinc-500 light:border-slate-500 bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-base md:text-sm p-2.5"
+              />
+              <div className="flex flex-wrap items-center gap-3">
+                <CTAButton
+                  type="submit"
+                  busy={form.saving}
+                  disabled={!isDirty && !form.saving}
+                  className="mr-0"
+                >
+                  {form.saving ? t("common.saving") : t("common.save")}
+                </CTAButton>
+                <button
+                  type="button"
+                  onClick={() => !isDefault && setConfirmReset(true)}
+                  aria-disabled={isDefault || undefined}
+                  className={SECONDARY_BUTTON}
+                >
+                  {t("admin-pages.default-prompt.restore")}
+                </button>
               </div>
-            )}
-          </div>
+            </form>
+          )}
         </div>
-      </div>
+      </main>
+      <ConfirmModal
+        isOpen={confirmReset}
+        title={t("admin-pages.default-prompt.restore-title")}
+        confirmLabel={t("admin-pages.default-prompt.restore-confirm")}
+        busy={resetting}
+        onConfirm={handleReset}
+        onCancel={() => setConfirmReset(false)}
+      >
+        <p>{t("admin-pages.default-prompt.restore-body")}</p>
+      </ConfirmModal>
     </div>
   );
 }

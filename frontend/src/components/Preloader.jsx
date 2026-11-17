@@ -1,8 +1,15 @@
+import { useTranslation } from "react-i18next";
+
 export default function PreLoader({ size = "16" }) {
+  const { t } = useTranslation();
   return (
-    <div
-      className={`h-${size} w-${size} animate-spin rounded-full border-4 border-solid border-primary border-t-transparent`}
-    ></div>
+    <div role="status">
+      <div
+        aria-hidden="true"
+        className={`h-${size} w-${size} animate-spin rounded-full border-4 border-solid border-primary border-t-transparent`}
+      ></div>
+      <span className="sr-only">{t("common.loading")}</span>
+    </div>
   );
 }
 

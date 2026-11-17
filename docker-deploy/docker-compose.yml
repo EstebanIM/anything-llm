@@ -21,6 +21,8 @@ services:
       - SERVER_PORT=3031
       - STORAGE_DIR=/app/server/storage
       - NODE_ENV=production
+      # IASMAR is an internal instance: no anonymous usage events to AnythingLLM.
+      - DISABLE_TELEMETRY=true
     volumes:
       - ./data/server-storage:/app/server/storage
       - ./data/collector-hotdir:/app/collector/hotdir

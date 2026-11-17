@@ -1,15 +1,30 @@
+import { useId } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  FIELD_COL,
+  FIELD_INPUT,
+  FIELD_LABEL,
+  FIELD_ROW,
+  SECRET_MASK,
+  SecretInput,
+} from "@/components/ProviderFields";
+
 export default function ZillizCloudOptions({ settings }) {
+  const { t } = useTranslation();
+  const id = useId();
+
   return (
     <div className="w-full flex flex-col gap-y-4">
-      <div className="w-full flex items-center gap-[36px] mt-1.5">
-        <div className="flex flex-col w-60">
-          <label className="text-white text-sm font-semibold block mb-3">
-            Cluster Endpoint
+      <div className={`${FIELD_ROW} mt-1.5`}>
+        <div className={FIELD_COL}>
+          <label htmlFor={`${id}-endpoint`} className={FIELD_LABEL}>
+            {t("provider-forms.vector-db.zilliz.endpoint")}
           </label>
           <input
+            id={`${id}-endpoint`}
             type="text"
             name="ZillizEndpoint"
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
+            className={FIELD_INPUT}
             placeholder="https://sample.api.gcp-us-west1.zillizcloud.com"
             defaultValue={settings?.ZillizEndpoint}
             required={true}
@@ -18,18 +33,14 @@ export default function ZillizCloudOptions({ settings }) {
           />
         </div>
 
-        <div className="flex flex-col w-60">
-          <label className="text-white text-sm font-semibold block mb-3">
-            API Token
+        <div className={FIELD_COL}>
+          <label htmlFor={`${id}-token`} className={FIELD_LABEL}>
+            {t("provider-forms.vector-db.zilliz.token")}
           </label>
-          <input
-            type="password"
+          <SecretInput
+            id={`${id}-token`}
             name="ZillizApiToken"
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-            placeholder="Zilliz cluster API Token"
-            defaultValue={settings?.ZillizApiToken ? "*".repeat(20) : ""}
-            autoComplete="off"
-            spellCheck={false}
+            defaultValue={settings?.ZillizApiToken ? SECRET_MASK : ""}
           />
         </div>
       </div>

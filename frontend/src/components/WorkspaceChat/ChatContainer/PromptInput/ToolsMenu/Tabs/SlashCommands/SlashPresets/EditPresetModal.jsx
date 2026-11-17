@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import Modal, {
   ModalHeader,
   ModalBody,
@@ -11,6 +12,7 @@ import Modal, {
 } from "@/components/lib/Modal";
 import { CMD_REGEX, isReservedCommand } from "./constants";
 import showToast from "@/utils/toast";
+import ConfirmModal from "@/components/lib/ConfirmModal";
 
 export default function EditPresetModal({
   isOpen,
@@ -19,6 +21,7 @@ export default function EditPresetModal({
   onDelete,
   preset,
 }) {
+  const { t } = useTranslation();
   const [command, setCommand] = useState("");
   const [deleting, setDeleting] = useState(false);
 
@@ -33,10 +36,7 @@ export default function EditPresetModal({
     const form = new FormData(e.target);
     const sanitizedCommand = command.replace(CMD_REGEX, "");
     if (isReservedCommand(`/${sanitizedCommand}`)) {
-      showToast(
-        "This command is reserved for system use - please choose another.",
-        "error"
-      );
+      showToast(t("chat-input.preset-reserved"), "error");
       return;
     }
     onSave({
@@ -52,63 +52,81 @@ export default function EditPresetModal({
     setCommand(value);
   };
 
-  const handleDelete = async () => {
-    if (!window.confirm("Are you sure you want to delete this preset?")) return;
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
+  const handleDelete = async () => {
     setDeleting(true);
     await onDelete(preset.id);
     setDeleting(false);
+    setConfirmingDelete(false);
     onClose();
   };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-y-5">
-        <ModalHeader title="Edit Preset" onClose={onClose} />
+        <ModalHeader title={t("chat-input.preset-edit")} onClose={onClose} />
         <ModalBody>
           <ModalInput
-            label="Command"
+            label={t("chat_window.command")}
             name="command"
             id="command"
             leading="/"
-            placeholder="your-command"
+            placeholder={t("chat_window.your_command")}
             value={command}
             onChange={handleCommandChange}
+            autoComplete="off"
             required={true}
           />
           <ModalTextarea
-            label="Prompt"
+            label={t("chat-input.preset-prompt-label")}
             name="prompt"
             id="prompt"
-            placeholder="This is a test prompt. Please respond with a poem about LLMs."
+            autoComplete="off"
+            placeholder={t("chat_window.placeholder_prompt")}
             defaultValue={preset.prompt}
             required={true}
           />
           <ModalInput
-            label="Description"
+            label={t("chat_window.description")}
             name="description"
             id="description"
             defaultValue={preset.description}
-            placeholder="Responds with a poem about LLMs."
+            placeholder={t("chat_window.placeholder_description")}
+            autoComplete="off"
             required={true}
           />
         </ModalBody>
         <ModalFooter>
           <ModalDangerButton
             disabled={deleting}
-            onClick={handleDelete}
+            onClick={() => setConfirmingDelete(true)}
             type="button"
           >
-            {deleting ? "Deleting..." : "Delete Preset"}
+            {deleting
+              ? t("chat-input.preset-deleting")
+              : t("chat-input.preset-delete")}
           </ModalDangerButton>
           <div className="flex gap-x-2">
             <ModalSecondaryButton onClick={onClose} type="button">
-              Cancel
+              {t("chat_window.cancel")}
             </ModalSecondaryButton>
-            <ModalPrimaryButton type="submit">Save</ModalPrimaryButton>
+            <ModalPrimaryButton type="submit">
+              {t("chat_window.save")}
+            </ModalPrimaryButton>
           </div>
         </ModalFooter>
       </form>
+      <ConfirmModal
+        isOpen={confirmingDelete}
+        title={t("chat-input.preset-delete-confirm", {
+          command: preset?.command,
+        })}
+        confirmLabel={t("chat-input.preset-delete")}
+        busy={deleting}
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmingDelete(false)}
+      />
     </Modal>
   );
 }

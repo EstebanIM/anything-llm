@@ -1,13 +1,15 @@
-import { CloudUpload } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { CloudUpload, CloudOff, LoaderCircle } from "lucide-react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import showToast from "../../../../../utils/toast";
 import { useDropzone } from "react-dropzone";
+import debounce from "lodash.debounce";
+import showToast from "@/utils/toast";
+import Workspace from "@/models/workspace";
+import { getFilesFromUploadEvent } from "@/utils/folderUpload";
+import { FIELD_ERROR, FIELD_INPUT } from "@/components/ProviderFields";
 import FileUploadProgress from "./FileUploadProgress";
 import MobileUploadFile from "./MobileUploadFile";
-import Workspace from "../../../../../models/workspace";
-import debounce from "lodash.debounce";
-import { getFilesFromUploadEvent } from "../../../../../utils/folderUpload";
+import SupportedFormats from "./SupportedFormats";
 
 /**
  * Fills in a missing protocol so the user can type "example.com/docs" instead
@@ -30,6 +32,70 @@ function withProtocol(value = "") {
 }
 
 /**
+ * One line for the upload list's live region: what is running, what finished
+ * and what failed.
+ * @param {(key: string, options?: object) => string} t
+ * @param {{uploading: number, complete: number, failed: number}} summary
+ */
+export function uploadSummaryText(t, summary) {
+  return [
+    summary.uploading > 0 &&
+      t("workspace-docs.upload.uploading-count", { count: summary.uploading }),
+    summary.uploading === 0 &&
+      summary.complete > 0 &&
+      t("workspace-docs.upload.done-count", { count: summary.complete }),
+    summary.failed > 0 &&
+      t("workspace-docs.upload.failed-count", { count: summary.failed }),
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+/**
+ * Submit handler shared by the desktop and mobile link forms.
+ * @returns {{fetchingUrl: boolean, linkError: string|null, sendLink: (e: SubmitEvent) => Promise<void>}}
+ */
+function useLinkUpload(slug, onLinkScraped) {
+  const { t } = useTranslation();
+  const [fetchingUrl, setFetchingUrl] = useState(false);
+  const [linkError, setLinkError] = useState(null);
+
+  const sendLink = async (e) => {
+    e.preventDefault();
+    if (fetchingUrl) return;
+    const formEl = e.currentTarget;
+    const link = withProtocol(new FormData(formEl).get("link"));
+    if (!link) {
+      setLinkError(t("workspace-docs.upload.link-invalid"));
+      formEl.elements.namedItem("link")?.focus();
+      return;
+    }
+
+    setLinkError(null);
+    setFetchingUrl(true);
+    let ok = false;
+    let message = "";
+    try {
+      const { response, data } = await Workspace.uploadLink(slug, link);
+      ok = response.ok;
+      message = data?.error ?? "";
+    } catch (error) {
+      message = error.message;
+    }
+    if (ok) {
+      await onLinkScraped();
+      showToast(t("workspace-docs.upload.link-success"), "success");
+      formEl.reset();
+    } else {
+      setLinkError(t("workspace-docs.upload.link-error", { error: message }));
+    }
+    setFetchingUrl(false);
+  };
+
+  return { fetchingUrl, linkError, sendLink };
+}
+
+/**
  * @param {object} props
  * @param {ReturnType<import("../hooks/useUploadQueue").default>} props.queue
  * the upload queue shared with the picker's per-folder drop targets, so both
@@ -48,27 +114,15 @@ export default function UploadFile({
   variant = "default",
 }) {
   const { t } = useTranslation();
-  const { ready, files, setFiles, enqueueDrop } = queue;
-  const [fetchingUrl, setFetchingUrl] = useState(false);
-
-  const handleSendLink = async (e) => {
-    e.preventDefault();
-    const formEl = e.target;
-    const form = new FormData(formEl);
-    const link = withProtocol(form.get("link"));
-    if (!link) return showToast("Please enter a valid link", "error");
-
-    setFetchingUrl(true);
-    const { response, data } = await Workspace.uploadLink(workspace.slug, link);
-    if (!response.ok) {
-      showToast(`Error uploading link: ${data.error}`, "error");
-    } else {
-      await onLinkScraped();
-      showToast("Link uploaded successfully", "success");
-      formEl.reset();
-    }
-    setFetchingUrl(false);
-  };
+  const { ready, processor, formats, files, summary, enqueueDrop } = queue;
+  const { fetchingUrl, linkError, sendLink } = useLinkUpload(
+    workspace.slug,
+    onLinkScraped
+  );
+  const titleId = useId();
+  const formatsId = useId();
+  const linkId = useId();
+  const linkErrorId = useId();
 
   // Uploads finish one at a time; coalesce their completions into a single
   // picker sync so a 50-file folder drop does not fire 50 refreshes.
@@ -78,110 +132,185 @@ export default function UploadFile({
   );
   useEffect(() => () => syncPicker.cancel(), [syncPicker]);
 
-  const { getRootProps, getInputProps, inputRef } = useDropzone({
+  const { getRootProps, getInputProps, inputRef, isDragActive } = useDropzone({
     onDrop: enqueueDrop,
     disabled: !ready,
     getFilesFromEvent: getFilesFromUploadEvent,
   });
 
+  const summaryText = uploadSummaryText(t, summary);
+  const uploadList = (
+    <UploadList
+      files={files}
+      slug={workspace.slug}
+      queue={queue}
+      onSettled={syncPicker}
+    />
+  );
+
   if (variant === "mobile")
     return (
       <MobileUploadFile
         ready={ready}
-        uploads={files}
-        setFiles={setFiles}
-        slug={workspace.slug}
+        processor={processor}
+        formats={formats}
+        summaryText={summaryText}
+        uploadList={uploadList}
         openFilePicker={() => inputRef.current?.click()}
         inputProps={getInputProps()}
         fetchingUrl={fetchingUrl}
-        onSubmitLink={handleSendLink}
-        onSettled={syncPicker}
+        linkError={linkError}
+        onSubmitLink={sendLink}
       />
     );
 
   return (
-    <div>
+    <div className="w-full flex flex-col gap-y-3">
       <div
-        className={`w-[560px] border-dashed border-[2px] border-theme-modal-border light:border-[#686C6F] rounded-2xl bg-theme-bg-primary transition-colors duration-300 p-3 ${
+        {...getRootProps({
+          role: "button",
+          "aria-labelledby": titleId,
+          "aria-describedby": formatsId,
+          "aria-disabled": !ready || undefined,
+        })}
+        className={`w-full border-dashed border-2 rounded-2xl p-4 flex flex-col items-center justify-center gap-y-1 text-center transition-colors duration-quick ease-smooth ${
+          isDragActive
+            ? "border-sky-400 bg-sky-500/10 light:border-sky-700 light:bg-sky-50"
+            : "border-zinc-500 light:border-slate-500 bg-theme-bg-primary light:bg-slate-50"
+        } ${
           ready
-            ? " light:bg-[#E0F2FE] cursor-pointer hover:bg-theme-bg-secondary light:hover:bg-transparent"
+            ? "cursor-pointer hover:bg-zinc-800 light:hover:bg-sky-50"
             : "cursor-not-allowed"
         }`}
-        {...getRootProps()}
       >
         <input {...getInputProps()} />
-        {ready === false ? (
-          <div className="flex flex-col items-center justify-center h-full">
-            <CloudUpload
-              strokeWidth={1.5}
-              className="w-8 h-8 text-white/80 light:invert"
-            />
-            <div className="text-white text-opacity-80 text-sm font-semibold py-1">
-              {t("connectors.upload.processor-offline")}
-            </div>
-            <div className="text-white text-opacity-60 text-xs font-medium py-1 px-20 text-center">
-              {t("connectors.upload.processor-offline-desc")}
-            </div>
-          </div>
-        ) : files.length === 0 ? (
-          <div className="flex flex-col items-center justify-center">
-            <CloudUpload
-              strokeWidth={1.5}
-              className="w-8 h-8 text-white/80 light:invert"
-            />
-            <div className="text-white text-opacity-80 text-sm font-semibold py-1">
-              {t("connectors.upload.click-upload")}
-            </div>
-            <div className="text-white text-opacity-60 text-xs font-medium py-1">
-              {t("connectors.upload.file-types")}
-            </div>
-          </div>
+        {processor === "checking" ? (
+          <LoaderCircle
+            strokeWidth={1.5}
+            aria-hidden="true"
+            className="w-8 h-8 animate-spin text-zinc-300 light:text-slate-600"
+          />
+        ) : ready ? (
+          <CloudUpload
+            strokeWidth={1.5}
+            aria-hidden="true"
+            className="w-8 h-8 text-zinc-300 light:text-slate-600"
+          />
         ) : (
-          <div className="grid grid-cols-2 gap-2 overflow-auto max-h-[180px] p-1 overflow-y-scroll no-scroll">
-            {files.map((file) => (
-              <FileUploadProgress
-                key={file.uid}
-                file={file.file}
-                uuid={file.uid}
-                setFiles={setFiles}
-                slug={workspace.slug}
-                rejected={file?.rejected}
-                reason={file?.reason}
-                folderName={file?.folderName}
-                relativePath={file?.relativePath}
-                onSettled={syncPicker}
-              />
-            ))}
-          </div>
+          <CloudOff
+            strokeWidth={1.5}
+            aria-hidden="true"
+            className="w-8 h-8 text-zinc-300 light:text-slate-600"
+          />
         )}
-      </div>
-      <div className="text-center text-white text-opacity-50 text-xs font-medium w-[560px] py-2">
-        {t("connectors.upload.or-submit-link")}
-      </div>
-      <form onSubmit={handleSendLink} className="flex gap-x-2">
-        <input
-          disabled={fetchingUrl}
-          name="link"
-          // Not type="url" - that would force the user to type the protocol.
-          type="text"
-          inputMode="url"
-          className="border-none disabled:bg-theme-settings-input-bg disabled:text-theme-settings-input-placeholder bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-3/4 p-2.5"
-          placeholder={t("connectors.upload.placeholder-link")}
-          autoComplete="off"
-        />
-        <button
-          disabled={fetchingUrl}
-          type="submit"
-          className="disabled:bg-white/20 disabled:text-slate-300 disabled:border-slate-400 disabled:cursor-wait bg bg-transparent hover:bg-slate-200 hover:text-slate-800 w-auto border border-white light:border-theme-modal-border text-sm text-white p-2.5 rounded-lg"
+        <p
+          id={titleId}
+          className="text-sm font-semibold text-slate-50 light:text-slate-900"
         >
-          {fetchingUrl
-            ? t("connectors.upload.fetching")
-            : t("connectors.upload.fetch-website")}
-        </button>
-      </form>
-      <div className="mt-6 text-center text-white text-opacity-80 text-xs font-medium w-[560px]">
-        {t("connectors.upload.privacy-notice")}
+          {processor === "checking"
+            ? t("workspace-docs.upload.checking")
+            : ready
+              ? t("connectors.upload.click-upload")
+              : t("connectors.upload.processor-offline")}
+        </p>
+        <p
+          id={formatsId}
+          className="text-xs text-zinc-400 light:text-slate-600 max-w-[420px]"
+        >
+          {ready || processor === "checking"
+            ? t("connectors.upload.file-types")
+            : t("connectors.upload.processor-offline-desc")}
+        </p>
       </div>
+
+      <SupportedFormats formats={formats} />
+
+      <p
+        role="status"
+        className={
+          summaryText
+            ? "text-xs font-medium text-slate-50 light:text-slate-900"
+            : "sr-only"
+        }
+      >
+        {summaryText}
+      </p>
+      {uploadList}
+
+      <form onSubmit={sendLink} noValidate className="flex flex-col gap-y-1.5">
+        <label
+          htmlFor={linkId}
+          className="text-sm font-medium text-slate-50 light:text-slate-900"
+        >
+          {t("connectors.upload.or-submit-link")}
+        </label>
+        <div className="flex gap-x-2">
+          <input
+            id={linkId}
+            name="link"
+            // Not type="url" - that would force the user to type the protocol.
+            type="text"
+            inputMode="url"
+            autoComplete="off"
+            readOnly={fetchingUrl}
+            placeholder={t("connectors.upload.placeholder-link")}
+            aria-invalid={!!linkError || undefined}
+            aria-describedby={linkError ? linkErrorId : undefined}
+            className={`${FIELD_INPUT} flex-1 min-w-0`}
+          />
+          <button
+            type="submit"
+            aria-disabled={fetchingUrl || undefined}
+            aria-busy={fetchingUrl || undefined}
+            className="shrink-0 flex items-center justify-center gap-x-2 px-4 min-h-[44px] md:min-h-0 rounded-lg bg-transparent border border-zinc-500 light:border-slate-500 text-sm font-medium text-slate-50 light:text-slate-900 hover:bg-zinc-800 light:hover:bg-slate-100 transition-colors duration-quick ease-smooth aria-disabled:cursor-wait aria-disabled:opacity-60"
+          >
+            {fetchingUrl && (
+              <LoaderCircle
+                strokeWidth={1.5}
+                size={14}
+                aria-hidden="true"
+                className="animate-spin"
+              />
+            )}
+            {fetchingUrl
+              ? t("connectors.upload.fetching")
+              : t("connectors.upload.fetch-website")}
+          </button>
+        </div>
+        {linkError && (
+          <p id={linkErrorId} role="alert" className={FIELD_ERROR}>
+            {linkError}
+          </p>
+        )}
+      </form>
+      <p className="text-xs text-zinc-400 light:text-slate-600">
+        {t("connectors.upload.privacy-notice")}
+      </p>
     </div>
+  );
+}
+
+/** Progress rows for every queued upload, outside the dropzone. */
+function UploadList({ files, slug, queue, onSettled }) {
+  const { t } = useTranslation();
+  if (files.length === 0) return null;
+  return (
+    <ul
+      role="list"
+      aria-label={t("workspace-docs.upload.list-label")}
+      className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[180px] overflow-y-auto p-0.5"
+    >
+      {files.map((entry) => (
+        <FileUploadProgress
+          key={entry.uid}
+          entry={entry}
+          slug={slug}
+          onUpdate={queue.updateFile}
+          onRemove={queue.removeFile}
+          onRetry={queue.retryFile}
+          onSettled={onSettled}
+        />
+      ))}
+    </ul>
   );
 }

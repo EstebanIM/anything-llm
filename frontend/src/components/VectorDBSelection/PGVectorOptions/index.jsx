@@ -1,101 +1,101 @@
-import { Info } from "lucide-react";
-import { Tooltip } from "react-tooltip";
+import { useId } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  FIELD_COL,
+  FIELD_INPUT,
+  FIELD_ROW,
+  InfoTip,
+  SECRET_MASK,
+  SecretInput,
+} from "@/components/ProviderFields";
 
 export default function PGVectorOptions({ settings }) {
+  const { t } = useTranslation();
+  const id = useId();
+
   return (
     <div className="w-full flex flex-col gap-y-7">
-      <div className="w-full flex items-center gap-[36px] mt-1.5">
-        <div className="flex flex-col w-96">
+      <div className={`${FIELD_ROW} mt-1.5`}>
+        <div className="flex flex-col w-full md:w-96">
           <div className="flex items-center gap-x-1 mb-3">
-            <label className="text-white text-sm font-semibold block">
-              Postgres Connection String
-            </label>
-            <Info
-              strokeWidth={1.5}
-              size={16}
-              className="text-theme-text-secondary cursor-pointer"
-              data-tooltip-id="pgvector-connection-string-tooltip"
-              data-tooltip-place="right"
-            />
-            <Tooltip
-              delayHide={300}
-              id="pgvector-connection-string-tooltip"
-              className="max-w-md z-99"
-              clickable={true}
+            <label
+              htmlFor={`${id}-connection`}
+              className="text-white text-sm font-semibold"
             >
-              <p className="text-md whitespace-pre-line break-words">
-                This is the connection string for the Postgres database in the
-                format of <br />
-                <code>postgresql://username:password@host:port/database</code>
-                <br />
-                <br />
-                The user for the database must have the following permissions:
+              {t("provider-forms.vector-db.pgvector.connection")}
+            </label>
+            <InfoTip
+              label={t("provider-forms.vector-db.pgvector.connection")}
+              place="right"
+            >
+              <div className="flex flex-col gap-y-2 break-words">
+                <p>
+                  {t("provider-forms.vector-db.pgvector.connection-format")}
+                  <br />
+                  <code>postgresql://username:password@host:port/database</code>
+                </p>
+                <p>
+                  {t("provider-forms.vector-db.pgvector.permissions-intro")}
+                </p>
                 <ul className="list-disc list-inside">
-                  <li>Read access to the database</li>
-                  <li>Read access to the database schema</li>
-                  <li>Create access to the database</li>
+                  <li>
+                    {t("provider-forms.vector-db.pgvector.permission-read")}
+                  </li>
+                  <li>
+                    {t("provider-forms.vector-db.pgvector.permission-schema")}
+                  </li>
+                  <li>
+                    {t("provider-forms.vector-db.pgvector.permission-create")}
+                  </li>
                 </ul>
-                <br />
-                <b>
-                  You must have the pgvector extension installed on the
-                  database.
-                </b>
-              </p>
-            </Tooltip>
+                <p className="font-semibold">
+                  {t("provider-forms.vector-db.pgvector.extension-required")}
+                </p>
+              </div>
+            </InfoTip>
           </div>
-          <input
-            type="text"
+          <SecretInput
+            id={`${id}-connection`}
             name="PGVectorConnectionString"
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
+            revealLabel={t("provider-fields.show-password")}
             placeholder="postgresql://username:password@host:port/database"
-            defaultValue={
-              settings?.PGVectorConnectionString ? "*".repeat(20) : ""
-            }
+            defaultValue={settings?.PGVectorConnectionString ? SECRET_MASK : ""}
             required={true}
-            autoComplete="off"
-            spellCheck={false}
           />
         </div>
 
-        <div className="flex flex-col w-60">
+        <div className={FIELD_COL}>
           <div className="flex items-center gap-x-1 mb-3">
-            <label className="text-white text-sm font-semibold block">
-              Vector Table Name
-            </label>
-            <Info
-              strokeWidth={1.5}
-              size={16}
-              className="text-theme-text-secondary cursor-pointer"
-              data-tooltip-id="pgvector-table-name-tooltip"
-              data-tooltip-place="right"
-            />
-            <Tooltip
-              delayHide={300}
-              id="pgvector-table-name-tooltip"
-              className="max-w-md z-99"
-              clickable={true}
+            <label
+              htmlFor={`${id}-table`}
+              className="text-white text-sm font-semibold"
             >
-              <p className="text-md whitespace-pre-line break-words">
-                This is the name of the table in the Postgres database that will
-                store the vectors.
-                <br />
-                <br />
-                By default, the table name is <code>anythingllm_vectors</code>.
-                <br />
-                <br />
-                <b>
-                  This table must not already exist on the database - it will be
-                  created automatically.
-                </b>
-              </p>
-            </Tooltip>
+              {t("provider-forms.vector-db.pgvector.table")}
+            </label>
+            <InfoTip
+              label={t("provider-forms.vector-db.pgvector.table")}
+              place="right"
+            >
+              <div className="flex flex-col gap-y-2 break-words">
+                <p>{t("provider-forms.vector-db.pgvector.table-help")}</p>
+                <p>
+                  {t("provider-forms.vector-db.pgvector.table-default")}{" "}
+                  <code>anythingllm_vectors</code>
+                </p>
+                <p className="font-semibold">
+                  {t("provider-forms.vector-db.pgvector.table-new")}
+                </p>
+              </div>
+            </InfoTip>
           </div>
           <input
+            id={`${id}-table`}
             type="text"
             name="PGVectorTableName"
             autoComplete="off"
+            spellCheck={false}
             defaultValue={settings?.PGVectorTableName}
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
+            className={FIELD_INPUT}
             placeholder="vector_table"
           />
         </div>

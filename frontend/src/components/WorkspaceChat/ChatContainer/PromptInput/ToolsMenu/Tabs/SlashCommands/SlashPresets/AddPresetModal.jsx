@@ -21,10 +21,7 @@ export default function AddPresetModal({ isOpen, onClose, onSave }) {
     const form = new FormData(e.target);
     const sanitizedCommand = command.replace(CMD_REGEX, "");
     if (isReservedCommand(`/${sanitizedCommand}`)) {
-      showToast(
-        "This command is reserved for system use - please choose another.",
-        "error"
-      );
+      showToast(t("chat-input.preset-reserved"), "error");
       return;
     }
     const saved = await onSave({
@@ -44,7 +41,7 @@ export default function AddPresetModal({ isOpen, onClose, onSave }) {
     <Modal isOpen={isOpen} onClose={onClose}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-y-5">
         <ModalHeader
-          title={t("chat_window.add_new_preset")}
+          title={t("chat_window.add_new_preset").trim()}
           onClose={onClose}
         />
         <ModalBody>
@@ -61,7 +58,7 @@ export default function AddPresetModal({ isOpen, onClose, onSave }) {
             required={true}
           />
           <ModalTextarea
-            label="Prompt"
+            label={t("chat-input.preset-prompt-label")}
             name="prompt"
             id="prompt"
             autoComplete="off"

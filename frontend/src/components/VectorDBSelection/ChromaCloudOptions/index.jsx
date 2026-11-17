@@ -1,49 +1,62 @@
+import { useId } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  FIELD_COL,
+  FIELD_INPUT,
+  FIELD_LABEL,
+  FIELD_ROW,
+  SECRET_MASK,
+  SecretInput,
+} from "@/components/ProviderFields";
+
 export default function ChromaCloudOptions({ settings }) {
+  const { t } = useTranslation();
+  const id = useId();
+
   return (
     <div className="w-full flex flex-col gap-y-7">
-      <div className="w-full flex items-center gap-[36px] mt-1.5">
-        <div className="flex flex-col w-60">
-          <label className="text-white text-sm font-semibold block mb-3">
-            API Key
+      <div className={`${FIELD_ROW} mt-1.5`}>
+        <div className={FIELD_COL}>
+          <label htmlFor={`${id}-api-key`} className={FIELD_LABEL}>
+            {t("provider-fields.api-key")}
           </label>
-          <input
-            type="password"
+          <SecretInput
+            id={`${id}-api-key`}
             name="ChromaCloudApiKey"
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-            placeholder="ck-your-api-key-here"
-            defaultValue={settings?.ChromaCloudApiKey ? "*".repeat(20) : ""}
+            placeholder="ck-..."
+            defaultValue={settings?.ChromaCloudApiKey ? SECRET_MASK : ""}
             required={true}
-            autoComplete="off"
-            spellCheck={false}
           />
         </div>
 
-        <div className="flex flex-col w-60">
-          <label className="text-white text-sm font-semibold block mb-3">
-            Tenant ID
+        <div className={FIELD_COL}>
+          <label htmlFor={`${id}-tenant`} className={FIELD_LABEL}>
+            {t("provider-forms.vector-db.chroma-cloud.tenant")}
           </label>
           <input
+            id={`${id}-tenant`}
             name="ChromaCloudTenant"
             autoComplete="off"
+            spellCheck={false}
             type="text"
             defaultValue={settings?.ChromaCloudTenant}
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-            placeholder="your-tenant-id-here"
+            className={FIELD_INPUT}
             required={true}
           />
         </div>
 
-        <div className="flex flex-col w-60">
-          <label className="text-white text-sm font-semibold block mb-3">
-            Database Name
+        <div className={FIELD_COL}>
+          <label htmlFor={`${id}-database`} className={FIELD_LABEL}>
+            {t("provider-forms.vector-db.database-name")}
           </label>
           <input
+            id={`${id}-database`}
             name="ChromaCloudDatabase"
             autoComplete="off"
+            spellCheck={false}
             type="text"
             defaultValue={settings?.ChromaCloudDatabase}
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-            placeholder="your-database-name"
+            className={FIELD_INPUT}
             required={true}
           />
         </div>

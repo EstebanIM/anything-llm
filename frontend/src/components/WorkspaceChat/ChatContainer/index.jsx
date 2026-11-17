@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext, useRef, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import ChatHistory from "./ChatHistory";
 import { CLEAR_ATTACHMENTS_EVENT, DndUploaderContext } from "./DnDWrapper";
 import PromptInput, {
@@ -7,8 +8,9 @@ import PromptInput, {
 } from "./PromptInput";
 import Workspace from "@/models/workspace";
 import handleChat, { ABORT_STREAM_EVENT } from "@/utils/chat";
-import { isMobile } from "react-device-detect";
+import useIsMobile from "@/hooks/useIsMobile";
 import { SidebarMobileHeader } from "../../Sidebar";
+import { THREAD_RENAME_EVENT } from "../../Sidebar/ActiveWorkspaces/ThreadContainer";
 import { useNavigate } from "react-router-dom";
 import { v4 } from "uuid";
 import handleSocketResponse, {
@@ -48,6 +50,7 @@ export default function ChatContainer({
 }) {
   const navigate = useNavigate();
   const greeting = useGreeting();
+  const isMobile = useIsMobile();
   const [loadingResponse, setLoadingResponse] = useState(false);
   const [chatHistory, setChatHistory] = useState(knownHistory);
   const [socketId, setSocketId] = useState(null);
@@ -470,24 +473,22 @@ export default function ChatContainer({
   if (isEmpty) {
     return (
       <ChatSidebarProvider>
-        <div
-          style={{ height: isMobile ? "100%" : "calc(100% - 32px)" }}
-          className="relative flex md:ml-[2px] md:mr-[16px] md:my-[16px] w-full h-full z-[2]"
-        >
+        <div className="relative flex md:ml-[2px] md:mr-[16px] md:my-[16px] w-full h-full md:h-[calc(100%-32px)] z-[2]">
           <ChatSettingsMenu
             history={chatHistory}
             workspace={workspace}
             threadSlug={activeThreadSlug}
           />
-          <div className="flex-1 min-w-0 relative md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full overflow-hidden border-none light:border-solid light:border light:border-theme-modal-border">
-            {isMobile && <SidebarMobileHeader />}
+          {isMobile && <SidebarMobileHeader />}
+          <main className="flex-1 min-w-0 relative md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full overflow-hidden border-none light:border-solid light:border light:border-theme-modal-border">
+            <ChatHeading workspace={workspace} threadSlug={activeThreadSlug} />
             <WorkspaceModelPicker workspaceSlug={workspace.slug} />
             <DnDFileUploaderWrapper>
               <div className="flex flex-col h-full w-full items-center justify-center">
                 <div className="flex flex-col items-center w-full max-w-[750px]">
-                  <h1 className="text-white text-2xl md:text-[32px] md:leading-10 mb-11 text-center">
+                  <p className="text-white text-2xl md:text-[32px] md:leading-10 mb-11 text-center">
                     {greeting}
-                  </h1>
+                  </p>
                   <PromptInput
                     workspace={workspace}
                     submit={handleSubmit}
@@ -518,7 +519,7 @@ export default function ChatContainer({
               </div>
             </DnDFileUploaderWrapper>
             <ChatTooltips />
-          </div>
+          </main>
           <MemoriesSidebar workspace={workspace} />
         </div>
       </ChatSidebarProvider>
@@ -528,17 +529,15 @@ export default function ChatContainer({
   return (
     <ChatSidebarProvider>
       <ActiveGenerationGuard isGenerating={loadingResponse} />
-      <div
-        style={{ height: isMobile ? "100%" : "calc(100% - 32px)" }}
-        className="relative flex md:ml-[2px] md:mr-[16px] md:my-[16px] w-full h-full z-[2]"
-      >
+      <div className="relative flex md:ml-[2px] md:mr-[16px] md:my-[16px] w-full h-full md:h-[calc(100%-32px)] z-[2]">
         <ChatSettingsMenu
           history={chatHistory}
           workspace={workspace}
           threadSlug={activeThreadSlug}
         />
-        <div className="flex-1 min-w-0 relative md:rounded-[16px] bg-zinc-900 light:bg-white text-white light:text-slate-900 h-full overflow-hidden border-none light:border-solid light:border light:border-theme-modal-border">
-          {isMobile && <SidebarMobileHeader />}
+        {isMobile && <SidebarMobileHeader />}
+        <main className="flex-1 min-w-0 relative md:rounded-[16px] bg-zinc-900 light:bg-white text-white light:text-slate-900 h-full overflow-hidden border-none light:border-solid light:border light:border-theme-modal-border">
+          <ChatHeading workspace={workspace} threadSlug={activeThreadSlug} />
           <WorkspaceModelPicker workspaceSlug={workspace.slug} />
           <DnDFileUploaderWrapper>
             <div className="flex flex-col h-full w-full pb-20 md:pb-0">
@@ -566,10 +565,52 @@ export default function ChatContainer({
             </div>
           </DnDFileUploaderWrapper>
           <ChatTooltips />
-        </div>
+        </main>
         <SourcesSidebar />
         <MemoriesSidebar workspace={workspace} />
       </div>
     </ChatSidebarProvider>
+  );
+}
+
+/**
+ * Visually hidden page heading for the chat column: the thread name (with its
+ * workspace) or the workspace name.
+ */
+function ChatHeading({ workspace, threadSlug }) {
+  const { t } = useTranslation();
+  const [threadName, setThreadName] = useState(null);
+
+  useEffect(() => {
+    setThreadName(null);
+    if (!threadSlug || !workspace?.slug) return;
+    let cancelled = false;
+    Workspace.threads
+      .all(workspace.slug)
+      .then(({ threads = [] }) => {
+        if (cancelled) return;
+        setThreadName(threads.find((th) => th.slug === threadSlug)?.name);
+      })
+      .catch(() => {});
+
+    const onRename = (e) => {
+      if (e.detail?.threadSlug === threadSlug) setThreadName(e.detail.newName);
+    };
+    window.addEventListener(THREAD_RENAME_EVENT, onRename);
+    return () => {
+      cancelled = true;
+      window.removeEventListener(THREAD_RENAME_EVENT, onRename);
+    };
+  }, [workspace?.slug, threadSlug]);
+
+  return (
+    <h1 className="sr-only">
+      {threadName
+        ? t("chat-panels.heading.thread", {
+            thread: threadName,
+            workspace: workspace.name,
+          })
+        : workspace.name}
+    </h1>
   );
 }

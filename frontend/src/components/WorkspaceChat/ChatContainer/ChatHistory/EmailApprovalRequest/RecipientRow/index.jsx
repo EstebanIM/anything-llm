@@ -82,7 +82,8 @@ export default function RecipientRow({
             onKeyDown={handleKeyDown}
             onBlur={commit}
             placeholder={t("chat_window.agent_invocation.email.add_recipient")}
-            className="flex-1 min-w-[160px] bg-transparent border-none outline-none p-0 text-sm leading-5 text-white light:text-slate-950 placeholder:text-zinc-500 light:placeholder:text-slate-400"
+            aria-label={`${label} ${t("chat_window.agent_invocation.email.add_recipient")}`}
+            className="flex-1 min-w-[160px] bg-transparent border-none rounded-sm p-0 text-sm leading-5 text-white light:text-slate-950 placeholder:text-zinc-400 light:placeholder:text-slate-600"
           />
         )}
       </div>
@@ -105,9 +106,9 @@ function RecipientChip({ email, onRemove }) {
           aria-label={t("chat_window.agent_invocation.email.remove_recipient", {
             email,
           })}
-          className="border-none bg-transparent p-0 flex items-center text-zinc-300 light:text-slate-800 hover:text-white light:hover:text-slate-950"
+          className="border-none bg-transparent p-0 flex items-center rounded-full text-zinc-300 light:text-slate-800 hover:text-white light:hover:text-slate-950"
         >
-          <X strokeWidth={1.5} size={12} />
+          <X strokeWidth={1.5} size={12} aria-hidden="true" />
         </button>
       )}
     </span>

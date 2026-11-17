@@ -7,7 +7,7 @@ const ScheduledJobs = {
       headers: baseHeaders(),
     })
       .then((res) => res.json())
-      .catch(() => ({ jobs: [] }));
+      .catch(() => ({ jobs: [], error: true }));
   },
 
   create: async function (data) {
@@ -73,7 +73,7 @@ const ScheduledJobs = {
       headers: baseHeaders(),
     })
       .then((res) => res.json())
-      .catch(() => ({ runs: [] }));
+      .catch(() => ({ runs: [], error: true }));
   },
 
   getRun: async function (runId) {
@@ -111,7 +111,7 @@ const ScheduledJobs = {
       headers: baseHeaders(),
     })
       .then((res) => res.json())
-      .catch(() => ({ tools: [] }));
+      .catch(() => ({ tools: [], error: true }));
   },
 
   killRun: async function (runId) {

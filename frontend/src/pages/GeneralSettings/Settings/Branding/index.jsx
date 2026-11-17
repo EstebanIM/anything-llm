@@ -1,5 +1,5 @@
+import { useId, useRef } from "react";
 import Sidebar from "@/components/SettingsSidebar";
-import { isMobile } from "react-device-detect";
 import { useSearchParams } from "react-router-dom";
 import { AppWindow, Palette, IdCard } from "lucide-react";
 import CustomLogo from "../components/CustomLogo";
@@ -34,65 +34,96 @@ const TABS = {
     Component: CustomSiteSettings,
   },
 };
+const TAB_KEYS = Object.keys(TABS);
+
 export default function BrandingSettings() {
   const { t } = useTranslation();
+  const baseId = useId();
+  const tabRefs = useRef({});
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = TABS[searchParams.get("tab")]
     ? searchParams.get("tab")
     : "identity";
   const { Component } = TABS[activeTab];
+  const tabId = (key) => `${baseId}-tab-${key}`;
+  const panelId = `${baseId}-panel`;
+
+  const selectTab = (key) => setSearchParams({ tab: key }, { replace: true });
+
+  // Tabs follow the APG pattern: one Tab stop, arrows and Home/End move and select.
+  const handleTabKeyDown = (e) => {
+    const current = TAB_KEYS.indexOf(activeTab);
+    const next = {
+      ArrowRight: current + 1,
+      ArrowLeft: current - 1,
+      Home: 0,
+      End: TAB_KEYS.length - 1,
+    }[e.key];
+    if (next === undefined) return;
+    e.preventDefault();
+    const key = TAB_KEYS[(next + TAB_KEYS.length) % TAB_KEYS.length];
+    selectTab(key);
+    tabRefs.current[key]?.focus();
+  };
+
   return (
     <div className="w-screen h-screen overflow-hidden bg-zinc-950 light:bg-slate-50 flex">
       <Sidebar />
-      <div
-        style={{
-          height: isMobile ? "100%" : "calc(100% - 32px)",
-        }}
-        className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full overflow-y-scroll p-4 md:p-0"
-      >
+      <main className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full md:h-[calc(100%-32px)] overflow-y-scroll p-4 md:p-0">
         <div className="flex flex-col w-full px-1 md:pl-6 md:pr-[86px] md:py-6 py-16">
           <div className="w-full flex flex-col gap-y-1 pb-6">
-            <div className="items-center">
-              <p className="text-lg leading-6 font-bold text-white">
-                {t("customization.branding.title")}
-              </p>
-            </div>
-            <p className="text-xs leading-[18px] font-base text-white text-opacity-60">
+            <h1 className="text-lg leading-6 font-bold text-white">
+              {t("customization.branding.title")}
+            </h1>
+            <p className="text-xs leading-[18px] text-white text-opacity-60">
               {t("customization.branding.description")}
             </p>
           </div>
           <div
             role="tablist"
+            aria-label={t("customization.branding.title")}
+            onKeyDown={handleTabKeyDown}
             className="flex gap-x-8 border-b-2 border-white/10 light:border-theme-sidebar-border overflow-x-auto overflow-y-hidden no-scroll"
           >
-            {Object.entries(TABS).map(([key, { icon: Icon }]) => (
-              <button
-                key={key}
-                type="button"
-                role="tab"
-                aria-selected={activeTab === key}
-                onClick={() =>
-                  setSearchParams(
-                    {
-                      tab: key,
-                    },
-                    {
-                      replace: true,
-                    }
-                  )
-                }
-                className={`flex gap-x-2 items-center pb-3 -mb-[2px] border-b-2 text-sm font-medium whitespace-nowrap transition-colors ${activeTab === key ? "text-sky-400 border-sky-400 light:text-sky-600 light:border-sky-600" : "text-white/60 border-transparent hover:text-sky-400 light:hover:text-sky-600"}`}
-              >
-                <Icon strokeWidth={1.5} className="h-5 w-5" />
-                {t(`customization.branding.tabs.${key}`)}
-              </button>
-            ))}
+            {TAB_KEYS.map((key) => {
+              const Icon = TABS[key].icon;
+              const selected = activeTab === key;
+              return (
+                <button
+                  key={key}
+                  ref={(el) => {
+                    tabRefs.current[key] = el;
+                  }}
+                  id={tabId(key)}
+                  type="button"
+                  role="tab"
+                  aria-selected={selected}
+                  aria-controls={selected ? panelId : undefined}
+                  tabIndex={selected ? 0 : -1}
+                  onClick={() => selectTab(key)}
+                  className={`flex gap-x-2 items-center min-h-[44px] md:min-h-0 pb-3 -mb-[2px] border-b-2 text-sm font-medium whitespace-nowrap transition-colors duration-quick ease-smooth ${selected ? "text-sky-400 border-sky-400 light:text-sky-700 light:border-sky-700" : "text-white/60 border-transparent hover:text-sky-400 light:hover:text-sky-700"}`}
+                >
+                  <Icon
+                    strokeWidth={1.5}
+                    className="h-5 w-5"
+                    aria-hidden="true"
+                  />
+                  {t(`customization.branding.tabs.${key}`)}
+                </button>
+              );
+            })}
           </div>
-          <div role="tabpanel" className="pt-2">
+          <div
+            role="tabpanel"
+            id={panelId}
+            aria-labelledby={tabId(activeTab)}
+            tabIndex={0}
+            className="pt-2 rounded-sm"
+          >
             <Component />
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

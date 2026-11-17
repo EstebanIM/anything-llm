@@ -1,17 +1,19 @@
-import ConnectorImages from "@/components/DataConnectorOption/media";
+import { useId, useRef, useState } from "react";
 import { Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import ConnectorImages from "@/components/DataConnectorOption/media";
+import { FIELD_INPUT } from "@/components/ProviderFields";
 import GithubOptions from "./Connectors/Github";
 import GitlabOptions from "./Connectors/Gitlab";
 import GiteaOptions from "./Connectors/Gitea";
 import YoutubeOptions from "./Connectors/Youtube";
 import ConfluenceOptions from "./Connectors/Confluence";
 import DrupalWikiOptions from "./Connectors/DrupalWiki";
-import { useState } from "react";
-import ConnectorOption from "./ConnectorOption";
 import WebsiteDepthOptions from "./Connectors/WebsiteDepth";
 import ObsidianOptions from "./Connectors/Obsidian";
 import PaperlessNgxOptions from "./Connectors/PaperlessNgx";
+import ConnectorOption from "./ConnectorOption";
+import { normalize } from "@/components/lib/ProviderSearchMenu";
 
 export const getDataConnectors = (t) => ({
   github: {
@@ -53,74 +55,159 @@ export const getDataConnectors = (t) => ({
   drupalwiki: {
     name: "Drupal Wiki",
     image: ConnectorImages.drupalwiki,
-    description: "Import Drupal Wiki spaces in a single click.",
+    description: t("data-connectors.drupalwiki.description"),
     options: <DrupalWikiOptions />,
   },
   obsidian: {
     name: "Obsidian",
     image: ConnectorImages.obsidian,
-    description: "Import Obsidian vault in a single click.",
+    description: t("data-connectors.obsidian.description"),
     options: <ObsidianOptions />,
   },
   "paperless-ngx": {
     name: "Paperless-ngx",
     image: ConnectorImages.paperlessNgx,
-    description: "Import documents from your Paperless-ngx instance.",
+    description: t("data-connectors.paperless-ngx.description"),
     options: <PaperlessNgxOptions />,
   },
 });
 
+/**
+ * Data connectors as vertical tabs (APG: one Tab stop, arrows and Home/End
+ * move and select). Every panel stays mounted and only the selected one is
+ * shown, so a collection in progress survives switching connectors.
+ */
 export default function DataConnectors() {
   const { t } = useTranslation();
+  const baseId = useId();
+  const tabRefs = useRef({});
   const [selectedConnector, setSelectedConnector] = useState("github");
   const [searchQuery, setSearchQuery] = useState("");
   const DATA_CONNECTORS = getDataConnectors(t);
+  const slugs = Object.keys(DATA_CONNECTORS);
 
-  const filteredConnectors = Object.keys(DATA_CONNECTORS).filter((slug) =>
-    DATA_CONNECTORS[slug].name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const tabId = (slug) => `${baseId}-tab-${slug}`;
+  const panelId = (slug) => `${baseId}-panel-${slug}`;
+  const headingId = (slug) => `${baseId}-heading-${slug}`;
+
+  const needle = normalize(searchQuery.trim());
+  const filteredConnectors = needle
+    ? slugs.filter((slug) =>
+        [DATA_CONNECTORS[slug].name, DATA_CONNECTORS[slug].description].some(
+          (text) => normalize(text).includes(needle)
+        )
+      )
+    : slugs;
+  // The selected connector may be filtered out: then the first result takes the Tab stop.
+  const tabStop = filteredConnectors.includes(selectedConnector)
+    ? selectedConnector
+    : filteredConnectors[0];
+
+  // Arrows select as they move, so the focused tab is always the Tab stop.
+  const handleTabKeyDown = (e) => {
+    const current = filteredConnectors.indexOf(tabStop);
+    if (current === -1) return;
+    const last = filteredConnectors.length - 1;
+    const next = {
+      ArrowDown: current === last ? 0 : current + 1,
+      ArrowUp: current === 0 ? last : current - 1,
+      Home: 0,
+      End: last,
+    }[e.key];
+    if (next === undefined) return;
+    e.preventDefault();
+    const slug = filteredConnectors[next];
+    setSelectedConnector(slug);
+    tabRefs.current[slug]?.focus();
+  };
 
   return (
-    <div className="flex upload-modal -mt-10 relative h-[70vh] w-[70vw]">
-      <div className="w-full p-4 top-0 z-20 overflow-y-auto h-full">
-        <div className="w-full flex items-center sticky top-0 z-50">
-          <Search
-            strokeWidth={1.5}
-            size={16}
-            className="absolute left-4 z-30 text-white"
-          />
-          <input
-            type="text"
-            placeholder={t("connectors.search-placeholder")}
-            className="border-none z-20 pl-10 h-[38px] rounded-full w-full px-4 py-1 text-sm border-2 border-slate-300/40 outline-none focus:outline-primary-button active:outline-primary-button outline-none placeholder:text-theme-settings-input-placeholder text-white bg-theme-settings-input-bg"
-            autoComplete="off"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+    <div className="relative w-[70vw] max-w-full h-[70vh] overflow-y-auto md:overflow-hidden grid grid-cols-1 md:grid-cols-[minmax(220px,280px)_1fr] md:grid-rows-1">
+      <div className="p-4 md:h-full md:min-h-0 md:overflow-y-auto md:border-r border-white/10 light:border-slate-200">
+        <div className="sticky top-0 z-10 pb-2 bg-zinc-900 light:bg-white">
+          <label htmlFor={`${baseId}-search`} className="sr-only">
+            {t("connectors.search-placeholder")}
+          </label>
+          <div className="relative">
+            <Search
+              strokeWidth={1.5}
+              size={16}
+              aria-hidden="true"
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-theme-text-secondary pointer-events-none"
+            />
+            <input
+              id={`${baseId}-search`}
+              type="search"
+              placeholder={t("connectors.search-placeholder")}
+              className={`${FIELD_INPUT} pl-10 rounded-full`}
+              autoComplete="off"
+              spellCheck={false}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <p role="status" className="sr-only">
+            {needle
+              ? t("data-connectors.search-results", {
+                  count: filteredConnectors.length,
+                })
+              : ""}
+          </p>
         </div>
-        <div className="mt-2 flex flex-col gap-y-2">
-          {filteredConnectors.length > 0 ? (
-            filteredConnectors.map((slug, index) => (
+        {filteredConnectors.length > 0 ? (
+          <div
+            role="tablist"
+            aria-orientation="vertical"
+            aria-label={t("connectors.manage.data-connectors")}
+            onKeyDown={handleTabKeyDown}
+            className="mt-2 flex flex-col gap-y-1"
+          >
+            {filteredConnectors.map((slug) => (
               <ConnectorOption
-                key={index}
-                slug={slug}
-                selectedConnector={selectedConnector}
-                setSelectedConnector={setSelectedConnector}
+                key={slug}
+                ref={(el) => {
+                  tabRefs.current[slug] = el;
+                }}
+                id={tabId(slug)}
+                panelId={panelId(slug)}
+                selected={slug === selectedConnector}
+                tabIndex={slug === tabStop ? 0 : -1}
                 image={DATA_CONNECTORS[slug].image}
                 name={DATA_CONNECTORS[slug].name}
                 description={DATA_CONNECTORS[slug].description}
+                onSelect={() => setSelectedConnector(slug)}
               />
-            ))
-          ) : (
-            <div className="text-white text-center mt-4">
-              {t("connectors.no-connectors")}
-            </div>
-          )}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-4 text-sm text-center text-theme-text-secondary">
+            {t("connectors.no-connectors")}
+          </p>
+        )}
       </div>
-      <div className="xl:block hidden absolute left-1/2 top-0 bottom-0 w-[0.5px] bg-white/20 -translate-x-1/2"></div>
-      <div className="w-full p-4 pb-8 top-0 text-white min-w-[500px] overflow-y-auto h-full">
-        {DATA_CONNECTORS[selectedConnector].options}
+      <div className="p-4 md:px-6 md:h-full md:min-h-0 md:overflow-y-auto text-white">
+        {slugs.map((slug) => (
+          <div
+            key={slug}
+            role="tabpanel"
+            id={panelId(slug)}
+            aria-labelledby={headingId(slug)}
+            hidden={slug !== selectedConnector}
+            tabIndex={0}
+            className="rounded-sm"
+          >
+            <h2
+              id={headingId(slug)}
+              className="text-base font-semibold text-white"
+            >
+              {DATA_CONNECTORS[slug].name}
+            </h2>
+            <p className="mt-1 text-xs text-theme-text-secondary">
+              {DATA_CONNECTORS[slug].description}
+            </p>
+            <div className="mt-6">{DATA_CONNECTORS[slug].options}</div>
+          </div>
+        ))}
       </div>
     </div>
   );

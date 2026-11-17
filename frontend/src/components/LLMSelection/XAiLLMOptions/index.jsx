@@ -1,25 +1,36 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useId } from "react";
+import { useTranslation } from "react-i18next";
 import System from "@/models/system";
+import {
+  FIELD_COL,
+  FIELD_ROW,
+  SECRET_MASK,
+  SecretInput,
+} from "@/components/ProviderFields";
+import {
+  FieldLabel,
+  ModelSelectField,
+  modelStatus,
+} from "@/components/LLMSelection/FormParts";
 
 export default function XAILLMOptions({ settings }) {
+  const { t } = useTranslation();
+  const id = useId();
   const [inputValue, setInputValue] = useState(settings?.XAIApiKey);
   const [apiKey, setApiKey] = useState(settings?.XAIApiKey);
 
   return (
-    <div className="flex gap-[36px] mt-1.5">
-      <div className="flex flex-col w-60">
-        <label className="text-white text-sm font-semibold block mb-3">
-          xAI API Key
-        </label>
-        <input
-          type="password"
+    <div className={`${FIELD_ROW} mt-1.5`}>
+      <div className={FIELD_COL}>
+        <FieldLabel
+          htmlFor={`${id}-key`}
+          label={t("provider-fields.api-key")}
+        />
+        <SecretInput
+          id={`${id}-key`}
           name="XAIApiKey"
-          className="border-none bg-theme-settings-input-bg text-theme-text-primary placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-          placeholder="xAI API Key"
-          defaultValue={settings?.XAIApiKey ? "*".repeat(20) : ""}
+          defaultValue={settings?.XAIApiKey ? SECRET_MASK : ""}
           required={true}
-          autoComplete="off"
-          spellCheck={false}
           onChange={(e) => setInputValue(e.target.value)}
           onBlur={() => setApiKey(inputValue)}
         />
@@ -33,82 +44,63 @@ export default function XAILLMOptions({ settings }) {
 }
 
 function XAIModelSelection({ apiKey, settings }) {
+  const { t } = useTranslation();
   const [customModels, setCustomModels] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     async function findCustomModels() {
       if (!apiKey) {
         setCustomModels([]);
-        setLoading(true);
         return;
       }
 
       try {
         setLoading(true);
-        const { models } = await System.customModels("xai", apiKey);
+        const { models, error } = await System.customModels("xai", apiKey);
         setCustomModels(models || []);
+        setError(error || null);
       } catch (error) {
         console.error("Failed to fetch custom models:", error);
         setCustomModels([]);
+        setError(error.message);
       } finally {
         setLoading(false);
       }
     }
     findCustomModels();
-  }, [apiKey]);
+  }, [apiKey, attempt]);
 
-  if (loading) {
-    return (
-      <div className="flex flex-col w-60">
-        <label className="text-theme-text-primary text-sm font-semibold block mb-3">
-          Chat Model Selection
-        </label>
-        <select
-          name="XAIModelPref"
-          disabled={true}
-          className="border-none bg-theme-settings-input-bg text-theme-text-primary border-theme-border text-sm rounded-lg block w-full p-2.5"
-        >
-          <option disabled={true} selected={true}>
-            --loading available models--
-          </option>
-        </select>
-        <p className="text-xs leading-[18px] font-base text-theme-text-primary opacity-60 mt-2">
-          Enter a valid API key to view all available models for your account.
-        </p>
-      </div>
-    );
-  }
+  const status = modelStatus({
+    loading,
+    error,
+    count: customModels.length,
+    needs: apiKey ? null : "need-key",
+  });
 
   return (
-    <div className="flex flex-col w-60">
-      <label className="text-theme-text-primary text-sm font-semibold block mb-3">
-        Chat Model Selection
-      </label>
-      <select
-        name="XAIModelPref"
-        required={true}
-        className="border-none bg-theme-settings-input-bg text-theme-text-primary border-theme-border text-sm rounded-lg block w-full p-2.5"
-      >
-        {customModels.length > 0 && (
-          <optgroup label="Available models">
-            {customModels.map((model) => {
-              return (
-                <option
-                  key={model.id}
-                  value={model.id}
-                  selected={settings?.XAIModelPref === model.id}
-                >
-                  {model.id}
-                </option>
-              );
-            })}
-          </optgroup>
-        )}
-      </select>
-      <p className="text-xs leading-[18px] font-base text-theme-text-primary opacity-60 mt-2">
-        Select the xAI model you want to use for your conversations.
-      </p>
-    </div>
+    <ModelSelectField
+      name="XAIModelPref"
+      label={t("provider-fields.chat-model")}
+      status={status}
+      error={error}
+      onRetry={() => setAttempt((n) => n + 1)}
+      defaultValue={settings?.XAIModelPref}
+      help={
+        status === "ready"
+          ? t("llm-fields.common.model-help-select", { provider: "xAI" })
+          : t("llm-fields.common.model-help-key")
+      }
+    >
+      <optgroup label={t("llm-fields.common.available-models")}>
+        {customModels.map((model) => (
+          <option key={model.id} value={model.id}>
+            {model.id}
+          </option>
+        ))}
+      </optgroup>
+    </ModelSelectField>
   );
 }

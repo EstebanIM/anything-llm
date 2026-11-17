@@ -1,14 +1,34 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
+import { useTranslation } from "react-i18next";
 import System from "@/models/system";
 import { LLMMAN_COMMON_URLS } from "@/utils/constants";
-import { ChevronDown, ChevronUp, Info, LoaderCircle } from "lucide-react";
 import useProviderEndpointAutoDiscovery from "@/hooks/useProviderEndpointAutoDiscovery";
-import { Tooltip } from "react-tooltip";
-import { Link } from "react-router-dom";
+import {
+  AdvancedSection,
+  FIELD_COL,
+  FIELD_INPUT,
+  FIELD_ROW,
+  FIELD_SELECT,
+  SECRET_MASK,
+  SecretInput,
+} from "@/components/ProviderFields";
+import {
+  AutoDetectRow,
+  ContextWindowTip,
+  ExternalLink,
+  FieldLabel,
+  ModelSelectField,
+  blurOnWheel,
+  modelStatus,
+} from "@/components/LLMSelection/FormParts";
 
 export default function LlmmanOptions({ settings }) {
+  const { t } = useTranslation();
+  const id = useId();
   const {
     autoDetecting: loading,
+    autoDetectStatus,
+    detectedEndpoint,
     basePath,
     basePathValue,
     authToken,
@@ -25,261 +45,139 @@ export default function LlmmanOptions({ settings }) {
 
   return (
     <div className="w-full flex flex-col gap-y-7">
-      <div className="w-full flex items-start gap-[36px] mt-1.5">
+      <div className={`${FIELD_ROW} mt-1.5`}>
         <LlmmanModelSelection
           settings={settings}
           basePath={basePath.value}
           authToken={authToken.value}
         />
       </div>
-      <div className="flex justify-start mt-4">
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            setShowAdvancedControls(!showAdvancedControls);
-          }}
-          className="border-none text-theme-text-primary hover:text-theme-text-secondary flex items-center text-sm"
-        >
-          {showAdvancedControls ? "Hide" : "Show"} advanced settings
-          {showAdvancedControls ? (
-            <ChevronUp strokeWidth={1.5} size={14} className="ml-1" />
-          ) : (
-            <ChevronDown strokeWidth={1.5} size={14} className="ml-1" />
-          )}
-        </button>
-      </div>
+      <AutoDetectRow
+        provider="llmman"
+        busy={loading}
+        status={autoDetectStatus}
+        endpoint={detectedEndpoint}
+        onDetect={handleAutoDetectClick}
+      />
 
-      <div hidden={!showAdvancedControls}>
-        <div className="flex flex-col">
-          <div className="w-full flex items-start gap-4 mb-4">
-            <div className="flex flex-col w-60">
-              <div className="flex justify-between items-center mb-2">
-                <div className="flex items-center gap-1">
-                  <label className="text-white text-sm font-semibold">
-                    llmman Base URL
-                  </label>
-                  <Info
-                    strokeWidth={1.5}
-                    size={18}
-                    className="text-theme-text-secondary cursor-pointer"
-                    data-tooltip-id="llmman-base-url"
-                    data-tooltip-content="Enter the URL where `llmman serve` is running."
-                  />
-                  <Tooltip
-                    id="llmman-base-url"
-                    place="top"
-                    delayShow={300}
-                    className="tooltip !text-xs !opacity-100"
-                    style={{
-                      maxWidth: "250px",
-                      whiteSpace: "normal",
-                      wordWrap: "break-word",
-                    }}
-                  />
-                </div>
-                {loading ? (
-                  <LoaderCircle
-                    strokeWidth={1.5}
-                    size={16}
-                    className="text-theme-text-secondary animate-spin"
-                  />
-                ) : (
-                  <>
-                    {!basePathValue.value && (
-                      <button
-                        onClick={handleAutoDetectClick}
-                        className="bg-primary-button text-xs font-medium px-2 py-1 rounded-lg hover:bg-secondary hover:text-white shadow-[0_4px_14px_rgba(0,0,0,0.25)]"
-                      >
-                        Auto-Detect
-                      </button>
-                    )}
-                  </>
-                )}
-              </div>
-              <input
-                type="url"
-                name="LlmmanBasePath"
-                className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-                placeholder="http://127.0.0.1:17434"
-                value={basePathValue.value}
-                required={true}
-                autoComplete="off"
-                spellCheck={false}
-                onChange={basePath.onChange}
-                onBlur={basePath.onBlur}
-              />
-            </div>
-
-            <div className="flex flex-col w-60">
-              <div className="flex items-center mb-2 gap-x-1">
-                <label className="text-white text-sm font-semibold block">
-                  Keep Alive
-                </label>
-                <Info
-                  strokeWidth={1.5}
-                  size={18}
-                  className="text-theme-text-secondary cursor-pointer"
-                  data-tooltip-id="llmman-keep-alive"
-                />
-                <Tooltip
-                  id="llmman-keep-alive"
-                  place="top"
-                  delayShow={300}
-                  delayHide={400}
-                  clickable={true}
-                  className="tooltip !text-xs !opacity-100"
-                  style={{
-                    maxWidth: "250px",
-                    whiteSpace: "normal",
-                    wordWrap: "break-word",
-                  }}
-                >
-                  <p className="text-xs leading-[18px] font-base">
-                    Choose how long llmman should keep your model in memory
-                    before unloading.{" "}
-                    <Link
-                      className="underline text-blue-300"
-                      to="https://github.com/llmmanorg/llmman#serve"
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Learn more &rarr;
-                    </Link>
-                  </p>
-                </Tooltip>
-              </div>
-              <select
-                name="LlmmanKeepAliveSeconds"
-                required={true}
-                className="border-none bg-theme-settings-input-bg border-gray-500 text-white text-sm rounded-lg block w-full p-2.5"
-                defaultValue={settings?.LlmmanKeepAliveSeconds ?? "300"}
-              >
-                <option value="0">No cache</option>
-                <option value="300">5 minutes</option>
-                <option value="3600">1 hour</option>
-                <option value="-1">Forever</option>
-              </select>
-            </div>
+      <AdvancedSection
+        open={showAdvancedControls}
+        onOpenChange={setShowAdvancedControls}
+      >
+        <div className={`${FIELD_ROW} mt-4`}>
+          <div className={FIELD_COL}>
+            <FieldLabel
+              htmlFor={`${id}-url`}
+              label={t("provider-fields.base-url")}
+              tip={t("llm-fields.common.base-url-tip", {
+                provider: "llmman serve",
+              })}
+            />
+            <input
+              id={`${id}-url`}
+              type="url"
+              name="LlmmanBasePath"
+              className={FIELD_INPUT}
+              placeholder="http://127.0.0.1:17434"
+              value={basePathValue.value}
+              required={true}
+              autoComplete="off"
+              spellCheck={false}
+              onChange={basePath.onChange}
+              onBlur={basePath.onBlur}
+            />
           </div>
-          <div className="w-full flex items-start gap-4">
-            <div className="flex flex-col w-60">
-              <div className="flex items-center mb-2 gap-x-1">
-                <label className="text-white text-sm font-semibold block">
-                  Model context window
-                </label>
-                <Info
-                  strokeWidth={1.5}
-                  size={18}
-                  className="text-theme-text-secondary cursor-pointer"
-                  data-tooltip-id="llmman-model-context-window"
-                />
-                <Tooltip
-                  id="llmman-model-context-window"
-                  place="top"
-                  delayShow={300}
-                  delayHide={400}
-                  clickable={true}
-                  className="tooltip !text-xs !opacity-100"
-                  style={{
-                    maxWidth: "250px",
-                    whiteSpace: "normal",
-                    wordWrap: "break-word",
-                  }}
-                >
-                  <p className="text-xs leading-[18px] font-base">
-                    Specify the maximum number of tokens that can be used for
-                    the model context window.
-                    <br /> <br />
-                    If you leave this field blank, the context window limit will
-                    be auto-detected from the model and applied to all chats. If
-                    auto-detection fails, a fallback context window limit of
-                    4096 will be used.
-                    <br /> <br />
-                    <b>Important:</b> Some models have very large context
-                    windows using the full context window limit can dramatically
-                    increase the memory usage of your system. For this reason,
-                    we will automatically cap the context window limit to 16,384
-                    tokens if the model supports more than that and no value is
-                    specified.
-                    <br /> <br />
-                    If an invalid value is entered, AnythingLLM will handle this
-                    for you so that chats do not fail.
-                  </p>
-                </Tooltip>
-              </div>
-              <input
-                type="number"
-                name="LlmmanTokenLimit"
-                className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-                placeholder="Automatically managed"
-                min={1}
-                value={maxTokens}
-                onChange={(e) =>
-                  setMaxTokens(e.target.value ? Number(e.target.value) : "")
-                }
-                onScroll={(e) => e.target.blur()}
-                required={false}
-                autoComplete="off"
-              />
-            </div>
 
-            <div className="flex flex-col w-60">
-              <div className="flex items-center mb-2 gap-x-1">
-                <label className="text-white text-sm font-semibold">
-                  Authentication Token
-                </label>
-                <Info
-                  strokeWidth={1.5}
-                  size={18}
-                  className="text-theme-text-secondary cursor-pointer"
-                  data-tooltip-id="llmman-authentication-token"
-                />
-                <Tooltip
-                  id="llmman-authentication-token"
-                  place="top"
-                  delayShow={300}
-                  delayHide={400}
-                  clickable={true}
-                  className="tooltip !text-xs !opacity-100"
-                  style={{
-                    maxWidth: "250px",
-                    whiteSpace: "normal",
-                    wordWrap: "break-word",
-                  }}
-                >
-                  <p className="text-xs leading-[18px] font-base">
-                    Enter a <code>Bearer</code> Auth Token for interacting with
-                    your llmman server.
-                    <br /> <br />
-                    Used <b>only</b> if running llmman behind an authentication
-                    server.
-                  </p>
-                </Tooltip>
-              </div>
-              <input
-                type="password"
-                name="LlmmanAuthToken"
-                className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg outline-none block w-full p-2.5 focus:outline-primary-button active:outline-primary-button"
-                placeholder="Auth Token"
-                defaultValue={settings?.LlmmanAuthToken ? "*".repeat(20) : ""}
-                value={authTokenValue.value}
-                onChange={authToken.onChange}
-                onBlur={authToken.onBlur}
-                required={false}
-                autoComplete="off"
-                spellCheck={false}
-              />
-            </div>
+          <div className={FIELD_COL}>
+            <FieldLabel
+              htmlFor={`${id}-keep-alive`}
+              label={t("llm-fields.common.keep-alive")}
+              tipClickable={true}
+              tip={
+                <>
+                  {t("llm-fields.common.keep-alive-tip", {
+                    provider: "llmman",
+                  })}{" "}
+                  <ExternalLink
+                    href="https://github.com/llmmanorg/llmman#serve"
+                    className="underline"
+                  >
+                    {t("llm-fields.common.learn-more")}
+                  </ExternalLink>
+                </>
+              }
+            />
+            <select
+              id={`${id}-keep-alive`}
+              name="LlmmanKeepAliveSeconds"
+              required={true}
+              className={FIELD_SELECT}
+              defaultValue={settings?.LlmmanKeepAliveSeconds ?? "300"}
+            >
+              <option value="0">{t("llm-fields.common.no-cache")}</option>
+              <option value="300">{t("llm-fields.common.five-minutes")}</option>
+              <option value="3600">{t("llm-fields.common.one-hour")}</option>
+              <option value="-1">{t("llm-fields.common.forever")}</option>
+            </select>
           </div>
         </div>
-      </div>
+        <div className={`${FIELD_ROW} mt-4`}>
+          <div className={FIELD_COL}>
+            <FieldLabel
+              htmlFor={`${id}-context`}
+              label={t("provider-fields.context-window")}
+              tip={<ContextWindowTip fallback={4096} />}
+            />
+            <input
+              id={`${id}-context`}
+              type="number"
+              name="LlmmanTokenLimit"
+              className={FIELD_INPUT}
+              placeholder={t("provider-fields.context-window-auto")}
+              min={1}
+              value={maxTokens}
+              onChange={(e) =>
+                setMaxTokens(e.target.value ? Number(e.target.value) : "")
+              }
+              onWheel={blurOnWheel}
+              required={false}
+              autoComplete="off"
+            />
+          </div>
+
+          <div className={FIELD_COL}>
+            <FieldLabel
+              htmlFor={`${id}-token`}
+              label={t("provider-fields.auth-token")}
+              optional={true}
+              tip={t("llm-fields.common.auth-token-tip", {
+                provider: "llmman",
+              })}
+            />
+            <SecretInput
+              id={`${id}-token`}
+              name="LlmmanAuthToken"
+              value={
+                authTokenValue.value ??
+                (settings?.LlmmanAuthToken ? SECRET_MASK : "")
+              }
+              onChange={authToken.onChange}
+              onBlur={authToken.onBlur}
+              required={false}
+            />
+          </div>
+        </div>
+      </AdvancedSection>
     </div>
   );
 }
 
 function LlmmanModelSelection({ settings, basePath = null, authToken = null }) {
+  const { t } = useTranslation();
   const [customModels, setCustomModels] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     async function findCustomModels() {
@@ -290,75 +188,45 @@ function LlmmanModelSelection({ settings, basePath = null, authToken = null }) {
       }
       setLoading(true);
       try {
-        const { models } = await System.customModels(
+        const { models, error } = await System.customModels(
           "llmman",
           authToken,
           basePath
         );
         setCustomModels(models || []);
+        setError(error || null);
       } catch (error) {
         console.error("Failed to fetch custom models:", error);
         setCustomModels([]);
+        setError(error.message);
       }
       setLoading(false);
     }
     findCustomModels();
-  }, [basePath, authToken]);
-
-  if (loading || customModels.length === 0) {
-    return (
-      <div className="flex flex-col w-60">
-        <label className="text-white text-sm font-semibold block mb-2">
-          llmman Model
-        </label>
-        <select
-          name="LlmmanModelPref"
-          disabled={true}
-          className="border-none bg-theme-settings-input-bg border-gray-500 text-white text-sm rounded-lg block w-full p-2.5"
-        >
-          <option disabled={true} selected={true}>
-            {!!basePath
-              ? "--loading available models--"
-              : "Enter llmman URL first"}
-          </option>
-        </select>
-        <p className="text-xs leading-[18px] font-base text-white text-opacity-60 mt-2">
-          Select the llmman model you want to use. Models will load after
-          entering a valid llmman URL.
-        </p>
-      </div>
-    );
-  }
+  }, [basePath, authToken, attempt]);
 
   return (
-    <div className="flex flex-col w-60">
-      <label className="text-white text-sm font-semibold block mb-2">
-        llmman Model
-      </label>
-      <select
-        name="LlmmanModelPref"
-        required={true}
-        className="border-none bg-theme-settings-input-bg border-gray-500 text-white text-sm rounded-lg block w-full p-2.5"
-      >
-        {customModels.length > 0 && (
-          <optgroup label="Your loaded models">
-            {customModels.map((model) => {
-              return (
-                <option
-                  key={model.id}
-                  value={model.id}
-                  selected={settings.LlmmanModelPref === model.id}
-                >
-                  {model.id}
-                </option>
-              );
-            })}
-          </optgroup>
-        )}
-      </select>
-      <p className="text-xs leading-[18px] font-base text-white text-opacity-60 mt-2">
-        Choose the llmman model you want to use for your conversations.
-      </p>
-    </div>
+    <ModelSelectField
+      name="LlmmanModelPref"
+      label={t("provider-fields.chat-model")}
+      status={modelStatus({
+        loading,
+        error,
+        count: customModels.length,
+        needs: basePath ? null : "need-url",
+      })}
+      error={error}
+      onRetry={() => setAttempt((n) => n + 1)}
+      defaultValue={settings?.LlmmanModelPref}
+      help={t("llm-fields.common.model-help-select", { provider: "llmman" })}
+    >
+      <optgroup label={t("llm-fields.common.loaded-models")}>
+        {customModels.map((model) => (
+          <option key={model.id} value={model.id}>
+            {model.id}
+          </option>
+        ))}
+      </optgroup>
+    </ModelSelectField>
   );
 }

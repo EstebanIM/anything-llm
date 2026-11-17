@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import SubmenuItem from "../Submenu";
 
 function getTextSizes(t) {
   return [
@@ -12,7 +12,6 @@ function getTextSizes(t) {
 
 export default function TextSizeRow() {
   const { t } = useTranslation();
-  const [showSubmenu, setShowSubmenu] = useState(false);
   const [selectedSize, setSelectedSize] = useState(
     window.localStorage.getItem("anythingllm_text_size") || "normal"
   );
@@ -24,58 +23,26 @@ export default function TextSizeRow() {
   }
 
   return (
-    <div
-      className="relative"
-      onMouseEnter={() => setShowSubmenu(true)}
-      onMouseLeave={() => setShowSubmenu(false)}
+    <SubmenuItem
+      label={t("chat_window.text_size_label")}
+      widthClass="w-[110px]"
     >
-      <div
-        className={`flex items-center justify-between px-2 py-1 rounded cursor-pointer ${
-          showSubmenu
-            ? "bg-zinc-700 light:bg-slate-200"
-            : "hover:bg-zinc-700 light:hover:bg-slate-200"
-        }`}
-      >
-        <span className="text-sm font-normal text-zinc-50 light:text-slate-800">
-          {t("chat_window.text_size_label")}
-        </span>
-        <ChevronRight
-          strokeWidth={1.5}
-          size={14}
-          className="text-zinc-50 light:text-slate-800"
-        />
-      </div>
-      {showSubmenu && (
-        <TextSizeSubmenu
-          selectedSize={selectedSize}
-          onSizeChange={handleTextSizeChange}
-        />
-      )}
-    </div>
-  );
-}
-
-function TextSizeSubmenu({ selectedSize, onSizeChange }) {
-  const { t } = useTranslation();
-  const textSizes = getTextSizes(t);
-
-  return (
-    <div className="absolute right-full top-0 -mr-2 pr-2 pt-0">
-      <div className="bg-zinc-800 light:bg-slate-50 border border-zinc-700 light:border-slate-300 rounded-lg p-3.5 w-[98px] flex flex-col gap-1.5 shadow-lg">
-        {textSizes.map(({ key, label }) => (
-          <div
-            key={key}
-            onClick={() => onSizeChange(key)}
-            className={`px-2 py-1 rounded cursor-pointer text-sm font-normal text-white light:text-slate-800 ${
-              selectedSize === key
-                ? "bg-zinc-700 light:bg-slate-200"
-                : "hover:bg-zinc-700/50 light:hover:bg-slate-100"
-            }`}
-          >
-            {label}
-          </div>
-        ))}
-      </div>
-    </div>
+      {getTextSizes(t).map(({ key, label }) => (
+        <button
+          key={key}
+          type="button"
+          role="menuitemradio"
+          aria-checked={selectedSize === key}
+          onClick={() => handleTextSizeChange(key)}
+          className={`w-full text-left border-none px-2 py-1 min-h-11 md:min-h-0 rounded cursor-pointer text-sm font-normal text-white light:text-slate-800 transition-colors duration-quick ${
+            selectedSize === key
+              ? "bg-zinc-700 light:bg-slate-200"
+              : "bg-transparent hover:bg-zinc-700/50 light:hover:bg-slate-100"
+          }`}
+        >
+          {label}
+        </button>
+      ))}
+    </SubmenuItem>
   );
 }

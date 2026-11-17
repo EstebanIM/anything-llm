@@ -39,6 +39,8 @@ const EMPTY_MAP = Object.freeze(new Map());
 const initialState = {
   /** @type {'initializing'|'ready'} only `initializing` may blank out the tree */
   status: "initializing",
+  /** The last folder listing failed; the tree shows what it had before. */
+  loadError: false,
   /** Message for a non-blocking mutation (delete/move); null when idle. */
   busyMessage: null,
   /** @type {Array<{name: string, fileCount: number}>} ordered folder shells */
@@ -179,6 +181,7 @@ function reducer(state, action) {
       return {
         ...state,
         status: "ready",
+        loadError: false,
         folders: action.folders,
         contents,
         expanded: new Set([...state.expanded].filter((n) => names.has(n))),
@@ -188,7 +191,7 @@ function reducer(state, action) {
     }
 
     case "hydrate-failed":
-      return { ...state, status: "ready" };
+      return { ...state, status: "ready", loadError: true };
 
     case "busy":
       return { ...state, busyMessage: action.message ?? null };
@@ -251,6 +254,13 @@ function reducer(state, action) {
         expanded: withToggled(state.expanded, action.name, opening),
       };
     }
+
+    // Back to unloaded so the self-healing effect fetches it again.
+    case "folder-retry":
+      return {
+        ...state,
+        contents: { ...state.contents, [action.name]: UNLOADED },
+      };
 
     case "set-expanded":
       return {
@@ -720,6 +730,10 @@ export default function useDocumentPicker({ slug }) {
     (name) => loadFolder({ name, append: true }),
     [loadFolder]
   );
+  const retryFolder = useCallback(
+    (name) => dispatch({ type: "folder-retry", name }),
+    []
+  );
   const removeFiles = useCallback(
     (ids, { deleted = false } = {}) =>
       dispatch({ type: "remove-files", ids, deleted }),
@@ -836,6 +850,7 @@ export default function useDocumentPicker({ slug }) {
     toggleExpanded,
     prefetchFolder,
     loadMore,
+    retryFolder,
     toggleFile,
     toggleFolder,
     selectAll,

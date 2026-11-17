@@ -20,6 +20,7 @@ import {
   RadarChart,
   RadialBar,
   RadialBarChart,
+  ResponsiveContainer,
   Scatter,
   ScatterChart,
   Treemap,
@@ -33,6 +34,7 @@ import { safeJsonParse } from "@/utils/request.js";
 import renderMarkdown from "@/utils/chat/markdown.js";
 import DOMPurify from "dompurify";
 import { memo, useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { saveAs } from "file-saver";
 import { useGenerateImage } from "recharts-to-png";
 import { LoaderCircle, Download } from "lucide-react";
@@ -42,6 +44,7 @@ const dataFormatter = (number) => {
 };
 
 export function Chartable({ props }) {
+  const { t } = useTranslation();
   const [getDivJpeg, { ref }] = useGenerateImage({
     quality: 1,
     type: "image/jpeg",
@@ -75,7 +78,7 @@ export function Chartable({ props }) {
     switch (chartType) {
       case "area":
         return (
-          <div className="bg-theme-bg-primary p-8 rounded-xl text-white light:border light:border-theme-border-primary">
+          <div className="bg-theme-bg-primary p-4 md:p-8 rounded-xl text-white light:border light:border-slate-300">
             <h3 className="text-lg text-theme-text-primary font-medium">
               {title}
             </h3>
@@ -92,7 +95,7 @@ export function Chartable({ props }) {
         );
       case "bar":
         return (
-          <div className="bg-theme-bg-primary p-8 rounded-xl text-white light:border light:border-theme-border-primary">
+          <div className="bg-theme-bg-primary p-4 md:p-8 rounded-xl text-white light:border light:border-slate-300">
             <h3 className="text-lg text-theme-text-primary font-medium">
               {title}
             </h3>
@@ -111,7 +114,7 @@ export function Chartable({ props }) {
         );
       case "line":
         return (
-          <div className="bg-theme-bg-primary p-8 pb-12 rounded-xl text-white h-[500px] w-full light:border light:border-theme-border-primary">
+          <div className="bg-theme-bg-primary p-4 pb-12 md:p-8 md:pb-12 rounded-xl text-white h-[500px] w-full light:border light:border-slate-300">
             <h3 className="text-lg text-theme-text-primary font-medium">
               {title}
             </h3>
@@ -128,7 +131,7 @@ export function Chartable({ props }) {
         );
       case "composed":
         return (
-          <div className="bg-theme-bg-primary p-8 rounded-xl text-white light:border light:border-theme-border-primary">
+          <div className="bg-theme-bg-primary p-4 md:p-8 rounded-xl text-white light:border light:border-slate-300">
             <h3 className="text-lg text-theme-text-primary font-medium">
               {title}
             </h3>
@@ -139,54 +142,56 @@ export function Chartable({ props }) {
                 className="mb-5 justify-end"
               />
             )}
-            <ComposedChart width={500} height={260} data={data}>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                horizontal
-                vertical={false}
-              />
-              <XAxis
-                dataKey="name"
-                tickLine={false}
-                axisLine={false}
-                interval="preserveStartEnd"
-                tick={{ transform: "translate(0, 6)", fill: "white" }}
-                style={{
-                  fontSize: "12px",
-                  fontFamily: "Inter; Helvetica",
-                }}
-                padding={{ left: 10, right: 10 }}
-              />
-              <YAxis
-                tickLine={false}
-                axisLine={false}
-                type="number"
-                tick={{ transform: "translate(-3, 0)", fill: "white" }}
-                style={{
-                  fontSize: "12px",
-                  fontFamily: "Inter; Helvetica",
-                }}
-              />
-              <Tooltip legendColor={getTremorColor(color || "blue")} />
-              <Line
-                type="linear"
-                dataKey={value}
-                stroke={getTremorColor(color || "blue")}
-                dot={false}
-                strokeWidth={2}
-              />
-              <Bar
-                dataKey="value"
-                name="value"
-                type="linear"
-                fill={getTremorColor(color || "blue")}
-              />
-            </ComposedChart>
+            <ResponsiveContainer width="100%" height={260}>
+              <ComposedChart data={data}>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  horizontal
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="name"
+                  tickLine={false}
+                  axisLine={false}
+                  interval="preserveStartEnd"
+                  tick={{ transform: "translate(0, 6)", fill: "currentColor" }}
+                  style={{
+                    fontSize: "12px",
+                    fontFamily: "Inter; Helvetica",
+                  }}
+                  padding={{ left: 10, right: 10 }}
+                />
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  type="number"
+                  tick={{ transform: "translate(-3, 0)", fill: "currentColor" }}
+                  style={{
+                    fontSize: "12px",
+                    fontFamily: "Inter; Helvetica",
+                  }}
+                />
+                <Tooltip legendColor={getTremorColor(color || "blue")} />
+                <Line
+                  type="linear"
+                  dataKey={value}
+                  stroke={getTremorColor(color || "blue")}
+                  dot={false}
+                  strokeWidth={2}
+                />
+                <Bar
+                  dataKey="value"
+                  name="value"
+                  type="linear"
+                  fill={getTremorColor(color || "blue")}
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
           </div>
         );
       case "scatter":
         return (
-          <div className="bg-theme-bg-primary p-8 rounded-xl text-white light:border light:border-theme-border-primary">
+          <div className="bg-theme-bg-primary p-4 md:p-8 rounded-xl text-white light:border light:border-slate-300">
             <h3 className="text-lg text-theme-text-primary font-medium">
               {title}
             </h3>
@@ -199,42 +204,47 @@ export function Chartable({ props }) {
                 />
               </div>
             )}
-            <ScatterChart width={500} height={260} data={data}>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                horizontal
-                vertical={false}
-              />
-              <XAxis
-                dataKey="name"
-                tickLine={false}
-                axisLine={false}
-                interval="preserveStartEnd"
-                tick={{ transform: "translate(0, 6)", fill: "white" }}
-                style={{
-                  fontSize: "12px",
-                  fontFamily: "Inter; Helvetica",
-                }}
-                padding={{ left: 10, right: 10 }}
-              />
-              <YAxis
-                tickLine={false}
-                axisLine={false}
-                type="number"
-                tick={{ transform: "translate(-3, 0)", fill: "white" }}
-                style={{
-                  fontSize: "12px",
-                  fontFamily: "Inter; Helvetica",
-                }}
-              />
-              <Tooltip legendColor={getTremorColor(color || "blue")} />
-              <Scatter dataKey={value} fill={getTremorColor(color || "blue")} />
-            </ScatterChart>
+            <ResponsiveContainer width="100%" height={260}>
+              <ScatterChart data={data}>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  horizontal
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="name"
+                  tickLine={false}
+                  axisLine={false}
+                  interval="preserveStartEnd"
+                  tick={{ transform: "translate(0, 6)", fill: "currentColor" }}
+                  style={{
+                    fontSize: "12px",
+                    fontFamily: "Inter; Helvetica",
+                  }}
+                  padding={{ left: 10, right: 10 }}
+                />
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  type="number"
+                  tick={{ transform: "translate(-3, 0)", fill: "currentColor" }}
+                  style={{
+                    fontSize: "12px",
+                    fontFamily: "Inter; Helvetica",
+                  }}
+                />
+                <Tooltip legendColor={getTremorColor(color || "blue")} />
+                <Scatter
+                  dataKey={value}
+                  fill={getTremorColor(color || "blue")}
+                />
+              </ScatterChart>
+            </ResponsiveContainer>
           </div>
         );
       case "pie":
         return (
-          <div className="bg-theme-bg-primary p-8 rounded-xl text-white light:border light:border-theme-border-primary">
+          <div className="bg-theme-bg-primary p-4 md:p-8 rounded-xl text-white light:border light:border-slate-300">
             <h3 className="text-lg text-theme-text-primary font-medium">
               {title}
             </h3>
@@ -260,7 +270,7 @@ export function Chartable({ props }) {
         );
       case "radar":
         return (
-          <div className="bg-theme-bg-primary p-8 rounded-xl text-white light:border light:border-theme-border-primary">
+          <div className="bg-theme-bg-primary p-4 md:p-8 rounded-xl text-white light:border light:border-slate-300">
             <h3 className="text-lg text-theme-text-primary font-medium">
               {title}
             </h3>
@@ -273,30 +283,28 @@ export function Chartable({ props }) {
                 />
               </div>
             )}
-            <RadarChart
-              cx={300}
-              cy={250}
-              outerRadius={150}
-              width={600}
-              height={500}
-              data={data}
-            >
-              <PolarGrid />
-              <PolarAngleAxis dataKey="name" tick={{ fill: "white" }} />
-              <PolarRadiusAxis tick={{ fill: "white" }} />
-              <Tooltip legendColor={getTremorColor(color || "blue")} />
-              <Radar
-                dataKey="value"
-                stroke={getTremorColor(color || "blue")}
-                fill={getTremorColor(color || "blue")}
-                fillOpacity={0.6}
-              />
-            </RadarChart>
+            <ResponsiveContainer width="100%" height={400}>
+              <RadarChart cx="50%" cy="50%" outerRadius="70%" data={data}>
+                <PolarGrid />
+                <PolarAngleAxis
+                  dataKey="name"
+                  tick={{ fill: "currentColor" }}
+                />
+                <PolarRadiusAxis tick={{ fill: "currentColor" }} />
+                <Tooltip legendColor={getTremorColor(color || "blue")} />
+                <Radar
+                  dataKey="value"
+                  stroke={getTremorColor(color || "blue")}
+                  fill={getTremorColor(color || "blue")}
+                  fillOpacity={0.6}
+                />
+              </RadarChart>
+            </ResponsiveContainer>
           </div>
         );
       case "radialbar":
         return (
-          <div className="bg-theme-bg-primary p-8 rounded-xl text-white light:border light:border-theme-border-primary">
+          <div className="bg-theme-bg-primary p-4 md:p-8 rounded-xl text-white light:border light:border-slate-300">
             <h3 className="text-lg text-theme-text-primary font-medium">
               {title}
             </h3>
@@ -309,31 +317,31 @@ export function Chartable({ props }) {
                 />
               </div>
             )}
-            <RadialBarChart
-              width={500}
-              height={300}
-              cx={150}
-              cy={150}
-              innerRadius={20}
-              outerRadius={140}
-              barSize={10}
-              data={data}
-            >
-              <RadialBar
-                angleAxisId={15}
-                label={{
-                  position: "insideStart",
-                  fill: getTremorColor(color || "blue"),
-                }}
-                dataKey="value"
-              />
-              <Tooltip legendColor={getTremorColor(color || "blue")} />
-            </RadialBarChart>
+            <ResponsiveContainer width="100%" height={300}>
+              <RadialBarChart
+                cx="50%"
+                cy="50%"
+                innerRadius={20}
+                outerRadius={140}
+                barSize={10}
+                data={data}
+              >
+                <RadialBar
+                  angleAxisId={15}
+                  label={{
+                    position: "insideStart",
+                    fill: getTremorColor(color || "blue"),
+                  }}
+                  dataKey="value"
+                />
+                <Tooltip legendColor={getTremorColor(color || "blue")} />
+              </RadialBarChart>
+            </ResponsiveContainer>
           </div>
         );
       case "treemap":
         return (
-          <div className="bg-theme-bg-primary p-8 rounded-xl text-white light:border light:border-theme-border-primary">
+          <div className="bg-theme-bg-primary p-4 md:p-8 rounded-xl text-white light:border light:border-slate-300">
             <h3 className="text-lg text-theme-text-primary font-medium">
               {title}
             </h3>
@@ -346,22 +354,22 @@ export function Chartable({ props }) {
                 />
               </div>
             )}
-            <Treemap
-              width={500}
-              height={260}
-              data={data}
-              dataKey="value"
-              stroke="#fff"
-              fill={getTremorColor(color || "blue")}
-              content={<CustomCell colors={Object.values(Colors)} />}
-            >
-              <Tooltip legendColor={getTremorColor(color || "blue")} />
-            </Treemap>
+            <ResponsiveContainer width="100%" height={260}>
+              <Treemap
+                data={data}
+                dataKey="value"
+                stroke="#fff"
+                fill={getTremorColor(color || "blue")}
+                content={<CustomCell colors={Object.values(Colors)} />}
+              >
+                <Tooltip legendColor={getTremorColor(color || "blue")} />
+              </Treemap>
+            </ResponsiveContainer>
           </div>
         );
       case "funnel":
         return (
-          <div className="bg-theme-bg-primary p-8 rounded-xl text-white light:border light:border-theme-border-primary">
+          <div className="bg-theme-bg-primary p-4 md:p-8 rounded-xl text-white light:border light:border-slate-300">
             <h3 className="text-lg text-theme-text-primary font-medium">
               {title}
             </h3>
@@ -374,14 +382,19 @@ export function Chartable({ props }) {
                 />
               </div>
             )}
-            <FunnelChart width={500} height={300} data={data}>
-              <Tooltip legendColor={getTremorColor(color || "blue")} />
-              <Funnel dataKey="value" color={getTremorColor(color || "blue")} />
-            </FunnelChart>
+            <ResponsiveContainer width="100%" height={300}>
+              <FunnelChart data={data}>
+                <Tooltip legendColor={getTremorColor(color || "blue")} />
+                <Funnel
+                  dataKey="value"
+                  color={getTremorColor(color || "blue")}
+                />
+              </FunnelChart>
+            </ResponsiveContainer>
           </div>
         );
       default:
-        return <p>Unsupported chart type.</p>;
+        return <p>{t("chat-history.chart.unsupported")}</p>;
     }
   };
 
@@ -449,34 +462,36 @@ const customTooltip = (props) => {
 };
 
 function DownloadGraph({ onClick }) {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const handleClick = async () => {
     setLoading(true);
     await onClick?.();
     setLoading(false);
   };
+  const label = loading
+    ? t("chat-history.chart.downloading")
+    : t("chat-history.chart.download");
 
   return (
-    <div className="absolute top-3 right-3 z-50 cursor-pointer">
-      <div className="flex flex-col items-center">
-        <div className="p-1 rounded-full border-none">
-          {loading ? (
-            <LoaderCircle
-              strokeWidth={1.5}
-              className="text-theme-text-primary w-5 h-5 animate-spin"
-              aria-label="Downloading image..."
-            />
-          ) : (
-            <Download
-              strokeWidth={1.5}
-              className="text-theme-text-primary w-5 h-5 hover:text-theme-text-primary"
-              onClick={handleClick}
-              aria-label="Download graph image"
-            />
-          )}
-        </div>
-      </div>
-    </div>
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={loading}
+      aria-label={label}
+      title={label}
+      className="absolute top-1 right-1 md:top-2 md:right-2 z-10 flex items-center justify-center w-11 h-11 rounded-full border-none text-theme-text-secondary hover:text-theme-text-primary transition-colors duration-quick disabled:cursor-wait"
+    >
+      {loading ? (
+        <LoaderCircle
+          strokeWidth={1.5}
+          aria-hidden="true"
+          className="w-5 h-5 animate-spin"
+        />
+      ) : (
+        <Download strokeWidth={1.5} aria-hidden="true" className="w-5 h-5" />
+      )}
+    </button>
   );
 }
 

@@ -63,21 +63,69 @@ export function utcTimeToLocal(utcHour, utcMinute = 0) {
   };
 }
 
+/** "GMT-3" / "GMT+5:30" / "GMT" from the browser's current UTC offset. */
+function offsetLabel() {
+  const offset = -new Date().getTimezoneOffset();
+  if (offset === 0) return "GMT";
+  const sign = offset > 0 ? "+" : "-";
+  const hours = Math.floor(Math.abs(offset) / 60);
+  const minutes = Math.abs(offset) % 60;
+  return `GMT${sign}${hours}${minutes ? `:${String(minutes).padStart(2, "0")}` : ""}`;
+}
+
 /**
- * Get the user's timezone abbreviation for display.
- * @returns {string} Timezone abbreviation (e.g., "PST", "EST", "UTC").
+ * The user's UTC offset as a language-neutral label ("GMT-3"), used next to
+ * every local time so it is never ambiguous which zone a time refers to.
+ * @returns {string}
  */
 export function getTimezoneAbbreviation() {
   try {
-    const formatter = new Intl.DateTimeFormat(undefined, {
-      timeZoneName: "short",
-    });
-    const parts = formatter.formatToParts(new Date());
-    const tzPart = parts.find((p) => p.type === "timeZoneName");
-    return tzPart?.value || "local time";
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZoneName: "shortOffset",
+    }).formatToParts(new Date());
+    return parts.find((p) => p.type === "timeZoneName")?.value || offsetLabel();
   } catch {
-    return "local time";
+    return offsetLabel();
   }
+}
+
+// Allowed range per field: minute, hour, day of month, month, day of week
+// (0 and 7 are both Sunday). Mirrors the server's cron-validate defaults: no
+// names (MON, JAN) and no "?".
+const CRON_FIELD_RANGES = [
+  [0, 59],
+  [0, 23],
+  [1, 31],
+  [1, 12],
+  [0, 7],
+];
+
+function isValidCronField(field, min, max) {
+  return field.split(",").every((part) => {
+    const match = /^(?:\*|(\d+)(?:-(\d+))?)(?:\/(\d+))?$/.exec(part);
+    if (!match) return false;
+    const [, from, to, step] = match;
+    if (step !== undefined && Number(step) < 1) return false;
+    if (from === undefined) return true;
+    const start = Number(from);
+    const end = to !== undefined ? Number(to) : start;
+    return start >= min && end <= max && start <= end;
+  });
+}
+
+/**
+ * Check a 5-field cron expression before sending it, so a typo is reported
+ * next to the field instead of after a round trip. The server validates again.
+ * @param {string} cron
+ * @returns {boolean}
+ */
+export function isValidCron(cron) {
+  if (typeof cron !== "string") return false;
+  const parts = cron.trim().split(/\s+/);
+  if (parts.length !== 5) return false;
+  return parts.every((field, i) =>
+    isValidCronField(field, ...CRON_FIELD_RANGES[i])
+  );
 }
 
 /**
@@ -86,17 +134,18 @@ export function getTimezoneAbbreviation() {
  * schedule with no single local expression is shown in UTC.
  * @param {string} cron - The cron expression (in UTC).
  * @param {string} locale - The locale.
- * @returns {string} The humanized cron expression with timezone indicator.
+ * @returns {string} The humanized cron expression with timezone indicator,
+ *   or "" when the expression is not valid.
  */
 export function humanizeCron(cron, locale) {
-  if (!cron) return "";
+  if (!cron || !isValidCron(cron)) return "";
   try {
     const localCron = convertCronToLocalTime(cron);
     const humanized = cronstrue.toString(localCron ?? cron, {
       throwExceptionOnParseError: false,
       locale: toCronstrueLocale(locale),
     });
-    return `${humanized} ${localCron ? getTimezoneAbbreviation() : "UTC"}`;
+    return `${humanized} (${localCron ? getTimezoneAbbreviation() : "UTC"})`;
   } catch {
     return cron;
   }
@@ -274,6 +323,15 @@ export const DEFAULT_BUILDER_STATE = {
   weekdays: [1],
   dayOfMonth: 1,
 };
+
+/**
+ * Schedule for a new job: the builder's default (daily at 09:00 local time),
+ * converted to UTC. A literal "0 9 * * *" would run at 09:00 UTC instead.
+ * @returns {string}
+ */
+export function defaultSchedule() {
+  return buildCronFromBuilderState(DEFAULT_BUILDER_STATE);
+}
 
 /**
  * Parse a 5-field cron expression into the visual builder's state shape.

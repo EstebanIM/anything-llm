@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
-import { Copy, Check } from "lucide-react";
+import { useEffect, useId, useRef, useState } from "react";
 import Admin from "@/models/admin";
 import paths from "@/utils/paths";
 import { userFromStorage } from "@/utils/request";
 import System from "@/models/system";
-import useCustomAppName from "@/hooks/useCustomAppName";
+import CopyButton from "@/components/lib/CopyButton";
+import { ExternalLink, FIELD_INPUT } from "@/components/ProviderFields";
 import { useTranslation } from "react-i18next";
 import {
   ModalHeader,
@@ -13,59 +13,62 @@ import {
   ModalPrimaryButton,
   ModalSecondaryButton,
   ModalInput,
+  ModalLabel,
+  ModalHint,
 } from "@/components/lib/Modal";
+
 export default function NewApiKeyModal({ closeModal, onSuccess }) {
   const { t } = useTranslation();
-  const { brandName } = useCustomAppName();
   const [apiKey, setApiKey] = useState(null);
   const [name, setName] = useState("");
   const [error, setError] = useState(null);
-  const [copied, setCopied] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   const handleCreate = async (e) => {
-    setError(null);
     e.preventDefault();
+    // Enter in the read-only key field would submit the form again.
+    if (creating || apiKey) return;
+    setError(null);
+    setCreating(true);
     const user = userFromStorage();
     const Model = !!user ? Admin : System;
 
     const { apiKey: newApiKey, error } = await Model.generateApiKey({
       name,
     });
+    setCreating(false);
     if (!!newApiKey) {
       setApiKey(newApiKey);
       onSuccess();
+      return;
     }
-    setError(error);
+    setError(error || t("tools-pages.api-keys.create-failed"));
   };
-
-  const copyApiKey = () => {
-    if (!apiKey) return false;
-    window.navigator.clipboard.writeText(apiKey.secret);
-    setCopied(true);
-  };
-
-  useEffect(() => {
-    function resetStatus() {
-      if (!copied) return false;
-      setTimeout(() => {
-        setCopied(false);
-      }, 3000);
-    }
-    resetStatus();
-  }, [copied]);
 
   return (
     <form onSubmit={handleCreate} className="flex flex-col gap-y-5">
-      <ModalHeader title={t("api.modal.title")} onClose={closeModal} />
+      <ModalHeader
+        title={
+          apiKey
+            ? t("tools-pages.api-keys.created-title")
+            : t("api.modal.title")
+        }
+        onClose={closeModal}
+      />
       <ModalBody>
         {error && (
-          <p className="text-red-400 text-sm">
-            {t("api.messages.error", {
-              error,
-            })}
+          <p role="alert" className="text-sm text-red-400 light:text-red-700">
+            {t("api.messages.error", { error })}
           </p>
         )}
-        {!apiKey && (
+        {apiKey ? (
+          <NewKeyField
+            value={apiKey.secret}
+            label={t("tools-pages.api-keys.new-key")}
+            hint={t("tools-pages.api-keys.new-key-hint")}
+            copyLabel={t("tools-pages.api-keys.copy-new")}
+          />
+        ) : (
           <ModalInput
             label={t("api.modal.name.label")}
             type="text"
@@ -75,43 +78,15 @@ export default function NewApiKeyModal({ closeModal, onSuccess }) {
             hint={t("api.modal.name.helper")}
           />
         )}
-        {apiKey && (
-          <div className="relative">
-            <input
-              type="text"
-              defaultValue={`${apiKey.secret}`}
-              disabled={true}
-              className="border-none bg-zinc-800 text-zinc-100 placeholder:text-zinc-400 light:bg-white light:text-slate-900 light:placeholder:text-slate-400 text-sm rounded-lg outline-none block w-full p-2.5 pr-10"
-            />
-            <button
-              type="button"
-              onClick={copyApiKey}
-              disabled={copied}
-              className="border-none absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md bg-transparent hover:bg-zinc-800 light:hover:bg-slate-100 transition-all duration-300"
-            >
-              {copied ? (
-                <Check strokeWidth={1.5} size={20} className="text-green-400" />
-              ) : (
-                <Copy
-                  strokeWidth={1.5}
-                  size={20}
-                  className="text-slate-50 light:text-slate-900"
-                />
-              )}
-            </button>
-          </div>
-        )}
         <p className="text-xs text-zinc-400 light:text-slate-600">
-          {t("api.modal.helper", { appName: brandName })}
+          {t("api.modal.helper")}
         </p>
-        <a
+        <ExternalLink
           href={paths.apiDocs()}
-          target="_blank"
-          rel="noreferrer"
-          className="text-blue-400 hover:underline"
+          className="w-fit text-sm text-sky-300 light:text-sky-700 underline hover:no-underline"
         >
-          Read the API documentation &rarr;
-        </a>
+          {t("api.link")} <span aria-hidden="true">&rarr;</span>
+        </ExternalLink>
       </ModalBody>
       <ModalFooter className={apiKey ? "justify-end" : undefined}>
         {!apiKey ? (
@@ -119,8 +94,10 @@ export default function NewApiKeyModal({ closeModal, onSuccess }) {
             <ModalSecondaryButton onClick={closeModal} type="button">
               {t("api.modal.cancel")}
             </ModalSecondaryButton>
-            <ModalPrimaryButton type="submit">
-              {t("api.modal.create")}
+            <ModalPrimaryButton type="submit" busy={creating}>
+              {creating
+                ? t("tools-pages.api-keys.creating")
+                : t("api.modal.create")}
             </ModalPrimaryButton>
           </>
         ) : (
@@ -130,5 +107,41 @@ export default function NewApiKeyModal({ closeModal, onSuccess }) {
         )}
       </ModalFooter>
     </form>
+  );
+}
+
+/**
+ * Read-only field that shows a freshly created key once, with a copy button.
+ * It takes the focus when it appears (the Create button it replaces is gone)
+ * and selects its text, so the key can also be copied by hand.
+ */
+export function NewKeyField({ value, label, hint, copyLabel }) {
+  const id = useId();
+  const hintId = `${id}-hint`;
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  return (
+    <div className="flex flex-col gap-y-1.5 w-full">
+      <ModalLabel htmlFor={id}>{label}</ModalLabel>
+      <div className="flex items-center gap-x-2">
+        <input
+          ref={inputRef}
+          id={id}
+          type="text"
+          readOnly
+          value={value}
+          onFocus={(e) => e.target.select()}
+          aria-describedby={hintId}
+          spellCheck={false}
+          className={`${FIELD_INPUT} font-mono`}
+        />
+        <CopyButton text={value} label={copyLabel} className="shrink-0" />
+      </div>
+      <ModalHint id={hintId}>{hint}</ModalHint>
+    </div>
   );
 }

@@ -1,18 +1,25 @@
-import { useState } from "react";
-import { ChevronDown, ChevronUp, Info } from "lucide-react";
-import { Tooltip } from "react-tooltip";
+import { useId, useState } from "react";
+import { useTranslation } from "react-i18next";
 import ImageModelSelection from "../ImageModelSelection";
 import ImageDimensionSelection, {
   initialDimension,
 } from "../ImageDimensionSelection";
+import {
+  AdvancedSection,
+  FIELD_COL,
+  FIELD_LABEL,
+  FIELD_ROW,
+  FIELD_SELECT,
+  InfoTip,
+  SECRET_MASK,
+  SecretInput,
+} from "@/components/ProviderFields";
 
 const RESOLUTIONS = ["1K", "2K", "4K"];
 
-const INPUT_CLASSES =
-  "border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5";
-
 export default function MinimaxImageOptions({ settings }) {
-  const [showAdvancedControls, setShowAdvancedControls] = useState(false);
+  const { t } = useTranslation();
+  const id = useId();
   const [aspectRatio, setAspectRatio] = useState(
     initialDimension("minimax-imggen", settings)
   );
@@ -23,22 +30,18 @@ export default function MinimaxImageOptions({ settings }) {
 
   return (
     <div className="w-full flex flex-col">
-      <div className="w-full flex flex-wrap items-start gap-[36px] mt-1.5">
-        <div className="flex flex-col w-60">
-          <label className="text-white text-sm font-semibold block mb-3">
-            API Key
+      <div className={`${FIELD_ROW} mt-1.5`}>
+        <div className={FIELD_COL}>
+          <label htmlFor={`${id}-api-key`} className={FIELD_LABEL}>
+            {t("provider-fields.api-key")}
           </label>
-          <input
-            type="password"
+          <SecretInput
+            id={`${id}-api-key`}
             name="ImageGenerationMinimaxApiKey"
-            className={INPUT_CLASSES}
-            placeholder="MiniMax API Key"
             defaultValue={
-              settings?.ImageGenerationMinimaxApiKey ? "*".repeat(20) : ""
+              settings?.ImageGenerationMinimaxApiKey ? SECRET_MASK : ""
             }
             required={true}
-            autoComplete="off"
-            spellCheck={false}
           />
         </div>
         <ImageModelSelection provider="minimax-imggen" settings={settings} />
@@ -48,32 +51,16 @@ export default function MinimaxImageOptions({ settings }) {
           onChange={setAspectRatio}
         />
       </div>
-      <div className="flex justify-start mt-4">
-        <button
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            setShowAdvancedControls(!showAdvancedControls);
-          }}
-          className="border-none text-theme-text-primary hover:text-theme-text-secondary flex items-center text-sm"
-        >
-          {showAdvancedControls ? "Hide" : "Show"} advanced settings
-          {showAdvancedControls ? (
-            <ChevronUp strokeWidth={1.5} size={14} className="ml-1" />
-          ) : (
-            <ChevronDown strokeWidth={1.5} size={14} className="ml-1" />
-          )}
-        </button>
-      </div>
-      <div hidden={!showAdvancedControls}>
-        <div className="w-full flex flex-wrap items-start gap-[36px] mt-4">
-          <div className="flex flex-col w-60">
-            <label className="text-white text-sm font-semibold block mb-3">
-              Resolution
+      <AdvancedSection className="mt-4">
+        <div className={`${FIELD_ROW} mt-4`}>
+          <div className={FIELD_COL}>
+            <label htmlFor={`${id}-resolution`} className={FIELD_LABEL}>
+              {t("provider-forms.image-generation.minimax.resolution")}
             </label>
             <select
+              id={`${id}-resolution`}
               name="ImageGenerationMinimaxResolution"
-              className={INPUT_CLASSES}
+              className={FIELD_SELECT}
               defaultValue={settings?.ImageGenerationMinimaxResolution}
             >
               {RESOLUTIONS.map((resolution) => (
@@ -83,61 +70,60 @@ export default function MinimaxImageOptions({ settings }) {
               ))}
             </select>
           </div>
-          <div className="flex flex-col w-60">
-            <div className="flex items-center gap-1 mb-3">
-              <label className="text-white text-sm font-semibold">
-                Prompt Enhancement
-              </label>
-              <Info
-                strokeWidth={1.5}
-                size={18}
-                className="text-theme-text-secondary cursor-pointer"
-                data-tooltip-id="image-gen-minimax-prompt-enhancement"
-              />
-              <Tooltip
-                id="image-gen-minimax-prompt-enhancement"
-                place="top"
-                delayShow={300}
-                delayHide={800}
-                clickable={true}
-                className="tooltip !text-xs !opacity-100 z-99"
-                style={{
-                  maxWidth: "250px",
-                  whiteSpace: "normal",
-                  wordWrap: "break-word",
-                }}
+          <div className={FIELD_COL}>
+            <div className="flex items-center gap-x-1 mb-3">
+              <label
+                htmlFor={`${id}-enhancement`}
+                className="text-white text-sm font-semibold"
               >
-                MiniMax rewrites your prompt into a more detailed one before
-                generating the image. This can improve results, but the
-                rewritten prompt is billed as extra input tokens.
-                <br />
-                <br />
-                When disabled, your prompt is used exactly as written. MiniMax
-                requires prompt enhancement for the Auto aspect ratio and for
-                image edits, so it is always on for those.
-              </Tooltip>
+                {t("provider-forms.image-generation.minimax.enhancement")}
+              </label>
+              <InfoTip
+                label={t("provider-forms.image-generation.minimax.enhancement")}
+              >
+                <p>
+                  {t(
+                    "provider-forms.image-generation.minimax.enhancement-help"
+                  )}
+                </p>
+                <p className="mt-2">
+                  {t(
+                    "provider-forms.image-generation.minimax.enhancement-required"
+                  )}
+                </p>
+              </InfoTip>
             </div>
             {enhancementRequired ? (
               <select
-                className={`${INPUT_CLASSES} opacity-60 cursor-not-allowed`}
+                key="locked"
+                id={`${id}-enhancement`}
+                className={FIELD_SELECT}
                 value="true"
                 disabled={true}
               >
-                <option value="true">Enabled (required for Auto)</option>
+                <option value="true">
+                  {t("provider-forms.image-generation.minimax.enabled-auto")}
+                </option>
               </select>
             ) : (
               <select
+                key="free"
+                id={`${id}-enhancement`}
                 name="ImageGenerationMinimaxPromptEnhancement"
-                className={INPUT_CLASSES}
+                className={FIELD_SELECT}
                 defaultValue={settings?.ImageGenerationMinimaxPromptEnhancement}
               >
-                <option value="false">Disabled</option>
-                <option value="true">Enabled</option>
+                <option value="false">
+                  {t("provider-forms.image-generation.minimax.disabled")}
+                </option>
+                <option value="true">
+                  {t("provider-forms.image-generation.minimax.enabled")}
+                </option>
               </select>
             )}
           </div>
         </div>
-      </div>
+      </AdvancedSection>
     </div>
   );
 }

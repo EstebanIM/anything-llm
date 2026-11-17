@@ -1,7 +1,11 @@
 import React, { useState } from "react";
 import Admin from "@/models/admin";
-import { userFromStorage } from "@/utils/request";
-import { MessageLimitInput, RoleHintDisplay } from "..";
+import showToast from "@/utils/toast";
+import {
+  MessageLimitInput,
+  RoleSelect,
+  parseMessageLimit,
+} from "../UserFields";
 import { useTranslation } from "react-i18next";
 import {
   USERNAME_MIN_LENGTH,
@@ -16,42 +20,58 @@ import {
   ModalSecondaryButton,
   ModalInput,
   ModalTextarea,
-  ModalLabel,
 } from "@/components/lib/Modal";
 
-export default function NewUserModal({ closeModal }) {
+export default function NewUserModal({ currUser, closeModal, onSuccess }) {
+  const { t } = useTranslation();
   const [error, setError] = useState(null);
+  const [busy, setBusy] = useState(false);
   const [role, setRole] = useState("default");
   const [messageLimit, setMessageLimit] = useState({
     enabled: false,
     limit: 10,
   });
-  const { t } = useTranslation();
 
   const handleCreate = async (e) => {
-    setError(null);
     e.preventDefault();
+    if (busy) return;
+    setError(null);
     const data = {};
     const form = new FormData(e.target);
     for (var [key, value] of form.entries()) data[key] = value;
-    data.dailyMessageLimit = messageLimit.enabled ? messageLimit.limit : null;
+    const dailyMessageLimit = parseMessageLimit(messageLimit, role);
+    // The number field is required while the limit is on, so the browser
+    // already blocks an empty or invalid value; this is a last guard.
+    if (dailyMessageLimit === undefined) return;
+    data.dailyMessageLimit = dailyMessageLimit;
 
+    setBusy(true);
     const { user, error } = await Admin.newUser(data);
-    if (!!user) window.location.reload();
-    setError(error);
+    setBusy(false);
+    if (!user) {
+      setError(error || t("admin-pages.unknown-error"));
+      return;
+    }
+    showToast(
+      t("admin-pages.users.created-toast", { username: user.username }),
+      "success",
+      { clear: true }
+    );
+    onSuccess?.();
+    closeModal();
   };
-
-  const user = userFromStorage();
 
   return (
     <form onSubmit={handleCreate} className="flex flex-col gap-y-5">
-      <ModalHeader title="Add user to instance" onClose={closeModal} />
+      <ModalHeader
+        title={t("admin-pages.users.new-title")}
+        onClose={closeModal}
+      />
       <ModalBody>
         <ModalInput
-          label="Username"
+          label={t("profile_settings.username")}
           name="username"
           type="text"
-          placeholder="User's username"
           minLength={USERNAME_MIN_LENGTH}
           maxLength={USERNAME_MAX_LENGTH}
           pattern={USERNAME_PATTERN}
@@ -60,59 +80,45 @@ export default function NewUserModal({ closeModal }) {
           hint={t("common.username_requirements")}
         />
         <ModalInput
-          label="Password"
+          label={t("admin-pages.users.initial-password")}
           name="password"
           type="password"
-          placeholder="User's initial password"
           required={true}
-          autoComplete="off"
+          autoComplete="new-password"
           minLength={8}
-          hint="Password must be at least 8 characters long"
+          hint={t("admin-pages.users.initial-password-hint")}
         />
         <ModalTextarea
-          label="Bio"
+          label={t("admin-pages.users.bio")}
+          optional={true}
           name="bio"
-          placeholder="User's bio"
           autoComplete="off"
           rows={3}
         />
-        <div className="flex flex-col gap-y-1.5 w-full">
-          <ModalLabel htmlFor="role">Role</ModalLabel>
-          <select
-            name="role"
-            required={true}
-            defaultValue={"default"}
-            onChange={(e) => setRole(e.target.value)}
-            className="w-full h-[34px] px-3.5 text-sm rounded-lg outline-none bg-zinc-800 border border-zinc-800 text-zinc-100 light:bg-white light:border-slate-300 light:text-slate-900 focus:border-sky-500 light:focus:border-sky-500"
-          >
-            <option value="default">Default</option>
-            <option value="manager">Manager</option>
-            {["admin", "superadmin"].includes(user?.role) && (
-              <option value="admin">Administrator</option>
-            )}
-            {user?.role === "superadmin" && (
-              <option value="superadmin">Super Administrator</option>
-            )}
-          </select>
-          <RoleHintDisplay role={role} />
-        </div>
+        <RoleSelect
+          actorRole={currUser?.role}
+          value={role}
+          onChange={setRole}
+        />
         <MessageLimitInput
           role={role}
           enabled={messageLimit.enabled}
           limit={messageLimit.limit}
           updateState={setMessageLimit}
         />
-        {error && <p className="text-red-400 text-sm">Error: {error}</p>}
-        <p className="text-zinc-300 light:text-slate-700 text-xs md:text-sm">
-          After creating a user they will need to login with their initial login
-          to get access.
-        </p>
+        {error && (
+          <p role="alert" className="text-sm text-red-400 light:text-red-700">
+            {t("settings-pages.form-error", { error })}
+          </p>
+        )}
       </ModalBody>
       <ModalFooter>
         <ModalSecondaryButton onClick={closeModal} type="button">
-          Cancel
+          {t("settings-pages.cancel")}
         </ModalSecondaryButton>
-        <ModalPrimaryButton type="submit">Add user</ModalPrimaryButton>
+        <ModalPrimaryButton type="submit" busy={busy}>
+          {t("admin-pages.users.add")}
+        </ModalPrimaryButton>
       </ModalFooter>
     </form>
   );

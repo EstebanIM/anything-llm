@@ -1,7 +1,15 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import Admin from "@/models/admin";
-import { MessageLimitInput, RoleHintDisplay } from "../..";
-import { AUTH_USER } from "@/utils/constants";
+import showToast from "@/utils/toast";
+import { AuthContext } from "@/AuthContext";
+import ConfirmModal from "@/components/lib/ConfirmModal";
+import {
+  MessageLimitInput,
+  ROLE_RANK,
+  RoleSelect,
+  parseMessageLimit,
+  useRoleLabel,
+} from "../../UserFields";
 import { useTranslation } from "react-i18next";
 import {
   USERNAME_MIN_LENGTH,
@@ -16,116 +24,160 @@ import {
   ModalSecondaryButton,
   ModalInput,
   ModalTextarea,
-  ModalLabel,
 } from "@/components/lib/Modal";
 
-export default function EditUserModal({ currentUser, user, closeModal }) {
+export default function EditUserModal({
+  currentUser,
+  user,
+  closeModal,
+  onSuccess,
+}) {
+  const { t } = useTranslation();
+  const roleLabel = useRoleLabel();
+  const auth = useContext(AuthContext);
   const [role, setRole] = useState(user.role);
   const [error, setError] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [pendingData, setPendingData] = useState(null);
   const [messageLimit, setMessageLimit] = useState({
     enabled: user.dailyMessageLimit !== null,
     limit: user.dailyMessageLimit || 10,
   });
-  const { t } = useTranslation();
+  const isSelf = !!currentUser && currentUser.id === user.id;
+
+  const save = async (data) => {
+    setBusy(true);
+    const { success, error } = await Admin.updateUser(user.id, data);
+    setBusy(false);
+    setPendingData(null);
+    if (!success) {
+      setError(error || t("admin-pages.unknown-error"));
+      return;
+    }
+    if (isSelf) {
+      // Keep the signed-in user in step without reloading the app.
+      auth?.actions?.updateUser(
+        {
+          ...currentUser,
+          username: data.username,
+          bio: data.bio,
+          role: data.role,
+        },
+        auth?.store?.authToken ?? ""
+      );
+    }
+    showToast(
+      t("admin-pages.users.updated", { username: data.username }),
+      "success",
+      { clear: true }
+    );
+    onSuccess?.();
+    closeModal();
+  };
 
   const handleUpdate = async (e) => {
-    setError(null);
     e.preventDefault();
+    if (busy) return;
+    setError(null);
     const data = {};
     const form = new FormData(e.target);
     for (var [key, value] of form.entries()) {
       if (!value && key !== "bio") continue;
       data[key] = value;
     }
-    if (messageLimit.enabled) {
-      data.dailyMessageLimit = messageLimit.limit;
-    } else {
-      data.dailyMessageLimit = null;
-    }
+    const dailyMessageLimit = parseMessageLimit(messageLimit, role);
+    if (dailyMessageLimit === undefined) return;
+    data.dailyMessageLimit = dailyMessageLimit;
 
-    const { success, error } = await Admin.updateUser(user.id, data);
-    if (success) {
-      // Update local storage if we're editing our own user
-      if (currentUser && currentUser.id === user.id) {
-        currentUser.username = data.username;
-        currentUser.bio = data.bio;
-        currentUser.role = data.role;
-        localStorage.setItem(AUTH_USER, JSON.stringify(currentUser));
-      }
-
-      window.location.reload();
+    // Lowering your own role cannot be undone from this account: ask first.
+    if (isSelf && ROLE_RANK[data.role] < ROLE_RANK[user.role]) {
+      setPendingData(data);
+      return;
     }
-    setError(error);
+    await save(data);
   };
 
   return (
-    <form onSubmit={handleUpdate} className="flex flex-col gap-y-5">
-      <ModalHeader title={`Edit ${user.username}`} onClose={closeModal} />
-      <ModalBody>
-        <ModalInput
-          label="Username"
-          name="username"
-          type="text"
-          placeholder="User's username"
-          defaultValue={user.username}
-          minLength={USERNAME_MIN_LENGTH}
-          maxLength={USERNAME_MAX_LENGTH}
-          pattern={USERNAME_PATTERN}
-          required={true}
-          autoComplete="off"
-          hint={t("common.username_requirements")}
+    <>
+      <form onSubmit={handleUpdate} className="flex flex-col gap-y-5">
+        <ModalHeader
+          title={t("admin-pages.users.edit-title", {
+            username: user.username,
+          })}
+          onClose={closeModal}
         />
-        <ModalInput
-          label="New Password"
-          name="password"
-          type="password"
-          placeholder={`${user.username}'s new password`}
-          autoComplete="off"
-          minLength={8}
-          hint="Password must be at least 8 characters long"
-        />
-        <ModalTextarea
-          label="Bio"
-          name="bio"
-          placeholder="User's bio"
-          defaultValue={user.bio}
-          autoComplete="off"
-          rows={3}
-        />
-        <div className="flex flex-col gap-y-1.5 w-full">
-          <ModalLabel htmlFor="role">Role</ModalLabel>
-          <select
-            name="role"
+        <ModalBody>
+          <ModalInput
+            label={t("profile_settings.username")}
+            name="username"
+            type="text"
+            defaultValue={user.username}
+            minLength={USERNAME_MIN_LENGTH}
+            maxLength={USERNAME_MAX_LENGTH}
+            pattern={USERNAME_PATTERN}
             required={true}
-            defaultValue={user.role}
-            onChange={(e) => setRole(e.target.value)}
-            className="w-full h-[34px] px-3.5 text-sm rounded-lg outline-none bg-zinc-800 border border-zinc-800 text-zinc-100 light:bg-white light:border-slate-300 light:text-slate-900 focus:border-sky-500 light:focus:border-sky-500"
-          >
-            <option value="default">Default</option>
-            <option value="manager">Manager</option>
-            {["admin", "superadmin"].includes(currentUser?.role) && (
-              <option value="admin">Administrator</option>
-            )}
-            {currentUser?.role === "superadmin" && (
-              <option value="superadmin">Super Administrator</option>
-            )}
-          </select>
-          <RoleHintDisplay role={role} />
-        </div>
-        <MessageLimitInput
-          role={role}
-          enabled={messageLimit.enabled}
-          limit={messageLimit.limit}
-          updateState={setMessageLimit}
-        />
-        {error && <p className="text-red-400 text-sm">Error: {error}</p>}
-      </ModalBody>
-      <ModalFooter>
-        <ModalSecondaryButton onClick={closeModal} type="button">
-          Cancel
-        </ModalSecondaryButton>
-        <ModalPrimaryButton type="submit">Update user</ModalPrimaryButton>
-      </ModalFooter>
-    </form>
+            autoComplete="off"
+            hint={t("common.username_requirements")}
+          />
+          <ModalInput
+            label={t("profile_settings.new_password")}
+            optional={true}
+            name="password"
+            type="password"
+            autoComplete="new-password"
+            minLength={8}
+            hint={t("admin-pages.users.new-password-hint")}
+          />
+          <ModalTextarea
+            label={t("admin-pages.users.bio")}
+            optional={true}
+            name="bio"
+            defaultValue={user.bio}
+            autoComplete="off"
+            rows={3}
+          />
+          <RoleSelect
+            actorRole={currentUser?.role}
+            value={role}
+            onChange={setRole}
+          />
+          <MessageLimitInput
+            role={role}
+            enabled={messageLimit.enabled}
+            limit={messageLimit.limit}
+            updateState={setMessageLimit}
+          />
+          {error && (
+            <p role="alert" className="text-sm text-red-400 light:text-red-700">
+              {t("settings-pages.form-error", { error })}
+            </p>
+          )}
+        </ModalBody>
+        <ModalFooter>
+          <ModalSecondaryButton onClick={closeModal} type="button">
+            {t("settings-pages.cancel")}
+          </ModalSecondaryButton>
+          <ModalPrimaryButton type="submit" busy={busy}>
+            {t("common.save")}
+          </ModalPrimaryButton>
+        </ModalFooter>
+      </form>
+      <ConfirmModal
+        isOpen={!!pendingData}
+        title={t("admin-pages.users.self-demote-title", {
+          role: roleLabel(pendingData?.role),
+        })}
+        confirmLabel={t("admin-pages.users.self-demote-confirm")}
+        busy={busy}
+        onConfirm={() => save(pendingData)}
+        onCancel={() => setPendingData(null)}
+      >
+        <p>
+          {t("admin-pages.users.self-demote-body", {
+            role: roleLabel(user.role),
+          })}
+        </p>
+      </ConfirmModal>
+    </>
   );
 }

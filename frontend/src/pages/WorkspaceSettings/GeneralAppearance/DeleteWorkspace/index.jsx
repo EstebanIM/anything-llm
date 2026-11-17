@@ -1,53 +1,69 @@
-import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useId, useState } from "react";
 import Workspace from "@/models/workspace";
 import paths from "@/utils/paths";
 import { useTranslation } from "react-i18next";
 import showToast from "@/utils/toast";
+import ConfirmModal from "@/components/lib/ConfirmModal";
+import {
+  DANGER_BUTTON,
+  HELP_TEXT,
+  SECTION_HEADING,
+} from "../../components/SettingsField";
 
 export default function DeleteWorkspace({ workspace, visible = true }) {
-  const { slug } = useParams();
-  const [deleting, setDeleting] = useState(false);
   const { t } = useTranslation();
+  const headingId = useId();
+  const helpId = useId();
+  const [confirming, setConfirming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const deleteWorkspace = async () => {
-    if (
-      !window.confirm(
-        `${t("general.delete.confirm-start")} ${workspace.name} ${t(
-          "general.delete.confirm-end"
-        )}`
-      )
-    )
-      return false;
-
+    if (deleting) return;
     setDeleting(true);
     const success = await Workspace.delete(workspace.slug);
     if (!success) {
-      showToast("Workspace could not be deleted!", "error", { clear: true });
+      showToast(t("workspace-settings.delete.failed"), "error", {
+        clear: true,
+      });
       setDeleting(false);
+      setConfirming(false);
       return;
     }
-
-    workspace.slug === slug
-      ? (window.location = paths.home())
-      : window.location.reload();
+    // Full load so the sidebar drops the deleted workspace.
+    window.location = paths.home();
   };
 
   if (!visible) return null;
   return (
-    <div className="flex flex-col gap-y-[8px]">
-      <label className="block input-label">{t("general.delete.title")}</label>
-      <p className="text-theme-text-secondary text-xs font-medium">
+    <section aria-labelledby={headingId} className="flex flex-col gap-y-2">
+      <h2 id={headingId} className={SECTION_HEADING}>
+        {t("general.delete.title")}
+      </h2>
+      <p id={helpId} className={HELP_TEXT}>
         {t("general.delete.description")}
       </p>
       <button
-        disabled={deleting}
-        onClick={deleteWorkspace}
         type="button"
-        className="w-60 transition-all duration-300 border border-transparent rounded-lg whitespace-nowrap text-sm px-5 py-2.5 focus:z-10 bg-red-500/25 text-red-200 light:text-red-500 hover:light:text-[#FFFFFF] hover:text-[#FFFFFF] hover:bg-red-600 disabled:bg-red-600 disabled:text-red-200 disabled:animate-pulse"
+        onClick={() => setConfirming(true)}
+        aria-describedby={helpId}
+        className={`${DANGER_BUTTON} mt-1`}
       >
-        {deleting ? t("general.delete.deleting") : t("general.delete.delete")}
+        {t("general.delete.delete")}
       </button>
-    </div>
+      <ConfirmModal
+        isOpen={confirming}
+        title={t("workspace-settings.delete.confirm-title", {
+          name: workspace.name,
+        })}
+        confirmLabel={
+          deleting ? t("general.delete.deleting") : t("general.delete.delete")
+        }
+        busy={deleting}
+        onConfirm={deleteWorkspace}
+        onCancel={() => setConfirming(false)}
+      >
+        <p>{t("workspace-settings.delete.confirm-body")}</p>
+      </ConfirmModal>
+    </section>
   );
 }

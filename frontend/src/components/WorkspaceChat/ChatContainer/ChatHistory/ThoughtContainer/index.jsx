@@ -50,14 +50,18 @@ export function useThoughtExpansion(messageId) {
 }
 
 /**
+ * @param {import("i18next").TFunction} t
  * @param {boolean} isThinking
  * @param {number|null} duration - seconds spent working, when it was observed
  * @returns {string}
  */
-export function thoughtLabel(isThinking, duration) {
-  if (isThinking) return "Thinking...";
-  if (duration) return `Thought for ${formatDuration(duration)}`;
-  return "Thoughts";
+export function thoughtLabel(t, isThinking, duration) {
+  if (isThinking) return t("chat_window.thought_in_progress");
+  if (duration)
+    return t("chat-history.thought-for", {
+      duration: formatDuration(duration),
+    });
+  return t("chat_window.thoughts");
 }
 
 const THOUGHT_KEYWORDS = ["thought", "thinking", "think", "thought_chain"];

@@ -218,13 +218,22 @@ export default {
           '"Noto Color Emoji"'
         ]
       },
+      // Motion tokens, defined as CSS variables in src/index.css.
+      transitionTimingFunction: {
+        smooth: "var(--ease-smooth)",
+        "soft-in-out": "var(--ease-soft-in-out)",
+        drawer: "var(--ease-drawer)"
+      },
+      transitionDuration: {
+        quick: "var(--dur-quick)",
+        base: "var(--dur-base)",
+        panel: "var(--dur-panel)"
+      },
       animation: {
         sweep: "sweep 0.5s ease-in-out",
-        "pulse-glow": "pulse-glow 1.5s infinite",
         'fade-in': 'fade-in 0.3s ease-out',
         'slide-up': 'slide-up 0.4s ease-out forwards',
-        'bounce-subtle': 'bounce-subtle 2s ease-in-out infinite',
-        shimmer: 'shimmer 3s linear infinite'
+        shimmer: 'shimmer 2s linear infinite'
       },
       keyframes: {
         sweep: {
@@ -239,26 +248,6 @@ export default {
           "0%": { opacity: 1 },
           "100%": { opacity: 0 }
         },
-        "pulse-glow": {
-          "0%": {
-            opacity: 1,
-            transform: "scale(1)",
-            boxShadow: "0 0 0 rgba(255, 255, 255, 0.0)",
-            backgroundColor: "rgba(255, 255, 255, 0.0)"
-          },
-          "50%": {
-            opacity: 1,
-            transform: "scale(1.1)",
-            boxShadow: "0 0 15px rgba(255, 255, 255, 0.2)",
-            backgroundColor: "rgba(255, 255, 255, 0.1)"
-          },
-          "100%": {
-            opacity: 1,
-            transform: "scale(1)",
-            boxShadow: "0 0 0 rgba(255, 255, 255, 0.0)",
-            backgroundColor: "rgba(255, 255, 255, 0.0)"
-          }
-        },
         'fade-in': {
           '0%': { opacity: '0' },
           '100%': { opacity: '1' }
@@ -266,10 +255,6 @@ export default {
         'slide-up': {
           '0%': { transform: 'translateY(10px)', opacity: '0' },
           '100%': { transform: 'translateY(0)', opacity: '1' }
-        },
-        'bounce-subtle': {
-          '0%, 100%': { transform: 'translateY(0)' },
-          '50%': { transform: 'translateY(-2px)' }
         },
         shimmer: {
           '0%': { backgroundPosition: '200% 0' },

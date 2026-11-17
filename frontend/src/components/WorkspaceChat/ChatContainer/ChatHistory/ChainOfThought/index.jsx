@@ -8,6 +8,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { useTranslation } from "react-i18next";
 
 const cn = (...classes) => classes.filter(Boolean).join(" ");
 
@@ -75,7 +76,8 @@ export function ChainOfThought({
  * @param {Object} props
  * @param {React.ReactNode} [props.icon] - leading indicator, defaults to a brain glyph
  * @param {boolean} [props.pending] - sweeps a shine across the label while work is in flight
- * @param {React.ReactNode} [props.trailing] - shown after the label and never truncated with it
+ * @param {React.ReactNode} [props.trailing] - shown after the label and never truncated with it;
+ *   hidden from assistive tech so a ticking timer does not change the button name
  */
 export function ChainOfThoughtHeader({
   className,
@@ -86,20 +88,28 @@ export function ChainOfThoughtHeader({
   ...props
 }) {
   const { isOpen, setIsOpen, contentId } = useChainOfThought();
+  const { t } = useTranslation();
 
   return (
     <button
       type="button"
       aria-expanded={isOpen}
-      aria-controls={contentId}
+      // The content only exists while open.
+      aria-controls={isOpen ? contentId : undefined}
       onClick={() => setIsOpen(!isOpen)}
       className={cn(
-        "border-none bg-transparent p-0 flex w-full items-center gap-2 text-zinc-400 transition-colors hover:text-zinc-50 light:text-zinc-500 light:hover:text-zinc-950",
+        "border-none bg-transparent p-0 flex w-full min-h-[44px] md:min-h-0 items-center gap-2 text-zinc-400 transition-colors duration-quick hover:text-zinc-50 light:text-slate-600 light:hover:text-zinc-950",
         className
       )}
       {...props}
     >
-      {icon ?? <Brain strokeWidth={1.5} className="size-5 flex-shrink-0" />}
+      {icon ?? (
+        <Brain
+          strokeWidth={1.5}
+          aria-hidden="true"
+          className="size-5 flex-shrink-0"
+        />
+      )}
       {/*
         No `flex-1` here: the caret should sit next to the label rather than
         out at the container edge. The label still shrinks and truncates when
@@ -112,13 +122,16 @@ export function ChainOfThoughtHeader({
             "animate-shimmer bg-[length:200%_100%] bg-clip-text text-transparent bg-[linear-gradient(90deg,theme(colors.zinc.500),theme(colors.zinc.100),theme(colors.zinc.500))] light:bg-[linear-gradient(90deg,theme(colors.zinc.400),theme(colors.zinc.900),theme(colors.zinc.400))]"
         )}
       >
-        {children ?? "Thoughts"}
+        {children ?? t("chat_window.thoughts")}
       </span>
       {trailing && (
-        <span className="flex-shrink-0 tabular-nums">{trailing}</span>
+        <span aria-hidden="true" className="flex-shrink-0 tabular-nums">
+          {trailing}
+        </span>
       )}
       <ChevronRight
         strokeWidth={1.5}
+        aria-hidden="true"
         className={cn(
           "size-3 flex-shrink-0 transition-transform",
           isOpen ? "rotate-90" : "rotate-0"

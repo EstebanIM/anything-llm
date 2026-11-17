@@ -24,9 +24,14 @@ const Memory = {
       method: "GET",
       headers: baseHeaders(),
     })
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then((res) => res?.memories || { global: [], workspace: [] })
-      .catch(() => ({ global: [], workspace: [] }));
+      // Keep the list shape so callers never crash, and report the failure
+      // instead of passing it off as "no memories".
+      .catch((e) => ({ global: [], workspace: [], error: e.message }));
   },
 
   /**

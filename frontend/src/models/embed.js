@@ -7,11 +7,15 @@ const Embed = {
       method: "GET",
       headers: baseHeaders(),
     })
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then((res) => res?.embeds || [])
+      // null (not []) so the list can tell "failed to load" from "none yet".
       .catch((e) => {
         console.error(e);
-        return [];
+        return null;
       });
   },
   newEmbed: async (data) => {
@@ -49,7 +53,7 @@ const Embed = {
       })
       .catch((e) => {
         console.error(e);
-        return { success: true, error: e.message };
+        return { success: false, error: e.message };
       });
   },
   chats: async (offset = 0) => {

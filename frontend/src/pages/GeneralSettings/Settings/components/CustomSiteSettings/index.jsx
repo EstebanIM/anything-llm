@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import Admin from "@/models/admin";
 import System from "@/models/system";
 import showToast from "@/utils/toast";
 import { useTranslation } from "react-i18next";
 import { DEFAULT_APP_NAME } from "@/utils/constants/brand";
-import { Plus } from "lucide-react";
+import { LoaderCircle, Plus } from "lucide-react";
+import { FIELD_INPUT } from "@/components/ProviderFields";
+import { BRAND_SECONDARY_BUTTON, BRAND_TEXT_BUTTON } from "../brandButtons";
 const INTERNAL_FAVICON_PATH = "/api/system/favicon";
 function isUploadedFaviconUrl(url = null) {
   if (!url?.startsWith(INTERNAL_FAVICON_PATH)) return false;
@@ -21,7 +23,9 @@ function isUploadedFaviconUrl(url = null) {
 }
 export default function CustomSiteSettings() {
   const { t } = useTranslation();
+  const id = useId();
   const [hasChanges, setHasChanges] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [faviconUrlInput, setFaviconUrlInput] = useState("");
   const [isUploadingFavicon, setIsUploadingFavicon] = useState(false);
   const [settings, setSettings] = useState({
@@ -56,17 +60,19 @@ export default function CustomSiteSettings() {
     const nextFaviconUrl = externalFaviconUrl || uploadedFaviconUrl || null;
     const previousFaviconUrl = settings.faviconUrl;
     const previousFaviconUrlInput = faviconUrlInput;
+    setSaving(true);
     const { success, error } = await Admin.updateSystemPreferences({
       meta_page_title: settings.title ?? null,
       meta_page_favicon: nextFaviconUrl,
     });
+    setSaving(false);
     if (!success) {
       setSettings((prev) => ({
         ...prev,
         faviconUrl: previousFaviconUrl,
       }));
       setFaviconUrlInput(previousFaviconUrlInput);
-      showToast(`Failed to update site preferences: ${error}`, "error");
+      showToast(t("settings-pages.site-failed", { error }), "error");
       return;
     }
     setSettings((prev) => ({
@@ -77,13 +83,9 @@ export default function CustomSiteSettings() {
       isUploadedFaviconUrl(nextFaviconUrl) ? "" : nextFaviconUrl || ""
     );
     clearBrowserAppearanceCache();
-    showToast(
-      "Site preferences updated! They will reflect on page reload.",
-      "success",
-      {
-        clear: true,
-      }
-    );
+    showToast(t("settings-pages.site-saved"), "success", {
+      clear: true,
+    });
     setHasChanges(false);
     return;
   }
@@ -111,7 +113,7 @@ export default function CustomSiteSettings() {
       }));
       setFaviconUrlInput(previousFaviconUrlInput);
       setIsUploadingFavicon(false);
-      showToast(`Failed to upload favicon: ${error}`, "error");
+      showToast(t("settings-pages.favicon-upload-failed", { error }), "error");
       return;
     }
     setSettings((prev) => ({
@@ -122,7 +124,7 @@ export default function CustomSiteSettings() {
     setHasChanges(false);
     setIsUploadingFavicon(false);
     clearBrowserAppearanceCache();
-    showToast("Favicon uploaded successfully.", "success");
+    showToast(t("settings-pages.favicon-uploaded"), "success");
   }
   async function handleRemoveFavicon() {
     const previousFaviconUrl = settings.faviconUrl;
@@ -139,12 +141,12 @@ export default function CustomSiteSettings() {
         faviconUrl: previousFaviconUrl,
       }));
       setFaviconUrlInput(previousFaviconUrlInput);
-      showToast(`Failed to remove favicon: ${error}`, "error");
+      showToast(t("settings-pages.favicon-remove-failed", { error }), "error");
       return;
     }
     setHasChanges(false);
     clearBrowserAppearanceCache();
-    showToast("Favicon removed successfully.", "success");
+    showToast(t("settings-pages.favicon-removed"), "success");
   }
   const faviconPreviewUrl =
     faviconUrlInput.trim() ||
@@ -158,56 +160,59 @@ export default function CustomSiteSettings() {
       className="flex flex-col gap-y-0.5 my-4 border-t border-white border-opacity-20 light:border-black/20 pt-6"
       onSubmit={handleSiteSettingUpdate}
     >
-      <p className="text-sm leading-6 font-semibold text-white">
+      <h2 className="text-sm leading-6 font-semibold text-white">
         {t("customization.items.browser-appearance.title")}
-      </p>
+      </h2>
       <p className="text-xs text-white/60">
         {t("customization.items.browser-appearance.description")}
       </p>
 
-      <div className="w-full max-w-[600px]">
-        <p className="text-sm leading-6 font-medium text-white mt-2">
+      <div className="w-full max-w-[600px] flex flex-col">
+        <label
+          htmlFor={`${id}-title`}
+          className="text-sm leading-6 font-medium text-white mt-2"
+        >
           {t("customization.items.browser-appearance.tab.title")}
-        </p>
-        <p className="text-xs text-white/60">
+        </label>
+        <p id={`${id}-title-help`} className="text-xs text-white/60">
           {t("customization.items.browser-appearance.tab.description")}
         </p>
-        <div className="flex items-center gap-x-4 w-full">
-          <input
-            name="meta_page_title"
-            type="text"
-            className="border-none bg-theme-settings-input-bg mt-2 text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full py-2 px-4"
-            placeholder={DEFAULT_APP_NAME}
-            autoComplete="off"
-            onChange={(e) => {
-              setHasChanges(true);
-              setSettings((prev) => {
-                return {
-                  ...prev,
-                  title: e.target.value,
-                };
-              });
-            }}
-            value={settings.title ?? DEFAULT_APP_NAME}
-          />
-        </div>
+        <input
+          id={`${id}-title`}
+          name="meta_page_title"
+          type="text"
+          aria-describedby={`${id}-title-help`}
+          className={`${FIELD_INPUT} mt-2`}
+          placeholder={DEFAULT_APP_NAME}
+          autoComplete="off"
+          onChange={(e) => {
+            setHasChanges(true);
+            setSettings((prev) => {
+              return {
+                ...prev,
+                title: e.target.value,
+              };
+            });
+          }}
+          value={settings.title ?? DEFAULT_APP_NAME}
+        />
       </div>
 
-      <div className="w-full max-w-[600px]">
-        <p className="text-sm leading-6 font-medium text-white mt-2">
+      <div className="w-full max-w-[600px] flex flex-col">
+        <h3 className="text-sm leading-6 font-medium text-white mt-4">
           {t("customization.items.browser-appearance.favicon.title")}
-        </p>
-        <p className="text-xs text-white/60">
+        </h3>
+        <p id={`${id}-favicon-help`} className="text-xs text-white/60">
           {t("customization.items.browser-appearance.favicon.description")}
         </p>
-        <div className="flex items-center gap-x-2 w-full">
+        <div className="flex flex-wrap items-center gap-2 w-full mt-2">
           <img
             src={faviconPreviewUrl}
             onError={(e) => {
               if (!e.currentTarget.src.endsWith("/favicon.png"))
                 e.currentTarget.src = "/favicon.png";
             }}
-            className="h-10 w-10 shrink-0 rounded-lg border border-theme-text-secondary border-opacity-30 bg-white object-contain p-1 mt-2"
+            className="h-10 w-10 shrink-0 rounded-lg border border-theme-text-secondary border-opacity-30 bg-white object-contain p-1"
             alt={t("customization.items.browser-appearance.favicon.alt")}
           />
           <input
@@ -215,59 +220,81 @@ export default function CustomSiteSettings() {
             type="file"
             accept="image/*,.ico"
             className="hidden"
+            tabIndex={-1}
+            aria-hidden="true"
             onChange={handleFaviconUpload}
           />
           <button
             type="button"
-            disabled={isUploadingFavicon}
-            onClick={() => faviconInputRef.current?.click()}
-            className="transition-all mt-2 w-fit duration-300 border border-slate-200 px-3 py-2 rounded-lg text-white text-sm items-center flex gap-x-2 hover:bg-slate-200 hover:text-slate-800 focus:ring-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
+            // aria-disabled keeps focus on the button while the upload runs.
+            aria-disabled={isUploadingFavicon || undefined}
+            aria-busy={isUploadingFavicon || undefined}
+            aria-describedby={`${id}-favicon-formats`}
+            onClick={() => {
+              if (!isUploadingFavicon) faviconInputRef.current?.click();
+            }}
+            className={`${BRAND_SECONDARY_BUTTON} !mt-0 !px-3 !py-2`}
           >
-            <Plus strokeWidth={1.5} className="h-4 w-4" />
-            {hasCustomFavicon
-              ? t("customization.items.browser-appearance.favicon.replace")
-              : t("customization.items.browser-appearance.favicon.upload")}
+            {isUploadingFavicon ? (
+              <LoaderCircle
+                strokeWidth={1.5}
+                aria-hidden="true"
+                className="h-4 w-4 animate-spin"
+              />
+            ) : (
+              <Plus strokeWidth={1.5} aria-hidden="true" className="h-4 w-4" />
+            )}
+            {isUploadingFavicon
+              ? t("settings-pages.uploading")
+              : hasCustomFavicon
+                ? t("customization.items.browser-appearance.favicon.replace")
+                : t("customization.items.browser-appearance.favicon.upload")}
           </button>
-          {hasCustomFavicon && (
+          {hasCustomFavicon && !isUploadingFavicon && (
             <button
               type="button"
               onClick={handleRemoveFavicon}
-              className="text-white text-base font-medium hover:text-opacity-60 mt-2"
+              className={BRAND_TEXT_BUTTON}
             >
               {t("customization.items.browser-appearance.favicon.remove")}
             </button>
           )}
         </div>
-        <p className="text-xs text-white/60 mt-2">
+        <p id={`${id}-favicon-formats`} className="text-xs text-white/60 mt-2">
           {t("customization.items.browser-appearance.favicon.recommended")}
         </p>
-        <div className="flex items-center gap-x-2">
-          <input
-            name="meta_page_favicon"
-            type="url"
-            className="border-none bg-theme-settings-input-bg mt-2 text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full py-2 px-4"
-            placeholder={t(
-              "customization.items.browser-appearance.favicon.placeholder"
-            )}
-            onChange={(e) => {
-              setHasChanges(true);
-              setFaviconUrlInput(e.target.value);
-            }}
-            autoComplete="off"
-            value={faviconUrlInput}
-          />
-          <span className="text-xs text-white/60 mt-2">
-            {t("customization.items.browser-appearance.favicon.url")}
-          </span>
-        </div>
+        <label
+          htmlFor={`${id}-favicon-url`}
+          className="text-sm leading-6 font-medium text-white mt-3"
+        >
+          {t("customization.items.browser-appearance.favicon.url")}
+        </label>
+        <input
+          id={`${id}-favicon-url`}
+          name="meta_page_favicon"
+          type="url"
+          aria-describedby={`${id}-favicon-help`}
+          className={`${FIELD_INPUT} mt-1`}
+          placeholder={t(
+            "customization.items.browser-appearance.favicon.placeholder"
+          )}
+          onChange={(e) => {
+            setHasChanges(true);
+            setFaviconUrlInput(e.target.value);
+          }}
+          autoComplete="off"
+          value={faviconUrlInput}
+        />
       </div>
 
       {hasChanges && (
         <button
           type="submit"
-          className="transition-all mt-2 w-fit duration-300 border border-slate-200 px-5 py-2.5 rounded-lg text-white text-sm items-center flex gap-x-2 hover:bg-slate-200 hover:text-slate-800 focus:ring-gray-800"
+          disabled={saving}
+          aria-busy={saving || undefined}
+          className={BRAND_SECONDARY_BUTTON}
         >
-          Save
+          {saving ? t("common.saving") : t("common.save")}
         </button>
       )}
     </form>

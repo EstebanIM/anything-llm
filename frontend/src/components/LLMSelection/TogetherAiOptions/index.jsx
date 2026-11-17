@@ -1,27 +1,40 @@
+import { useState, useEffect, useId } from "react";
+import { useTranslation } from "react-i18next";
 import System from "@/models/system";
-import { ChevronDown, ChevronUp } from "lucide-react";
-import { useState, useEffect } from "react";
+import {
+  AdvancedSection,
+  FIELD_COL,
+  FIELD_INPUT,
+  FIELD_ROW,
+  SECRET_MASK,
+  SecretInput,
+} from "@/components/ProviderFields";
+import {
+  FieldLabel,
+  ModelSelectField,
+  blurOnWheel,
+  modelStatus,
+} from "@/components/LLMSelection/FormParts";
 
 export default function TogetherAiOptions({ settings }) {
+  const { t } = useTranslation();
+  const id = useId();
   const [inputValue, setInputValue] = useState(settings?.TogetherAiApiKey);
   const [apiKey, setApiKey] = useState(settings?.TogetherAiApiKey);
 
   return (
     <div className="flex flex-col gap-y-4 mt-1.5">
-      <div className="flex gap-[36px]">
-        <div className="flex flex-col w-60">
-          <label className="text-white text-sm font-semibold block mb-3">
-            Together AI API Key
-          </label>
-          <input
-            type="password"
+      <div className={FIELD_ROW}>
+        <div className={FIELD_COL}>
+          <FieldLabel
+            htmlFor={`${id}-key`}
+            label={t("provider-fields.api-key")}
+          />
+          <SecretInput
+            id={`${id}-key`}
             name="TogetherAiApiKey"
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-            placeholder="Together AI API Key"
-            defaultValue={settings?.TogetherAiApiKey ? "*".repeat(20) : ""}
+            defaultValue={settings?.TogetherAiApiKey ? SECRET_MASK : ""}
             required={true}
-            autoComplete="off"
-            spellCheck={false}
             onChange={(e) => setInputValue(e.target.value)}
             onBlur={() => setApiKey(inputValue)}
           />
@@ -36,56 +49,49 @@ export default function TogetherAiOptions({ settings }) {
 }
 
 function AdvancedControls({ settings }) {
-  const [showAdvancedControls, setShowAdvancedControls] = useState(false);
+  const { t } = useTranslation();
+  const id = useId();
 
   return (
-    <div className="flex flex-col gap-y-4">
-      <button
-        type="button"
-        onClick={() => setShowAdvancedControls(!showAdvancedControls)}
-        className="border-none text-white hover:text-white/70 flex items-center text-sm"
-      >
-        {showAdvancedControls ? "Hide" : "Show"} advanced controls
-        {showAdvancedControls ? (
-          <ChevronUp strokeWidth={1.5} size={14} className="ml-1" />
-        ) : (
-          <ChevronDown strokeWidth={1.5} size={14} className="ml-1" />
-        )}
-      </button>
-      <div hidden={!showAdvancedControls}>
-        <div className="flex gap-[36px]">
-          <div className="flex flex-col w-60">
-            <label className="text-white text-sm font-semibold block mb-3">
-              Max Tokens
-            </label>
-            <input
-              type="number"
-              name="TogetherAiMaxTokens"
-              className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-              placeholder="Provider default"
-              min={0}
-              step={1}
-              onScroll={(e) => e.target.blur()}
-              defaultValue={settings?.TogetherAiMaxTokens}
-              autoComplete="off"
-            />
-          </div>
+    <AdvancedSection>
+      <div className={`${FIELD_ROW} mt-4`}>
+        <div className={FIELD_COL}>
+          <FieldLabel
+            htmlFor={`${id}-max-tokens`}
+            label={t("provider-fields.max-tokens")}
+          />
+          <input
+            id={`${id}-max-tokens`}
+            type="number"
+            name="TogetherAiMaxTokens"
+            className={FIELD_INPUT}
+            placeholder={t("llm-fields.common.provider-default")}
+            min={0}
+            step={1}
+            onWheel={blurOnWheel}
+            defaultValue={settings?.TogetherAiMaxTokens}
+            autoComplete="off"
+          />
         </div>
       </div>
-    </div>
+    </AdvancedSection>
   );
 }
 
 function TogetherAiModelSelection({ settings, apiKey }) {
+  const { t } = useTranslation();
   const [groupedModels, setGroupedModels] = useState({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     async function findCustomModels() {
+      if (!apiKey) return;
       setLoading(true);
       try {
-        const key = apiKey === "*".repeat(20) ? null : apiKey;
-        const { models } = await System.customModels("togetherai", key);
+        const key = apiKey === SECRET_MASK ? null : apiKey;
+        const { models, error } = await System.customModels("togetherai", key);
         if (models?.length > 0) {
           const modelsByOrganization = models.reduce((acc, model) => {
             if (model.type !== "chat") return acc; // Only show chat models in dropdown
@@ -101,59 +107,41 @@ function TogetherAiModelSelection({ settings, apiKey }) {
           }, {});
           setGroupedModels(modelsByOrganization);
         }
+        setError(error || null);
       } catch (error) {
         console.error("Error fetching Together AI models:", error);
+        setError(error.message);
       }
       setLoading(false);
     }
     findCustomModels();
-  }, [apiKey]);
-
-  if (loading || Object.keys(groupedModels).length === 0) {
-    return (
-      <div className="flex flex-col w-60">
-        <label className="text-white text-sm font-semibold block mb-3">
-          Chat Model Selection
-        </label>
-        <select
-          name="TogetherAiModelPref"
-          disabled={true}
-          className="border-none bg-theme-settings-input-bg border-gray-500 text-white text-sm rounded-lg block w-full p-2.5"
-        >
-          <option disabled={true} selected={true}>
-            -- loading available models --
-          </option>
-        </select>
-      </div>
-    );
-  }
+  }, [apiKey, attempt]);
 
   return (
-    <div className="flex flex-col w-60">
-      <label className="text-white text-sm font-semibold block mb-3">
-        Chat Model Selection
-      </label>
-      <select
-        name="TogetherAiModelPref"
-        required={true}
-        className="border-none bg-theme-settings-input-bg border-gray-500 text-white text-sm rounded-lg block w-full p-2.5"
-      >
-        {Object.keys(groupedModels)
-          .sort()
-          .map((organization) => (
-            <optgroup key={organization} label={organization}>
-              {groupedModels[organization].map((model) => (
-                <option
-                  key={model.id}
-                  value={model.id}
-                  selected={settings?.TogetherAiModelPref === model.id}
-                >
-                  {model.name}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-      </select>
-    </div>
+    <ModelSelectField
+      name="TogetherAiModelPref"
+      label={t("provider-fields.chat-model")}
+      status={modelStatus({
+        loading,
+        error,
+        count: Object.keys(groupedModels).length,
+        needs: apiKey ? null : "need-key",
+      })}
+      error={error}
+      onRetry={() => setAttempt((n) => n + 1)}
+      defaultValue={settings?.TogetherAiModelPref}
+    >
+      {Object.keys(groupedModels)
+        .sort()
+        .map((organization) => (
+          <optgroup key={organization} label={organization}>
+            {groupedModels[organization].map((model) => (
+              <option key={model.id} value={model.id}>
+                {model.name}
+              </option>
+            ))}
+          </optgroup>
+        ))}
+    </ModelSelectField>
   );
 }

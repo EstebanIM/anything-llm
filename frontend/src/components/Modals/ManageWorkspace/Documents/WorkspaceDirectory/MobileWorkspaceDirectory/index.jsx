@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Undo2, Eye, Pin } from "lucide-react";
+import { Undo2, Eye, EyeOff, LoaderCircle, Pin, PinOff } from "lucide-react";
 import PreLoader from "@/components/Preloader";
 import EmbeddingFileRow from "@/components/EmbeddingFileRow";
 import MobileWorkspaceFileRow from "./MobileWorkspaceFileRow";
@@ -9,15 +9,22 @@ import MobileActionBar, { MobileActionButton } from "../../MobileActionBar";
 
 /**
  * Touch layout of the workspace documents panel. State and mutations come from `WorkspaceDirectory`.
+ *
+ * @param {Object} props
+ * @param {Array<[string, object]>} props.embedding - files mid-embed and their status
+ * @param {import("react").ReactNode} props.alerts - error strips from the parent
+ * @param {(ids: string[]) => void} props.onRemoveItems - asks for confirmation first
  */
 export default function MobileWorkspaceDirectory({
   workspace,
   orderedFiles,
   loading,
-  loadingMessage,
-  embeddingProgress,
+  busyMessage,
+  alerts,
+  embedding,
   onRemoveQueued,
   hasChanges,
+  selectable,
   movedItems,
   selectedItems,
   allSelected,
@@ -25,27 +32,26 @@ export default function MobileWorkspaceDirectory({
   onToggleSelectAll,
   onRemoveItems,
   onSave,
+  listRef,
+  saveRef,
 }) {
   const { t } = useTranslation();
+  const listLabelId = useId();
   const [actions, setActions] = useState(null);
   const [showActions, setShowActions] = useState(false);
   const selectedIds = Object.keys(selectedItems);
 
   if (loading)
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-y-4 px-8">
+      <div className="flex-1 flex items-center justify-center px-8">
         <PreLoader />
-        <p className="text-sm font-medium text-center animate-pulse text-slate-50 light:text-slate-900">
-          {loadingMessage}
-        </p>
       </div>
     );
 
-  const embedding = Object.entries(embeddingProgress ?? {});
+  const embeddingPaths = new Set(embedding.map(([filename]) => filename));
   const embeddedFiles = orderedFiles.filter(
-    ({ item, folder }) => !embeddingProgress?.[`${folder.name}/${item.name}`]
+    ({ item, folder }) => !embeddingPaths.has(`${folder.name}/${item.name}`)
   );
-  const selectable = !hasChanges && embedding.length === 0;
 
   const openActions = (rowActions) => {
     setActions(rowActions);
@@ -58,8 +64,8 @@ export default function MobileWorkspaceDirectory({
 
   return (
     <div className="relative flex flex-col flex-1 min-h-0">
-      <div className="shrink-0 flex items-center justify-between h-9 px-4 text-xs text-zinc-400 light:text-slate-500">
-        <p>
+      <div className="shrink-0 flex items-center justify-between min-h-11 px-4 text-xs text-zinc-400 light:text-slate-600">
+        <p id={listLabelId} aria-live="polite">
           {t("connectors.directory.total-documents", {
             count: embeddedFiles.length,
           })}
@@ -68,7 +74,7 @@ export default function MobileWorkspaceDirectory({
           <button
             type="button"
             onClick={onToggleSelectAll}
-            className="border-none bg-transparent h-9 -mr-2 px-2 text-xs font-semibold text-sky-400 light:text-sky-700"
+            className="border-none bg-transparent h-11 -mr-2 px-2 text-xs font-semibold text-sky-400 light:text-sky-700"
           >
             {allSelected
               ? t("connectors.directory.deselect_all")
@@ -77,45 +83,76 @@ export default function MobileWorkspaceDirectory({
         )}
       </div>
 
+      <p
+        role="status"
+        className={
+          busyMessage
+            ? "shrink-0 flex items-center gap-x-2 mx-4 mb-2 px-3 py-2 rounded-xl text-xs font-medium bg-zinc-800 light:bg-slate-100 text-slate-50 light:text-slate-900"
+            : "sr-only"
+        }
+      >
+        {busyMessage && (
+          <LoaderCircle
+            strokeWidth={1.5}
+            size={14}
+            aria-hidden="true"
+            className="animate-spin"
+          />
+        )}
+        {busyMessage}
+      </p>
+      <div className="shrink-0 mx-4 rounded-xl overflow-hidden">{alerts}</div>
+
       <div
+        ref={listRef}
+        tabIndex={-1}
+        aria-busy={!!busyMessage || undefined}
         className={`flex-1 min-h-0 overflow-y-auto px-2 select-none ${
           hasChanges || selectedIds.length > 0 ? "pb-40" : "pb-6"
         }`}
       >
         {embedding.length > 0 && (
-          <div className="mb-2 rounded-xl bg-zinc-800 light:bg-slate-100">
+          <ul
+            role="list"
+            className="mb-2 rounded-xl bg-zinc-800 light:bg-slate-100"
+          >
             {embedding.map(([filename, fileStatus]) => (
-              <EmbeddingFileRow
-                key={filename}
-                filename={filename}
-                status={fileStatus}
-                onRemove={
-                  fileStatus.status === "pending"
-                    ? () => onRemoveQueued(filename)
-                    : null
-                }
-              />
+              <li key={filename}>
+                <EmbeddingFileRow
+                  filename={filename}
+                  status={fileStatus}
+                  onRemove={
+                    fileStatus.status === "pending"
+                      ? () => onRemoveQueued(filename)
+                      : null
+                  }
+                />
+              </li>
             ))}
-          </div>
+          </ul>
         )}
         {embeddedFiles.length === 0 && embedding.length === 0 && (
-          <p className="h-full flex items-center justify-center text-sm text-zinc-400 light:text-slate-500">
-            {t("connectors.directory.no_docs")}
+          <p className="h-full flex items-center justify-center px-6 text-center text-sm text-zinc-400 light:text-slate-600">
+            {t("workspace-docs.ws-empty")}
           </p>
         )}
-        {embeddedFiles.map(({ item, folder }) => (
-          <MobileWorkspaceFileRow
-            key={item.id}
-            item={item}
-            folderName={folder.name}
-            workspace={workspace}
-            staged={movedItems.some((moved) => moved.id === item.id)}
-            selected={!!selectedItems[item.id]}
-            selectable={selectable}
-            onToggle={onToggleItem}
-            onOpenActions={openActions}
-          />
-        ))}
+        {embeddedFiles.length > 0 && (
+          <ul role="list" aria-labelledby={listLabelId}>
+            {embeddedFiles.map(({ item, folder }) => (
+              <MobileWorkspaceFileRow
+                key={item.id}
+                item={item}
+                folderName={folder.name}
+                workspace={workspace}
+                staged={movedItems.some((moved) => moved.id === item.id)}
+                selected={!!selectedItems[item.id]}
+                selectable={selectable}
+                onToggle={onToggleItem}
+                onOpenActions={openActions}
+              />
+            ))}
+          </ul>
+        )}
       </div>
 
       <MobileActionBar
@@ -124,10 +161,10 @@ export default function MobileWorkspaceDirectory({
           count: movedItems.length,
         })}
       >
-        <MobileActionButton onClick={onSave}>
+        <MobileActionButton ref={saveRef} onClick={onSave}>
           {embedding.length > 0
             ? t("connectors.directory.add-to-queue")
-            : t("connectors.directory.save_embed")}
+            : t("workspace-docs.save-embed", { count: movedItems.length })}
         </MobileActionButton>
       </MobileActionBar>
       <MobileActionBar
@@ -138,6 +175,7 @@ export default function MobileWorkspaceDirectory({
       >
         <MobileActionButton
           variant="danger"
+          aria-haspopup="dialog"
           onClick={() => onRemoveItems(selectedIds)}
         >
           {t("connectors.directory.remove_selected")}
@@ -152,7 +190,7 @@ export default function MobileWorkspaceDirectory({
         {actions && (
           <>
             <MobileSheetOption
-              icon={Pin}
+              icon={actions.pinned ? PinOff : Pin}
               label={
                 actions.pinned
                   ? t("connectors.directory.unpin")
@@ -162,7 +200,7 @@ export default function MobileWorkspaceDirectory({
             />
             {actions.item.canWatch && (
               <MobileSheetOption
-                icon={Eye}
+                icon={actions.watched ? EyeOff : Eye}
                 label={
                   actions.watched
                     ? t("connectors.directory.unwatch")

@@ -1,4 +1,4 @@
-import { Fragment, useState, useEffect } from "react";
+import { Fragment } from "react";
 import { decode as HTMLDecode } from "he";
 import truncate from "truncate";
 import Modal, { ModalHeader, ModalBody } from "@/components/lib/Modal";
@@ -9,6 +9,7 @@ import {
   Github,
   Youtube,
   Link,
+  Globe,
   Gitlab,
   GitBranch,
 } from "lucide-react";
@@ -21,7 +22,9 @@ import { useSourcesSidebar } from "../../ChatSidebar";
 
 const CIRCLE_ICONS = {
   file: FileText,
-  link: Link,
+  // Web sources use a local icon: fetching each site's favicon from a third
+  // party would leak the cited domains outside the instance.
+  link: Globe,
   youtube: Youtube,
   github: Github,
   gitlab: Gitlab,
@@ -50,54 +53,31 @@ export function getCustomImage(type) {
 }
 
 /**
- * Renders a circle with a source type icon inside, or a favicon if URL is provided.
+ * Renders a circle with a source type icon inside. Decorative: the source
+ * title next to it carries the meaning.
  * @param {"file"|"link"|"youtube"|"github"|"gitlab"|"gitea"|"confluence"|"drupalwiki"|"obsidian"|"paperlessNgx"} props.type
  * @param {number} [props.size] - Circle diameter in px
  * @param {number} [props.iconSize] - Icon size in px
- * @param {string} [props.url] - Optional URL to fetch favicon from
  * @param {string} [props.customImage] - Optional custom image to display
  */
 export function SourceTypeCircle({
   type = "file",
   size = 22,
   iconSize = 12,
-  url = null,
   customImage = null,
 }) {
   const Icon = CIRCLE_ICONS[type] || CIRCLE_ICONS.file;
-  const [imgError, setImgError] = useState(false);
-
-  let faviconUrl = null;
-  if (type === "link" && url) {
-    try {
-      const hostname = new URL(url).hostname;
-      faviconUrl = `https://www.google.com/s2/favicons?domain=${hostname}&sz=64`;
-    } catch {
-      faviconUrl = null;
-    }
-  }
-
-  useEffect(() => {
-    setImgError(false);
-  }, [url]);
 
   return (
     <div
+      aria-hidden="true"
       className={`${customImage ? "bg-transparent border-none" : "bg-white light:bg-slate-100 border-zinc-800 light:border-white rounded-full"} flex items-center justify-center overflow-hidden`}
       style={{ width: size, height: size }}
     >
-      {faviconUrl && !imgError ? (
-        <img
-          src={faviconUrl}
-          alt="favicon"
-          style={{ width: size, height: size }}
-          className="object-cover"
-          onError={() => setImgError(true)}
-        />
-      ) : customImage ? (
+      {customImage ? (
         <img
           src={customImage}
-          alt={type}
+          alt=""
           style={{ width: size, height: size }}
           className="object-contain bg-transparent"
         />
@@ -135,13 +115,14 @@ export default function Citations({ sources = [] }) {
   } = useSourcesSidebar();
   const { t } = useTranslation();
   if (sources.length === 0) return null;
+  const isShowingThese = sidebarOpen && sources === currentSources;
 
   const combined = combineLikeSources(sources);
   const visibleSources = combined.slice(0, 3);
   const remainingCount = Math.max(0, combined.length - 3);
 
   function handleOpenSourcesSidebar() {
-    if (sidebarOpen && sources === currentSources) {
+    if (isShowingThese) {
       closeSidebar();
     } else {
       openSidebar(sources);
@@ -151,8 +132,9 @@ export default function Citations({ sources = [] }) {
   return (
     <button
       onClick={handleOpenSourcesSidebar}
-      className="w-fit flex items-center gap-[5px] px-[10px] py-[4px] rounded-full hover:bg-white/5 light:hover:bg-black/5 transition-colors"
+      className="w-fit flex items-center gap-[5px] px-[10px] py-[4px] min-h-[44px] md:min-h-0 rounded-full hover:bg-white/5 light:hover:bg-black/5 transition-colors duration-quick"
       type="button"
+      aria-expanded={isShowingThese}
     >
       <span className="text-xs text-white light:text-slate-800">
         {t("chat_window.sources")}
@@ -174,7 +156,6 @@ export default function Citations({ sources = [] }) {
                 type={info.icon}
                 size={18}
                 iconSize={10}
-                url={info.href}
                 customImage={customImage}
               />
             </div>
@@ -216,15 +197,19 @@ export function CitationDetailModal({ source, onClose }) {
               </span>
               <SquareArrowOutUpRight
                 strokeWidth={1.5}
+                aria-hidden="true"
                 className="flex-shrink-0"
               />
+              <span className="sr-only">{t("chat-history.opens-new-tab")}</span>
             </a>
           ) : (
             truncate(title, 45)
           )
         }
         subtitle={
-          references > 1 ? `Referenced ${references} times.` : undefined
+          references > 1
+            ? t("chat-history.citation.referenced", { count: references })
+            : undefined
         }
         onClose={onClose}
       />
@@ -241,10 +226,12 @@ export function CitationDetailModal({ source, onClose }) {
                   <div className="w-full flex items-center text-xs text-zinc-400 light:text-slate-500 gap-x-2 cursor-default">
                     <div
                       data-tooltip-id="similarity-score"
-                      data-tooltip-content={`This is the semantic similarity score of this chunk of text compared to your query calculated by the vector database.`}
+                      data-tooltip-content={t(
+                        "chat-history.citation.similarity-tooltip"
+                      )}
                       className="flex items-center gap-x-1"
                     >
-                      <Info strokeWidth={1.5} size={14} />
+                      <Info strokeWidth={1.5} size={14} aria-hidden="true" />
                       <p>
                         {toPercentString(score)}{" "}
                         {t("chat_window.similarity_match")}

@@ -1,25 +1,36 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useId } from "react";
+import { useTranslation } from "react-i18next";
 import System from "@/models/system";
+import {
+  FIELD_COL,
+  FIELD_ROW,
+  SECRET_MASK,
+  SecretInput,
+} from "@/components/ProviderFields";
+import {
+  FieldLabel,
+  ModelSelectField,
+  modelStatus,
+} from "@/components/LLMSelection/FormParts";
 
 export default function ZAiLLMOptions({ settings }) {
+  const { t } = useTranslation();
+  const id = useId();
   const [inputValue, setInputValue] = useState(settings?.ZAiApiKey);
   const [apiKey, setApiKey] = useState(settings?.ZAiApiKey);
 
   return (
-    <div className="flex gap-[36px] mt-1.5">
-      <div className="flex flex-col w-60">
-        <label className="text-white text-sm font-semibold block mb-3">
-          Z.AI API Key
-        </label>
-        <input
-          type="password"
+    <div className={`${FIELD_ROW} mt-1.5`}>
+      <div className={FIELD_COL}>
+        <FieldLabel
+          htmlFor={`${id}-key`}
+          label={t("provider-fields.api-key")}
+        />
+        <SecretInput
+          id={`${id}-key`}
           name="ZAiApiKey"
-          className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-          placeholder="Z.AI API Key"
-          defaultValue={settings?.ZAiApiKey ? "*".repeat(20) : ""}
+          defaultValue={settings?.ZAiApiKey ? SECRET_MASK : ""}
           required={true}
-          autoComplete="off"
-          spellCheck={false}
           onChange={(e) => setInputValue(e.target.value)}
           onBlur={() => setApiKey(inputValue)}
         />
@@ -33,82 +44,63 @@ export default function ZAiLLMOptions({ settings }) {
 }
 
 function ZAiModelSelection({ apiKey, settings }) {
+  const { t } = useTranslation();
   const [customModels, setCustomModels] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     async function findCustomModels() {
       if (!apiKey) {
         setCustomModels([]);
-        setLoading(true);
         return;
       }
 
       try {
         setLoading(true);
-        const { models } = await System.customModels("zai", apiKey);
+        const { models, error } = await System.customModels("zai", apiKey);
         setCustomModels(models || []);
+        setError(error || null);
       } catch (error) {
         console.error("Failed to fetch custom models:", error);
         setCustomModels([]);
+        setError(error.message);
       } finally {
         setLoading(false);
       }
     }
     findCustomModels();
-  }, [apiKey]);
+  }, [apiKey, attempt]);
 
-  if (loading) {
-    return (
-      <div className="flex flex-col w-60">
-        <label className="text-white text-sm font-semibold block mb-3">
-          Chat Model Selection
-        </label>
-        <select
-          name="ZAiModelPref"
-          disabled={true}
-          className="border-none bg-theme-settings-input-bg border-gray-500 text-white text-sm rounded-lg block w-full p-2.5"
-        >
-          <option disabled={true} selected={true}>
-            --loading available models--
-          </option>
-        </select>
-        <p className="text-xs leading-[18px] font-base text-white text-opacity-60 mt-2">
-          Enter a valid API key to view all available models for your account.
-        </p>
-      </div>
-    );
-  }
+  const status = modelStatus({
+    loading,
+    error,
+    count: customModels.length,
+    needs: apiKey ? null : "need-key",
+  });
 
   return (
-    <div className="flex flex-col w-60">
-      <label className="text-white text-sm font-semibold block mb-3">
-        Chat Model Selection
-      </label>
-      <select
-        name="ZAiModelPref"
-        required={true}
-        className="border-none bg-theme-settings-input-bg border-gray-500 text-white text-sm rounded-lg block w-full p-2.5"
-      >
-        {customModels.length > 0 && (
-          <optgroup label="Available models">
-            {customModels.map((model) => {
-              return (
-                <option
-                  key={model.id}
-                  value={model.id}
-                  selected={settings?.ZAiModelPref === model.id}
-                >
-                  {model.id}
-                </option>
-              );
-            })}
-          </optgroup>
-        )}
-      </select>
-      <p className="text-xs leading-[18px] font-base text-white text-opacity-60 mt-2">
-        Select the Z.AI model you want to use for your conversations.
-      </p>
-    </div>
+    <ModelSelectField
+      name="ZAiModelPref"
+      label={t("provider-fields.chat-model")}
+      status={status}
+      error={error}
+      onRetry={() => setAttempt((n) => n + 1)}
+      defaultValue={settings?.ZAiModelPref}
+      help={
+        status === "ready"
+          ? t("llm-fields.common.model-help-select", { provider: "Z.AI" })
+          : t("llm-fields.common.model-help-key")
+      }
+    >
+      <optgroup label={t("llm-fields.common.available-models")}>
+        {customModels.map((model) => (
+          <option key={model.id} value={model.id}>
+            {model.id}
+          </option>
+        ))}
+      </optgroup>
+    </ModelSelectField>
   );
 }

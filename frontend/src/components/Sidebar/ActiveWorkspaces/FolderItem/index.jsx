@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import {
   ChevronRight,
-  ChevronDown,
   Folder,
   FolderOpen,
   Pencil,
@@ -10,6 +9,7 @@ import {
   Check,
   X,
   Move,
+  Ellipsis,
 } from "lucide-react";
 import { Droppable } from "react-beautiful-dnd";
 import WorkspaceFolder from "@/models/workspaceFolder";
@@ -18,6 +18,7 @@ import { useTranslation } from "react-i18next";
 import MoveFolderModal, {
   useMoveFolderModal,
 } from "@/components/Modals/MoveFolderModal";
+import NewFolderModal from "@/components/Modals/NewFolderModal";
 
 /**
  * Renders a single folder node with its children (sub-folders) and workspaces.
@@ -45,18 +46,45 @@ export default function FolderItem({
 }) {
   const { t } = useTranslation();
   const [isRenaming, setIsRenaming] = useState(false);
+  const [showSubfolderModal, setShowSubfolderModal] = useState(false);
   const [renameValue, setRenameValue] = useState(folder.name);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const renameRef = useRef(null);
+  const nameButtonRef = useRef(null);
+  const wasRenaming = useRef(false);
+  const deleteButtonRef = useRef(null);
+  const wasConfirmingDelete = useRef(false);
+  const confirmDescId = `folder-${folder.id}-delete-desc`;
+
+  // The trash button is swapped for confirm / cancel: when the user cancels,
+  // focus returns to it instead of dropping to <body>.
+  useEffect(() => {
+    if (showConfirmDelete) {
+      wasConfirmingDelete.current = true;
+      return;
+    }
+    if (wasConfirmingDelete.current) {
+      wasConfirmingDelete.current = false;
+      deleteButtonRef.current?.focus();
+    }
+  }, [showConfirmDelete]);
   const moveModal = useMoveFolderModal();
 
   const isExpanded = expandedMap[folder.id] !== false; // default: expanded
   const isAdmin = !user || user?.role !== "default";
   const indent = depth * 12;
 
+  // Focus the input while renaming, and the folder button again afterwards
+  // so keyboard users keep their place.
   useEffect(() => {
-    if (isRenaming && renameRef.current) renameRef.current.focus();
+    if (isRenaming) {
+      wasRenaming.current = true;
+      renameRef.current?.focus();
+    } else if (wasRenaming.current) {
+      wasRenaming.current = false;
+      nameButtonRef.current?.focus();
+    }
   }, [isRenaming]);
 
   const handleRenameSubmit = async () => {
@@ -71,12 +99,14 @@ export default function FolderItem({
       { name: trimmed }
     );
     if (updated) {
-      showToast(t("workspace-folders.rename") + " OK", "success", {
+      showToast(t("workspace-folders.renamed", { name: trimmed }), "success", {
         clear: true,
       });
       onFolderChange();
     } else {
-      showToast(message || "Error renaming folder", "error", { clear: true });
+      showToast(message || t("sidebar-nav.folder-rename-failed"), "error", {
+        clear: true,
+      });
     }
     setIsRenaming(false);
   };
@@ -84,27 +114,19 @@ export default function FolderItem({
   const handleRenameKeyDown = (e) => {
     if (e.key === "Enter") handleRenameSubmit();
     if (e.key === "Escape") {
+      // Handled here: an open drawer must not close as well.
+      e.preventDefault();
       setIsRenaming(false);
       setRenameValue(folder.name);
     }
   };
 
-  const handleAddSubfolder = async () => {
-    const name = window.prompt(t("workspace-folders.placeholder"));
-    if (!name?.trim()) return;
-    const { folder: created, message } = await WorkspaceFolder.new({
-      name: name.trim(),
-      parent_id: folder.id,
-    });
-    if (created) {
-      // Ensure parent stays expanded
-      if (expandedMap[folder.id] === false) toggleExpanded(folder.id);
-      onFolderChange();
-    } else {
-      showToast(message || "Error creating subfolder", "error", {
-        clear: true,
-      });
-    }
+  const handleAddSubfolder = () => setShowSubfolderModal(true);
+
+  const handleSubfolderCreated = () => {
+    // Keep the parent open so the new subfolder is visible.
+    if (expandedMap[folder.id] === false) toggleExpanded(folder.id);
+    onFolderChange();
   };
 
   const handleDelete = async () => {
@@ -113,12 +135,18 @@ export default function FolderItem({
     setIsDeleting(false);
     setShowConfirmDelete(false);
     if (success) {
-      showToast(t("workspace-folders.delete") + " OK", "success", {
-        clear: true,
-      });
+      showToast(
+        t("workspace-folders.deleted", { name: folder.name }),
+        "success",
+        {
+          clear: true,
+        }
+      );
       onFolderChange();
     } else {
-      showToast(message || "Error deleting folder", "error", { clear: true });
+      showToast(message || t("sidebar-nav.folder-delete-failed"), "error", {
+        clear: true,
+      });
     }
   };
 
@@ -126,63 +154,93 @@ export default function FolderItem({
     <div className="flex flex-col w-full">
       {/* Folder header row */}
       <div
-        className="flex items-center gap-x-1 group/folder rounded-full hover:bg-theme-sidebar-subitem-hover transition-colors duration-150"
+        className="relative flex items-center gap-x-1 min-h-[44px] md:min-h-0 group/folder rounded-lg hover:bg-theme-sidebar-subitem-hover transition-colors duration-quick"
         style={{ paddingLeft: `${indent + 4}px`, paddingRight: "4px" }}
       >
-        {/* Expand/collapse caret */}
+        {/* Expand/collapse caret. Decorative for screen readers: the folder
+            name button below carries the same action and the state. */}
         <button
           type="button"
+          tabIndex={-1}
+          aria-hidden="true"
           onClick={() => toggleExpanded(folder.id)}
           className="flex-shrink-0 flex items-center justify-center w-5 h-5 text-white/60 hover:text-white light:text-slate-600 light:hover:text-slate-900"
-          aria-label={isExpanded ? "Collapse folder" : "Expand folder"}
         >
-          {isExpanded ? (
-            <ChevronDown size={13} strokeWidth={1.5} />
-          ) : (
-            <ChevronRight size={13} strokeWidth={1.5} />
-          )}
+          <ChevronRight
+            size={13}
+            strokeWidth={1.5}
+            className={`transition-transform duration-base ease-smooth ${isExpanded ? "rotate-90" : ""}`}
+          />
         </button>
 
-        {/* Folder icon + name */}
-        <button
-          type="button"
-          onClick={() => toggleExpanded(folder.id)}
-          className="flex flex-grow items-center gap-x-2 py-[5px] min-w-0"
-        >
-          {isExpanded ? (
+        {/* Folder icon + name. While renaming, the input replaces the button
+            so no control is nested inside another. */}
+        {isRenaming ? (
+          <div className="flex flex-grow items-center gap-x-2 py-[3px] min-w-0">
             <FolderOpen
               size={16}
               strokeWidth={1.5}
+              aria-hidden="true"
               className="flex-shrink-0 text-yellow-400/80"
             />
-          ) : (
-            <Folder
-              size={16}
-              strokeWidth={1.5}
-              className="flex-shrink-0 text-yellow-400/80"
-            />
-          )}
-
-          {isRenaming ? (
             <input
               ref={renameRef}
               value={renameValue}
+              aria-label={t("workspace-folders.placeholder")}
               onChange={(e) => setRenameValue(e.target.value)}
               onKeyDown={handleRenameKeyDown}
               onBlur={handleRenameSubmit}
-              className="flex-grow bg-transparent border border-white/40 light:border-slate-400 text-white light:text-slate-800 text-[13px] outline-none min-w-0 rounded-full px-3"
-              onClick={(e) => e.stopPropagation()}
+              className="flex-grow bg-transparent border border-white/40 light:border-slate-400 text-white light:text-slate-800 text-base md:text-[13px] min-w-0 rounded-md px-2 h-9 md:h-auto md:py-[2px]"
             />
-          ) : (
+          </div>
+        ) : (
+          <button
+            ref={nameButtonRef}
+            type="button"
+            onClick={() => toggleExpanded(folder.id)}
+            aria-expanded={isExpanded}
+            className="flex flex-grow items-center gap-x-2 py-[5px] min-w-0 rounded-md"
+          >
+            {isExpanded ? (
+              <FolderOpen
+                size={16}
+                strokeWidth={1.5}
+                aria-hidden="true"
+                className="flex-shrink-0 text-yellow-400/80"
+              />
+            ) : (
+              <Folder
+                size={16}
+                strokeWidth={1.5}
+                aria-hidden="true"
+                className="flex-shrink-0 text-yellow-400/80"
+              />
+            )}
             <span className="text-white light:text-slate-700 text-[13px] font-medium truncate">
               {folder.name}
             </span>
-          )}
-        </button>
+          </button>
+        )}
 
-        {/* Admin action buttons (visible on hover) */}
+        {/* Touch screens: the four actions do not fit at a 44px tap size,
+            so they live in one menu. */}
         {isAdmin && !isRenaming && (
-          <div className="flex items-center gap-x-[2px] opacity-0 group-hover/folder:opacity-100 transition-opacity duration-150">
+          <FolderActionsMenu
+            folderName={folder.name}
+            onRename={() => {
+              setRenameValue(folder.name);
+              setIsRenaming(true);
+            }}
+            onAddSubfolder={handleAddSubfolder}
+            onMove={moveModal.showModal}
+            onDelete={handleDelete}
+            isDeleting={isDeleting}
+          />
+        )}
+
+        {/* Desktop: inline actions, shown on hover or keyboard focus. */}
+        {isAdmin && !isRenaming && (
+          <div className="hidden md:flex items-center gap-x-[2px] md:opacity-0 md:group-hover/folder:opacity-100 md:group-focus-within/folder:opacity-100 transition-opacity duration-quick">
             <button
               type="button"
               onClick={() => {
@@ -190,6 +248,7 @@ export default function FolderItem({
                 setIsRenaming(true);
               }}
               title={t("workspace-folders.rename")}
+              aria-label={`${t("workspace-folders.rename")}: ${folder.name}`}
               className="rounded-full p-[3px] hover:bg-white/10 light:hover:bg-slate-300/70"
             >
               <Pencil
@@ -202,6 +261,7 @@ export default function FolderItem({
               type="button"
               onClick={handleAddSubfolder}
               title={t("workspace-folders.add-subfolder")}
+              aria-label={`${t("workspace-folders.add-subfolder")}: ${folder.name}`}
               className="rounded-full p-[3px] hover:bg-white/10 light:hover:bg-slate-300/70"
             >
               <Plus
@@ -214,6 +274,7 @@ export default function FolderItem({
               type="button"
               onClick={moveModal.showModal}
               title={t("workspace-folders.move")}
+              aria-label={`${t("workspace-folders.move")}: ${folder.name}`}
               className="rounded-full p-[3px] hover:bg-white/10 light:hover:bg-slate-300/70"
             >
               <Move
@@ -224,9 +285,11 @@ export default function FolderItem({
             </button>
             {!showConfirmDelete ? (
               <button
+                ref={deleteButtonRef}
                 type="button"
                 onClick={() => setShowConfirmDelete(true)}
                 title={t("workspace-folders.delete")}
+                aria-label={`${t("workspace-folders.delete")}: ${folder.name}`}
                 className="rounded-full p-[3px] hover:bg-red-500/20 light:hover:bg-red-500/15"
               >
                 <Trash2
@@ -237,11 +300,18 @@ export default function FolderItem({
               </button>
             ) : (
               <>
+                <span id={confirmDescId} className="sr-only">
+                  {t("sidebar-nav.delete-folder-confirm")}
+                </span>
                 <button
                   type="button"
                   onClick={handleDelete}
                   disabled={isDeleting}
-                  title="Confirm delete"
+                  // Takes focus from the trash button it replaces.
+                  autoFocus
+                  title={t("sidebar-nav.delete-folder-confirm")}
+                  aria-label={`${t("sidebar-nav.confirm-delete")}: ${folder.name}`}
+                  aria-describedby={confirmDescId}
                   className="rounded-full p-[3px] hover:bg-red-500/40 light:hover:bg-red-500/20"
                 >
                   <Check
@@ -253,7 +323,14 @@ export default function FolderItem({
                 <button
                   type="button"
                   onClick={() => setShowConfirmDelete(false)}
-                  title="Cancel"
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") {
+                      e.preventDefault();
+                      setShowConfirmDelete(false);
+                    }
+                  }}
+                  title={t("sidebar-nav.cancel")}
+                  aria-label={`${t("sidebar-nav.cancel")}: ${folder.name}`}
                   className="rounded-full p-[3px] hover:bg-white/10 light:hover:bg-slate-300/70"
                 >
                   <X
@@ -268,6 +345,14 @@ export default function FolderItem({
         )}
       </div>
 
+      {showSubfolderModal && (
+        <NewFolderModal
+          parentId={folder.id}
+          parentName={folder.name}
+          hideModal={() => setShowSubfolderModal(false)}
+          onFolderCreated={handleSubfolderCreated}
+        />
+      )}
       {moveModal.showing && (
         <MoveFolderModal
           folder={folder}
@@ -314,6 +399,147 @@ export default function FolderItem({
             </div>
           )}
         </Droppable>
+      )}
+    </div>
+  );
+}
+
+function FolderActionsMenu({
+  folderName,
+  onRename,
+  onAddSubfolder,
+  onMove,
+  onDelete,
+  isDeleting,
+}) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const wrapperRef = useRef(null);
+  const buttonRef = useRef(null);
+  const menuRef = useRef(null);
+
+  const close = ({ returnFocus = false } = {}) => {
+    setOpen(false);
+    setConfirmingDelete(false);
+    if (returnFocus) buttonRef.current?.focus();
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    menuRef.current?.querySelector("button")?.focus();
+  }, [open, confirmingDelete]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onOutside = (e) => {
+      if (!e.composedPath().includes(wrapperRef.current)) close();
+    };
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") close({ returnFocus: true });
+    };
+    document.addEventListener("click", onOutside);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("click", onOutside);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  const run = (action) => () => {
+    close();
+    action();
+  };
+
+  const itemClass =
+    "w-full rounded-md flex items-center min-h-[44px] px-3 gap-x-2 text-sm text-slate-200 light:text-theme-text-primary hover:bg-slate-500/20";
+
+  return (
+    <div ref={wrapperRef} className="md:hidden flex">
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={() => (open ? close() : setOpen(true))}
+        aria-label={t("sidebar-nav.folder-options", { name: folderName })}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className="w-11 h-11 flex items-center justify-center rounded-lg text-theme-text-secondary"
+      >
+        <Ellipsis size={20} strokeWidth={1.5} aria-hidden="true" />
+      </button>
+      {open && (
+        <div
+          ref={menuRef}
+          role="menu"
+          aria-label={t("sidebar-nav.folder-options", { name: folderName })}
+          className="absolute z-20 right-1 top-full w-max max-w-[240px] rounded-lg p-1 bg-zinc-900 light:bg-theme-bg-sidebar light:border light:border-theme-sidebar-border shadow-lg animate-in fade-in-0 slide-in-from-top-2"
+        >
+          {confirmingDelete ? (
+            <div className="p-2 flex flex-col gap-y-2">
+              <p className="text-sm text-theme-text-primary">
+                {t("sidebar-nav.delete-folder-confirm")}
+              </p>
+              <div className="flex gap-x-2 justify-end">
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => close({ returnFocus: true })}
+                  className="rounded-md min-h-[44px] px-3 text-sm text-theme-text-primary hover:bg-slate-500/20"
+                >
+                  {t("sidebar-nav.cancel")}
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  disabled={isDeleting}
+                  onClick={run(onDelete)}
+                  className="rounded-md min-h-[44px] px-3 text-sm font-medium text-red-300 light:text-red-700 hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {t("workspace-folders.delete")}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={run(onRename)}
+                className={itemClass}
+              >
+                <Pencil size={16} strokeWidth={1.5} aria-hidden="true" />
+                {t("workspace-folders.rename")}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={run(onAddSubfolder)}
+                className={itemClass}
+              >
+                <Plus size={16} strokeWidth={1.5} aria-hidden="true" />
+                {t("workspace-folders.add-subfolder")}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={run(onMove)}
+                className={itemClass}
+              >
+                <Move size={16} strokeWidth={1.5} aria-hidden="true" />
+                {t("workspace-folders.move")}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => setConfirmingDelete(true)}
+                className={`${itemClass} hover:bg-red-500/20 hover:text-red-100 light:hover:text-red-700`}
+              >
+                <Trash2 size={16} strokeWidth={1.5} aria-hidden="true" />
+                {t("workspace-folders.delete")}
+              </button>
+            </>
+          )}
+        </div>
       )}
     </div>
   );

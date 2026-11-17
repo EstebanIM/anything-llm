@@ -1,15 +1,24 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { LoaderCircle, Folder, FolderPlus, Search, Trash2 } from "lucide-react";
+import {
+  FolderInput,
+  FolderPlus,
+  Folder,
+  LoaderCircle,
+  RotateCw,
+  Search,
+  Trash2,
+} from "lucide-react";
 import PreLoader from "@/components/Preloader";
+import { FIELD_INPUT } from "@/components/ProviderFields";
 import UploadFile from "../../UploadFile";
-import MoveToFolderIcon from "../MoveToFolderIcon";
 import MobileFolderRow from "./MobileFolderRow";
 import MobileSheet, { MobileSheetOption } from "../../MobileSheet";
 import MobileActionBar, {
   MobileActionButton,
   MobileActionIconButton,
 } from "../../MobileActionBar";
+import InlineAlert from "../../InlineAlert";
 
 /**
  * Touch layout of the "My Documents" picker. State and mutations come from `Directory`.
@@ -18,26 +27,35 @@ import MobileActionBar, {
  * @param {ReturnType<import("../../hooks/useDocumentPicker").default>} props.picker
  * @param {Record<string, number>} props.embeddedCounts - Per folder, documents already in workspace
  * @param {number} props.documentCount - Total documents, or matches while searching
+ * @param {import("react").RefObject<HTMLElement>} props.listRef - focus target after a move or delete
  */
 export default function MobileDirectory({
   picker,
   workspace,
   rows,
+  query,
   embeddedCounts,
   documentCount,
+  searchResultCount,
   allSelected,
   uploadQueue,
+  pickerError,
+  onDismissError,
   onSearch,
   onSelectAll,
   onMoveToWorkspace,
   onMoveToFolder,
   onDelete,
   onNewFolder,
+  listRef,
 }) {
   const { t } = useTranslation();
+  const searchId = useId();
+  const listLabelId = useId();
   const [showFolderSheet, setShowFolderSheet] = useState(false);
   const {
     status,
+    loadError,
     busyMessage,
     folders,
     searching,
@@ -51,8 +69,10 @@ export default function MobileDirectory({
     toggleFolder,
     toggleFile,
     loadMore,
+    retryFolder,
     clearSelection,
     syncAfterUpload,
+    refresh,
     contents,
   } = picker;
 
@@ -78,23 +98,31 @@ export default function MobileDirectory({
         />
         <div className="flex gap-x-2">
           <div className="relative flex-1 min-w-0">
+            <label htmlFor={searchId} className="sr-only">
+              {t("workspace-docs.search-label")}
+            </label>
             <input
+              id={searchId}
               type="search"
-              placeholder={t("connectors.directory.search-document")}
+              value={query}
               onChange={onSearch}
-              className="search-input w-full h-11 pl-10 pr-3 rounded-xl text-base outline-none border border-transparent bg-zinc-800 light:bg-slate-100 text-slate-50 light:text-slate-900 placeholder:text-zinc-500 light:placeholder:text-slate-400 focus:border-sky-500"
+              placeholder={t("connectors.directory.search-document")}
+              aria-busy={searching || undefined}
+              className={`${FIELD_INPUT} search-input pl-10`}
             />
             {searching ? (
               <LoaderCircle
                 strokeWidth={1.5}
                 size={16}
-                className="absolute left-3.5 top-1/2 -translate-y-1/2 animate-spin text-zinc-400 light:text-slate-500"
+                aria-hidden="true"
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 animate-spin text-zinc-400 light:text-slate-600"
               />
             ) : (
               <Search
                 strokeWidth={1.5}
                 size={16}
-                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 light:text-slate-500"
+                aria-hidden="true"
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 light:text-slate-600 pointer-events-none"
               />
             )}
           </div>
@@ -102,13 +130,13 @@ export default function MobileDirectory({
             label={t("connectors.directory.new-folder")}
             onClick={onNewFolder}
           >
-            <FolderPlus strokeWidth={1.5} size={20} />
+            <FolderPlus strokeWidth={1.5} size={20} aria-hidden="true" />
           </MobileActionIconButton>
         </div>
       </div>
 
-      <div className="shrink-0 flex items-center justify-between h-9 px-4 text-xs text-zinc-400 light:text-slate-500">
-        <p>
+      <div className="shrink-0 flex items-center justify-between min-h-11 px-4 text-xs text-zinc-400 light:text-slate-600">
+        <p id={listLabelId} aria-live="polite">
           {searchResults
             ? t("connectors.directory.search-results", {
                 count: documentCount,
@@ -121,7 +149,7 @@ export default function MobileDirectory({
           <button
             type="button"
             onClick={allSelected ? clearSelection : onSelectAll}
-            className="border-none bg-transparent h-9 -mr-2 px-2 text-xs font-semibold text-sky-400 light:text-sky-700"
+            className="border-none bg-transparent h-11 -mr-2 px-2 text-xs font-semibold text-sky-400 light:text-sky-700"
           >
             {allSelected
               ? t("connectors.directory.deselect_all")
@@ -130,28 +158,54 @@ export default function MobileDirectory({
         )}
       </div>
 
-      {!!busyMessage && (
-        <div className="shrink-0 flex items-center gap-x-2 mx-4 mb-2 px-3 py-2 rounded-xl text-xs font-medium bg-zinc-800 light:bg-slate-100 text-slate-50 light:text-slate-900">
-          <LoaderCircle strokeWidth={1.5} size={14} className="animate-spin" />
-          {busyMessage}
+      <p
+        role="status"
+        className={
+          busyMessage
+            ? "shrink-0 flex items-center gap-x-2 mx-4 mb-2 px-3 py-2 rounded-xl text-xs font-medium bg-zinc-800 light:bg-slate-100 text-slate-50 light:text-slate-900"
+            : "sr-only"
+        }
+      >
+        {busyMessage && (
+          <LoaderCircle
+            strokeWidth={1.5}
+            size={14}
+            aria-hidden="true"
+            className="animate-spin"
+          />
+        )}
+        {busyMessage}
+      </p>
+      {pickerError && (
+        <div className="shrink-0 mx-4 mb-2 rounded-xl overflow-hidden">
+          <InlineAlert onDismiss={onDismissError}>{pickerError}</InlineAlert>
         </div>
       )}
 
       <div
+        ref={listRef}
+        tabIndex={-1}
+        aria-busy={!!busyMessage || undefined}
         className={`flex-1 min-h-0 overflow-y-auto px-2 select-none ${
           hasSelection ? "pb-40" : "pb-6"
         }`}
       >
         <DirectoryContent
           status={status}
+          loadError={loadError && rows.length === 0}
+          noResults={!!searchResults && searchResultCount === 0}
+          query={query}
           rows={rows}
+          listLabelId={listLabelId}
           embeddedCounts={searchResults ? {} : embeddedCounts}
           folderSelectionState={folderSelectionState}
           isFileSelected={isFileSelected}
+          onRetryLoad={refresh}
           onToggleExpanded={toggleExpanded}
           onToggleFolder={toggleFolder}
           onToggleFile={toggleFile}
           onLoadMore={loadMore}
+          onRetry={retryFolder}
         />
       </div>
 
@@ -160,7 +214,9 @@ export default function MobileDirectory({
         label={
           hasFiles
             ? t("connectors.directory.selected-count", { count: movableCount })
-            : selectedFolderNames.join(", ")
+            : t("workspace-docs.selected-folders", {
+                count: selectedFolderNames.length,
+              })
         }
       >
         <MobileActionButton disabled={!hasFiles} onClick={onMoveToWorkspace}>
@@ -168,17 +224,19 @@ export default function MobileDirectory({
         </MobileActionButton>
         <MobileActionIconButton
           label={t("connectors.directory.move-to-folder")}
+          aria-haspopup="dialog"
           disabled={!hasFiles}
           onClick={() => setShowFolderSheet(true)}
         >
-          <MoveToFolderIcon width={20} height={20} />
+          <FolderInput strokeWidth={1.5} size={20} aria-hidden="true" />
         </MobileActionIconButton>
         <MobileActionIconButton
           danger
           label={t("chat_window.delete")}
+          aria-haspopup="dialog"
           onClick={onDelete}
         >
-          <Trash2 strokeWidth={1.5} size={20} />
+          <Trash2 strokeWidth={1.5} size={20} aria-hidden="true" />
         </MobileActionIconButton>
       </MobileActionBar>
 
@@ -205,13 +263,20 @@ export default function MobileDirectory({
 
 function DirectoryContent({
   status,
+  loadError,
+  noResults,
+  query,
   rows,
+  listLabelId,
   embeddedCounts,
   folderSelectionState,
   isFileSelected,
+  onRetryLoad,
   ...handlers
 }) {
   const { t } = useTranslation();
+  const message =
+    "h-full flex flex-col items-center justify-center gap-y-2 px-6 text-center text-sm text-zinc-400 light:text-slate-600";
 
   if (status === "initializing")
     return (
@@ -220,21 +285,43 @@ function DirectoryContent({
       </div>
     );
 
-  if (rows.length === 0)
+  if (loadError)
     return (
-      <p className="h-full flex items-center justify-center text-sm text-zinc-400 light:text-slate-500">
-        {t("connectors.directory.no-documents")}
+      <div className={message}>
+        <span role="alert">{t("workspace-docs.load-docs-error")}</span>
+        <button
+          type="button"
+          onClick={onRetryLoad}
+          className="border-none bg-transparent flex items-center gap-x-1.5 min-h-11 px-3 rounded-md text-sm font-medium underline text-slate-50 light:text-slate-900"
+        >
+          <RotateCw strokeWidth={1.5} size={14} aria-hidden="true" />
+          {t("provider-fields.retry")}
+        </button>
+      </div>
+    );
+
+  if (noResults)
+    return (
+      <p className={message}>
+        {t("workspace-docs.no-results", { query: query.trim() })}
       </p>
     );
 
-  return rows.map((row) => (
-    <MobileFolderRow
-      key={row.item.name}
-      row={row}
-      inWorkspaceCount={embeddedCounts[row.item.name] ?? 0}
-      selectionState={folderSelectionState(row.item.name, row.files)}
-      isFileSelected={(id) => isFileSelected(row.item.name, id)}
-      {...handlers}
-    />
-  ));
+  if (rows.length === 0)
+    return <p className={message}>{t("workspace-docs.empty")}</p>;
+
+  return (
+    <ul role="list" aria-labelledby={listLabelId}>
+      {rows.map((row) => (
+        <MobileFolderRow
+          key={row.item.name}
+          row={row}
+          inWorkspaceCount={embeddedCounts[row.item.name] ?? 0}
+          selectionState={folderSelectionState(row.item.name, row.files)}
+          isFileSelected={(id) => isFileSelected(row.item.name, id)}
+          {...handlers}
+        />
+      ))}
+    </ul>
+  );
 }

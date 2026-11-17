@@ -1,15 +1,30 @@
+import { useId } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  FIELD_COL,
+  FIELD_INPUT,
+  FIELD_LABEL,
+  FIELD_ROW,
+  SECRET_MASK,
+  SecretInput,
+} from "@/components/ProviderFields";
+
 export default function MilvusDBOptions({ settings }) {
+  const { t } = useTranslation();
+  const id = useId();
+
   return (
     <div className="w-full flex flex-col gap-y-7">
-      <div className="w-full flex items-center gap-[36px] mt-1.5">
-        <div className="flex flex-col w-60">
-          <label className="text-white text-sm font-semibold block mb-3">
-            Milvus DB Address
+      <div className={`${FIELD_ROW} mt-1.5`}>
+        <div className={FIELD_COL}>
+          <label htmlFor={`${id}-address`} className={FIELD_LABEL}>
+            {t("provider-forms.vector-db.milvus.address")}
           </label>
           <input
+            id={`${id}-address`}
             type="text"
             name="MilvusAddress"
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
+            className={FIELD_INPUT}
             placeholder="http://localhost:19530"
             defaultValue={settings?.MilvusAddress}
             required={true}
@@ -18,32 +33,29 @@ export default function MilvusDBOptions({ settings }) {
           />
         </div>
 
-        <div className="flex flex-col w-60">
-          <label className="text-white text-sm font-semibold block mb-3">
-            Milvus Username
+        <div className={FIELD_COL}>
+          <label htmlFor={`${id}-username`} className={FIELD_LABEL}>
+            {t("provider-forms.vector-db.milvus.username")}
           </label>
           <input
+            id={`${id}-username`}
             type="text"
             name="MilvusUsername"
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-            placeholder="username"
+            className={FIELD_INPUT}
             defaultValue={settings?.MilvusUsername}
             autoComplete="off"
             spellCheck={false}
           />
         </div>
-        <div className="flex flex-col w-60">
-          <label className="text-white text-sm font-semibold block mb-3">
-            Milvus Password
+        <div className={FIELD_COL}>
+          <label htmlFor={`${id}-password`} className={FIELD_LABEL}>
+            {t("provider-forms.vector-db.milvus.password")}
           </label>
-          <input
-            type="password"
+          <SecretInput
+            id={`${id}-password`}
             name="MilvusPassword"
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-            placeholder="password"
-            defaultValue={settings?.MilvusPassword ? "*".repeat(20) : ""}
-            autoComplete="off"
-            spellCheck={false}
+            revealLabel={t("provider-fields.show-password")}
+            defaultValue={settings?.MilvusPassword ? SECRET_MASK : ""}
           />
         </div>
       </div>

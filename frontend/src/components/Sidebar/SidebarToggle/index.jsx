@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { PanelLeft } from "lucide-react";
 import paths from "@/utils/paths";
 import { Tooltip } from "react-tooltip";
+import { useTranslation } from "react-i18next";
 const SIDEBAR_TOGGLE_STORAGE_KEY = "anythingllm_sidebar_toggle";
 export const SIDEBAR_TOGGLE_EVENT = "sidebar-toggle";
 
@@ -74,29 +75,27 @@ export function useSidebarToggle() {
 }
 
 export function ToggleSidebarButton({ showSidebar, setShowSidebar }) {
+  const { t } = useTranslation();
   const isMac = navigator.userAgent.includes("Mac");
   const shortcut = isMac ? "⌘ + Shift + S" : "Ctrl + Shift + S";
+  const label = `${
+    showSidebar ? t("sidebar-nav.hide-sidebar") : t("sidebar-nav.show-sidebar")
+  } (${shortcut})`;
 
   return (
     <>
       <button
         type="button"
-        className={`hidden md:block border-none bg-transparent outline-none ring-0 absolute transition-all duration-500 z-10 ${showSidebar ? "top-[18px] left-[248px]" : "top-[20px] left-[30px]"}`}
+        className={`hidden md:block border-none bg-transparent rounded-md absolute transition-[top,left] duration-base ease-smooth z-10 ${showSidebar ? "top-[18px] left-[248px]" : "top-[20px] left-[30px]"}`}
         onClick={() => setShowSidebar((prev) => !prev)}
         data-tooltip-id="sidebar-toggle"
-        data-tooltip-content={
-          showSidebar
-            ? `Hide Sidebar (${shortcut})`
-            : `Show Sidebar (${shortcut})`
-        }
-        aria-label={
-          showSidebar
-            ? `Hide Sidebar (${shortcut})`
-            : `Show Sidebar (${shortcut})`
-        }
+        data-tooltip-content={label}
+        aria-label={label}
+        aria-expanded={showSidebar}
       >
         <PanelLeft
           strokeWidth={1.5}
+          aria-hidden="true"
           className="text-theme-text-secondary hover:text-theme-text-primary"
           size={24}
         />
@@ -104,7 +103,7 @@ export function ToggleSidebarButton({ showSidebar, setShowSidebar }) {
       <Tooltip
         id="sidebar-toggle"
         place="top"
-        delayShow={300}
+        delayShow={120}
         className="tooltip !text-xs z-99"
       />
     </>

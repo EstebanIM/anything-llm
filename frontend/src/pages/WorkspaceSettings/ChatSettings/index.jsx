@@ -3,6 +3,7 @@ import Workspace from "@/models/workspace";
 import showToast from "@/utils/toast";
 import { castToType } from "@/utils/types";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import AutosaveForm from "@/components/AutosaveForm";
 import ChatHistorySettings from "./ChatHistorySettings";
 import ChatPromptSettings from "./ChatPromptSettings";
@@ -12,6 +13,7 @@ import WorkspaceLLMSelection from "./WorkspaceLLMSelection";
 import ChatQueryRefusalResponse from "./ChatQueryRefusalResponse";
 
 export default function ChatSettings({ workspace }) {
+  const { t } = useTranslation();
   const [settings, setSettings] = useState(null);
   useEffect(() => {
     async function fetchSettings() {
@@ -31,7 +33,7 @@ export default function ChatSettings({ workspace }) {
       data
     );
     if (!updatedWorkspace) {
-      showToast(`Error: ${message}`, "error", {
+      showToast(t("provider-pages.toast.failed", { error: message }), "error", {
         clear: true,
       });
       // Returning false keeps the fields dirty so the next save retries them.
@@ -42,10 +44,9 @@ export default function ChatSettings({ workspace }) {
 
   if (!workspace || !settings) return null;
   return (
-    <div id="workspace-chat-settings-container" className="relative">
+    <div className="relative">
       <AutosaveForm
         onSave={handleUpdate}
-        id="chat-settings-form"
         className="w-full lg:w-1/2 flex flex-col gap-y-[32px]"
       >
         <WorkspaceLLMSelection settings={settings} workspace={workspace} />

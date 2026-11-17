@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useId } from "react";
 import debounce from "lodash.debounce";
 import { ArrowUp, AtSign } from "lucide-react";
 import StopGenerationButton from "./StopGenerationButton";
@@ -55,6 +55,8 @@ export default function PromptInput({
   const [showTools, setShowTools] = useState(false);
   const autoOpenedToolsRef = useRef(false);
   const toolsHighlightRef = useRef(-1);
+  const toolsIdBase = useId();
+  const toolsListboxId = `${toolsIdBase}-listbox`;
   const formRef = useRef(null);
   const textareaRef = useRef(null);
   const [_, setFocused] = useState(false);
@@ -149,6 +151,10 @@ export default function PromptInput({
    * @param {KeyboardEvent} event
    */
   function captureEnterOrUndo(event) {
+    // While an IME is composing (Japanese, Chinese, Korean...), Enter confirms
+    // the candidate text and must not submit or pick a menu item.
+    if (event.nativeEvent?.isComposing || event.keyCode === 229) return;
+
     // Forward keyboard events to the ToolsMenu when open
     if (showTools) {
       if (
@@ -196,7 +202,7 @@ export default function PromptInput({
     }
 
     // Is simple enter key press w/o shift key
-    if (event.keyCode === 13 && !event.shiftKey) {
+    if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       if (isStreaming || isDisabled) return; // Prevent submission if streaming or disabled
       setShowTools(false);
@@ -352,13 +358,26 @@ export default function PromptInput({
               promptRef={textareaRef}
               centered={centered}
               highlightedIndexRef={toolsHighlightRef}
+              idBase={toolsIdBase}
             />
-            <div className="bg-zinc-800 light:bg-white light:border light:border-slate-300 rounded-[20px] pwa:rounded-3xl flex flex-col px-5 overflow-hidden">
+            {/* The textarea keeps outline-none, so the ring is drawn on the
+                whole input box while the textarea has focus. */}
+            <div className="bg-zinc-800 light:bg-white light:border light:border-slate-300 rounded-[20px] pwa:rounded-3xl flex flex-col px-5 overflow-hidden has-[textarea:focus-visible]:outline has-[textarea:focus-visible]:outline-2 has-[textarea:focus-visible]:outline-offset-2 has-[textarea:focus-visible]:outline-[var(--theme-focus-ring)]">
               <AttachmentManager attachments={attachments} />
               <div className="flex items-center">
                 <textarea
                   id={PROMPT_INPUT_ID}
                   ref={textareaRef}
+                  // The "/" tools popup is a listbox whose highlighted option
+                  // ToolsMenu exposes through aria-activedescendant, so focus
+                  // never leaves the textarea. The textarea keeps its native
+                  // textbox role (a textarea cannot be a combobox in ARIA in
+                  // HTML, and screen readers would stop announcing it as
+                  // multi-line); textbox supports aria-haspopup and
+                  // aria-activedescendant.
+                  aria-label={t("chat-input.prompt-label")}
+                  aria-haspopup="listbox"
+                  aria-controls={showTools ? toolsListboxId : undefined}
                   onChange={handleChange}
                   onKeyDown={captureEnterOrUndo}
                   onPaste={(e) => {
@@ -373,12 +392,12 @@ export default function PromptInput({
                   }}
                   value={promptInput}
                   spellCheck={Appearance.get("enableSpellCheck")}
-                  className={`border-none cursor-text max-h-[50vh] md:max-h-[350px] md:min-h-[40px] pt-[20px] w-full leading-5 text-white light:text-slate-600 bg-transparent placeholder:text-white/60 light:placeholder:text-slate-400 resize-none active:outline-none focus:outline-none flex-grow pwa:!text-[16px] ${inputTextSizeClass}`}
+                  className={`border-none cursor-text max-h-[50vh] md:max-h-[350px] md:min-h-[40px] pt-[20px] w-full leading-5 text-white light:text-slate-600 bg-transparent placeholder:text-white/60 light:placeholder:text-slate-600 resize-none active:outline-none focus:outline-none flex-grow pwa:!text-[16px] ${inputTextSizeClass}`}
                   placeholder={t("chat_window.send_message")}
                 />
               </div>
-              <div className="flex justify-between items-center pt-3.5 pb-3">
-                <div className="flex items-center gap-x-0.25">
+              <div className="flex justify-between items-center pt-1.5 pb-1 md:pt-3.5 md:pb-3">
+                <div className="flex items-center gap-x-1">
                   <div className="flex items-center gap-x-1">
                     <AttachItem
                       workspaceSlug={workspaceSlug}
@@ -401,6 +420,7 @@ export default function PromptInput({
                     setShowTools={setShowTools}
                     textareaRef={textareaRef}
                     autoOpenedToolsRef={autoOpenedToolsRef}
+                    controlsId={toolsListboxId}
                   />
                 </div>
                 <div className="flex gap-x-2 items-center">
@@ -450,18 +470,19 @@ function AgentSessionButton({
         data-tooltip-id="agent-session"
         data-tooltip-content={t("chat_window.start_agent_session")}
         aria-label={t("chat_window.start_agent_session")}
-        className="group border-none relative flex justify-center items-center cursor-pointer w-6 h-6 rounded-full hover:bg-zinc-700 light:hover:bg-slate-200"
+        className="group border-none relative flex justify-center items-center cursor-pointer w-11 h-11 md:w-6 md:h-6 rounded-full hover:bg-zinc-700 light:hover:bg-slate-200 transition-colors duration-quick"
       >
         <AtSign
           strokeWidth={1.5}
           size={18}
+          aria-hidden="true"
           className="pointer-events-none text-zinc-300 light:text-slate-600 group-hover:text-white light:group-hover:text-slate-600 shrink-0"
         />
       </button>
       <Tooltip
         id="agent-session"
         place="bottom"
-        delayShow={300}
+        delayShow={100}
         className="tooltip !text-xs z-99"
       />
     </>
@@ -473,6 +494,7 @@ function ToolsButton({
   setShowTools,
   textareaRef,
   autoOpenedToolsRef,
+  controlsId,
 }) {
   const { t } = useTranslation();
 
@@ -480,12 +502,15 @@ function ToolsButton({
     <button
       id="tools-btn"
       type="button"
+      aria-haspopup="listbox"
+      aria-expanded={showTools}
+      aria-controls={showTools ? controlsId : undefined}
       onClick={() => {
         autoOpenedToolsRef.current = false;
         setShowTools(!showTools);
         textareaRef.current?.focus();
       }}
-      className={`group border-none cursor-pointer flex items-center justify-center h-6 px-2 rounded-full ${
+      className={`group border-none cursor-pointer flex items-center justify-center h-11 md:h-6 px-2 rounded-full transition-colors duration-quick ${
         showTools
           ? "bg-zinc-700 light:bg-slate-200"
           : "hover:bg-zinc-700 light:hover:bg-slate-200"
@@ -506,16 +531,17 @@ function ToolsButton({
 
 function SendPromptButton({ formRef, promptInput, isDisabled }) {
   const { t } = useTranslation();
+  const canSend = !!promptInput.trim().length && !isDisabled;
 
   return (
     <>
       <button
         ref={formRef}
         type="submit"
-        disabled={isDisabled || !promptInput.trim().length}
-        className={`border-none flex justify-center items-center rounded-full w-8 h-8 transition-all ${
-          promptInput.trim().length && !isDisabled
-            ? "cursor-pointer bg-white hover:bg-zinc-200 light:bg-slate-800 light:hover:bg-slate-600"
+        disabled={!canSend}
+        className={`border-none flex justify-center items-center rounded-full w-11 h-11 md:w-8 md:h-8 transition-colors duration-quick ${
+          canSend
+            ? "cursor-pointer bg-primary-button hover:bg-primary-button-hover"
             : "cursor-not-allowed bg-zinc-600 light:bg-slate-400"
         }`}
         data-tooltip-id="send-prompt"
@@ -528,14 +554,18 @@ function SendPromptButton({ formRef, promptInput, isDisabled }) {
       >
         <ArrowUp
           strokeWidth={1.5}
-          className="w-[18px] h-[18px] pointer-events-none text-zinc-800 light:text-white"
+          aria-hidden="true"
+          className={`w-[18px] h-[18px] pointer-events-none ${
+            canSend
+              ? "text-theme-button-primary-text"
+              : "text-zinc-800 light:text-white"
+          }`}
         />
-        <span className="sr-only">{t("chat_window.send")}</span>
       </button>
       <Tooltip
         id="send-prompt"
         place="bottom"
-        delayShow={300}
+        delayShow={100}
         className="tooltip !text-xs z-99"
       />
     </>

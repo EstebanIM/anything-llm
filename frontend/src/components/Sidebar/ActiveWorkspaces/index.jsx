@@ -18,9 +18,11 @@ import {
   WORKSPACE_FOLDERS_EXPANDED,
 } from "@/utils/constants";
 import { safeJsonParse } from "@/utils/request";
+import { useTranslation } from "react-i18next";
 import FolderItem from "./FolderItem";
 export const REFETCH_WORKSPACES_EVENT = "refetchWorkspaces";
 export default function ActiveWorkspaces() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { slug } = useParams();
   const [loading, setLoading] = useState(true);
@@ -176,7 +178,7 @@ export default function ActiveWorkspaces() {
         folderId
       );
       if (!success) {
-        showToast(message || "Failed to move workspace", "error");
+        showToast(message || t("sidebar-nav.move-workspace-failed"), "error");
         setTree(prevTree);
       }
     }
@@ -200,89 +202,104 @@ export default function ActiveWorkspaces() {
             className={`flex flex-col w-full group ${snapshot.isDragging ? "opacity-50" : ""}`}
             role="listitem"
           >
-            <div className="flex gap-x-2 items-center justify-between">
+            {/* The row is a plain container: the link, the drag handle and the
+                action buttons are siblings, never nested inside one another. */}
+            <div
+              className={`group/ws relative flex items-center gap-x-1 rounded-lg transition-colors duration-quick ease-smooth ${
+                isActive
+                  ? "bg-theme-sidebar-item-default light:bg-blue-200"
+                  : "hover:bg-theme-sidebar-subitem-hover light:hover:bg-slate-300"
+              }`}
+            >
+              {isActive && (
+                <span
+                  aria-hidden="true"
+                  className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-[3px] rounded-full bg-[var(--theme-nav-active)]"
+                />
+              )}
+              <div
+                {...provided.dragHandleProps}
+                aria-label={t("sidebar-nav.reorder-workspace", {
+                  name: workspace.name,
+                })}
+                className="cursor-grab shrink-0 pl-[6px] text-theme-text-secondary rounded-md"
+              >
+                <GripVertical strokeWidth={1.5} size={18} aria-hidden="true" />
+              </div>
               <Link
                 to={paths.workspace.chat(workspace.slug)}
                 data-tooltip-id="workspace-name"
                 data-tooltip-content={workspace.name}
-                aria-current={isActive ? "page" : ""}
-                className={`
-                  transition-all duration-[200ms]
-                  flex flex-grow w-[75%] gap-x-2 py-[6px] pl-[4px] pr-[6px] rounded-full text-white justify-start items-center
-                  bg-theme-sidebar-item-default
-                  ${isActive ? "light:bg-blue-200 font-bold" : "hover:bg-theme-sidebar-subitem-hover light:hover:bg-slate-300"}
-                `}
+                aria-current={isActive ? "page" : undefined}
+                className="flex-grow min-w-0 py-[6px] rounded-md"
               >
-                <div className="flex flex-row justify-between w-full items-center">
-                  <div
-                    {...provided.dragHandleProps}
-                    className="cursor-grab mr-[3px]"
-                  >
-                    <GripVertical
-                      strokeWidth={1.5}
-                      size={20}
-                      className={`${isActive ? "text-white light:text-blue-800" : ""}`}
-                    />
-                  </div>
-                  <div className="flex items-center space-x-2 overflow-hidden flex-grow">
-                    <div className="w-[130px] overflow-hidden">
-                      <p
-                        className={`
-                          text-[14px] leading-loose whitespace-nowrap overflow-hidden
-                          ${isActive ? "font-bold text-white light:text-blue-900" : "font-medium "} truncate
-                          w-full group-hover:w-[130px] group-hover:duration-200
-                        `}
-                      >
-                        {workspace.name}
-                      </p>
-                    </div>
-                  </div>
-                  {user?.role !== "default" && (
-                    <div
-                      className={`flex items-center gap-x-[2px] transition-opacity duration-200 ${isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
-                    >
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setSelectedWs(workspace);
-                          showModal();
-                        }}
-                        data-tooltip-id="upload-workspace"
-                        data-tooltip-content="Upload documents to this workspace for RAG indexing"
-                        className={`group/upload border-none rounded-full flex items-center justify-center ml-auto p-[3px] ${isActive ? "hover:bg-zinc-500 light:hover:bg-sky-800/30" : "hover:bg-zinc-500 light:hover:bg-slate-400"}`}
-                      >
-                        <Upload
-                          strokeWidth={1.5}
-                          className={`h-[20px] w-[20px] ${isActive ? "text-zinc-400 hover:text-white light:text-blue-700 light:group-hover/upload:text-blue-900" : "text-zinc-400 hover:text-white light:text-slate-600 light:group-hover/upload:text-slate-950"}`}
-                        />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          navigate(
-                            isInWorkspaceSettings
-                              ? paths.workspace.chat(workspace.slug)
-                              : paths.workspace.settings.generalAppearance(
-                                  workspace.slug
-                                )
-                          );
-                        }}
-                        className={`group/gear rounded-full flex items-center justify-center ml-auto p-[3px] ${isActive ? "hover:bg-zinc-500 light:hover:bg-sky-800/30" : "hover:bg-zinc-500 light:hover:bg-slate-400"}`}
-                        aria-label="General appearance settings"
-                        data-tooltip-id="gear-workspace"
-                        data-tooltip-content="General appearance settings"
-                      >
-                        <Settings
-                          strokeWidth={1.5}
-                          className={`h-[20px] w-[20px] ${isActive ? "text-zinc-400 hover:text-white light:text-blue-700 light:group-hover/gear:text-blue-900" : "text-zinc-400 hover:text-white light:text-slate-600 light:group-hover/gear:text-slate-950"}`}
-                        />
-                      </button>
-                    </div>
-                  )}
-                </div>
+                <p
+                  className={`text-[14px] leading-loose truncate ${
+                    isActive
+                      ? "font-bold text-white light:text-blue-900"
+                      : "font-medium text-white"
+                  }`}
+                >
+                  {workspace.name}
+                </p>
               </Link>
+              {user?.role !== "default" && (
+                <div
+                  className={`flex shrink-0 items-center gap-x-[2px] pr-1 transition-opacity duration-quick ease-smooth ${
+                    isActive
+                      ? "opacity-100"
+                      : "opacity-100 md:opacity-0 md:group-hover/ws:opacity-100 md:group-focus-within/ws:opacity-100"
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedWs(workspace);
+                      showModal();
+                    }}
+                    aria-label={t("sidebar-nav.upload-documents", {
+                      name: workspace.name,
+                    })}
+                    data-tooltip-id="upload-workspace"
+                    data-tooltip-content={t("sidebar-nav.upload-documents", {
+                      name: workspace.name,
+                    })}
+                    className="rounded-md flex items-center justify-center w-11 h-11 md:w-auto md:h-auto md:p-[3px] text-theme-text-secondary hover:text-white hover:bg-white/10 light:hover:text-slate-900 light:hover:bg-slate-400/40"
+                  >
+                    <Upload
+                      strokeWidth={1.5}
+                      className="h-[18px] w-[18px]"
+                      aria-hidden="true"
+                    />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      navigate(
+                        isInWorkspaceSettings
+                          ? paths.workspace.chat(workspace.slug)
+                          : paths.workspace.settings.generalAppearance(
+                              workspace.slug
+                            )
+                      )
+                    }
+                    aria-label={t("sidebar-nav.workspace-settings", {
+                      name: workspace.name,
+                    })}
+                    data-tooltip-id="gear-workspace"
+                    data-tooltip-content={t("sidebar-nav.workspace-settings", {
+                      name: workspace.name,
+                    })}
+                    className="rounded-md flex items-center justify-center w-11 h-11 md:w-auto md:h-auto md:p-[3px] text-theme-text-secondary hover:text-white hover:bg-white/10 light:hover:text-slate-900 light:hover:bg-slate-400/40"
+                  >
+                    <Settings
+                      strokeWidth={1.5}
+                      className="h-[18px] w-[18px]"
+                      aria-hidden="true"
+                    />
+                  </button>
+                </div>
+              )}
             </div>
             {isActive && (
               <ThreadContainer
@@ -297,11 +314,15 @@ export default function ActiveWorkspaces() {
     );
   };
   return (
-    <DragDropContext onDragEnd={onDragEnd} onDragUpdate={onDragUpdate}>
+    <DragDropContext
+      onDragEnd={onDragEnd}
+      onDragUpdate={onDragUpdate}
+      dragHandleUsageInstructions={t("sidebar-nav.drag-instructions")}
+    >
       <div
         role="list"
-        aria-label="Workspaces"
-        className="flex flex-col gap-y-2"
+        aria-label={t("sidebar-nav.workspaces")}
+        className="flex flex-col gap-y-1"
       >
         {/* Folders */}
         {tree.folders.map((folder) => (
@@ -324,7 +345,7 @@ export default function ActiveWorkspaces() {
             <div
               ref={provided.innerRef}
               {...provided.droppableProps}
-              className={`flex flex-col gap-y-2 min-h-[4px] rounded-2xl transition-colors duration-150 ${snapshot.isDraggingOver ? "bg-white/5 light:bg-slate-300/40" : ""}`}
+              className={`flex flex-col gap-y-1 min-h-[4px] rounded-lg transition-colors duration-quick ${snapshot.isDraggingOver ? "bg-white/5 light:bg-slate-300/40" : ""}`}
             >
               {tree.workspaces.map((workspace, index) =>
                 renderWorkspace(workspace, index)

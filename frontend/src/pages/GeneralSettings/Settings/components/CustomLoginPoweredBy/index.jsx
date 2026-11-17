@@ -1,12 +1,16 @@
 import Admin from "@/models/admin";
 import System from "@/models/system";
 import showToast from "@/utils/toast";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { FIELD_INPUT } from "@/components/ProviderFields";
+import { BRAND_SECONDARY_BUTTON, BRAND_TEXT_BUTTON } from "../brandButtons";
 
 export default function CustomLoginPoweredBy() {
   const { t } = useTranslation();
+  const id = useId();
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [loginPoweredBy, setLoginPoweredBy] = useState("");
   const [originalLoginPoweredBy, setOriginalLoginPoweredBy] = useState("");
@@ -15,6 +19,7 @@ export default function CustomLoginPoweredBy() {
   useEffect(() => {
     const fetchInitialParams = async () => {
       const systemSettings = await System.keys();
+      // CustomAppName explains why these fields are missing without authentication.
       if (!systemSettings?.MultiUserMode && !systemSettings?.RequiresAuth) {
         setCanCustomize(false);
         return false;
@@ -40,16 +45,18 @@ export default function CustomLoginPoweredBy() {
       login_powered_by = form.get("loginPoweredBy");
     }
 
+    setSaving(true);
     const { success, error } = await Admin.updateSystemPreferences({
       login_powered_by,
     });
+    setSaving(false);
 
     if (!success) {
-      showToast(`Failed to update login footer text: ${error}`, "error");
+      showToast(t("settings-pages.login-footer-failed", { error }), "error");
       return;
     }
 
-    showToast("Successfully updated login footer text.", "success");
+    showToast(t("settings-pages.login-footer-saved"), "success");
     window.localStorage.removeItem(System.cacheKeys.loginPoweredBy);
     setLoginPoweredBy(login_powered_by);
     setOriginalLoginPoweredBy(login_powered_by);
@@ -68,17 +75,23 @@ export default function CustomLoginPoweredBy() {
       className="flex flex-col gap-y-0.5 mt-4"
       onSubmit={updateLoginPoweredBy}
     >
-      <p className="text-sm leading-6 font-semibold text-white">
+      <label
+        id={`${id}-label`}
+        htmlFor={`${id}-input`}
+        className="text-sm leading-6 font-semibold text-white"
+      >
         {t("customization.items.login-powered-by.title")}
-      </p>
-      <p className="text-xs text-white/60">
+      </label>
+      <p id={`${id}-help`} className="text-xs text-white/60">
         {t("customization.items.login-powered-by.description")}
       </p>
-      <div className="flex items-center gap-x-4">
+      <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-x-4 mt-2">
         <input
+          id={`${id}-input`}
           name="loginPoweredBy"
           type="text"
-          className="border-none bg-theme-settings-input-bg mt-2 text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-fit py-2 px-4"
+          aria-describedby={`${id}-help`}
+          className={`${FIELD_INPUT} md:w-80`}
           placeholder={t("customization.items.login-powered-by.placeholder")}
           autoComplete="off"
           onChange={handleChange}
@@ -87,19 +100,24 @@ export default function CustomLoginPoweredBy() {
         {originalLoginPoweredBy !== "" && (
           <button
             type="button"
+            id={`${id}-clear`}
+            aria-labelledby={`${id}-clear ${id}-label`}
+            disabled={saving}
             onClick={(e) => updateLoginPoweredBy(e, "")}
-            className="text-white text-base font-medium hover:text-opacity-60"
+            className={BRAND_TEXT_BUTTON}
           >
-            Clear
+            {t("settings-pages.clear")}
           </button>
         )}
       </div>
       {hasChanges && (
         <button
           type="submit"
-          className="transition-all mt-2 w-fit duration-300 border border-slate-200 px-5 py-2.5 rounded-lg text-white text-sm items-center flex gap-x-2 hover:bg-slate-200 hover:text-slate-800 focus:ring-gray-800"
+          disabled={saving}
+          aria-busy={saving || undefined}
+          className={BRAND_SECONDARY_BUTTON}
         >
-          Save
+          {saving ? t("common.saving") : t("common.save")}
         </button>
       )}
     </form>

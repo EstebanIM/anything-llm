@@ -1,47 +1,36 @@
-import moment from "moment";
-import { useRef, useState } from "react";
 import BrowserExtensionApiKey from "@/models/browserExtensionApiKey";
 import showToast from "@/utils/toast";
-import { Trash2, Copy, Check, Plug } from "lucide-react";
+import { formatDateTime } from "@/utils/dates";
+import { Trash2, Plug } from "lucide-react";
 import { POPUP_BROWSER_EXTENSION_EVENT } from "@/utils/constants";
+import CopyButton from "@/components/lib/CopyButton";
+import { maskSecret } from "@/components/lib/MaskedSecret";
+import InlineConfirm, {
+  ROW_ICON_BUTTON,
+} from "@/pages/GeneralSettings/ApiKeys/InlineConfirm";
+import { useTranslation } from "react-i18next";
 
 export default function BrowserExtensionApiKeyRow({
   apiKey,
-  removeApiKey,
+  revokeButtonId,
+  onRemoved,
   connectionString,
   isMultiUser,
 }) {
-  const rowRef = useRef(null);
-  const [copied, setCopied] = useState(false);
+  const { t } = useTranslation();
+  const keyLabel = maskSecret(apiKey.key);
 
   const handleRevoke = async () => {
-    if (
-      !window.confirm(
-        `Are you sure you want to revoke this browser extension API key?\nAfter you do this it will no longer be useable.\n\nThis action is irreversible.`
-      )
-    )
-      return false;
-
     const result = await BrowserExtensionApiKey.revoke(apiKey.id);
-    if (result.success) {
-      removeApiKey(apiKey.id);
-      showToast("Browser Extension API Key permanently revoked", "info", {
+    if (!result.success) {
+      showToast(t("tools-pages.extension.revoke-failed"), "error", {
         clear: true,
       });
-    } else {
-      showToast("Failed to revoke API Key", "error", {
-        clear: true,
-      });
+      return false;
     }
-  };
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(connectionString);
-    showToast("Connection string copied to clipboard", "success", {
-      clear: true,
-    });
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    showToast(t("tools-pages.extension.revoked"), "success", { clear: true });
+    onRemoved(apiKey.id);
+    return true;
   };
 
   const handleConnect = () => {
@@ -51,57 +40,62 @@ export default function BrowserExtensionApiKeyRow({
       { type: POPUP_BROWSER_EXTENSION_EVENT, apiKey: connectionString },
       "*"
     );
-    showToast("Attempting to connect to browser extension...", "info", {
+    showToast(t("tools-pages.extension.connecting"), "info", {
       clear: true,
     });
   };
 
   return (
-    <tr
-      ref={rowRef}
-      className="bg-transparent text-white text-opacity-80 text-xs font-medium border-b border-white/10 h-10"
-    >
-      <td scope="row" className="px-6 py-2 whitespace-nowrap">
-        <div className="flex items-center">
-          <span className="mr-2 font-mono">{connectionString}</span>
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={handleCopy}
-              data-tooltip-id="copy-connection-text"
-              data-tooltip-content="Copy connection string"
-              className="border-none text-theme-text-primary hover:text-theme-text-secondary transition-colors duration-200 p-1 rounded"
-            >
-              {copied ? (
-                <Check strokeWidth={1.5} className="h-4 w-4 text-green-500" />
-              ) : (
-                <Copy strokeWidth={1.5} className="h-4 w-4" />
-              )}
-            </button>
-
-            <button
-              onClick={handleConnect}
-              data-tooltip-id="auto-connection"
-              data-tooltip-content="Automatically connect to extension"
-              className="border-none text-theme-text-primary hover:text-theme-text-secondary transition-colors duration-200 p-1 rounded"
-            >
-              <Plug strokeWidth={1.5} className="h-4 w-4" />
-            </button>
-          </div>
+    <tr className="bg-transparent text-white text-opacity-80 text-xs font-medium border-b border-white/10 light:border-slate-200">
+      <td className="px-4 md:px-6 py-3 align-middle">
+        <div className="flex items-center gap-x-1">
+          <button
+            type="button"
+            onClick={handleConnect}
+            aria-label={t("tools-pages.extension.connect-label", {
+              key: keyLabel,
+            })}
+            className="inline-flex items-center gap-x-1.5 min-h-[44px] md:min-h-[32px] px-2 rounded-lg text-sm text-theme-text-secondary hover:text-white light:hover:text-slate-900 hover:bg-white/5 light:hover:bg-slate-100 transition-colors duration-quick ease-smooth whitespace-nowrap"
+          >
+            <Plug strokeWidth={1.5} className="h-4 w-4" aria-hidden="true" />
+            {t("tools-pages.extension.connect")}
+          </button>
+          <InlineConfirm
+            id={revokeButtonId}
+            label={t("tools-pages.extension.revoke-label", { key: keyLabel })}
+            icon={Trash2}
+            triggerClassName={ROW_ICON_BUTTON}
+            consequence={t("tools-pages.extension.revoke-consequence")}
+            confirmLabel={t("tools-pages.extension.revoke")}
+            onConfirm={handleRevoke}
+          />
         </div>
       </td>
+      <th
+        scope="row"
+        className="px-4 md:px-6 py-3 align-middle text-left font-medium"
+      >
+        <div className="flex items-center gap-x-1 whitespace-nowrap">
+          <code className="font-mono text-xs text-theme-text-primary">
+            {keyLabel}
+          </code>
+          <CopyButton
+            text={connectionString}
+            label={t("tools-pages.extension.copy-label", { key: keyLabel })}
+          />
+        </div>
+      </th>
       {isMultiUser && (
-        <td className="px-6 py-2">
-          {apiKey.user ? apiKey.user.username : "N/A"}
+        <td className="px-4 md:px-6 py-3 align-middle">
+          {apiKey.user?.username || (
+            <span className="text-theme-text-secondary">
+              {t("tools-pages.api-keys.not-recorded")}
+            </span>
+          )}
         </td>
       )}
-      <td className="px-6 py-2">{moment(apiKey.createdAt).format("lll")}</td>
-      <td className="px-6 py-2">
-        <button
-          onClick={handleRevoke}
-          className="text-xs font-medium text-white/80 light:text-black/80 hover:light:text-red-500 hover:text-red-300 rounded-lg px-2 py-1 hover:bg-white hover:light:bg-red-50 hover:bg-opacity-10"
-        >
-          <Trash2 strokeWidth={1.5} className="h-4 w-4" />
-        </button>
+      <td className="px-4 md:px-6 py-3 align-middle whitespace-nowrap">
+        {formatDateTime(apiKey.createdAt)}
       </td>
     </tr>
   );

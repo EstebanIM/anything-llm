@@ -1,12 +1,21 @@
-import { useEffect, useState } from "react";
-import { Info } from "lucide-react";
-import { Tooltip } from "react-tooltip";
+import { useEffect, useId, useState } from "react";
+import { useTranslation } from "react-i18next";
 import System from "@/models/system";
-import { Link } from "react-router-dom";
+import { FIELD_COL, FIELD_INPUT, FIELD_ROW } from "@/components/ProviderFields";
+import {
+  ExternalLink,
+  FieldLabel,
+  ModelSelectField,
+  modelStatus,
+} from "@/components/LLMSelection/FormParts";
 
 export default function PrivateModeOptions({ settings }) {
+  const { t } = useTranslation();
+  const id = useId();
   const [models, setModels] = useState([]);
   const [loading, setLoading] = useState(!!settings?.PrivateModeBasePath);
+  const [error, setError] = useState(null);
+  const [attempt, setAttempt] = useState(0);
   const [basePath, setBasePath] = useState(settings?.PrivateModeBasePath);
   const [model, setModel] = useState(settings?.PrivateModeModelPref || "");
 
@@ -16,9 +25,14 @@ export default function PrivateModeOptions({ settings }) {
 
   useEffect(() => {
     async function fetchModels() {
+      if (!basePath) {
+        setModels([]);
+        setError(null);
+        setLoading(false);
+        return;
+      }
       try {
         setLoading(true);
-        if (!basePath) throw new Error("Base path is required");
         const { models, error } = await System.customModels(
           "privatemode",
           null,
@@ -26,59 +40,48 @@ export default function PrivateModeOptions({ settings }) {
         );
         if (error) throw new Error(error);
         setModels(models);
+        setError(null);
       } catch (error) {
         console.error("Error fetching Private Mode models:", error);
         setModels([]);
+        setError(error.message);
       } finally {
         setLoading(false);
       }
     }
     fetchModels();
-  }, [basePath]);
+  }, [basePath, attempt]);
 
   return (
     <div className="flex flex-col gap-y-7">
-      <div className="flex gap-[36px] mt-1.5 flex-wrap">
-        <div className="flex flex-col w-60">
-          <div className="flex items-center gap-1 mb-2">
-            <label className="text-white text-sm font-semibold">
-              Privatemode Proxy URL
-            </label>
-            <Info
-              strokeWidth={1.5}
-              size={18}
-              className="text-theme-text-secondary cursor-pointer"
-              data-tooltip-id="private-mode-base-url"
-            />
-            <Tooltip
-              id="private-mode-base-url"
-              place="top"
-              delayShow={300}
-              clickable={true}
-              className="tooltip !text-xs !opacity-100"
-              style={{
-                maxWidth: "250px",
-                whiteSpace: "normal",
-                wordWrap: "break-word",
-              }}
-            >
-              Enter the URL where Privatemode Proxy is running.
-              <br />
-              <br />
-              <Link
-                to="https://docs.privatemode.ai/quickstart#2-run-the-proxy"
-                target="_blank"
-                className="text-blue-500 hover:underline"
-              >
-                Learn more &rarr;
-              </Link>
-            </Tooltip>
-          </div>
+      <div className={`${FIELD_ROW} mt-1.5`}>
+        <div className={FIELD_COL}>
+          <FieldLabel
+            htmlFor={`${id}-url`}
+            label={t("llm-fields.privatemode.proxy-url")}
+            tipClickable={true}
+            tip={
+              <>
+                {t("llm-fields.common.base-url-tip", {
+                  provider: "Privatemode Proxy",
+                })}
+                <br />
+                <br />
+                <ExternalLink
+                  href="https://docs.privatemode.ai/quickstart#2-run-the-proxy"
+                  className="underline"
+                >
+                  {t("llm-fields.common.learn-more")}
+                </ExternalLink>
+              </>
+            }
+          />
           <input
+            id={`${id}-url`}
             type="url"
             name="PrivateModeBasePath"
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-            placeholder="eg: http://127.0.0.1:8080"
+            className={FIELD_INPUT}
+            placeholder="http://127.0.0.1:8080"
             defaultValue={settings?.PrivateModeBasePath}
             required={true}
             autoComplete="off"
@@ -86,44 +89,27 @@ export default function PrivateModeOptions({ settings }) {
             onChange={(e) => setBasePath(e.target.value)}
           />
         </div>
-        <div className="flex flex-col w-60">
-          <label className="text-white text-sm font-semibold block mb-2">
-            Chat Model
-          </label>
-          {loading ? (
-            <select
-              name="PrivateModeModelPref"
-              required={true}
-              disabled={true}
-              className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-            >
-              <option>---- Loading ----</option>
-            </select>
-          ) : (
-            <select
-              name="PrivateModeModelPref"
-              value={model}
-              onChange={(e) => setModel(e.target.value)}
-              required={true}
-              className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-            >
-              {models.length > 0 ? (
-                <>
-                  <option value="">-- Select a model --</option>
-                  {models.map((model) => (
-                    <option key={model.id} value={model.id}>
-                      {model.name}
-                    </option>
-                  ))}
-                </>
-              ) : (
-                <option disabled value="">
-                  No models found
-                </option>
-              )}
-            </select>
-          )}
-        </div>
+        <ModelSelectField
+          name="PrivateModeModelPref"
+          label={t("provider-fields.chat-model")}
+          status={modelStatus({
+            loading,
+            error,
+            count: models.length,
+            needs: basePath ? null : "need-url",
+          })}
+          error={error}
+          onRetry={() => setAttempt((n) => n + 1)}
+          value={model}
+          onChange={(e) => setModel(e.target.value)}
+        >
+          <option value="">{t("llm-fields.common.select-model")}</option>
+          {models.map((model) => (
+            <option key={model.id} value={model.id}>
+              {model.name}
+            </option>
+          ))}
+        </ModelSelectField>
       </div>
     </div>
   );

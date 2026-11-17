@@ -49,16 +49,38 @@ export default function UserButton({ className = "" }) {
 
   useEffect(() => {
     if (!showMenu) return;
-    const handleEscape = (event) => {
-      if (event.key !== "Escape") return;
-      setShowMenu(false);
-      buttonRef.current?.focus();
+    const items = () => [
+      ...(menuRef.current?.querySelectorAll('[role="menuitem"]') || []),
+    ];
+    items()[0]?.focus();
+
+    // Menu keyboard model: arrows move, Home/End jump, Escape closes and
+    // returns focus to the button, Tab leaves the menu and closes it.
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setShowMenu(false);
+        buttonRef.current?.focus();
+        return;
+      }
+      if (event.key === "Tab") return setShowMenu(false);
+      const list = items();
+      if (list.length === 0) return;
+      const current = list.indexOf(document.activeElement);
+      let next = null;
+      if (event.key === "ArrowDown") next = (current + 1) % list.length;
+      if (event.key === "ArrowUp")
+        next = (current - 1 + list.length) % list.length;
+      if (event.key === "Home") next = 0;
+      if (event.key === "End") next = list.length - 1;
+      if (next === null) return;
+      event.preventDefault();
+      list[next].focus();
     };
     document.addEventListener("mousedown", handleClose);
-    document.addEventListener("keydown", handleEscape);
+    document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("mousedown", handleClose);
-      document.removeEventListener("keydown", handleEscape);
+      document.removeEventListener("keydown", handleKeyDown);
     };
   }, [showMenu]);
 
@@ -79,7 +101,7 @@ export default function UserButton({ className = "" }) {
           type="button"
           aria-haspopup="menu"
           aria-expanded={showMenu}
-          className="w-full flex items-center gap-x-3 px-2.5 py-2 rounded-full bg-theme-sidebar-item-default hover:bg-theme-sidebar-item-hover transition-all duration-300 text-left"
+          className="w-full flex items-center gap-x-3 px-2.5 py-2 rounded-lg bg-theme-sidebar-item-default hover:bg-theme-sidebar-item-hover transition-colors duration-quick text-left"
         >
           <Avatar user={user} />
           <div className="flex flex-col items-start min-w-0 flex-1 leading-tight">
@@ -101,39 +123,44 @@ export default function UserButton({ className = "" }) {
           aria-expanded={showMenu}
           className="uppercase transition-all duration-300 w-[35px] h-[35px] text-base font-semibold rounded-full flex items-center bg-theme-action-menu-bg hover:bg-theme-action-menu-item-hover justify-center text-white p-2 hover:border-slate-100 hover:border-opacity-50 border-transparent border"
         >
-          <User strokeWidth={1.5} size={14} />
+          <User strokeWidth={1.5} size={14} aria-hidden="true" />
         </button>
       )}
 
       {showMenu && (
         <div
           ref={menuRef}
+          role="menu"
+          aria-label={t("profile_settings.account")}
           className={`absolute ${
             isWideMode
               ? "bottom-full mb-2 left-0 right-0"
               : "bottom-12 left-1/2 -translate-x-1/2"
-          } min-w-[200px] rounded-2xl bg-theme-action-menu-bg p-2 shadow-2xl flex flex-col gap-y-1 z-50`}
+          } min-w-[200px] rounded-xl bg-theme-action-menu-bg p-2 shadow-2xl flex flex-col gap-y-1 z-50 animate-in fade-in-0`}
         >
           {canAccessSettings && (
             <Link
               to={settingsPath}
+              role="menuitem"
               onClick={() => setShowMenu(false)}
-              className="text-white hover:bg-theme-action-menu-item-hover w-full text-left px-3 py-2 rounded-full flex items-center gap-x-2"
+              className="text-white hover:bg-theme-action-menu-item-hover w-full text-left px-3 py-2 rounded-lg flex items-center gap-x-2"
             >
               {isInSettings ? (
-                <House strokeWidth={1.5} size={16} />
+                <House strokeWidth={1.5} size={16} aria-hidden="true" />
               ) : (
-                <Settings strokeWidth={1.5} size={16} />
+                <Settings strokeWidth={1.5} size={16} aria-hidden="true" />
               )}
               <span>{settingsLabel}</span>
             </Link>
           )}
           {mode === "multi" && !!user && (
             <button
+              type="button"
+              role="menuitem"
               onClick={handleOpenAccountModal}
-              className="border-none text-white hover:bg-theme-action-menu-item-hover w-full text-left px-3 py-2 rounded-full flex items-center gap-x-2"
+              className="border-none text-white hover:bg-theme-action-menu-item-hover w-full text-left px-3 py-2 rounded-lg flex items-center gap-x-2"
             >
-              <CircleUserRound strokeWidth={1.5} size={16} />
+              <CircleUserRound strokeWidth={1.5} size={16} aria-hidden="true" />
               <span>{t("profile_settings.account")}</span>
             </button>
           )}
@@ -147,9 +174,10 @@ export default function UserButton({ className = "" }) {
               window.location.replace(paths.home());
             }}
             type="button"
-            className="text-white hover:bg-theme-action-menu-item-hover w-full text-left px-3 py-2 rounded-full flex items-center gap-x-2"
+            role="menuitem"
+            className="text-white hover:bg-theme-action-menu-item-hover w-full text-left px-3 py-2 rounded-lg flex items-center gap-x-2"
           >
-            <LogOut strokeWidth={1.5} size={16} />
+            <LogOut strokeWidth={1.5} size={16} aria-hidden="true" />
             <span>{t("profile_settings.signout")}</span>
           </button>
         </div>
@@ -170,11 +198,7 @@ function Avatar({ user }) {
   if (pfp) {
     return (
       <div className="w-[35px] h-[35px] rounded-full flex-shrink-0 overflow-hidden bg-gray-100 border border-transparent">
-        <img
-          src={pfp}
-          alt="User profile picture"
-          className="w-full h-full object-cover"
-        />
+        <img src={pfp} alt="" className="w-full h-full object-cover" />
       </div>
     );
   }

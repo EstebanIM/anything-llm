@@ -7,8 +7,24 @@
 }
 
 :root {
+  /* Motion tokens, exposed in tailwind.config.js as ease-smooth, ease-soft-in-out,
+     ease-drawer and duration-quick / duration-base / duration-panel.
+     Exits run at about 0.6x the entry duration and never wait on a delay. */
+  --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-soft-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --dur-micro: 80ms;
+  --dur-quick: 150ms;
+  --dur-base: 250ms;
+  --dur-panel: 350ms;
+  --dur-emphasis: 500ms;
+
   /* Default theme */
   --theme-loader: #ffffff;
+  /* Keyboard focus ring and active-navigation marker: the palette accent,
+     8:1 against the dark shells. */
+  --theme-focus-ring: rgb(var(--palette-sky-400, 56 189 248));
+  --theme-nav-active: rgb(var(--palette-sky-400, 56 189 248));
   --theme-bg-primary: #0e0f0f;
   --theme-bg-secondary: #1b1b1e;
   --theme-bg-sidebar: #0e0f0f;
@@ -17,7 +33,7 @@
   --theme-bg-chat-input: #27282a;
   --theme-text-primary: #ffffff;
   --theme-text-secondary: rgba(255, 255, 255, 0.6);
-  --theme-placeholder: #57585a;
+  --theme-placeholder: #a1a1aa;
   --theme-sidebar-item-default: rgba(255, 255, 255, 0.1);
   --theme-sidebar-item-selected: rgba(255, 255, 255, 0.3);
   --theme-sidebar-item-hover: #3f3f42;
@@ -44,8 +60,9 @@
   --theme-settings-input-text: #ffffff;
   --theme-modal-border: #3f3f42;
 
-  --theme-button-primary: #46c8ff;
-  --theme-button-primary-hover: #434343;
+  /* Dark mode: deep accent with white text (5.9:1). */
+  --theme-button-primary: #0369a1;
+  --theme-button-primary-hover: #075985;
   --theme-button-primary-text: #ffffff;
 
   --theme-button-cta: #7cd4fd;
@@ -108,6 +125,8 @@
 
 [data-theme="light"] {
   --theme-loader: #000000;
+  --theme-focus-ring: rgb(var(--palette-sky-700, 3 105 161));
+  --theme-nav-active: rgb(var(--palette-sky-700, 3 105 161));
   --theme-bg-primary: #ffffff;
   --theme-bg-secondary: #ffffff;
   --theme-bg-sidebar: #edf2fa;
@@ -117,17 +136,18 @@
   --theme-bg-chat: #ffffff;
   --theme-bg-chat-input: #eaeaea;
   --theme-text-primary: #0e0f0f;
-  --theme-text-secondary: #7a7d7e;
-  --theme-placeholder: #9ca3af;
+  /* 7.5:1 on white, 6:1 on the light sidebar. */
+  --theme-text-secondary: #4f555a;
+  --theme-placeholder: #4f555a;
   --theme-sidebar-item-default: #ffffff;
   --theme-sidebar-item-selected: #ffffff;
   --theme-sidebar-item-hover: #c8efff;
 
-  --theme-sidebar-item-text-inactive: #7a7d7e;
+  --theme-sidebar-item-text-inactive: #4f555a;
   --theme-sidebar-item-text-active: #184558;
 
   --theme-sidebar-item-workspace-active: #000000;
-  --theme-sidebar-item-workspace-inactive: #7a7d7e;
+  --theme-sidebar-item-workspace-inactive: #4f555a;
 
   --theme-sidebar-subitem-default: transparent;
   --theme-sidebar-subitem-selected: #e2e7ee;
@@ -143,13 +163,16 @@
   --theme-action-menu-bg: #eaeaea;
   --theme-action-menu-item-hover: rgba(0, 0, 0, 0.1);
   --theme-settings-input-bg: #edf2fa;
-  --theme-settings-input-placeholder: rgba(0, 0, 0, 0.5);
+  --theme-settings-input-placeholder: rgba(0, 0, 0, 0.6);
   --theme-settings-input-active: rgb(0 0 0 / 0.2);
   --theme-settings-input-text: #0e0f0f;
   --theme-modal-border: #d3d3d3;
 
-  --theme-button-primary: #0ba5ec;
-  --theme-button-primary-hover: #dedede;
+  /* Light mode: light accent with dark text (6.9:1). `.text-white` already
+     maps to the dark text color in this theme. */
+  --theme-button-primary: #0ea5e9;
+  --theme-button-primary-hover: #38bdf8;
+  --theme-button-primary-text: #0e0f0f;
 
   --theme-button-cta: #7cd4fd;
 
@@ -296,11 +319,38 @@ a {
 
 /* The primary button hover follows the instance palette accent. */
 :root[data-palette]:not([data-palette="default"]) {
-  --theme-button-primary-hover: rgb(var(--palette-sky-500));
+  --theme-button-primary-hover: rgb(var(--palette-sky-800));
 }
 
 :root[data-palette]:not([data-palette="default"])[data-theme="light"] {
-  --theme-button-primary-hover: rgb(var(--palette-sky-600));
+  --theme-button-primary-hover: rgb(var(--palette-sky-400));
+}
+
+/* Keyboard focus: one accent ring for every control that does not draw its own.
+   In the base layer so a component's own focus utilities still win. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--theme-focus-ring);
+    outline-offset: 2px;
+  }
+}
+
+/* Reduced motion: state changes become instant and loops stop. Spinners keep
+   turning because they are the only sign that work is in progress. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .animate-spin {
+    animation-duration: 1s !important;
+    animation-iteration-count: infinite !important;
+  }
 }
 
 .grr {
@@ -317,30 +367,6 @@ a {
   filter: none;
   -webkit-filter: none;
   transition: 0.4s;
-}
-
-.chat__message {
-  transform-origin: 0 100%;
-  transform: scale(0);
-  animation: message 0.15s ease-out 0s forwards;
-  animation-delay: 500ms;
-}
-
-@keyframes message {
-  0% {
-    max-height: 100%;
-  }
-
-  80% {
-    transform: scale(1.1);
-  }
-
-  100% {
-    transform: scale(1);
-    max-height: 100%;
-    overflow: visible;
-    padding-top: 1rem;
-  }
 }
 
 @media (prefers-color-scheme: light) {
@@ -386,100 +412,6 @@ a {
       rgba(41, 37, 36, 50%),
       rgb(41 37 36) 90%
     );
-  }
-}
-
-/**
- * ==============================================
- * Dot Falling
- * ==============================================
- */
-.dot-falling {
-  position: relative;
-  left: -9999px;
-  width: 10px;
-  height: 10px;
-  border-radius: 5px;
-  background-color: #eeeeee;
-  color: #5fa4fa;
-  box-shadow: 9999px 0 0 0 #eeeeee;
-  animation: dot-falling 1.5s infinite linear;
-  animation-delay: 0.1s;
-}
-
-.dot-falling::before,
-.dot-falling::after {
-  content: "";
-  display: inline-block;
-  position: absolute;
-  top: 0;
-}
-
-.dot-falling::before {
-  width: 10px;
-  height: 10px;
-  border-radius: 5px;
-  background-color: #eeeeee;
-  color: #eeeeee;
-  animation: dot-falling-before 1.5s infinite linear;
-  animation-delay: 0s;
-}
-
-.dot-falling::after {
-  width: 10px;
-  height: 10px;
-  border-radius: 5px;
-  background-color: #eeeeee;
-  color: #eeeeee;
-  animation: dot-falling-after 1.5s infinite linear;
-  animation-delay: 0.2s;
-}
-
-@keyframes dot-falling {
-  0% {
-    box-shadow: 9999px -15px 0 0 rgba(152, 128, 255, 0);
-  }
-
-  25%,
-  50%,
-  75% {
-    box-shadow: 9999px 0 0 0 #eeeeee;
-  }
-
-  100% {
-    box-shadow: 9999px 15px 0 0 rgba(152, 128, 255, 0);
-  }
-}
-
-@keyframes dot-falling-before {
-  0% {
-    box-shadow: 9984px -15px 0 0 rgba(152, 128, 255, 0);
-  }
-
-  25%,
-  50%,
-  75% {
-    box-shadow: 9984px 0 0 0 #eeeeee;
-  }
-
-  100% {
-    box-shadow: 9984px 15px 0 0 rgba(152, 128, 255, 0);
-  }
-}
-
-@keyframes dot-falling-after {
-  0% {
-    box-shadow: 10014px -15px 0 0 rgba(152, 128, 255, 0);
-  }
-
-  25%,
-  50%,
-  75% {
-    box-shadow: 10014px 0 0 0 #eeeeee;
-  }
-
-  100% {
-    box-shadow: 10014px 15px 0 0 rgba(152, 128, 255, 0);
   }
 }
 
@@ -541,6 +473,25 @@ a {
   /* Firefox */
 }
 
+/* Navigation lists: a thin scrollbar so a long list shows there is more. */
+.thin-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(128, 128, 128, 0.5) transparent;
+}
+
+.thin-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.thin-scroll::-webkit-scrollbar-thumb {
+  background-color: rgba(128, 128, 128, 0.5);
+  border-radius: 3px;
+}
+
+.thin-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 .z-99 {
   z-index: 99;
 }
@@ -580,40 +531,6 @@ dialog::backdrop {
 .backdrop {
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(2px);
-}
-
-.animate-slow-pulse {
-  transform: scale(1);
-  animation: subtlePulse 20s infinite;
-  will-change: transform;
-}
-
-@keyframes subtlePulse {
-  0% {
-    transform: scale(1);
-  }
-
-  50% {
-    transform: scale(1.1);
-  }
-
-  100% {
-    transform: scale(1);
-  }
-}
-
-@keyframes subtleShift {
-  0% {
-    background-position: 0% 50%;
-  }
-
-  50% {
-    background-position: 100% 50%;
-  }
-
-  100% {
-    background-position: 0% 50%;
-  }
 }
 
 .login-input-gradient {
@@ -656,31 +573,6 @@ dialog::backdrop {
   left: 1%;
 
   top: 100%;
-}
-
-.user-reply > div:first-of-type {
-  border: 2px solid white;
-}
-
-.reply > *:last-child::after {
-  content: "|";
-  animation: blink 1.5s steps(1) infinite;
-  color: white;
-  font-size: 14px;
-}
-
-@keyframes blink {
-  0% {
-    opacity: 0;
-  }
-
-  50% {
-    opacity: 1;
-  }
-
-  100% {
-    opacity: 0;
-  }
 }
 
 @layer components {
@@ -799,6 +691,10 @@ dialog::backdrop {
   text-decoration: underline;
 }
 
+[data-theme="light"] .markdown > * a {
+  color: rgb(var(--palette-sky-700, 3 105 161));
+}
+
 @media (max-width: 600px) {
   .markdown table th,
   .markdown table td {
@@ -824,7 +720,6 @@ dialog::backdrop {
   margin-left: 20px;
   padding-left: 10px;
   position: relative;
-  transition: all 0.3s ease;
   line-height: 1.4rem;
 }
 
@@ -859,15 +754,17 @@ dialog::backdrop {
   padding-top: 10px;
 }
 
-.markdownul li {
-  margin-left: 20px;
+[data-theme="light"] .markdown ul li::marker {
+  color: #6e7379;
+}
 
+.markdown ul li {
+  margin-left: 20px;
   padding-left: 10px;
-  transition: all 0.3s ease;
   line-height: 1.4rem;
 }
 
-.markdownul li a {
+.markdown ul li a {
   text-decoration: underline;
 }
 
@@ -897,55 +794,6 @@ dialog::backdrop {
 .markdown strong {
   font-weight: 600;
   color: #fff;
-}
-
-.file-row {
-  border-left: none !important;
-  border-right: none !important;
-  border-top: none !important;
-}
-
-.file-row:nth-child(even) {
-  @apply bg-theme-bg-primary;
-  background-color: var(--theme-file-row-even);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.file-row:nth-child(odd) {
-  @apply bg-theme-bg-secondary;
-  background-color: var(--theme-file-row-odd);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.file-row.selected:nth-child(even),
-.file-row.selected:nth-child(odd) {
-  background-color: var(--theme-file-row-selected-even);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-[data-theme="light"] .file-row.selected:nth-child(even),
-[data-theme="light"] .file-row.selected:nth-child(odd) {
-  border-bottom: 1px solid rgba(222, 222, 222, 0.5);
-}
-
-/* Flex upload modal to be a column when on small screens so that the UI
-does not extend the close button beyond the viewport. */
-@media (max-width: 1330px) {
-  .upload-modal {
-    @apply !flex-col !items-center !py-4 no-scroll;
-  }
-
-  .upload-modal-arrow {
-    margin-top: 0px !important;
-  }
-}
-
-.upload-modal {
-  @apply flex-row items-start gap-x-6 justify-center;
-}
-
-.upload-modal-arrow {
-  margin-top: 25%;
 }
 
 /* Scrollbar container */
@@ -1024,16 +872,6 @@ does not extend the close button beyond the viewport. */
   padding-bottom: 10px;
 }
 
-.file-upload {
-  -webkit-animation: fadein 0.3s linear forwards;
-  animation: fadein 0.3s linear forwards;
-}
-
-.file-upload-fadeout {
-  -webkit-animation: fadeout 0.3s linear forwards;
-  animation: fadeout 0.3s linear forwards;
-}
-
 @-webkit-keyframes fadein {
   0% {
     opacity: 0;
@@ -1054,52 +892,12 @@ does not extend the close button beyond the viewport. */
   }
 }
 
-@-webkit-keyframes fadeout {
-  0% {
-    opacity: 1;
-  }
-
-  100% {
-    opacity: 0;
-  }
-}
-
-@keyframes fadeout {
-  0% {
-    opacity: 1;
-  }
-
-  100% {
-    opacity: 0;
-  }
-}
-
 .search-input::-webkit-search-cancel-button {
   filter: grayscale(100%) invert(1) brightness(100) opacity(0.5);
 }
 
 [data-theme="light"] .search-input::-webkit-search-cancel-button {
   filter: grayscale(100%) invert(0) brightness(0) opacity(0.5);
-}
-
-.animate-remove {
-  animation: fadeAndShrink 800ms forwards;
-}
-
-@keyframes fadeAndShrink {
-  50% {
-    opacity: 25%;
-  }
-
-  75% {
-    opacity: 10%;
-  }
-
-  100% {
-    height: 0px;
-    opacity: 0%;
-    display: none;
-  }
 }
 
 /* KaTeX overrides - base CSS imported via markdown-katex.js plugin */
@@ -1110,18 +908,6 @@ does not extend the close button beyond the viewport. */
 
 .katex-display > .katex {
   text-align: left !important;
-}
-
-.rti--container {
-  @apply !bg-zinc-800 !border !border-zinc-800 !text-zinc-100 !text-sm !rounded-lg !p-2 !gap-1.5;
-}
-
-.light .rti--container {
-  @apply !bg-white !border-slate-300 !text-slate-900;
-}
-
-.rti--container:focus-within {
-  @apply !border-sky-500 !shadow-none;
 }
 
 @keyframes fadeUpIn {
@@ -1140,38 +926,6 @@ does not extend the close button beyond the viewport. */
   animation: fadeUpIn 0.3s ease-out forwards;
 }
 
-@keyframes bounce-subtle {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-
-  50% {
-    transform: translateY(-2px);
-  }
-}
-
-@keyframes thoughtTransition {
-  0% {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-
-  30% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-thoughtTransition {
-  animation: thoughtTransition 0.5s ease-out forwards;
-}
-
 .checklist-completed {
   -webkit-animation: fadein 0.3s linear forwards;
   animation: fadein 0.3s linear forwards;
@@ -1182,8 +936,7 @@ does not extend the close button beyond the viewport. */
  * `content-visibility: auto` lets the browser lazily render only visible
  * messages; `contain-intrinsic-size` provides a placeholder height estimate
  * so the scrollbar stays stable.
- * Exclude :last-child because the pending reply uses a box-shadow positioning
- * trick (left: -9999px) for its dot-falling animation that containment clips.
+ * Exclude :last-child so the reply being streamed is always fully rendered.
  */
 #chat-history > div > *:not(:last-child) {
   content-visibility: auto;

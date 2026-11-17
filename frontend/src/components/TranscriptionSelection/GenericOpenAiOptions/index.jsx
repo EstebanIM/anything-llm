@@ -1,60 +1,76 @@
+import { useId } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  FIELD_COL,
+  FIELD_HELP,
+  FIELD_INPUT,
+  FIELD_LABEL,
+  FIELD_ROW,
+  SECRET_MASK,
+  SecretInput,
+} from "@/components/ProviderFields";
+
 export default function GenericOpenAiWhisperOptions({ settings }) {
+  const { t } = useTranslation();
+  const id = useId();
+
   return (
-    <div className="flex gap-x-7 gap-[36px] mt-1.5 flex-wrap">
-      <div className="flex flex-col w-60">
-        <label className="text-white text-sm font-semibold block mb-3">
-          Base URL
+    <div className={`${FIELD_ROW} mt-1.5`}>
+      <div className={FIELD_COL}>
+        <label htmlFor={`${id}-base-url`} className={FIELD_LABEL}>
+          {t("provider-fields.base-url")}
         </label>
         <input
+          id={`${id}-base-url`}
           type="url"
           name="WhisperGenericOpenAiBaseUrl"
-          className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
+          className={FIELD_INPUT}
           placeholder="http://localhost:8000/v1"
           defaultValue={settings?.WhisperGenericOpenAiBaseUrl}
           required={true}
           autoComplete="off"
           spellCheck={false}
+          aria-describedby={`${id}-base-url-help`}
         />
-        <p className="text-xs leading-[18px] font-base text-white text-opacity-60 mt-2">
-          The base URL of the OpenAI-compatible service used to transcribe
-          audio.
+        <p id={`${id}-base-url-help`} className={FIELD_HELP}>
+          {t("provider-forms.shared.transcription-base-url-help")}
         </p>
       </div>
-      <div className="flex flex-col w-60">
-        <label className="text-white text-sm font-semibold block mb-3">
-          API Key
+      <div className={FIELD_COL}>
+        <label htmlFor={`${id}-api-key`} className={FIELD_LABEL}>
+          {t("provider-fields.api-key")}{" "}
+          <span className="font-normal text-theme-text-secondary">
+            ({t("provider-fields.optional")})
+          </span>
         </label>
-        <input
-          type="password"
+        <SecretInput
+          id={`${id}-api-key`}
           name="WhisperGenericOpenAiApiKey"
-          className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-          placeholder="API Key"
-          defaultValue={
-            settings?.WhisperGenericOpenAiApiKey ? "*".repeat(20) : ""
-          }
-          autoComplete="off"
-          spellCheck={false}
+          defaultValue={settings?.WhisperGenericOpenAiApiKey ? SECRET_MASK : ""}
+          aria-describedby={`${id}-api-key-help`}
         />
-        <p className="text-xs leading-[18px] font-base text-white text-opacity-60 mt-2">
-          Optional - Only required if your service enforces authentication.
+        <p id={`${id}-api-key-help`} className={FIELD_HELP}>
+          {t("provider-forms.shared.api-key-optional-help")}
         </p>
       </div>
-      <div className="flex flex-col w-60">
-        <label className="text-white text-sm font-semibold block mb-3">
-          Transcription Model
+      <div className={FIELD_COL}>
+        <label htmlFor={`${id}-model`} className={FIELD_LABEL}>
+          {t("provider-forms.shared.transcription-model")}
         </label>
         <input
+          id={`${id}-model`}
           type="text"
           name="WhisperGenericOpenAiModel"
-          className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
+          className={FIELD_INPUT}
           placeholder="whisper-small"
           defaultValue={settings?.WhisperGenericOpenAiModel}
           required={true}
           autoComplete="off"
           spellCheck={false}
+          aria-describedby={`${id}-model-help`}
         />
-        <p className="text-xs leading-[18px] font-base text-white text-opacity-60 mt-2">
-          The model identifier to be used for transcription.
+        <p id={`${id}-model-help`} className={FIELD_HELP}>
+          {t("provider-forms.transcription.generic.model-help")}
         </p>
       </div>
     </div>

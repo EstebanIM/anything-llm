@@ -1,200 +1,267 @@
-import { memo } from "react";
-import {
-  formatDateTimeAsMoment,
-  getFileExtension,
-  middleTruncate,
-} from "@/utils/directories";
-import { Undo2, Eye, File, Pin } from "lucide-react";
-import Workspace from "@/models/workspace";
+import { forwardRef, useEffect, useId, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Eye, EyeOff, File, Pin, PinOff, Undo2 } from "lucide-react";
+import { getFileExtension } from "@/utils/directories";
+import SelectionCheckbox from "../../SelectionCheckbox";
 import usePinDocument from "../../hooks/usePinDocument";
 import useWatchDocument from "../../hooks/useWatchDocument";
+import {
+  ROW_ACCENT,
+  ROW_BASE,
+  ROW_IDLE,
+  displayDate,
+  rowChip,
+  rowSecondaryText,
+} from "../../listStyles";
 
+/** Tooltip id rendered once by WorkspaceDirectory. */
+export const ROW_ACTION_TOOLTIP = "ws-row-action";
+
+/**
+ * A document embedded in (or staged for) the workspace.
+ *
+ * Pin and watch are toggle buttons (`aria-pressed`) with a stable name; their
+ * state is also written out in the row's detail line. Removing asks for
+ * confirmation in place: Escape or Cancel returns focus to the remove button.
+ *
+ * @param {Object} props
+ * @param {boolean} props.staged - moved in but not embedded yet
+ * @param {boolean} props.selectable - false while staged changes are unsaved
+ * @param {(ids: string[]) => Promise<boolean>} props.onRemove
+ */
 export default function WorkspaceFileRow({
   item,
   folderName,
   workspace,
-  setLoading,
-  setLoadingMessage,
-  fetchKeys,
-  hasChanges,
-  movedItems,
+  staged,
   selected,
-  toggleSelection,
-  disableSelection,
-  setSelectedItems,
+  selectable,
+  onToggle,
+  onRemove,
 }) {
-  const onRemoveClick = async (e) => {
-    e.stopPropagation();
-    setLoading(true);
-
-    try {
-      setLoadingMessage(`Removing file from workspace`);
-      await Workspace.modifyEmbeddings(workspace.slug, {
-        adds: [],
-        deletes: [`${folderName}/${item.name}`],
-      });
-      await fetchKeys(true);
-    } catch (error) {
-      console.error("Failed to remove document:", error);
-    }
-    setSelectedItems({});
-    setLoadingMessage("");
-    setLoading(false);
-  };
-
-  function toggleRowSelection(e) {
-    if (disableSelection) return;
-    e.stopPropagation();
-    toggleSelection(e);
-  }
-
-  function handleRowSelection(e) {
-    e.stopPropagation();
-    toggleSelection(e);
-  }
-
-  const isMovedItem = movedItems?.some((movedItem) => movedItem.id === item.id);
-  return (
-    <div
-      className={`text-theme-text-primary text-xs grid grid-cols-12 py-2 pl-3.5 pr-8 h-[34px] items-center file-row ${
-        !disableSelection
-          ? "hover:bg-theme-file-picker-hover cursor-pointer"
-          : ""
-      } ${isMovedItem ? "selected light:text-white" : ""} ${
-        selected ? "selected light:text-white" : ""
-      }`}
-      onClick={toggleRowSelection}
-    >
-      <div
-        className="col-span-10 w-fit flex gap-x-[2px] items-center relative"
-        data-tooltip-id="ws-directory-item"
-        data-tooltip-content={JSON.stringify({
-          title: item.title,
-          date: formatDateTimeAsMoment(item?.published),
-          extension: getFileExtension(item.url),
-        })}
-      >
-        <div className="shrink-0 w-3 h-3">
-          {!disableSelection ? (
-            <div
-              className={`shrink-0 w-3 h-3 rounded border-[1px] border-solid border-white ${
-                selected ? "text-white" : "text-theme-text-primary light:invert"
-              } flex justify-center items-center cursor-pointer`}
-              role="checkbox"
-              aria-checked={selected}
-              tabIndex={0}
-              onClick={handleRowSelection}
-            >
-              {selected && <div className="w-2 h-2 bg-white rounded-[2px]" />}
-            </div>
-          ) : null}
-        </div>
-        <File
-          strokeWidth={1.5}
-          className="shrink-0 text-base font-bold w-4 h-4 mr-[3px] ml-1"
-        />
-        <p className="whitespace-nowrap overflow-hidden text-ellipsis max-w-[400px]">
-          {middleTruncate(item.title, 50)}
-        </p>
-      </div>
-      <div className="col-span-2 flex justify-end items-center">
-        {hasChanges ? (
-          <div className="w-4 h-4 ml-2 flex-shrink-0" />
-        ) : (
-          <div className="flex gap-x-2 items-center">
-            <WatchForChanges
-              workspace={workspace}
-              docPath={`${folderName}/${item.name}`}
-              item={item}
-            />
-            <PinItemToWorkspace
-              workspace={workspace}
-              docPath={`${folderName}/${item.name}`}
-              item={item}
-            />
-            <RemoveItemFromWorkspace item={item} onClick={onRemoveClick} />
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-const PinItemToWorkspace = memo(({ workspace, docPath, item }) => {
-  const { pinned, togglePin } = usePinDocument({ workspace, docPath, item });
-
-  if (!item) return <div className="w-[16px] p-[2px] ml-2" />;
-
-  return (
-    <div
-      onClick={togglePin}
-      className="group flex items-center ml-2 cursor-pointer"
-      data-tooltip-id="pin-document"
-      data-tooltip-content={
-        pinned ? "Un-pin from workspace" : "Pin to workspace"
-      }
-    >
-      {pinned ? (
-        <div className="bg-theme-settings-input-active group-hover:bg-red-500/20 rounded-3xl whitespace-nowrap">
-          <p className="text-xs px-2 py-0.5 group-hover:text-red-500">
-            <span className="group-hover:hidden">Pinned</span>
-            <span className="hidden group-hover:inline">Un-pin</span>
-          </p>
-        </div>
-      ) : (
-        <Pin
-          strokeWidth={1.5}
-          size={16}
-          className="outline-none text-base font-bold flex-shrink-0"
-        />
-      )}
-    </div>
-  );
-});
-
-const WatchForChanges = memo(({ workspace, docPath, item }) => {
-  const { watched, toggleWatch } = useWatchDocument({
+  const { t } = useTranslation();
+  const docPath = `${folderName}/${item.name}`;
+  const { pinned, pinBusy, togglePin } = usePinDocument({
     workspace,
     docPath,
     item,
   });
+  const { watched, watchBusy, toggleWatch } = useWatchDocument({
+    workspace,
+    docPath,
+    item,
+  });
+  const [confirming, setConfirming] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const removeRef = useRef(null);
+  const cancelRef = useRef(null);
+  const returnFocus = useRef(false);
+  const questionId = useId();
+  const accent = selected || staged;
+  const secondary = rowSecondaryText(accent);
 
-  if (!item || !item.canWatch) return <div className="w-[16px] p-[2px] ml-2" />;
+  useEffect(() => {
+    if (confirming) {
+      cancelRef.current?.focus();
+      return;
+    }
+    if (returnFocus.current) {
+      returnFocus.current = false;
+      removeRef.current?.focus();
+    }
+  }, [confirming]);
+
+  const cancelRemove = () => {
+    returnFocus.current = true;
+    setConfirming(false);
+  };
+
+  const confirmRemove = async () => {
+    setRemoving(true);
+    const removed = await onRemove([item.id]);
+    // On success the row unmounts; on failure the error shows above the list.
+    if (!removed) {
+      setRemoving(false);
+      cancelRemove();
+    }
+  };
+
+  const meta = [
+    folderName,
+    getFileExtension(item.url),
+    displayDate(item.published),
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
-    <div
-      className="group flex gap-x-2 items-center hover:bg-theme-file-picker-hover p-[2px] rounded ml-2 cursor-pointer"
-      onClick={toggleWatch}
-      data-tooltip-id="watch-changes"
-      data-active={watched}
-      data-tooltip-content={
-        watched ? "Stop watching for changes" : "Watch document for changes"
-      }
+    <li
+      onClick={selectable ? onToggle : undefined}
+      className={`flex items-center gap-x-1.5 pl-1.5 pr-2 min-h-[44px] text-xs ${ROW_BASE} ${
+        accent ? ROW_ACCENT : ROW_IDLE
+      } ${selectable ? "cursor-pointer" : ""}`}
     >
-      <Eye
-        strokeWidth={1.5}
-        size={16}
-        className="outline-none text-base font-bold flex-shrink-0 group-hover:hidden group-data-[active=true]:hidden"
-      />
-      <Eye
-        strokeWidth={1.5}
-        size={16}
-        className="outline-none text-base font-bold flex-shrink-0 hidden group-hover:block group-data-[active=true]:block"
-      />
-    </div>
+      {selectable ? (
+        <SelectionCheckbox
+          state={selected ? "all" : "none"}
+          label={t("workspace-docs.select-item", { name: item.title })}
+          onToggle={onToggle}
+          onAccent={accent}
+        />
+      ) : (
+        <span className="w-7 shrink-0" aria-hidden="true" />
+      )}
+      <File strokeWidth={1.5} aria-hidden="true" className="shrink-0 w-4 h-4" />
+      <div className="flex-1 min-w-0 py-1">
+        <p className="truncate" title={item.title}>
+          {item.title}
+        </p>
+        <p
+          className={`flex items-center gap-x-1.5 min-w-0 text-[11px] ${secondary}`}
+        >
+          <span className="truncate">{meta}</span>
+          {!staged && pinned && (
+            <span className="shrink-0 flex items-center gap-x-0.5">
+              <Pin strokeWidth={1.5} size={11} aria-hidden="true" />
+              {t("connectors.directory.pinned")}
+            </span>
+          )}
+          {!staged && watched && (
+            <span className="shrink-0 flex items-center gap-x-0.5">
+              <Eye strokeWidth={1.5} size={11} aria-hidden="true" />
+              {t("connectors.directory.watching")}
+            </span>
+          )}
+        </p>
+      </div>
+
+      {staged ? (
+        <span className={rowChip(accent)}>
+          {t("connectors.directory.staged")}
+        </span>
+      ) : !selectable ? null : confirming ? (
+        <div
+          role="group"
+          aria-labelledby={questionId}
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => {
+            if (e.key !== "Escape") return;
+            // Only this confirmation closes, not the selection or the dialog.
+            e.preventDefault();
+            cancelRemove();
+          }}
+          className="shrink-0 flex items-center gap-x-1"
+        >
+          <span id={questionId} className="font-medium">
+            {t("workspace-docs.remove-confirm-inline")}
+          </span>
+          <button
+            ref={cancelRef}
+            type="button"
+            onClick={cancelRemove}
+            disabled={removing}
+            className="border-none bg-transparent h-7 px-2 rounded-md text-xs text-inherit hover:bg-zinc-700 light:hover:bg-slate-200 transition-colors duration-quick ease-smooth"
+          >
+            {t("settings-pages.cancel")}
+          </button>
+          <button
+            type="button"
+            onClick={confirmRemove}
+            aria-busy={removing || undefined}
+            aria-disabled={removing || undefined}
+            className="border-none h-7 px-2 rounded-md text-xs font-semibold bg-red-600 text-white hover:bg-red-500 light:bg-red-700 light:hover:bg-red-800 transition-colors duration-quick ease-smooth aria-disabled:opacity-60 aria-disabled:cursor-wait"
+          >
+            {t("workspace-docs.remove")}
+          </button>
+        </div>
+      ) : (
+        <div
+          className="shrink-0 flex items-center gap-x-0.5"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {item?.canWatch && (
+            <RowIconButton
+              pressed={watched}
+              busy={watchBusy}
+              accent={accent}
+              label={t("workspace-docs.watch-item", { name: item.title })}
+              tooltip={
+                watched
+                  ? t("connectors.directory.unwatch")
+                  : t("connectors.directory.watch")
+              }
+              onClick={toggleWatch}
+            >
+              {watched ? (
+                <Eye strokeWidth={1.5} size={16} aria-hidden="true" />
+              ) : (
+                <EyeOff strokeWidth={1.5} size={16} aria-hidden="true" />
+              )}
+            </RowIconButton>
+          )}
+          <RowIconButton
+            pressed={pinned}
+            busy={pinBusy}
+            accent={accent}
+            label={t("workspace-docs.pin-item", { name: item.title })}
+            tooltip={
+              pinned
+                ? t("connectors.directory.unpin")
+                : t("connectors.directory.pin")
+            }
+            onClick={togglePin}
+          >
+            {pinned ? (
+              <Pin strokeWidth={1.5} size={16} aria-hidden="true" />
+            ) : (
+              <PinOff strokeWidth={1.5} size={16} aria-hidden="true" />
+            )}
+          </RowIconButton>
+          <RowIconButton
+            ref={removeRef}
+            accent={accent}
+            label={t("workspace-docs.remove-item", { name: item.title })}
+            tooltip={t("connectors.directory.remove-from-workspace")}
+            onClick={() => setConfirming(true)}
+          >
+            <Undo2 strokeWidth={1.5} size={16} aria-hidden="true" />
+          </RowIconButton>
+        </div>
+      )}
+    </li>
+  );
+}
+
+/**
+ * Small icon button for a row action. With `pressed` it is a toggle button;
+ * the pressed state also gets the accent color so it is visible at a glance.
+ */
+const RowIconButton = forwardRef(function RowIconButton(
+  { pressed, busy = false, accent, label, tooltip, onClick, children },
+  ref
+) {
+  const isToggle = typeof pressed === "boolean";
+  const tone =
+    isToggle && pressed
+      ? accent
+        ? "text-white bg-white/20"
+        : "text-sky-400 bg-sky-500/15 light:text-sky-700 light:bg-sky-100"
+      : accent
+        ? "text-slate-200 light:text-sky-100 hover:bg-white/15"
+        : "text-zinc-400 light:text-slate-600 hover:bg-zinc-700 hover:text-slate-50 light:hover:bg-slate-200 light:hover:text-slate-900";
+  return (
+    <button
+      ref={ref}
+      type="button"
+      aria-label={label}
+      aria-pressed={isToggle ? pressed : undefined}
+      aria-busy={busy || undefined}
+      data-tooltip-id={ROW_ACTION_TOOLTIP}
+      data-tooltip-content={tooltip}
+      onClick={onClick}
+      className={`border-none w-7 h-7 rounded-md flex items-center justify-center transition-colors duration-quick ease-smooth aria-busy:opacity-60 aria-busy:cursor-wait ${tone}`}
+    >
+      {children}
+    </button>
   );
 });
-
-const RemoveItemFromWorkspace = ({ item: _item, onClick }) => {
-  return (
-    <div>
-      <Undo2
-        strokeWidth={1.5}
-        data-tooltip-id="remove-document"
-        data-tooltip-content="Remove document from workspace"
-        onClick={onClick}
-        className="text-base font-bold w-4 h-4 ml-2 flex-shrink-0 cursor-pointer"
-      />
-    </div>
-  );
-};

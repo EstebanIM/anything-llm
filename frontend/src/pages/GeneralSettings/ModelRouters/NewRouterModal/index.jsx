@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useId } from "react";
 import { useTranslation } from "react-i18next";
 import { LoaderCircle } from "lucide-react";
 import ModelRouter from "@/models/modelRouter";
@@ -24,6 +24,7 @@ export default function NewRouterModal({
   const [loading, setLoading] = useState(false);
   const [systemSettings, setSystemSettings] = useState(null);
   const isEdit = !!router;
+  const fieldId = useId();
 
   useEffect(() => {
     if (isOpen && !isEdit) {
@@ -68,7 +69,9 @@ export default function NewRouterModal({
     } else {
       setError(
         apiError ||
-          (isEdit ? t("model-router.edit-router.toast-update-failed") : null)
+          (isEdit
+            ? t("model-router.edit-router.toast-update-failed")
+            : t("settings-pages.router-create-failed"))
       );
     }
   };
@@ -89,6 +92,7 @@ export default function NewRouterModal({
           <ModalInput
             label={t("model-router.new-router.name")}
             type="text"
+            id={`${fieldId}-name`}
             name="name"
             defaultValue={router?.name || ""}
             placeholder={t("model-router.new-router.name-placeholder")}
@@ -98,6 +102,7 @@ export default function NewRouterModal({
           <ModalInput
             label={t("model-router.new-router.description")}
             type="text"
+            id={`${fieldId}-description`}
             name="description"
             defaultValue={router?.description || ""}
             placeholder={t("model-router.new-router.description-placeholder")}
@@ -116,16 +121,27 @@ export default function NewRouterModal({
 
           <ModalInput
             label={t("model-router.new-router.cooldown-label")}
-            hint={t("model-router.new-router.cooldown-help")}
             type="number"
+            id={`${fieldId}-cooldown`}
             name="cooldown_seconds"
+            aria-describedby={`${fieldId}-cooldown-hint`}
             defaultValue={router?.cooldown_seconds ?? 300}
             min={0}
           />
 
+          <p
+            id={`${fieldId}-cooldown-hint`}
+            className="-mt-2.5 text-xs text-zinc-400 light:text-slate-600"
+          >
+            {t("model-router.new-router.cooldown-help")}
+          </p>
+
           {error && (
-            <p className="text-xs leading-4 text-red-400 light:text-red-600">
-              Error: {error}
+            <p
+              role="alert"
+              className="text-xs leading-4 text-red-400 light:text-red-700"
+            >
+              {t("settings-pages.form-error", { error })}
             </p>
           )}
         </ModalBody>
@@ -133,11 +149,17 @@ export default function NewRouterModal({
           <ModalSecondaryButton onClick={closeModal} type="button">
             {t("model-router.new-router.cancel")}
           </ModalSecondaryButton>
-          <ModalPrimaryButton type="submit" disabled={loading}>
+          <ModalPrimaryButton
+            type="submit"
+            disabled={loading}
+            aria-busy={loading || undefined}
+            className="gap-x-2"
+          >
             {loading ? (
               <>
                 <LoaderCircle
                   strokeWidth={1.5}
+                  aria-hidden="true"
                   className="h-4 w-4 animate-spin"
                 />
                 {t("common.saving")}

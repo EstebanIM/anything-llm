@@ -1,16 +1,29 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { TriangleAlert } from "lucide-react";
 import renderMarkdown from "@/utils/chat/markdown";
 import DOMPurify from "@/utils/chat/purify";
 import Citations from "../Citation";
+import ResponseError from "../ResponseError";
 import {
   THOUGHT_REGEX_CLOSE,
   THOUGHT_REGEX_COMPLETE,
   THOUGHT_REGEX_OPEN,
 } from "../ThoughtContainer";
 
-const PromptReply = ({ uuid, reply, pending, error, sources = [] }) => {
+const DOT_DELAYS = [
+  "[animation-delay:0ms]",
+  "[animation-delay:200ms]",
+  "[animation-delay:400ms]",
+];
+
+const PromptReply = ({
+  uuid,
+  reply,
+  pending,
+  error,
+  sources = [],
+  onRetry = null,
+}) => {
   const { t } = useTranslation();
   if (!reply && sources.length === 0 && !pending && !error) return null;
 
@@ -19,52 +32,32 @@ const PromptReply = ({ uuid, reply, pending, error, sources = [] }) => {
       <div className="flex justify-start w-full">
         <div className="py-4 pl-0 pr-4 flex flex-col md:max-w-[80%]">
           {/*
-            The animation below is the only signal that a reply is coming, and it
-            is purely visual. The status region gives a screen reader user the
-            same information. It carries the text rather than wrapping the
-            animation so that it announces once, on appearance, instead of on
-            every repaint.
+            The dots are the only visual signal that a reply is coming. The
+            status region gives a screen reader user the same information. It
+            carries the text rather than wrapping the dots so that it announces
+            once, on appearance, instead of on every repaint.
           */}
           <span className="sr-only" role="status">
             {t("chat_window.generating_response")}
           </span>
+          {/* Mounted only while pending, so the loop stops with the state. */}
           <div
-            className="mt-3 ml-1 dot-falling light:invert"
+            className="mt-3 ml-1 flex items-center gap-x-1.5"
             aria-hidden="true"
-          ></div>
+          >
+            {DOT_DELAYS.map((delay) => (
+              <span
+                key={delay}
+                className={`size-2 rounded-full bg-zinc-400 light:bg-slate-500 animate-pulse ${delay}`}
+              />
+            ))}
+          </div>
         </div>
       </div>
     );
   }
 
-  if (error) {
-    return (
-      <div className="flex justify-start w-full">
-        <div className="py-4 pl-0 pr-4 flex flex-col md:max-w-[80%]">
-          {/*
-            role="alert" rather than "status": a failed reply is the one case
-            where the user needs interrupting, because nothing else on the page
-            changes to tell them the turn ended.
-          */}
-          <span
-            className="inline-block p-2 rounded-lg bg-red-50 text-red-500"
-            role="alert"
-          >
-            <TriangleAlert
-              strokeWidth={1.5}
-              className="h-4 w-4 mb-1 inline-block"
-            />{" "}
-            {t("chat_window.response_failed")}
-            <span className="text-xs">
-              {t("chat_window.response_failed_reason", {
-                reason: error || "unknown",
-              })}
-            </span>
-          </span>
-        </div>
-      </div>
-    );
-  }
+  if (error) return <ResponseError error={error} onRetry={onRetry} announce />;
 
   return (
     <div key={uuid} className="flex justify-start w-full">

@@ -9,6 +9,7 @@ import {
   OctagonAlert,
   X,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { REMOVE_ATTACHMENT_EVENT } from "../../DnDWrapper";
 import { openImageLightbox } from "@/components/ImageLightbox";
 
@@ -49,9 +50,34 @@ export default function AttachmentManager({ attachments }) {
 }
 
 /**
+ * Remove control for an attachment. It stays in the Tab order (opacity, not
+ * visibility), shows on hover or keyboard focus, is always visible on touch
+ * screens and gets a 44px hit area on small screens.
+ */
+function RemoveAttachmentButton({ fileName, onClick }) {
+  const { t } = useTranslation();
+  return (
+    <button
+      onClick={onClick}
+      type="button"
+      aria-label={t("chat-input.attach-remove", { name: fileName })}
+      className="absolute -top-2 -right-2 z-[10] w-5 h-5 rounded-full flex items-center justify-center bg-white text-zinc-900 border border-theme-attachment-bg hover:bg-error hover:text-white hover:border-transparent transition-[opacity,color,background-color] duration-quick opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 before:absolute before:-inset-3 before:content-[''] md:before:hidden"
+    >
+      <X
+        strokeWidth={1.5}
+        size={14}
+        aria-hidden="true"
+        className="flex-shrink-0"
+      />
+    </button>
+  );
+}
+
+/**
  * @param {{attachment: import("../../DnDWrapper").Attachment}}
  */
 function AttachmentItem({ attachment, onImageClick }) {
+  const { t } = useTranslation();
   const { uid, file, status, error, document, type, contentString } =
     attachment;
   const { iconBgColor, Icon } = displayFromFile(file);
@@ -71,6 +97,7 @@ function AttachmentItem({ attachment, onImageClick }) {
           <LoaderCircle
             strokeWidth={1.5}
             size={18}
+            aria-hidden="true"
             className="text-theme-attachment-icon-spinner animate-spin"
           />
         </div>
@@ -79,7 +106,7 @@ function AttachmentItem({ attachment, onImageClick }) {
             {file.name}
           </p>
           <p className="text-theme-attachment-text-secondary text-[10px] leading-[14px] font-medium">
-            Uploading...
+            {t("chat-input.attach-uploading")}
           </p>
         </div>
       </div>
@@ -93,21 +120,17 @@ function AttachmentItem({ attachment, onImageClick }) {
         data-tooltip-content={error}
         className={`relative flex items-center gap-x-1 rounded-lg bg-theme-attachment-error-bg border-none w-[180px] group`}
       >
-        <div className="invisible group-hover:visible absolute -top-[5px] -right-[5px] w-fit h-fit z-[10]">
-          <button
-            onClick={removeFileFromQueue}
-            type="button"
-            className="bg-white hover:bg-error hover:text-theme-attachment-text rounded-full p-1 flex items-center justify-center hover:border-transparent border border-theme-attachment-bg"
-          >
-            <X strokeWidth={1.5} size={10} className="flex-shrink-0" />
-          </button>
-        </div>
+        <RemoveAttachmentButton
+          fileName={file.name}
+          onClick={removeFileFromQueue}
+        />
         <div
           className={`bg-error rounded-md flex items-center justify-center flex-shrink-0 h-[32px] w-[32px] m-1`}
         >
           <OctagonAlert
             strokeWidth={1.5}
             size={24}
+            aria-hidden="true"
             className="text-theme-attachment-icon"
           />
         </div>
@@ -116,7 +139,7 @@ function AttachmentItem({ attachment, onImageClick }) {
             {file.name}
           </p>
           <p className="text-theme-attachment-text-secondary text-[10px] leading-[14px] font-medium truncate">
-            {error ?? "File not embedded!"}
+            {error ?? t("chat-input.attach-failed")}
           </p>
         </div>
       </div>
@@ -128,25 +151,22 @@ function AttachmentItem({ attachment, onImageClick }) {
       return (
         <div
           data-tooltip-id="attachment-status-tooltip"
-          data-tooltip-content={`${file.name} will be attached to this prompt. It will not be embedded into the workspace permanently.`}
+          data-tooltip-content={t("chat-input.attach-tooltip-attached", {
+            name: file.name,
+          })}
           className={`relative flex items-center gap-x-1 rounded-lg border-none group`}
         >
-          <div className="invisible group-hover:visible absolute -top-[5px] -right-[5px] w-fit h-fit z-[10]">
-            <button
-              onClick={removeFileFromQueue}
-              type="button"
-              className="bg-white hover:bg-error hover:text-theme-attachment-text rounded-full p-1 flex items-center justify-center hover:border-transparent border border-theme-attachment-bg"
-            >
-              <X strokeWidth={1.5} size={10} className="flex-shrink-0" />
-            </button>
-          </div>
+          <RemoveAttachmentButton
+            fileName={file.name}
+            onClick={removeFileFromQueue}
+          />
           <button
             type="button"
             onClick={onImageClick}
-            className="p-0 border-none bg-transparent cursor-pointer"
+            className="p-0 border-none bg-transparent cursor-pointer rounded-lg"
           >
             <img
-              alt={`Preview of ${file.name}`}
+              alt={t("chat-input.attach-preview", { name: file.name })}
               src={contentString}
               style={{ objectFit: "cover", objectPosition: "center" }}
               className={`${iconBgColor} w-[40px] h-[40px] rounded-lg flex items-center justify-center`}
@@ -159,29 +179,31 @@ function AttachmentItem({ attachment, onImageClick }) {
     return (
       <div
         data-tooltip-id="attachment-status-tooltip"
-        data-tooltip-content={`${file.name} will be attached to this prompt. It will not be embedded into the workspace permanently.`}
+        data-tooltip-content={t("chat-input.attach-tooltip-attached", {
+          name: file.name,
+        })}
         className={`relative flex items-center gap-x-1 rounded-lg bg-theme-attachment-success-bg border-none w-[180px] group`}
       >
-        <div className="invisible group-hover:visible absolute -top-[5px] -right-[5px] w-fit h-fit z-[10]">
-          <button
-            onClick={removeFileFromQueue}
-            type="button"
-            className="bg-white hover:bg-error hover:text-theme-attachment-text rounded-full p-1 flex items-center justify-center hover:border-transparent border border-theme-attachment-bg"
-          >
-            <X strokeWidth={1.5} size={10} className="flex-shrink-0" />
-          </button>
-        </div>
+        <RemoveAttachmentButton
+          fileName={file.name}
+          onClick={removeFileFromQueue}
+        />
         <div
           className={`${iconBgColor} rounded-md flex items-center justify-center flex-shrink-0 h-[32px] w-[32px] m-1`}
         >
-          <Icon size={24} className="text-theme-attachment-icon" />
+          <Icon
+            size={24}
+            strokeWidth={1.5}
+            aria-hidden="true"
+            className="text-theme-attachment-icon"
+          />
         </div>
         <div className="flex flex-col w-[125px]">
           <p className="text-theme-attachment-text text-xs font-semibold truncate">
             {file.name}
           </p>
           <p className="text-theme-attachment-text-secondary text-[10px] leading-[14px] font-medium">
-            Image attached!
+            {t("chat-input.attach-image-attached")}
           </p>
         </div>
       </div>
@@ -193,33 +215,33 @@ function AttachmentItem({ attachment, onImageClick }) {
       data-tooltip-id="attachment-status-tooltip"
       data-tooltip-content={
         status === "embedded"
-          ? `${file.name} was uploaded and embedded into this workspace. It will be available for RAG chat now.`
-          : `${file.name} will be used as context for this chat only.`
+          ? t("chat-input.attach-tooltip-embedded", { name: file.name })
+          : t("chat-input.attach-tooltip-context", { name: file.name })
       }
       className={`relative flex items-center gap-x-1 rounded-lg bg-theme-attachment-bg border-none w-[180px] group`}
     >
-      <div className="invisible group-hover:visible absolute -top-[5px] -right-[5px] w-fit h-fit z-[10]">
-        <button
-          onClick={removeFileFromQueue}
-          type="button"
-          className="bg-white hover:bg-error hover:text-theme-attachment-text rounded-full p-1 flex items-center justify-center hover:border-transparent border border-theme-attachment-bg"
-        >
-          <X strokeWidth={1.5} size={10} className="flex-shrink-0" />
-        </button>
-      </div>
+      <RemoveAttachmentButton
+        fileName={file.name}
+        onClick={removeFileFromQueue}
+      />
       <div
         className={`${iconBgColor} rounded-md flex items-center justify-center flex-shrink-0 h-[32px] w-[32px] m-1`}
       >
         <Icon
           strokeWidth={1.5}
           size={24}
+          aria-hidden="true"
           className="text-theme-attachment-icon"
         />
       </div>
       <div className="flex flex-col w-[125px]">
-        <p className="text-white text-xs font-semibold truncate">{file.name}</p>
+        <p className="text-theme-attachment-text text-xs font-semibold truncate">
+          {file.name}
+        </p>
         <p className="text-theme-attachment-text-secondary text-[10px] leading-[14px] font-medium">
-          {status === "embedded" ? "File embedded!" : "Added as context!"}
+          {status === "embedded"
+            ? t("chat-input.attach-embedded")
+            : t("chat-input.attach-context")}
         </p>
       </div>
     </div>

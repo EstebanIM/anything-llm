@@ -1,33 +1,38 @@
 import { chatQueryRefusalResponse } from "@/utils/chat";
-import { useTranslation } from "react-i18next";
-import { SavedIndicator } from "@/components/AutosaveForm";
+import { Trans, useTranslation } from "react-i18next";
+import { FIELD_INPUT } from "@/components/ProviderFields";
+import SettingsField from "../../components/SettingsField";
+
 export default function ChatQueryRefusalResponse({ workspace }) {
   const { t } = useTranslation();
   return (
-    <div>
-      <div className="flex flex-col gap-y-[8px]">
-        <label htmlFor="name" className="block input-label">
-          {t("chat.refusal.title")}
-          <SavedIndicator name="queryRefusalResponse" />
-        </label>
-        <p className="text-white text-opacity-60 text-xs font-medium">
-          {t("chat.refusal.desc-start")}{" "}
-          <code className="border-none bg-theme-settings-input-bg p-0.5 rounded-sm">
-            {t("chat.refusal.query")}
-          </code>{" "}
-          {t("chat.refusal.desc-end")}
-        </p>
-      </div>
-      <textarea
-        name="queryRefusalResponse"
-        rows={2}
-        defaultValue={chatQueryRefusalResponse(workspace)}
-        className="border-none bg-theme-settings-input-bg placeholder:text-theme-settings-input-placeholder text-white text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5 mt-2"
-        placeholder="The text returned in query mode when there is no relevant context found for a response."
-        required={true}
-        wrap="soft"
-        autoComplete="off"
-      />
-    </div>
+    <SettingsField
+      name="queryRefusalResponse"
+      label={t("chat.refusal.title")}
+      help={
+        <Trans
+          i18nKey="workspace-settings.refusal.help"
+          components={{
+            code: (
+              <code className="bg-theme-settings-input-bg px-1 py-0.5 rounded-sm" />
+            ),
+          }}
+        />
+      }
+    >
+      {(control) => (
+        <textarea
+          {...control}
+          name="queryRefusalResponse"
+          rows={2}
+          defaultValue={chatQueryRefusalResponse(workspace)}
+          className={FIELD_INPUT}
+          placeholder={t("workspace-settings.refusal.placeholder")}
+          required={true}
+          wrap="soft"
+          autoComplete="off"
+        />
+      )}
+    </SettingsField>
   );
 }

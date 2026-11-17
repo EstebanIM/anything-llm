@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useId, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { RefreshCw, LoaderCircle, Search } from "lucide-react";
+import { FIELD_INPUT } from "@/components/ProviderFields";
 
 export default function ModelTableLayout({
   children,
@@ -8,8 +10,13 @@ export default function ModelTableLayout({
   setSearchQuery = () => {},
   loading = false,
 }) {
+  const { t } = useTranslation();
+  const id = useId();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const busy = isRefreshing || loading;
+
   async function refreshModels() {
+    if (busy) return;
     setIsRefreshing(true);
     try {
       await fetchModels?.();
@@ -20,30 +27,49 @@ export default function ModelTableLayout({
   }
 
   return (
-    <div className="flex flex-col w-full">
+    <div
+      role="group"
+      aria-labelledby={`${id}-title`}
+      className="flex flex-col w-full"
+    >
       <div className="flex gap-x-2 items-center pb-[8px]">
-        <label className="text-theme-text-primary text-base font-semibold">
-          Available Models
-        </label>
+        <p
+          id={`${id}-title`}
+          className="text-theme-text-primary text-base font-semibold"
+        >
+          {t("llm-fields.common.available-models")}
+        </p>
       </div>
       <div className="flex w-full items-center gap-x-[16px]">
         <div className="relative flex-1 flex-grow">
+          <label htmlFor={`${id}-search`} className="sr-only">
+            {t("model-table.search")}
+          </label>
           <Search
             strokeWidth={1.5}
             size={16}
             color="var(--theme-text-primary)"
-            className="absolute left-[9px] top-[10px] text-theme-settings-input-placeholder peer-focus:invisible"
+            aria-hidden="true"
+            className="absolute left-[10px] top-1/2 -translate-y-1/2 pointer-events-none"
           />
           <input
+            id={`${id}-search`}
             type="search"
-            placeholder="Search models"
+            placeholder={t("model-table.search")}
             value={searchQuery}
             disabled={loading}
-            className="min-h-[32px] border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5 pl-[30px] py-2 search-input disabled:opacity-50 disabled:cursor-not-allowed"
+            autoComplete="off"
+            spellCheck={false}
+            className={`${FIELD_INPUT} pl-[32px] search-input`}
             onChange={(e) => {
+              // Keep the search out of the settings form's change tracking.
               e.preventDefault();
               e.stopPropagation();
               setSearchQuery(e.target.value);
+            }}
+            onKeyDown={(e) => {
+              // Enter in a search box must not submit the settings form.
+              if (e.key === "Enter") e.preventDefault();
             }}
           />
         </div>
@@ -51,25 +77,25 @@ export default function ModelTableLayout({
           <button
             type="button"
             onClick={refreshModels}
-            disabled={isRefreshing || loading}
-            className="border-none text-theme-text-secondary text-sm font-medium hover:bg-white/10 light:hover:bg-black/5 rounded-lg px-2 h-full flex items-center gap-x-1 disabled:opacity-50 disabled:cursor-not-allowed"
+            // aria-disabled keeps focus on the button while the list reloads.
+            aria-disabled={busy || undefined}
+            aria-busy={isRefreshing || undefined}
+            className="border-none shrink-0 self-stretch min-h-[44px] md:min-h-0 text-theme-text-secondary text-sm font-medium hover:bg-white/10 light:hover:bg-black/5 rounded-lg px-2 flex items-center gap-x-1 transition-colors duration-quick ease-smooth aria-disabled:opacity-60 aria-disabled:cursor-not-allowed"
           >
             {isRefreshing ? (
               <LoaderCircle
                 strokeWidth={1.5}
+                aria-hidden="true"
                 className="w-4 h-4 text-theme-text-secondary animate-spin"
               />
             ) : (
               <RefreshCw
                 strokeWidth={1.5}
+                aria-hidden="true"
                 className="w-4 h-4 text-theme-text-secondary"
               />
             )}
-            <span
-              className={`text-sm font-medium ${isRefreshing ? "hidden" : "text-theme-text-secondary"}`}
-            >
-              Refresh Models
-            </span>
+            <span>{t("model-table.refresh")}</span>
           </button>
         )}
       </div>

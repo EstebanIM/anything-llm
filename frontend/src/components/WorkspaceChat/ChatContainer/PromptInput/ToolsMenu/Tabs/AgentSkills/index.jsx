@@ -21,6 +21,9 @@ export default function AgentSkillsTab({
   highlightedIndex = -1,
   registerItemCount,
   workspace,
+  listboxId,
+  listboxLabelledBy,
+  getOptionId = (index) => `agent-skill-${index}`,
 }) {
   const { t } = useTranslation();
   const { showAgentCommand = true } = workspace ?? {};
@@ -143,7 +146,9 @@ export default function AgentSkillsTab({
           indexMap[item.id] = items.length;
           items.push(item);
 
-          if (item.hasSubSkills && item.subSkills) {
+          // Must mirror the render below: the sub-skills block only exists
+          // while its parent skill is enabled.
+          if (item.hasSubSkills && item.subSkills && item.enabled) {
             indexMap[`subsection-${item.id}`] = items.length;
             items.push({
               type: "subheader",
@@ -193,83 +198,104 @@ export default function AgentSkillsTab({
           placeholder={t("common.search")}
         />
       )}
-      {filteredSections.map((section) => (
-        <SkillSection
-          key={section.id}
-          name={section.name}
-          expanded={isSectionExpanded(section.id)}
-          onToggle={() => toggleSection(section.id)}
-          enabledCount={section.enabledCount}
-          totalCount={section.items.length}
-          isMcp={section.isMcp}
-          highlighted={highlightedIndex === flatIndexMap[section.id]}
-        >
-          {section.items.map((item) => (
-            <div key={item.id}>
-              <SkillRow
-                name={item.name}
-                enabled={item.enabled}
-                onToggle={item.onToggle}
-                highlighted={highlightedIndex === flatIndexMap[item.id]}
-              />
-              {item.hasSubSkills && item.subSkills && item.enabled && (
-                <SkillSection
-                  name={t("chat_window.sub_skills")}
-                  expanded={isSubSectionExpanded(item.id)}
-                  onToggle={() => toggleSubSection(item.id)}
-                  enabledCount={item.subSkills.filter((s) => s.enabled).length}
-                  totalCount={item.subSkills.length}
-                  highlighted={
-                    highlightedIndex === flatIndexMap[`subsection-${item.id}`]
-                  }
-                  indented
-                >
-                  {item.subSkills.map((subItem) => (
-                    <SkillRow
-                      key={subItem.id}
-                      name={subItem.name}
-                      enabled={subItem.enabled}
-                      onToggle={subItem.onToggle}
-                      highlighted={
-                        highlightedIndex === flatIndexMap[subItem.id]
-                      }
-                      disabled={!subItem.parentEnabled}
-                    />
-                  ))}
-                </SkillSection>
-              )}
-            </div>
-          ))}
-        </SkillSection>
-      ))}
+      <div
+        role="listbox"
+        id={listboxId}
+        aria-labelledby={listboxLabelledBy}
+        className="flex flex-col"
+      >
+        {filteredSections.map((section) => (
+          <SkillSection
+            key={section.id}
+            optionId={getOptionId(flatIndexMap[section.id])}
+            name={section.name}
+            expanded={isSectionExpanded(section.id)}
+            onToggle={() => toggleSection(section.id)}
+            enabledCount={section.enabledCount}
+            totalCount={section.items.length}
+            isMcp={section.isMcp}
+            highlighted={highlightedIndex === flatIndexMap[section.id]}
+          >
+            {section.items.map((item) => (
+              <div key={item.id} role="none">
+                <SkillRow
+                  optionId={getOptionId(flatIndexMap[item.id])}
+                  name={item.name}
+                  enabled={item.enabled}
+                  onToggle={item.onToggle}
+                  highlighted={highlightedIndex === flatIndexMap[item.id]}
+                />
+                {item.hasSubSkills && item.subSkills && item.enabled && (
+                  <SkillSection
+                    optionId={getOptionId(
+                      flatIndexMap[`subsection-${item.id}`]
+                    )}
+                    name={t("chat_window.sub_skills")}
+                    expanded={isSubSectionExpanded(item.id)}
+                    onToggle={() => toggleSubSection(item.id)}
+                    enabledCount={
+                      item.subSkills.filter((s) => s.enabled).length
+                    }
+                    totalCount={item.subSkills.length}
+                    highlighted={
+                      highlightedIndex === flatIndexMap[`subsection-${item.id}`]
+                    }
+                    indented
+                  >
+                    {item.subSkills.map((subItem) => (
+                      <SkillRow
+                        key={subItem.id}
+                        optionId={getOptionId(flatIndexMap[subItem.id])}
+                        name={subItem.name}
+                        enabled={subItem.enabled}
+                        onToggle={subItem.onToggle}
+                        highlighted={
+                          highlightedIndex === flatIndexMap[subItem.id]
+                        }
+                        disabled={!subItem.parentEnabled}
+                      />
+                    ))}
+                  </SkillSection>
+                )}
+              </div>
+            ))}
+          </SkillSection>
+        ))}
+      </div>
       {mcpLoading && (
-        <div className="flex items-center gap-1.5 px-2 py-1.5">
+        <div role="status" className="flex items-center gap-1.5 px-2 py-1.5">
           <LoaderCircle
             strokeWidth={1.5}
             size={12}
-            className="text-zinc-500 light:text-slate-400 animate-spin"
+            aria-hidden="true"
+            className="text-zinc-400 light:text-slate-500 animate-spin"
           />
-          <span className="text-[10px] text-zinc-500 light:text-slate-400">
+          <span className="text-[10px] text-zinc-400 light:text-slate-500">
             {t("chat_window.loading_mcp_servers")}
           </span>
         </div>
       )}
       {filteredSections.length === 0 && !mcpLoading && searchQuery.trim() && (
-        <p className="text-xs text-zinc-500 light:text-slate-400 text-center py-2">
+        <p
+          role="status"
+          className="text-xs text-zinc-400 light:text-slate-500 text-center py-2"
+        >
           {t("chat_window.no_tools_found")}
         </p>
       )}
-      <Link to={paths.settings.agentSkills()}>
-        <button className="border-none flex items-center gap-1.5 px-2 h-6 rounded cursor-pointer hover:bg-zinc-700/50 light:hover:bg-slate-100 text-theme-text-primary">
-          <Wrench
-            strokeWidth={1.5}
-            size={12}
-            className="text-theme-text-primary"
-          />
-          <span className="text-xs text-theme-text-primary">
-            {t("chat_window.manage_agent_skills")}
-          </span>
-        </button>
+      <Link
+        to={paths.settings.agentSkills()}
+        className="flex items-center gap-1.5 px-2 min-h-11 md:min-h-0 md:h-6 rounded cursor-pointer hover:bg-zinc-700/50 light:hover:bg-slate-100 text-theme-text-primary transition-colors duration-quick"
+      >
+        <Wrench
+          strokeWidth={1.5}
+          size={12}
+          aria-hidden="true"
+          className="text-theme-text-primary"
+        />
+        <span className="text-xs text-theme-text-primary">
+          {t("chat_window.manage_agent_skills")}
+        </span>
       </Link>
     </>
   );
@@ -281,22 +307,26 @@ function SearchInput({ value, onChange, placeholder }) {
       <Search
         strokeWidth={1.5}
         size={12}
-        className="absolute left-2 top-1/2 -translate-y-1/2 text-zinc-400 light:text-slate-400"
+        aria-hidden="true"
+        className="absolute left-2 top-1/2 -translate-y-1/2 text-zinc-400 light:text-slate-500"
       />
       <input
-        type="text"
+        type="search"
+        aria-label={placeholder}
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onMouseDown={(e) => e.stopPropagation()}
         onKeyDown={(e) => {
-          if (e.key === "Escape") {
+          // First Escape clears the query; with an empty query it bubbles up
+          // so the tools popup closes and focus returns to the prompt.
+          if (e.key === "Escape" && value) {
+            e.preventDefault();
             onChange("");
-            e.target.blur();
           }
           if (e.key === "Enter") e.preventDefault();
         }}
-        className="w-full pl-7 pr-2 py-1 text-xs bg-zinc-700/50 light:bg-slate-100 border border-zinc-600 light:border-slate-300 rounded text-white light:text-slate-900 placeholder:text-zinc-500 light:placeholder:text-slate-400 outline-none focus:border-zinc-500 light:focus:border-slate-400"
+        className="w-full pl-7 pr-2 py-1 text-base md:text-xs bg-zinc-700/50 light:bg-slate-100 border border-zinc-600 light:border-slate-300 rounded text-white light:text-slate-900 placeholder:text-zinc-400 light:placeholder:text-slate-600 focus:border-zinc-500 light:focus:border-slate-500"
       />
     </div>
   );

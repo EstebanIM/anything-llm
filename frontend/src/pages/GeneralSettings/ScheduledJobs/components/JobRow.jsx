@@ -1,108 +1,147 @@
-import moment from "moment";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Play, Pencil, X } from "lucide-react";
-import paths from "@/utils/paths";
-import { humanizeCron } from "../utils/cron";
 import { useTranslation } from "react-i18next";
+import paths from "@/utils/paths";
+import { SimpleToggleSwitch } from "@/components/lib/Toggle";
+import { humanizeCron } from "../utils/cron";
+import { isInFlight } from "../utils/format";
+import RunStatusBadge from "./StatusBadge";
+import TimeText from "./TimeText";
+import { ROW_ICON_BUTTON, ROW_ICON_MUTED } from "./PageLayout";
 
-// One row of the scheduled-jobs list. Clicking the name navigates to the
-// run history; CRUD callbacks come from the parent.
-export default function JobRow({ job, onTrigger, onToggle, onEdit, onDelete }) {
+// Table cells below md stack as a card (each value with its own label);
+// from md they are a regular table row.
+export const ROW =
+  "block md:table-row mb-2 md:mb-0 px-3 py-2 md:p-0 rounded-lg md:rounded-none bg-white/5 light:bg-slate-50 md:bg-transparent light:md:bg-transparent md:border-b md:border-white/5 light:md:border-slate-200 hover:bg-white/5 light:hover:bg-slate-100 transition-colors duration-quick ease-smooth cursor-pointer";
+const CELL_BASE =
+  "block md:table-cell py-1 md:py-3 md:px-4 align-middle text-sm";
+export const CELL = `${CELL_BASE} text-zinc-400 light:text-slate-600`;
+/** Row header cell (th scope="row"): the item's name or link. */
+export const HEADER_CELL = `${CELL_BASE} text-left font-medium text-white light:text-slate-950`;
+
+/** Field name shown before each value while the row is a card. */
+export function CellLabel({ children }) {
+  return (
+    <span className="md:hidden font-medium text-zinc-300 light:text-slate-700">
+      {children}:{" "}
+    </span>
+  );
+}
+
+/**
+ * Clicking anywhere on a row opens `to`. Mouse only: keyboard and screen
+ * reader users get the same page through the link in the row header, and
+ * clicks on the row's own controls are left alone.
+ */
+export function useRowClick(to) {
   const navigate = useNavigate();
-  const { t, i18n } = useTranslation();
-  // A job has at most one in-flight run; disable "Run now" while it's queued
-  // or running so users get visible feedback that their click registered and
-  // so the backend dedup never has to drop a manual trigger silently.
-  const inFlight =
-    job.latestRun?.status === "running" || job.latestRun?.status === "queued";
-
-  const statusText = job.latestRun
-    ? t(`scheduledJobs.status.${job.latestRun.status}`, job.latestRun.status)
-    : t("scheduledJobs.row.neverRun");
-
-  const stop = (handler) => (e) => {
-    e.stopPropagation();
-    handler();
+  return (e) => {
+    if (e.target.closest("a, button, input, select, [role='switch']")) return;
+    if (window.getSelection()?.toString()) return;
+    navigate(to);
   };
+}
+
+export default function JobRow({
+  job,
+  linkRef,
+  triggering = false,
+  toggling = false,
+  onTrigger,
+  onToggle,
+  onEdit,
+  onDelete,
+}) {
+  const { t, i18n } = useTranslation();
+  const runsPath = paths.settings.scheduledJobRuns(job.id);
+  const handleRowClick = useRowClick(runsPath);
+  // A job has at most one in-flight run: "Run now" stays focusable but only
+  // explains that a run is already going.
+  const inFlight = isInFlight(job.latestRun?.status);
+  const name = job.name;
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={() => navigate(paths.settings.scheduledJobRuns(job.id))}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          navigate(paths.settings.scheduledJobRuns(job.id));
-        }
-      }}
-      className="flex items-center justify-between px-4 h-14 hover:bg-white/5 light:hover:bg-slate-200 transition-colors cursor-pointer"
-      title={t("scheduledJobs.row.viewRuns")}
-    >
-      <span className="w-[150px] text-sm font-medium text-white light:text-slate-950 truncate">
-        {job.name}
-      </span>
-      <span className="w-[180px] text-sm text-zinc-400 light:text-slate-600 truncate">
-        {humanizeCron(job.schedule, i18n.language)}
-      </span>
-      <span className="w-[120px] text-sm text-zinc-400 light:text-slate-600 truncate">
-        {statusText}
-      </span>
-      <span className="w-[180px] text-sm text-zinc-400 light:text-slate-600 truncate">
-        {job.lastRunAt ? moment(job.lastRunAt).format("lll") : "—"}
-      </span>
-      <span className="w-[180px] text-sm text-zinc-400 light:text-slate-600 truncate">
-        {job.enabled && job.nextRunAt
-          ? moment(job.nextRunAt).format("lll")
-          : "—"}
-      </span>
-      <div className="w-[140px] flex items-center justify-end gap-1">
-        <button
-          type="button"
-          onClick={stop(() => onDelete(job.id))}
-          className="border-none p-2 rounded-full text-zinc-400 light:text-slate-950 hover:text-red-400 light:hover:text-red-600 hover:bg-white/10 light:hover:bg-slate-300/50 transition-colors"
-          title={t("scheduledJobs.row.delete")}
+    <tr onClick={handleRowClick} className={ROW}>
+      <th scope="row" className={`${HEADER_CELL} break-words`}>
+        <Link
+          ref={linkRef}
+          to={runsPath}
+          className="rounded-sm hover:underline underline-offset-2"
         >
-          <X strokeWidth={1.5} className="h-4 w-4 shrink-0" />
-        </button>
-        <button
-          type="button"
-          onClick={stop(() => onEdit(job))}
-          className="border-none p-2 rounded-full text-zinc-400 light:text-slate-950 hover:text-white light:hover:text-slate-700 hover:bg-white/10 light:hover:bg-slate-300/50 transition-colors"
-          title={t("scheduledJobs.row.edit")}
-        >
-          <Pencil strokeWidth={1.5} className="h-4 w-4 shrink-0" />
-        </button>
-        <button
-          type="button"
-          onClick={stop(() => onTrigger(job.id))}
-          disabled={inFlight}
-          className="border-none p-2 rounded-full text-zinc-400 light:text-slate-950 hover:text-white light:hover:text-slate-700 hover:bg-white/10 light:hover:bg-slate-300/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-          title={t("scheduledJobs.row.runNow")}
-        >
-          <Play strokeWidth={1.5} className="h-4 w-4 shrink-0" />
-        </button>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={job.enabled}
-          onClick={stop(() => onToggle(job.id))}
-          title={
-            job.enabled
-              ? t("scheduledJobs.row.disable")
-              : t("scheduledJobs.row.enable")
-          }
-          className={`border-none relative h-[15px] w-7 rounded-full p-0.5 transition-colors ${
-            job.enabled ? "bg-green-400" : "bg-zinc-600 light:bg-slate-300"
-          }`}
-        >
-          <span
-            className={`block h-3 w-3 rounded-full bg-white shadow transition-transform ${
-              job.enabled ? "translate-x-[13px]" : "translate-x-0"
-            }`}
+          {name}
+        </Link>
+      </th>
+      <td className={CELL}>
+        <CellLabel>{t("scheduledJobs.table.schedule")}</CellLabel>
+        {humanizeCron(job.schedule, i18n.language) || job.schedule}
+      </td>
+      <td className={CELL}>
+        <CellLabel>{t("scheduledJobs.table.status")}</CellLabel>
+        {job.latestRun ? (
+          <RunStatusBadge status={job.latestRun.status} />
+        ) : (
+          t("scheduledJobs.row.neverRun")
+        )}
+      </td>
+      <td className={CELL}>
+        <CellLabel>{t("scheduledJobs.table.lastRun")}</CellLabel>
+        {job.lastRunAt ? (
+          <TimeText value={job.lastRunAt} />
+        ) : (
+          t("scheduledJobs.row.never")
+        )}
+      </td>
+      <td className={CELL}>
+        <CellLabel>{t("scheduledJobs.table.nextRun")}</CellLabel>
+        {!job.enabled ? (
+          t("scheduledJobs.row.paused")
+        ) : job.nextRunAt ? (
+          <TimeText value={job.nextRunAt} relative />
+        ) : (
+          t("scheduledJobs.row.notScheduled")
+        )}
+      </td>
+      <td className={`${CELL} md:w-px`}>
+        <div className="flex items-center md:justify-end gap-1 -ml-2.5 md:ml-0">
+          <button
+            type="button"
+            onClick={() => onTrigger(job)}
+            aria-disabled={inFlight || triggering || undefined}
+            aria-busy={triggering || undefined}
+            aria-label={t("scheduledJobs.row.runNow", { name })}
+            title={t("scheduledJobs.row.runNow", { name })}
+            className={`${ROW_ICON_BUTTON} ${ROW_ICON_MUTED} hover:text-white light:hover:text-slate-950`}
+          >
+            <Play strokeWidth={1.5} size={16} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onEdit(job)}
+            aria-label={t("scheduledJobs.row.edit", { name })}
+            title={t("scheduledJobs.row.edit", { name })}
+            className={`${ROW_ICON_BUTTON} ${ROW_ICON_MUTED} hover:text-white light:hover:text-slate-950`}
+          >
+            <Pencil strokeWidth={1.5} size={16} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onDelete(job)}
+            aria-label={t("scheduledJobs.row.delete", { name })}
+            title={t("scheduledJobs.row.delete", { name })}
+            className={`${ROW_ICON_BUTTON} ${ROW_ICON_MUTED} hover:text-red-400 light:hover:text-red-700`}
+          >
+            <X strokeWidth={1.5} size={16} aria-hidden="true" />
+          </button>
+          <SimpleToggleSwitch
+            size="md"
+            className="ml-2"
+            enabled={job.enabled}
+            disabled={toggling}
+            onChange={() => onToggle(job)}
+            ariaLabel={t("scheduledJobs.row.enable", { name })}
           />
-        </button>
-      </div>
-    </div>
+        </div>
+      </td>
+    </tr>
   );
 }

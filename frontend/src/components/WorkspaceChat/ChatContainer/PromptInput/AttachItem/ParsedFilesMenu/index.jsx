@@ -1,15 +1,16 @@
 import { useState } from "react";
 import { X, LoaderCircle, TriangleAlert } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import Workspace from "@/models/workspace";
 import { nFormatter } from "@/utils/numbers";
 import showToast from "@/utils/toast";
-import pluralize from "pluralize";
 import { PARSED_FILE_ATTACHMENT_REMOVED_EVENT } from "../../../DnDWrapper";
 import useUser from "@/hooks/useUser";
 
 export default function ParsedFilesMenu({
+  titleId,
   onEmbeddingChange,
-  tooltipRef,
+  onDone,
   files,
   setFiles,
   currentTokens,
@@ -19,6 +20,7 @@ export default function ParsedFilesMenu({
   workspaceSlug,
   threadSlug = null,
 }) {
+  const { t } = useTranslation();
   const { user } = useUser();
   const canEmbed = !user || user.role !== "default";
   const initialContextWindowLimitExceeded =
@@ -93,14 +95,18 @@ export default function ParsedFilesMenu({
       const allEmbedded = results.every(({ response }) => response.ok);
       showToast(
         allEmbedded
-          ? `${files.length} ${pluralize("file", files.length)} embedded successfully`
-          : "Failed to embed files",
+          ? t("chat-input.context-embed-success", { count: files.length })
+          : t("chat-input.context-embed-failed"),
         allEmbedded ? "success" : "error"
       );
-      tooltipRef?.current?.close();
+      setIsEmbedding(false);
+      onEmbeddingChange?.(false);
+      setEmbedProgress(1);
+      onDone?.();
+      return;
     } catch (error) {
       console.error("Failed to embed files:", error);
-      showToast("Failed to embed files", "error");
+      showToast(t("chat-input.context-embed-failed"), "error");
     }
     setIsEmbedding(false);
     onEmbeddingChange?.(false);
@@ -110,16 +116,15 @@ export default function ParsedFilesMenu({
   return (
     <div className="flex flex-col gap-2 p-2">
       <div className="flex items-center justify-between">
-        <div className="text-sm font-medium text-theme-text-primary">
-          Current Context ({files.length} files)
-        </div>
+        <p id={titleId} className="text-sm font-medium text-theme-text-primary">
+          {t("chat-input.context-title", { count: files.length })}
+        </p>
         <div
           // If the user cannot see the embed CTA, show a tooltip
           {...(contextWindowLimitExceeded &&
             !canEmbed && {
               "data-tooltip-id": "context-window-limit-exceeded",
-              "data-tooltip-content":
-                "You have exceeded the context window limit. Some files may be truncated or excluded from chat responses. Responses may hallucinate or lack relevant information.",
+              "data-tooltip-content": t("chat-input.context-limit-exceeded"),
             })}
           className={`flex items-center gap-x-1 ${contextWindowLimitExceeded && !canEmbed ? "cursor-pointer" : ""}`}
         >
@@ -127,88 +132,102 @@ export default function ParsedFilesMenu({
             <TriangleAlert
               strokeWidth={1.5}
               size={14}
-              className="text-orange-600"
+              aria-hidden="true"
+              className="text-orange-500 light:text-orange-700"
             />
           )}
           <div
-            className={`text-xs ${contextWindowLimitExceeded ? "text-orange-600" : "text-theme-text-secondary"}`}
+            className={`text-xs ${contextWindowLimitExceeded ? "text-orange-500 light:text-orange-700" : "text-theme-text-secondary"}`}
           >
-            {nFormatter(currentTokens)} /{" "}
-            {contextWindow ? nFormatter(contextWindow) : "--"} tokens
+            {t("chat-input.context-tokens", {
+              current: nFormatter(currentTokens),
+              max: contextWindow ? nFormatter(contextWindow) : "--",
+            })}
           </div>
         </div>
       </div>
+      {contextWindowLimitExceeded && !canEmbed && (
+        <p className="sr-only">{t("chat-input.context-limit-exceeded")}</p>
+      )}
       {contextWindowLimitExceeded && canEmbed && (
         <div className="flex flex-col gap-2 p-2 bg-theme-bg-secondary light:bg-theme-bg-primary rounded">
           <div className="flex items-start gap-2">
             <TriangleAlert
               strokeWidth={1.5}
-              className="flex-shrink-0 mt-1 text-yellow-500 light:text-yellow-600"
+              className="flex-shrink-0 mt-1 text-yellow-500 light:text-yellow-700"
               size={16}
+              aria-hidden="true"
             />
-            <div className="text-xs text-theme-text-primary">
-              Your context window is getting full. Some files may be truncated
-              or excluded from chat responses. We recommend embedding these
-              files directly into your workspace for better results.
-            </div>
+            <p className="text-xs text-theme-text-primary">
+              {t("chat-input.context-almost-full")}
+            </p>
           </div>
           <button
+            type="button"
             onClick={handleEmbed}
             disabled={isEmbedding}
-            className="border-none disabled:opacity-50 flex items-center justify-center gap-2 px-3 py-2 text-xs bg-primary-button hover:bg-theme-button-primary-hover text-white font-medium rounded transition-colors shadow-sm"
+            className="border-none disabled:opacity-50 flex items-center justify-center gap-2 px-3 py-2 text-xs bg-primary-button hover:bg-primary-button-hover text-theme-button-primary-text font-medium rounded transition-colors duration-quick shadow-sm"
           >
             {isEmbedding ? (
               <>
                 <LoaderCircle
                   strokeWidth={1.5}
                   size={14}
+                  aria-hidden="true"
                   className="animate-spin"
                 />
-                Embedding {embedProgress} of {files.length} files...
+                {t("chat-input.context-embedding", {
+                  current: embedProgress,
+                  total: files.length,
+                })}
               </>
             ) : (
-              "Embed Files into Workspace"
+              t("chat-input.context-embed")
             )}
           </button>
         </div>
       )}
-      <div className="flex flex-col gap-1 max-h-[300px] overflow-y-auto">
+      <ul className="flex flex-col gap-1 max-h-[300px] overflow-y-auto">
         {files.length > 0 &&
           files.map((file, i) => (
-            <div
-              key={i}
-              className={
-                "flex items-center justify-between gap-2 p-2 text-xs bg-theme-bg-secondary rounded"
-              }
+            <li
+              key={file.id ?? i}
+              className="flex items-center justify-between gap-2 p-2 text-xs bg-theme-bg-secondary rounded"
             >
               <div className="truncate flex-1 text-theme-text-primary">
                 {file.title}
               </div>
               <button
+                type="button"
                 onClick={(e) => handleRemove(e, file)}
-                className="border-none text-theme-text-secondary hover:text-theme-text-primary"
+                aria-label={t("chat-input.attach-remove", { name: file.title })}
+                className="border-none rounded text-theme-text-secondary hover:text-theme-text-primary transition-colors duration-quick"
                 disabled={isEmbedding}
               >
-                <X strokeWidth={1.5} size={16} />
+                <X strokeWidth={1.5} size={16} aria-hidden="true" />
               </button>
-            </div>
+            </li>
           ))}
-        {isLoading && (
-          <div className="flex items-center justify-center gap-2 text-xs text-theme-text-secondary text-center py-2">
-            <LoaderCircle
-              strokeWidth={1.5}
-              size={16}
-              className="animate-spin"
-            />
-            Loading...
-          </div>
-        )}
-        {!isLoading && files.length === 0 && (
-          <div className="text-xs text-theme-text-secondary text-center py-2">
-            No files found
-          </div>
-        )}
-      </div>
+      </ul>
+      {isLoading && (
+        <div
+          role="status"
+          className="flex items-center justify-center gap-2 text-xs text-theme-text-secondary text-center py-2"
+        >
+          <LoaderCircle
+            strokeWidth={1.5}
+            size={16}
+            aria-hidden="true"
+            className="animate-spin"
+          />
+          {t("common.loading")}
+        </div>
+      )}
+      {!isLoading && files.length === 0 && (
+        <p className="text-xs text-theme-text-secondary text-center py-2">
+          {t("chat-input.context-empty")}
+        </p>
+      )}
     </div>
   );
 }

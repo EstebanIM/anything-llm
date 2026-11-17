@@ -1,51 +1,60 @@
 import { useTranslation } from "react-i18next";
+import {
+  CircleCheck,
+  CircleX,
+  Clock,
+  LoaderCircle,
+  TimerOff,
+} from "lucide-react";
+
+// One look for a run's status everywhere: icon + text, never color alone.
+// Light variants are -700 so the text keeps 4.5:1 on white.
+const STATUSES = {
+  completed: {
+    Icon: CircleCheck,
+    className: "text-green-400 light:text-green-700",
+  },
+  failed: { Icon: CircleX, className: "text-red-400 light:text-red-700" },
+  timed_out: {
+    Icon: TimerOff,
+    className: "text-orange-400 light:text-orange-700",
+  },
+  running: {
+    Icon: LoaderCircle,
+    className: "text-sky-400 light:text-sky-700",
+    spin: true,
+  },
+  queued: { Icon: Clock, className: "text-zinc-300 light:text-slate-700" },
+};
 
 /**
- * Per-status text styling per the run history figma:
- * - non-terminal (queued, running) → italic zinc-400
- * - completed → white medium
- * - failed / timed_out → red-400
- * @param {string} status - The status of the run.
- * @returns {string} The styled status text.
+ * Status of a job run with an icon and translated text.
+ * @param {{status: string, className?: string}} props
  */
-function getStatusesMap(t) {
-  return {
-    completed: {
-      text: t("scheduledJobs.status.completed"),
-      style: "font-medium text-white light:text-slate-950",
-    },
-    failed: {
-      text: t("scheduledJobs.status.failed"),
-      style: "text-red-400 light:text-red-600",
-    },
-    timed_out: {
-      text: t("scheduledJobs.status.timed_out"),
-      style: "text-red-400 light:text-red-600",
-    },
-    running: {
-      text: t("scheduledJobs.status.running"),
-      style: "italic text-zinc-400 light:text-slate-600",
-    },
-    queued: {
-      text: t("scheduledJobs.status.queued"),
-      style: "italic text-zinc-400 light:text-slate-600",
-    },
-    default: {
-      text: "—",
-      style: "text-zinc-400 light:text-slate-600",
-    },
-  };
-}
-
-/**
- * Status text shown in the run history table. Plain text — no pill — to
- * match the run history figma.
- * @param {string} status - The status of the run.
- * @returns {string} The status text.
- */
-export default function StatusBadge({ status }) {
+export default function RunStatusBadge({ status, className = "" }) {
   const { t } = useTranslation();
-  const statusesMap = getStatusesMap(t);
-  const { text, style } = statusesMap[status] || statusesMap.default;
-  return <span className={`text-sm ${style}`}>{text}</span>;
+  const config = STATUSES[status];
+  if (!config) {
+    return (
+      <span
+        className={`text-sm text-zinc-400 light:text-slate-600 ${className}`}
+      >
+        {status}
+      </span>
+    );
+  }
+  const { Icon, spin } = config;
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 text-sm font-medium ${config.className} ${className}`}
+    >
+      <Icon
+        strokeWidth={1.5}
+        size={16}
+        aria-hidden="true"
+        className={`shrink-0 ${spin ? "motion-safe:animate-spin" : ""}`}
+      />
+      {t(`scheduledJobs.status.${status}`)}
+    </span>
+  );
 }

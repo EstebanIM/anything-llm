@@ -1,15 +1,24 @@
-import { useEffect, useState } from "react";
-import System from "@/models/system";
-import strDistance from "js-levenshtein";
-import { Info } from "lucide-react";
+import { useEffect, useId, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Tooltip } from "react-tooltip";
+import strDistance from "js-levenshtein";
+import System from "@/models/system";
 import { LLM_PREFERENCE_CHANGED_EVENT } from "@/pages/GeneralSettings/LLMPreference";
-import ModelTable from "@/components/lib/ModelTable";
+import ModelTable, { DOWNLOADED_GROUP } from "@/components/lib/ModelTable";
 import ModelTableLayout from "@/components/lib/ModelTable/layout";
 import ModelTableLoadingSkeleton from "@/components/lib/ModelTable/loading";
 import FoundryUtils from "@/models/utils/foundryUtils";
+import {
+  FIELD_COL,
+  FIELD_ERROR,
+  FIELD_INPUT,
+  FIELD_ROW,
+} from "@/components/ProviderFields";
+import { FieldLabel, blurOnWheel } from "@/components/LLMSelection/FormParts";
 
 export default function FoundryOptions({ settings }) {
+  const { t } = useTranslation();
+  const id = useId();
   const [basePath, setBasePath] = useState(settings?.FoundryBasePath);
   const [tokenLimit, setTokenLimit] = useState(
     settings?.FoundryModelTokenLimit || ""
@@ -39,46 +48,24 @@ export default function FoundryOptions({ settings }) {
 
   return (
     <div className="w-full flex flex-col gap-y-7">
-      <div className="flex gap-[36px] mt-1.5 flex-wrap">
-        <div className="flex flex-col w-60">
-          <div className="flex items-center gap-1 mb-3">
-            <label className="text-white text-sm font-semibold block">
-              Base URL
-            </label>
-            <Tooltip
-              id="foundry-base-url"
-              place="top"
-              delayShow={300}
-              delayHide={800}
-              clickable={true}
-              className="tooltip !text-xs !opacity-100 z-99"
-              style={{
-                maxWidth: "300px",
-                whiteSpace: "normal",
-                wordWrap: "break-word",
-              }}
-            >
-              The URL where the Foundry Local service is running. Run
-              <b> foundry status</b> on the host to find it.
-            </Tooltip>
-            <div
-              className="text-theme-text-secondary cursor-pointer hover:bg-theme-bg-primary flex items-center justify-center rounded-full"
-              data-tooltip-id="foundry-base-url"
-              data-tooltip-place="top"
-              data-tooltip-delay-hide={800}
-            >
-              <Info
-                strokeWidth={1.5}
-                size={18}
-                className="text-theme-text-secondary"
-              />
-            </div>
-          </div>
+      <div className={`${FIELD_ROW} mt-1.5`}>
+        <div className={FIELD_COL}>
+          <FieldLabel
+            htmlFor={`${id}-url`}
+            label={t("provider-fields.base-url")}
+            tip={
+              <>
+                {t("llm-fields.foundry.base-url-tip")}{" "}
+                <code className="font-mono">foundry status</code>
+              </>
+            }
+          />
           <input
+            id={`${id}-url`}
             type="url"
             name="FoundryBasePath"
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-            placeholder="eg: http://127.0.0.1:5272"
+            className={FIELD_INPUT}
+            placeholder="http://127.0.0.1:5272"
             defaultValue={settings?.FoundryBasePath}
             required={true}
             autoComplete="off"
@@ -86,50 +73,22 @@ export default function FoundryOptions({ settings }) {
             onChange={(e) => setBasePath(e.target.value)}
           />
         </div>
-        <div className="flex flex-col w-60">
-          <div className="flex items-center gap-1 mb-3">
-            <label className="text-white text-sm font-semibold block">
-              Model context window
-            </label>
-            <Tooltip
-              id="foundry-model-context-window"
-              place="top"
-              delayShow={300}
-              delayHide={800}
-              clickable={true}
-              className="tooltip !text-xs !opacity-100 z-99"
-              style={{
-                maxWidth: "350px",
-                whiteSpace: "normal",
-                wordWrap: "break-word",
-              }}
-            >
-              Override the context window limit. Leave empty to auto-detect from
-              the model, or lower it if large context windows slow your machine
-              down.
-            </Tooltip>
-            <div
-              className="text-theme-text-secondary cursor-pointer hover:bg-theme-bg-primary flex items-center justify-center rounded-full"
-              data-tooltip-id="foundry-model-context-window"
-              data-tooltip-place="top"
-              data-tooltip-delay-hide={800}
-            >
-              <Info
-                strokeWidth={1.5}
-                size={18}
-                className="text-theme-text-secondary"
-              />
-            </div>
-          </div>
+        <div className={FIELD_COL}>
+          <FieldLabel
+            htmlFor={`${id}-context`}
+            label={t("provider-fields.context-window")}
+            tip={t("llm-fields.foundry.context-window-tip")}
+          />
           <input
+            id={`${id}-context`}
             type="number"
             name="FoundryModelTokenLimit"
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-            placeholder="Automatically managed"
+            className={FIELD_INPUT}
+            placeholder={t("provider-fields.context-window-auto")}
             min={1}
             value={tokenLimit}
             onChange={handleTokenLimitChange}
-            onScroll={(e) => e.target.blur()}
+            onWheel={blurOnWheel}
             required={false}
             autoComplete="off"
           />
@@ -149,9 +108,11 @@ function FoundryModelSelection({
   onModelSelected,
   basePath = null,
 }) {
+  const { t } = useTranslation();
   const [customModels, setCustomModels] = useState([]);
   const [filteredModels, setFilteredModels] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [canManage, setCanManage] = useState(false);
 
@@ -161,18 +122,20 @@ function FoundryModelSelection({
       setFilteredModels([]);
       setSearchQuery("");
       setCanManage(false);
+      setError(null);
       setLoading(false);
       return;
     }
 
     setLoading(true);
-    const [{ models }, capabilities] = await Promise.all([
+    const [{ models, error }, capabilities] = await Promise.all([
       System.customModels("foundry", null, basePath),
       FoundryUtils.capabilities(basePath),
     ]);
     setCustomModels(models || []);
     setFilteredModels(models || []);
     setCanManage(capabilities.canManage);
+    setError(error || null);
     setSearchQuery("");
     setLoading(false);
   }
@@ -215,7 +178,7 @@ function FoundryModelSelection({
 
     const grouped = {};
     if (downloaded.length && downloaded.length < models.length)
-      grouped["Downloaded Models"] = downloaded;
+      grouped[DOWNLOADED_GROUP] = downloaded;
     Object.keys(byType)
       .sort((a, b) => a.localeCompare(b))
       .forEach((type) => (grouped[type] = byType[type]));
@@ -240,26 +203,30 @@ function FoundryModelSelection({
         place="top"
         className="tooltip !text-xs !opacity-100 z-99"
       />
-      <input
-        type="hidden"
-        name="FoundryModelPref"
-        id="FoundryModelPref"
-        value={selectedModelId}
-      />
+      <input type="hidden" name="FoundryModelPref" value={selectedModelId} />
       {loading ? (
         <ModelTableLoadingSkeleton />
       ) : filteredModels.length === 0 ? (
         <div className="flex flex-col w-full gap-y-2 mt-4">
-          <p className="text-theme-text-secondary text-sm">No models found!</p>
+          {error ? (
+            <p role="alert" className={FIELD_ERROR}>
+              {t("provider-fields.models-error", { error })}
+            </p>
+          ) : (
+            <p className="text-theme-text-secondary text-sm">
+              {basePath
+                ? t("provider-fields.models-empty")
+                : t("provider-fields.models-need-url")}
+            </p>
+          )}
         </div>
       ) : (
         <>
           {!canManage && (
             <p className="text-theme-text-secondary text-xs italic mt-3">
-              This Foundry service only reports the models it already has.
-              Install more on the host with{" "}
-              <span className="font-mono">foundry model download</span>, then
-              refresh.
+              {t("llm-fields.foundry.read-only-before")}{" "}
+              <code className="font-mono">foundry model download</code>
+              {t("llm-fields.foundry.read-only-after")}
             </p>
           )}
           {Object.entries(groupedModels).map(([group, models]) => (

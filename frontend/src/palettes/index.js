@@ -384,8 +384,9 @@ export function applyPalette(paletteState, mode) {
     }
     for (const [shade, rgb] of Object.entries(shades))
       properties[`--palette-${shade}`] = rgb;
-    // Primary buttons use sky-400 in dark mode and sky-500 in light mode.
-    const button = properties[`--palette-sky-${mode === "light" ? 500 : 400}`];
+    // Primary buttons use sky-700 in dark mode and sky-500 in light mode
+    // (see --theme-button-primary in palettes.css).
+    const button = properties[`--palette-sky-${mode === "light" ? 500 : 700}`];
     properties["--palette-accent-text"] = readableTextOn(
       button.split(" ").map(Number)
     );

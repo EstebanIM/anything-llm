@@ -1,154 +1,140 @@
-import React, { useEffect, useState } from "react";
-import { Copy, Check } from "lucide-react";
+import React, { useEffect, useId, useState } from "react";
+import { useTranslation } from "react-i18next";
 import Admin from "@/models/admin";
 import Workspace from "@/models/workspace";
-import showToast from "@/utils/toast";
+import CopyButton from "@/components/lib/CopyButton";
 import {
   ModalHeader,
   ModalBody,
   ModalFooter,
   ModalPrimaryButton,
   ModalSecondaryButton,
-  ModalLabel,
+  ModalInput,
   ModalHint,
 } from "@/components/lib/Modal";
+import { inviteLink } from "../InviteRow";
 
 export default function NewInviteModal({ closeModal, onSuccess }) {
+  const { t } = useTranslation();
   const [invite, setInvite] = useState(null);
   const [error, setError] = useState(null);
-  const [copied, setCopied] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [workspaces, setWorkspaces] = useState([]);
   const [selectedWorkspaceIds, setSelectedWorkspaceIds] = useState([]);
+  const hintId = useId();
 
   const handleCreate = async (e) => {
-    setError(null);
     e.preventDefault();
-
+    if (busy) return;
+    setError(null);
+    setBusy(true);
     const { invite: newInvite, error } = await Admin.newInvite({
       role: null,
       workspaceIds: selectedWorkspaceIds,
     });
-    if (!!newInvite) {
-      setInvite(newInvite);
-      onSuccess();
-    }
-    setError(error);
-  };
-
-  const copyInviteLink = () => {
-    if (!invite) return false;
-    window.navigator.clipboard.writeText(
-      `${window.location.origin}/accept-invite/${invite.code}`
-    );
-    setCopied(true);
-    showToast("Invite link copied to clipboard", "success", {
-      clear: true,
-    });
-  };
-
-  const handleWorkspaceSelection = (workspaceId) => {
-    if (selectedWorkspaceIds.includes(workspaceId)) {
-      const updated = selectedWorkspaceIds.filter((id) => id !== workspaceId);
-      setSelectedWorkspaceIds(updated);
+    setBusy(false);
+    if (!newInvite) {
+      setError(error || t("admin-pages.unknown-error"));
       return;
     }
-    setSelectedWorkspaceIds([...selectedWorkspaceIds, workspaceId]);
+    setInvite(newInvite);
+    onSuccess?.();
+  };
+
+  const toggleWorkspace = (workspaceId, checked) => {
+    setSelectedWorkspaceIds((prev) =>
+      checked ? [...prev, workspaceId] : prev.filter((id) => id !== workspaceId)
+    );
   };
 
   useEffect(() => {
-    function resetStatus() {
-      if (!copied) return false;
-      setTimeout(() => {
-        setCopied(false);
-      }, 3000);
-    }
-    resetStatus();
-  }, [copied]);
-
-  useEffect(() => {
-    async function fetchWorkspaces() {
-      Workspace.all()
-        .then((workspaces) => setWorkspaces(workspaces))
-        .catch(() => setWorkspaces([]));
-    }
-    fetchWorkspaces();
+    Workspace.all()
+      .then((workspaces) => setWorkspaces(workspaces ?? []))
+      .catch(() => setWorkspaces([]));
   }, []);
 
   return (
     <form onSubmit={handleCreate} className="flex flex-col gap-y-5">
-      <ModalHeader title="Create new invite" onClose={closeModal} />
+      <ModalHeader
+        title={t("admin-pages.invites.new-title")}
+        onClose={closeModal}
+      />
       <ModalBody>
-        {error && <p className="text-red-400 text-sm">Error: {error}</p>}
-        {invite && (
-          <div className="relative">
-            <input
-              type="url"
-              defaultValue={`${window.location.origin}/accept-invite/${invite.code}`}
-              disabled={true}
-              className="w-full h-[34px] px-3.5 pr-10 text-sm rounded-lg outline-none bg-zinc-800 border border-zinc-800 text-zinc-100 placeholder:text-zinc-400 light:bg-white light:border-slate-300 light:text-slate-900 light:placeholder:text-slate-400 focus:border-sky-500 light:focus:border-sky-500"
-            />
-            <button
-              type="button"
-              onClick={copyInviteLink}
-              disabled={copied}
-              className="border-none absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md hover:bg-zinc-800 light:hover:bg-slate-100 transition-all duration-300"
-            >
-              {copied ? (
-                <Check strokeWidth={1.5} size={20} className="text-green-400" />
-              ) : (
-                <Copy
-                  strokeWidth={1.5}
-                  size={20}
-                  className="text-slate-50 light:text-slate-900"
-                />
-              )}
-            </button>
+        {invite ? (
+          <div className="flex flex-col gap-y-1.5">
+            <div className="flex items-end gap-x-2">
+              <ModalInput
+                label={t("admin-pages.invites.link-label")}
+                type="url"
+                value={inviteLink(invite)}
+                readOnly={true}
+                // The link replaces the create button: land here so it can be
+                // copied right away.
+                autoFocus={true}
+                onFocus={(e) => e.target.select()}
+              />
+              <CopyButton
+                text={inviteLink(invite)}
+                label={t("admin-pages.invites.copy-new-link")}
+                className="shrink-0 border border-zinc-500 light:border-slate-500"
+              />
+            </div>
+            <ModalHint>{t("admin-pages.invites.link-hint")}</ModalHint>
           </div>
+        ) : (
+          <>
+            <p className="text-zinc-300 light:text-slate-700 text-sm">
+              {t("admin-pages.invites.new-description", {
+                role: t("profile_settings.roles.default"),
+              })}
+            </p>
+            {workspaces.length > 0 && (
+              <fieldset
+                aria-describedby={hintId}
+                className="w-full flex flex-col gap-y-2"
+              >
+                <legend className="text-sm font-medium text-zinc-50 light:text-slate-700">
+                  {t("admin-pages.invites.workspaces-legend")}{" "}
+                  <span className="font-normal text-zinc-400 light:text-slate-500">
+                    ({t("common.optional")})
+                  </span>
+                </legend>
+                <ModalHint id={hintId}>
+                  {t("admin-pages.invites.workspaces-hint")}
+                </ModalHint>
+                <div className="flex flex-col gap-y-2 mt-1">
+                  {workspaces.map((workspace) => (
+                    <WorkspaceOption
+                      key={workspace.id}
+                      workspace={workspace}
+                      checked={selectedWorkspaceIds.includes(workspace.id)}
+                      onChange={toggleWorkspace}
+                    />
+                  ))}
+                </div>
+              </fieldset>
+            )}
+          </>
         )}
-        <p className="text-zinc-400 light:text-slate-600 text-xs md:text-sm">
-          After creation you will be able to copy the invite and send it to a
-          new user where they can create an account as the <b>default</b> role
-          and automatically be added to workspaces selected.
-        </p>
-
-        {workspaces.length > 0 && !invite && (
-          <div className="w-full">
-            <div className="flex flex-col gap-y-1 mb-2">
-              <ModalLabel htmlFor="workspaces">
-                Auto-add invitee to workspaces
-              </ModalLabel>
-              <ModalHint>
-                You can optionally automatically assign the user to the
-                workspaces below by selecting them. By default, the user will
-                not have any workspaces visible. You can assign workspaces later
-                post-invite acceptance.
-              </ModalHint>
-            </div>
-
-            <div className="flex flex-col gap-y-2 mt-2">
-              {workspaces.map((workspace) => (
-                <WorkspaceOption
-                  key={workspace.id}
-                  workspace={workspace}
-                  selected={selectedWorkspaceIds.includes(workspace.id)}
-                  toggleSelection={handleWorkspaceSelection}
-                />
-              ))}
-            </div>
-          </div>
+        {error && (
+          <p role="alert" className="text-sm text-red-400 light:text-red-700">
+            {t("settings-pages.form-error", { error })}
+          </p>
         )}
       </ModalBody>
-      <ModalFooter className={invite ? "justify-end" : undefined}>
+      <ModalFooter>
         {!invite ? (
           <>
             <ModalSecondaryButton onClick={closeModal} type="button">
-              Cancel
+              {t("settings-pages.cancel")}
             </ModalSecondaryButton>
-            <ModalPrimaryButton type="submit">Create Invite</ModalPrimaryButton>
+            <ModalPrimaryButton type="submit" busy={busy}>
+              {t("admin-pages.invites.create-submit")}
+            </ModalPrimaryButton>
           </>
         ) : (
           <ModalSecondaryButton onClick={closeModal} type="button">
-            Close
+            {t("api.modal.close")}
           </ModalSecondaryButton>
         )}
       </ModalFooter>
@@ -156,32 +142,26 @@ export default function NewInviteModal({ closeModal, onSuccess }) {
   );
 }
 
-function WorkspaceOption({ workspace, selected, toggleSelection }) {
+function WorkspaceOption({ workspace, checked, onChange }) {
   return (
-    <button
-      type="button"
-      onClick={() => toggleSelection(workspace.id)}
-      className={`transition-all duration-300 w-full h-11 p-2.5 rounded-lg flex justify-start items-center gap-2.5 cursor-pointer border ${
-        selected
-          ? "border-theme-sidebar-item-workspace-active bg-theme-bg-secondary"
-          : "border-theme-sidebar-border"
-      } hover:border-theme-sidebar-border hover:bg-theme-bg-secondary`}
+    <label
+      className={`w-full min-h-[44px] px-3 py-2 rounded-lg flex items-center gap-x-3 cursor-pointer border transition-colors duration-quick ease-smooth hover:bg-theme-bg-secondary ${
+        checked
+          ? "border-sky-400 light:border-sky-700 bg-theme-bg-secondary"
+          : "border-zinc-600 light:border-slate-400"
+      }`}
     >
       <input
-        type="radio"
-        name="workspace"
+        type="checkbox"
+        name="workspaceIds"
         value={workspace.id}
-        checked={selected}
-        className="hidden"
+        checked={checked}
+        onChange={(e) => onChange(workspace.id, e.target.checked)}
+        className="h-4 w-4 shrink-0 accent-sky-500 light:accent-sky-700"
       />
-      <div
-        className={`w-4 h-4 rounded-full border-2 border-theme-sidebar-border mr-2 ${
-          selected ? "bg-[var(--theme-sidebar-item-workspace-active)]" : ""
-        }`}
-      ></div>
-      <div className="text-theme-text-primary text-sm font-medium font-['Plus Jakarta Sans'] leading-tight">
+      <span className="text-theme-text-primary text-sm font-medium leading-tight break-words min-w-0">
         {workspace.name}
-      </div>
-    </button>
+      </span>
+    </label>
   );
 }

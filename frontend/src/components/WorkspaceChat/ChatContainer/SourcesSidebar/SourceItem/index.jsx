@@ -15,9 +15,9 @@ export default function SourceItem({ source, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="flex flex-col gap-[2px] items-start w-full text-left hover:opacity-75 transition-opacity"
+      className="flex flex-col gap-[2px] items-start w-full text-left rounded-md hover:opacity-75 transition-opacity duration-quick"
     >
-      <div className="flex gap-[6px] items-start w-full">
+      <span className="flex gap-[6px] items-start w-full">
         <SourceTypeCircle
           type={info.icon}
           size={16}
@@ -25,14 +25,16 @@ export default function SourceItem({ source, onClick }) {
           url={info.href}
           customImage={customImage}
         />
-        <p className="flex-1 font-medium text-sm text-white light:text-slate-900 leading-[15px] truncate">
+        <span className="block flex-1 font-medium text-sm text-white light:text-slate-900 leading-[15px] truncate">
           {source.title}
-        </p>
-      </div>
-      <div className="flex flex-col gap-[2px] pl-[22px] text-[10px] text-zinc-400 light:text-slate-500 leading-[14px]">
-        <p>{subtitle}</p>
-        <p>{t("chat_window.source_count", { count: source.references })}</p>
-      </div>
+        </span>
+      </span>
+      <span className="flex flex-col gap-[2px] pl-[22px] text-[10px] text-zinc-400 light:text-slate-600 leading-[14px]">
+        <span>{subtitle}</span>
+        <span>
+          {t("chat_window.source_count", { count: source.references })}
+        </span>
+      </span>
     </button>
   );
 }

@@ -1,11 +1,17 @@
-const Formatter = Intl.NumberFormat("en", { notation: "compact" });
+import i18n from "@/i18n";
 
+// Numbers follow the UI language ("10.000" in Spanish, "10,000" in English).
+const locale = () => i18n.resolvedLanguage || i18n.language || "en";
+
+/** Thousands separators in the UI language (name kept for its callers). */
 export function numberWithCommas(input) {
-  return input.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  const number = Number(input);
+  if (!Number.isFinite(number)) return String(input ?? "");
+  return new Intl.NumberFormat(locale()).format(number);
 }
 
 export function nFormatter(input) {
-  return Formatter.format(input);
+  return new Intl.NumberFormat(locale(), { notation: "compact" }).format(input);
 }
 
 export function toPercentString(input = null, decimals = 0) {
@@ -39,7 +45,11 @@ export function humanFileSize(bytes, si = false, dp = 1) {
     u < units.length - 1
   );
 
-  return bytes.toFixed(dp) + " " + units[u];
+  const value = new Intl.NumberFormat(locale(), {
+    minimumFractionDigits: dp,
+    maximumFractionDigits: dp,
+  }).format(bytes);
+  return value + " " + units[u];
 }
 
 export function milliToHms(milli = 0) {

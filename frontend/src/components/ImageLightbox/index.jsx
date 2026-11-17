@@ -1,8 +1,14 @@
 import { useState, useEffect } from "react";
-import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import Modal from "@/components/lib/Modal";
 
 const OPEN_EVENT = "open-image-lightbox";
+
+// `.text-white` is remapped to dark text in the light theme, but this overlay
+// stays black in both themes, so icons use a fixed light color.
+const CONTROL_CLASS =
+  "absolute flex items-center justify-center rounded-full text-zinc-50 bg-white/10 hover:bg-white/20 hover:text-zinc-300 transition-colors duration-quick border-none cursor-pointer";
 
 /**
  * Opens the image lightbox from anywhere in the app.
@@ -16,6 +22,7 @@ export function openImageLightbox(images, initialIndex = 0) {
 }
 
 export default function ImageLightbox() {
+  const { t } = useTranslation();
   const [images, setImages] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -40,76 +47,85 @@ export default function ImageLightbox() {
     setCurrentIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0));
   }
 
+  // Escape is handled by Modal; arrows page through the images.
   useEffect(() => {
     if (!images) return;
     function handleKeyDown(e) {
-      if (e.key === "Escape") close();
-      else if (e.key === "ArrowLeft") handlePrevious();
+      if (e.key === "ArrowLeft") handlePrevious();
       else if (e.key === "ArrowRight") handleNext();
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [images]);
 
-  if (!images || images.length === 0) return null;
-  const safeIndex = Math.min(currentIndex, images.length - 1);
-  const currentImage = images[safeIndex];
-  if (!currentImage) return null;
+  const isOpen = !!images && images.length > 0;
+  const safeIndex = isOpen ? Math.min(currentIndex, images.length - 1) : 0;
+  const currentImage = isOpen ? images[safeIndex] : null;
 
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90"
-      onClick={close}
+  return (
+    <Modal
+      isOpen={isOpen && !!currentImage}
+      onClose={close}
+      variant="bare"
+      ariaLabel={t("chat-panels.lightbox.label")}
+      className="!bg-black/90"
     >
-      <button
-        type="button"
-        onClick={close}
-        className="absolute top-4 right-4 p-2 text-white light:text-white hover:text-white/70 transition-colors rounded-full bg-white/10 hover:bg-white/20 border-none cursor-pointer"
-        aria-label="Close lightbox"
-      >
-        <X strokeWidth={1.5} size={24} />
-      </button>
-
-      {images.length > 1 && (
+      {currentImage && (
         <>
+          <div
+            aria-hidden="true"
+            className="absolute inset-0"
+            onClick={close}
+          />
           <button
             type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              handlePrevious();
-            }}
-            className="absolute left-4 p-3 text-white light:text-white hover:text-white/70 transition-colors rounded-full bg-white/10 hover:bg-white/20 border-none cursor-pointer"
-            aria-label="Previous image"
+            onClick={close}
+            className={`${CONTROL_CLASS} top-4 right-4 w-11 h-11`}
+            aria-label={t("chat-panels.lightbox.close")}
           >
-            <ChevronLeft strokeWidth={1.5} size={24} />
+            <X strokeWidth={1.5} size={24} aria-hidden="true" />
           </button>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleNext();
-            }}
-            className="absolute right-4 p-3 text-white light:text-white hover:text-white/70 transition-colors rounded-full bg-white/10 hover:bg-white/20 border-none cursor-pointer"
-            aria-label="Next image"
-          >
-            <ChevronRight strokeWidth={1.5} size={24} />
-          </button>
+
+          {images.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={handlePrevious}
+                className={`${CONTROL_CLASS} left-4 w-12 h-12`}
+                aria-label={t("chat-panels.lightbox.previous")}
+              >
+                <ChevronLeft strokeWidth={1.5} size={24} aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                onClick={handleNext}
+                className={`${CONTROL_CLASS} right-4 w-12 h-12`}
+                aria-label={t("chat-panels.lightbox.next")}
+              >
+                <ChevronRight strokeWidth={1.5} size={24} aria-hidden="true" />
+              </button>
+            </>
+          )}
+
+          <img
+            src={currentImage.contentString}
+            alt={currentImage.name || t("chat-panels.lightbox.image")}
+            className="relative max-w-[90vw] max-h-[90vh] object-contain"
+          />
+
+          {images.length > 1 && (
+            <p
+              aria-live="polite"
+              className="absolute bottom-4 left-1/2 -translate-x-1/2 text-zinc-200 text-sm bg-black/50 px-3 py-1 rounded-full tabular-nums"
+            >
+              {t("chat-panels.lightbox.position", {
+                current: safeIndex + 1,
+                total: images.length,
+              })}
+            </p>
+          )}
         </>
       )}
-
-      <img
-        src={currentImage.contentString}
-        alt={currentImage.name || "attachment"}
-        className="max-w-[90vw] max-h-[90vh] object-contain"
-        onClick={(e) => e.stopPropagation()}
-      />
-
-      {images.length > 1 && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/70 text-sm bg-black/50 px-3 py-1 rounded-full">
-          {safeIndex + 1} / {images.length}
-        </div>
-      )}
-    </div>,
-    document.getElementById("root")
+    </Modal>
   );
 }

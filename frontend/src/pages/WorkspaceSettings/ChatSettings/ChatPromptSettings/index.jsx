@@ -1,7 +1,6 @@
-import { useEffect, useState, useRef, Fragment } from "react";
-import { useTranslation } from "react-i18next";
+import { useEffect, useId, useState, useRef, Fragment } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import SystemPromptVariable from "@/models/systemPromptVariable";
-import Highlighter from "react-highlight-words";
 import { Link, useSearchParams } from "react-router-dom";
 import paths from "@/utils/paths";
 import ChatPromptHistory from "./ChatPromptHistory";
@@ -9,7 +8,15 @@ import PublishEntityModal from "@/components/CommunityHub/PublishEntityModal";
 import { useModal } from "@/hooks/useModal";
 import System from "@/models/system";
 import { userFromStorage } from "@/utils/request";
-import { useAutosaveForm, SavedIndicator } from "@/components/AutosaveForm";
+import { useAutosaveForm } from "@/components/AutosaveForm";
+import { FIELD_INPUT } from "@/components/ProviderFields";
+import SettingsField, {
+  HELP_TEXT,
+  TEXT_LINK,
+} from "../../components/SettingsField";
+
+const TEXT_BUTTON =
+  "min-h-[44px] md:min-h-0 text-xs font-medium underline transition-colors duration-quick ease-smooth";
 
 export default function ChatPromptSettings({ workspace }) {
   // Only superadmins can edit the system prompt; the server enforces the same rule.
@@ -22,6 +29,7 @@ function ChatPromptSettingsForm({ workspace }) {
   const { t } = useTranslation();
   const { markDirty, save, hasChanges } = useAutosaveForm();
   const [searchParams] = useSearchParams();
+  const variablesId = useId();
 
   // Prompt state
   const [prompt, setPrompt] = useState(workspace?.openAiPrompt ?? "");
@@ -29,14 +37,12 @@ function ChatPromptSettingsForm({ workspace }) {
   const [defaultSystemPrompt, setDefaultSystemPrompt] = useState("");
 
   // UI state
-  const [isEditing, setIsEditing] = useState(false);
   const [showPromptHistory, setShowPromptHistory] = useState(false);
   const [availableVariables, setAvailableVariables] = useState([]);
+  // Prompt sent to the publish dialog: null publishes the one being edited.
+  const [publishPrompt, setPublishPrompt] = useState(null);
 
-  // Refs
   const promptRef = useRef(null);
-  const promptHistoryRef = useRef(null);
-  const historyButtonRef = useRef(null);
 
   // Modals
   const {
@@ -50,17 +56,22 @@ function ChatPromptSettingsForm({ workspace }) {
   const hasBeenModified =
     defaultSystemPrompt && savedPrompt?.trim() !== defaultSystemPrompt?.trim();
   const showPublishButton =
-    !isEditing && prompt?.trim().length >= 10 && (isDirty || hasBeenModified);
+    prompt?.trim().length >= 10 && (isDirty || hasBeenModified);
 
-  // Load variables and handle focus on mount
   useEffect(() => {
-    async function setupVariableHighlighting() {
-      const { variables } = await SystemPromptVariable.getAll();
-      setAvailableVariables(variables);
-    }
-    setupVariableHighlighting();
-    if (searchParams.get("action") === "focus-system-prompt")
-      setIsEditing(true);
+    SystemPromptVariable.getAll().then(({ variables }) =>
+      setAvailableVariables(variables ?? [])
+    );
+  }, []);
+
+  // Links can ask for the prompt field (?action=focus-system-prompt).
+  useEffect(() => {
+    if (searchParams.get("action") !== "focus-system-prompt") return;
+    const field = promptRef.current;
+    if (!field) return;
+    field.focus();
+    field.setSelectionRange(field.value.length, field.value.length);
+    field.scrollIntoView({ block: "center" });
   }, [searchParams]);
 
   // Update saved prompt when parent clears hasChanges
@@ -68,37 +79,14 @@ function ChatPromptSettingsForm({ workspace }) {
     if (!hasChanges) setSavedPrompt(prompt);
   }, [hasChanges, prompt]);
 
-  // Auto-focus textarea when editing
-  useEffect(() => {
-    if (isEditing && promptRef.current) {
-      promptRef.current.focus();
-    }
-  }, [isEditing]);
-
   useEffect(() => {
     System.fetchDefaultSystemPrompt().then(({ defaultSystemPrompt }) => {
       setDefaultSystemPrompt(defaultSystemPrompt);
       if (!workspace?.openAiPrompt && defaultSystemPrompt) {
-        setPrompt(defaultSystemPrompt);
+        setPrompt(defaultSystemPrompt ?? "");
         setSavedPrompt(defaultSystemPrompt);
       }
     });
-  }, []);
-
-  // Handle click outside for history panel
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (
-        promptHistoryRef.current &&
-        !promptHistoryRef.current.contains(event.target) &&
-        historyButtonRef.current &&
-        !historyButtonRef.current.contains(event.target)
-      ) {
-        setShowPromptHistory(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleRestoreFromHistory = (historicalPrompt) => {
@@ -109,172 +97,141 @@ function ChatPromptSettingsForm({ workspace }) {
   };
 
   const handlePublishFromHistory = (historicalPrompt) => {
-    openPublishModal();
     setShowPromptHistory(false);
-    setTimeout(() => setPrompt(historicalPrompt), 0);
+    setPublishPrompt(historicalPrompt);
+    openPublishModal();
+  };
+
+  const handlePublishCurrent = () => {
+    setPublishPrompt(null);
+    openPublishModal();
   };
 
   // Restore to default system prompt, if no default system prompt is set
   const handleRestoreToDefaultSystemPrompt = () => {
     System.fetchDefaultSystemPrompt().then(({ defaultSystemPrompt }) => {
-      setPrompt(defaultSystemPrompt);
+      setPrompt(defaultSystemPrompt ?? "");
       markDirty("openAiPrompt");
       save();
+      // The restore button disappears once the prompt is the default one.
+      promptRef.current?.focus();
     });
   };
 
   return (
     <>
       <ChatPromptHistory
-        ref={promptHistoryRef}
         workspaceSlug={workspace.slug}
         show={showPromptHistory}
         onRestore={handleRestoreFromHistory}
         onPublishClick={handlePublishFromHistory}
         onClose={() => setShowPromptHistory(false)}
       />
-      <div className="flex flex-col gap-y-[8px]">
-        <div className="flex flex-col gap-y-[8px]">
-          <div className="flex items-center justify-between">
-            <label htmlFor="name" className="block input-label">
-              {t("chat.prompt.title")}
-              <SavedIndicator name="openAiPrompt" />
-            </label>
-          </div>
-          <p className="text-white text-opacity-60 text-xs font-medium">
-            {t("chat.prompt.description")}
-          </p>
-
-          <div className="flex items-center justify-between">
-            <p className="text-white text-opacity-60 text-xs font-medium">
-              You can insert{" "}
-              <Link
-                to={paths.settings.systemPromptVariables()}
-                className="text-primary-button"
-              >
-                prompt variables
-              </Link>{" "}
-              like:{" "}
-              {availableVariables.slice(0, 3).map((v, i) => (
-                <Fragment key={v.key}>
-                  <span className="bg-theme-settings-input-bg px-1 py-0.5 rounded">
-                    {`{${v.key}}`}
-                  </span>
-                  {i < availableVariables.length - 1 && ", "}
-                </Fragment>
-              ))}
-              {availableVariables.length > 3 && (
-                <Link
-                  to={paths.settings.systemPromptVariables()}
-                  className="text-primary-button"
-                >
-                  +{availableVariables.length - 3} more...
-                </Link>
-              )}
-            </p>
-            <button
-              ref={historyButtonRef}
-              type="button"
-              className="text-theme-text-secondary hover:text-white light:hover:text-black text-xs font-medium"
-              onClick={(e) => {
-                e.preventDefault();
-                setShowPromptHistory(!showPromptHistory);
-              }}
-            >
-              {showPromptHistory ? "Hide History" : "View History"}
-            </button>
-          </div>
-        </div>
-
-        <input type="hidden" name="openAiPrompt" value={prompt} />
-        <div className="relative w-full flex flex-col items-end">
-          <div className="relative w-full">
-            {isEditing ? (
-              <textarea
-                ref={promptRef}
-                autoFocus={true}
-                rows={5}
-                onFocus={(e) => {
-                  const length = e.target.value.length;
-                  e.target.setSelectionRange(length, length);
-                }}
-                onBlur={(e) => {
-                  setIsEditing(false);
-                  setPrompt(e.target.value);
-                }}
-                onChange={(e) => {
-                  setPrompt(e.target.value);
-                  markDirty("openAiPrompt");
-                }}
-                onPaste={(e) => {
-                  setPrompt(e.target.value);
-                  markDirty("openAiPrompt");
-                }}
-                style={{
-                  resize: "vertical",
-                  overflowY: "scroll",
-                  minHeight: "150px",
-                }}
-                defaultValue={prompt}
-                className="border-none bg-theme-settings-input-bg text-white text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5 mt-2"
+      <SettingsField
+        name="openAiPrompt"
+        label={t("chat.prompt.title")}
+        help={t("chat.prompt.description")}
+      >
+        {(control) => (
+          <>
+            <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
+              <PromptVariablesHint
+                id={variablesId}
+                variables={availableVariables}
               />
-            ) : (
-              <div
-                onClick={() => setIsEditing(true)}
-                style={{
-                  resize: "vertical",
-                  overflowY: "scroll",
-                  minHeight: "150px",
-                }}
-                className="border-none bg-theme-settings-input-bg text-white text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5 mt-2"
-              >
-                <Highlighter
-                  className="whitespace-pre-wrap"
-                  highlightClassName="bg-cta-button p-0.5 rounded-md"
-                  searchWords={availableVariables.map((v) => `{${v.key}}`)}
-                  autoEscape={true}
-                  caseSensitive={true}
-                  textToHighlight={prompt}
-                />
-              </div>
-            )}
-          </div>
-          <div className="w-full flex flex-row items-center justify-between pt-2">
-            {prompt !== defaultSystemPrompt && (
               <button
                 type="button"
-                onClick={handleRestoreToDefaultSystemPrompt}
-                className="text-theme-text-primary hover:text-white light:hover:text-black text-xs font-medium"
+                aria-haspopup="dialog"
+                onClick={() => setShowPromptHistory(true)}
+                className={`${TEXT_BUTTON} shrink-0 text-theme-text-secondary hover:text-white light:hover:text-slate-900`}
               >
-                Restore to Default
+                {t("workspace-settings.prompt.view-history")}
               </button>
-            )}
-            <PublishPromptCTA
-              hidden={!showPublishButton}
-              onClick={openPublishModal}
+            </div>
+            <textarea
+              {...control}
+              aria-describedby={[control["aria-describedby"], variablesId]
+                .filter(Boolean)
+                .join(" ")}
+              ref={promptRef}
+              name="openAiPrompt"
+              rows={8}
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              className={`${FIELD_INPUT} resize-y min-h-[150px]`}
             />
-          </div>
-        </div>
-      </div>
+            <div className="w-full flex flex-wrap items-center justify-between gap-x-4">
+              {prompt !== defaultSystemPrompt && (
+                <button
+                  type="button"
+                  onClick={handleRestoreToDefaultSystemPrompt}
+                  className={`${TEXT_BUTTON} text-theme-text-secondary hover:text-white light:hover:text-slate-900`}
+                >
+                  {t("workspace-settings.prompt.restore-default")}
+                </button>
+              )}
+              {showPublishButton && (
+                <button
+                  type="button"
+                  onClick={handlePublishCurrent}
+                  className={`${TEXT_BUTTON} ml-auto text-sky-400 light:text-sky-700 hover:text-sky-300 light:hover:text-sky-800`}
+                >
+                  {t("chat.prompt.history.publish")}
+                </button>
+              )}
+            </div>
+          </>
+        )}
+      </SettingsField>
       <PublishEntityModal
         show={showPublishModal}
         onClose={closePublishModal}
         entityType="system-prompt"
-        entity={prompt}
+        entity={publishPrompt ?? prompt}
       />
     </>
   );
 }
 
-function PublishPromptCTA({ hidden = false, onClick }) {
-  if (hidden) return null;
+/** "You can insert prompt variables like: {a}, {b}, {c} and 2 more". */
+function PromptVariablesHint({ id, variables }) {
+  const { t } = useTranslation();
+  const shown = variables.slice(0, 3);
+  const more = variables.length - shown.length;
+  const variablesLink = (
+    <Link to={paths.settings.systemPromptVariables()} className={TEXT_LINK} />
+  );
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="border-none text-primary-button hover:text-white light:hover:text-black text-xs font-medium"
-    >
-      Publish to Community Hub
-    </button>
+    <p id={id} className={HELP_TEXT}>
+      <Trans
+        i18nKey={
+          shown.length > 0
+            ? "workspace-settings.prompt.variables"
+            : "workspace-settings.prompt.variables-none"
+        }
+        components={{ anchor: variablesLink }}
+      />
+      {shown.map((variable, i) => (
+        <Fragment key={variable.key}>
+          {" "}
+          <code className="bg-theme-settings-input-bg px-1 py-0.5 rounded">
+            {`{${variable.key}}`}
+          </code>
+          {i < shown.length - 1 && ","}
+        </Fragment>
+      ))}
+      {more > 0 && (
+        <>
+          {" "}
+          <Link
+            to={paths.settings.systemPromptVariables()}
+            className={TEXT_LINK}
+          >
+            {t("workspace-settings.prompt.variables-more", { count: more })}
+          </Link>
+        </>
+      )}
+    </p>
   );
 }

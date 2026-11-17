@@ -3,6 +3,7 @@ import { formatDuration, numberWithCommas } from "@/utils/numbers";
 import React, { useEffect, useState, useContext } from "react";
 import { isMobile } from "react-device-detect";
 import useUser from "@/hooks/useUser";
+import { useTranslation } from "react-i18next";
 const MetricsContext = React.createContext();
 const SHOW_METRICS_KEY = "anythingllm_show_chat_metrics";
 const SHOW_METRICS_EVENT = "anythingllm_show_metrics_change";
@@ -80,7 +81,6 @@ export function MetricsProvider({ children }) {
       if (!e?.detail?.hasOwnProperty("showMetricsAutomatically")) return;
       setShowMetricsAutomatically(e.detail.showMetricsAutomatically);
     }
-    console.log("Adding event listener for metrics visibility");
     window.addEventListener(SHOW_METRICS_EVENT, handleShowingMetricsEvent);
     return () =>
       window.removeEventListener(SHOW_METRICS_EVENT, handleShowingMetricsEvent);
@@ -105,10 +105,12 @@ export default function RenderMetrics({ metrics = {} }) {
   const { showMetricsAutomatically, setShowMetricsAutomatically } =
     useContext(MetricsContext);
   const { user } = useUser();
+  const { t } = useTranslation();
   // The metrics string exposes the model in use, so default users do not see it.
   if (!!user && user.role === "default") return null;
   if (!metrics?.duration || !metrics?.outputTps || isMobile) return null;
 
+  const metricsText = buildMetricsString(metrics);
   return (
     <button
       type="button"
@@ -116,13 +118,15 @@ export default function RenderMetrics({ metrics = {} }) {
       data-tooltip-id="metrics-visibility"
       data-tooltip-content={
         showMetricsAutomatically
-          ? "Click to only show metrics when hovering"
-          : "Click to show metrics as soon as they are available"
+          ? t("chat-history.metrics.show-on-hover")
+          : t("chat-history.metrics.show-always")
       }
-      className={`border-none flex md:justify-end items-center gap-x-[8px] -ml-7 ${showMetricsAutomatically ? "opacity-100" : "opacity-0"} md:group-hover:opacity-100 transition-all duration-300`}
+      aria-label={t("chat-history.metrics.pin", { metrics: metricsText })}
+      aria-pressed={showMetricsAutomatically}
+      className={`border-none flex md:justify-end items-center gap-x-[8px] -ml-7 ${showMetricsAutomatically ? "opacity-100" : "opacity-0"} group-hover:opacity-100 focus-visible:opacity-100 group-focus-within:opacity-100 transition-opacity duration-quick ease-smooth`}
     >
-      <p className="cursor-pointer text-xs font-mono text-zinc-400 light:text-slate-500">
-        {buildMetricsString(metrics)}
+      <p className="!m-0 cursor-pointer text-xs font-mono text-zinc-400 light:text-slate-500">
+        {metricsText}
       </p>
     </button>
   );

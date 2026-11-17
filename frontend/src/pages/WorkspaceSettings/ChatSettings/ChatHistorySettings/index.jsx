@@ -1,31 +1,35 @@
 import { useTranslation } from "react-i18next";
-import { SavedIndicator } from "@/components/AutosaveForm";
+import { FIELD_INPUT, blurOnWheel } from "@/components/ProviderFields";
+import SettingsField from "../../components/SettingsField";
+
 export default function ChatHistorySettings({ workspace }) {
   const { t } = useTranslation();
   return (
-    <div className="flex flex-col gap-y-[8px]">
-      <div className="flex flex-col gap-y-[8px]">
-        <label htmlFor="name" className="block input-label">
-          {t("chat.history.title")}
-          <SavedIndicator name="openAiHistory" />
-        </label>
-        <p className="text-white text-opacity-60 text-xs font-medium">
-          {t("chat.history.desc-start")}
-          <i> {t("chat.history.recommend")} </i>
-        </p>
-      </div>
-      <input
-        name="openAiHistory"
-        type="number"
-        min={0}
-        step={1}
-        onWheel={(e) => e.target.blur()}
-        defaultValue={workspace?.openAiHistory ?? 20}
-        className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-        placeholder="20"
-        required={true}
-        autoComplete="off"
-      />
-    </div>
+    <SettingsField
+      name="openAiHistory"
+      label={t("chat.history.title")}
+      help={
+        <>
+          {t("chat.history.desc-start")} <i>{t("chat.history.recommend")}</i>
+        </>
+      }
+    >
+      {(control) => (
+        <input
+          {...control}
+          name="openAiHistory"
+          type="number"
+          inputMode="numeric"
+          min={0}
+          step={1}
+          onWheel={blurOnWheel}
+          defaultValue={workspace?.openAiHistory ?? 20}
+          className={FIELD_INPUT}
+          placeholder="20"
+          required={true}
+          autoComplete="off"
+        />
+      )}
+    </SettingsField>
   );
 }

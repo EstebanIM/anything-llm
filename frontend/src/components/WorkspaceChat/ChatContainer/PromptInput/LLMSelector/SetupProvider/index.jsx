@@ -17,6 +17,7 @@ export default function SetupProvider({
   settings,
   llmProvider,
 }) {
+  const { t } = useTranslation();
   if (!isOpen) return null;
 
   async function handleUpdate(e) {
@@ -28,7 +29,10 @@ export default function SetupProvider({
     const { error } = await System.updateSystem(data);
     if (error) {
       showToast(
-        `Failed to save ${llmProvider.name} settings: ${error}`,
+        t("chat-input.provider-save-failed", {
+          provider: llmProvider.name,
+          error,
+        }),
         "error"
       );
       return;
@@ -47,14 +51,17 @@ export default function SetupProvider({
         className="flex flex-col gap-y-5"
       >
         <ModalHeader
-          title={`${llmProvider.name} Settings`}
+          title={t("chat-input.provider-settings", {
+            provider: llmProvider.name,
+          })}
           onClose={closeModal}
         />
         <ModalBody>
           <div className="space-y-6 max-h-[60vh] overflow-y-auto p-1">
             <p className="text-sm text-zinc-400 light:text-slate-600">
-              To use {llmProvider.name} as this workspace's LLM you need to set
-              it up first.
+              {t("chat-input.provider-setup-required", {
+                provider: llmProvider.name,
+              })}
             </p>
             <div>
               {llmProvider.options(settings, { credentialsOnly: true })}
@@ -63,10 +70,10 @@ export default function SetupProvider({
         </ModalBody>
         <ModalFooter>
           <ModalSecondaryButton type="button" onClick={closeModal}>
-            Cancel
+            {t("chat_window.cancel")}
           </ModalSecondaryButton>
           <ModalPrimaryButton type="submit" form="provider-form">
-            Save settings
+            {t("chat-input.provider-save")}
           </ModalPrimaryButton>
         </ModalFooter>
       </form>
@@ -83,19 +90,20 @@ export function NoSetupWarning({ showing, onSetupClick }) {
       <CircleAlert
         strokeWidth={1.5}
         size={16}
+        aria-hidden="true"
         className="text-white light:text-slate-800 shrink-0 mt-0.5"
       />
       <p className="text-[13px] text-white light:text-slate-800 leading-5">
         {t("chat_window.workspace_llm_manager.missing_credentials")}{" "}
-        <span
+        <button
+          type="button"
           onClick={onSetupClick}
-          className="text-sky-400 font-semibold cursor-pointer hover:underline"
-          role="button"
+          className="border-none bg-transparent p-0 rounded text-sky-400 light:text-sky-700 font-semibold cursor-pointer hover:underline"
         >
           {t(
             "chat_window.workspace_llm_manager.missing_credentials_description"
           )}
-        </span>
+        </button>
       </p>
     </div>
   );

@@ -1,48 +1,67 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import Workspace from "@/models/workspace";
 import showToast from "@/utils/toast";
 import { useTranslation } from "react-i18next";
+import ConfirmModal from "@/components/lib/ConfirmModal";
+import {
+  DANGER_BUTTON,
+  HELP_TEXT,
+  SECTION_HEADING,
+} from "../../components/SettingsField";
 
-export default function ResetDatabase({ workspace }) {
-  const [deleting, setDeleting] = useState(false);
+export default function ResetDatabase({ workspace, onReset }) {
   const { t } = useTranslation();
-  const resetVectorDatabase = async () => {
-    if (!window.confirm(`${t("vector-workspace.reset.confirm")}`)) return false;
+  const headingId = useId();
+  const helpId = useId();
+  const [confirming, setConfirming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
+  const resetVectorDatabase = async () => {
+    if (deleting) return;
     setDeleting(true);
     const success = await Workspace.wipeVectorDb(workspace.slug);
+    setDeleting(false);
+    setConfirming(false);
     if (!success) {
-      showToast(
-        t("vector-workspace.reset.error"),
-        t("vector-workspace.common.error"),
-        {
-          clear: true,
-        }
-      );
-      setDeleting(false);
+      showToast(t("vector-workspace.reset.error"), "error", { clear: true });
       return;
     }
-
-    showToast(
-      t("vector-workspace.reset.success"),
-      t("vector-workspace.common.success"),
-      {
-        clear: true,
-      }
-    );
-    setDeleting(false);
+    showToast(t("vector-workspace.reset.success"), "success", { clear: true });
+    onReset?.();
   };
 
   return (
-    <button
-      disabled={deleting}
-      onClick={resetVectorDatabase}
-      type="button"
-      className="w-60 transition-all duration-300 border border-transparent rounded-lg whitespace-nowrap text-sm px-5 py-2.5 focus:z-10 bg-red-500/25 text-red-200 light:text-red-500 hover:light:text-[#FFFFFF] hover:text-[#FFFFFF] hover:bg-red-600 disabled:bg-red-600 disabled:text-red-200 disabled:animate-pulse"
-    >
-      {deleting
-        ? t("vector-workspace.reset.resetting")
-        : t("vector-workspace.reset.reset")}
-    </button>
+    <section aria-labelledby={headingId} className="flex flex-col gap-y-2">
+      <h2 id={headingId} className={SECTION_HEADING}>
+        {t("vector-workspace.reset.reset")}
+      </h2>
+      <p id={helpId} className={HELP_TEXT}>
+        {t("workspace-settings.reset.description")}
+      </p>
+      <button
+        type="button"
+        onClick={() => setConfirming(true)}
+        aria-describedby={helpId}
+        className={`${DANGER_BUTTON} mt-1`}
+      >
+        {t("workspace-settings.reset.button")}
+      </button>
+      <ConfirmModal
+        isOpen={confirming}
+        title={t("workspace-settings.reset.confirm-title", {
+          name: workspace.name,
+        })}
+        confirmLabel={
+          deleting
+            ? t("vector-workspace.reset.resetting")
+            : t("workspace-settings.reset.button")
+        }
+        busy={deleting}
+        onConfirm={resetVectorDatabase}
+        onCancel={() => setConfirming(false)}
+      >
+        <p>{t("workspace-settings.reset.confirm-body")}</p>
+      </ConfirmModal>
+    </section>
   );
 }

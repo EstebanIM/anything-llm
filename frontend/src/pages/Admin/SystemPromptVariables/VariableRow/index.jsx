@@ -1,113 +1,153 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import System from "@/models/system";
 import showToast from "@/utils/toast";
 import { useModal } from "@/hooks/useModal";
 import Modal from "@/components/lib/Modal";
 import EditVariableModal from "./EditVariableModal";
-import { titleCase } from "text-case";
+import { errorMessage } from "../VariableFields";
 import truncate from "truncate";
-import { Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
+import InlineConfirm, {
+  CELL,
+  MOBILE_LABEL,
+  ROW,
+  ROW_ACTION,
+  ROW_ACTION_DANGER,
+  ROW_ACTIONS,
+  ROW_HEADER,
+  useConfirmFocusReturn,
+} from "@/pages/Admin/Users/AdminTable";
+
+const TYPE_STYLES = {
+  system: "bg-blue-600/20 text-blue-300 light:text-blue-800",
+  user: "bg-green-600/20 text-green-300 light:text-green-800",
+  workspace: "bg-cyan-600/20 text-cyan-300 light:text-cyan-800",
+  static: "bg-yellow-600/20 text-yellow-300 light:text-yellow-800",
+};
 
 /**
  * A row component for displaying a system prompt variable
  * @param {{id: number|null, key: string, value: string, description: string, type: string}} variable - The system prompt variable to display
- * @param {Function} onRefresh - A function to call when the variable is refreshed
+ * @param {Function} onRefresh - Reloads the list after an edit
+ * @param {Function} onDeleted - Removes the row once the server confirms
  * @returns {JSX.Element} A JSX element for displaying the variable
  */
-export default function VariableRow({ variable, onRefresh }) {
-  const rowRef = useRef(null);
+export default function VariableRow({ variable, onRefresh, onDeleted }) {
+  const { t } = useTranslation();
   const { isOpen, openModal, closeModal } = useModal();
+  const [confirming, setConfirming] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const deleteRef = useRef(null);
+  useConfirmFocusReturn(confirming, { delete: deleteRef });
+  const type = variable?.type ?? "static";
+  const key = variable.key;
+  const value =
+    typeof variable.value === "function" ? variable.value() : variable.value;
 
   const handleDelete = async () => {
     if (!variable.id) return;
-    if (
-      !window.confirm(
-        `Are you sure you want to delete the variable "${variable.key}"?\nThis action is irreversible.`
-      )
-    )
-      return false;
-
-    try {
-      const { success, error } = await System.promptVariables.delete(
-        variable.id
+    setBusy(true);
+    const { success, error } = await System.promptVariables.delete(variable.id);
+    setBusy(false);
+    if (!success) {
+      setConfirming(null);
+      showToast(
+        t("admin-pages.variables.delete-failed", {
+          key,
+          error: errorMessage(error, t("admin-pages.unknown-error")),
+        }),
+        "error",
+        { clear: true }
       );
-      if (!success) throw new Error(error);
-      rowRef?.current?.remove();
-      showToast("Variable deleted successfully", "success", { clear: true });
-      if (onRefresh) onRefresh();
-    } catch (error) {
-      console.error("Error deleting variable:", error);
-      showToast("Failed to delete variable", "error", { clear: true });
+      return;
     }
+    showToast(t("admin-pages.variables.deleted", { key }), "success", {
+      clear: true,
+    });
+    onDeleted?.();
   };
-
-  const getTypeColorTheme = (type) => {
-    switch (type) {
-      case "system":
-        return {
-          bg: "bg-blue-600/20",
-          text: "text-blue-400 light:text-blue-800",
-        };
-      case "user":
-        return {
-          bg: "bg-green-600/20",
-          text: "text-green-400 light:text-green-800",
-        };
-      case "workspace":
-        return {
-          bg: "bg-cyan-600/20",
-          text: "text-cyan-400 light:text-cyan-800",
-        };
-      default:
-        return {
-          bg: "bg-yellow-600/20",
-          text: "text-yellow-400 light:text-yellow-800",
-        };
-    }
-  };
-
-  const colorTheme = getTypeColorTheme(variable.type);
 
   return (
     <>
-      <tr
-        ref={rowRef}
-        className="bg-transparent text-white text-opacity-80 text-xs font-medium border-b border-white/10 h-10"
-      >
-        <th scope="row" className="px-4 py-2 whitespace-nowrap">
-          {variable.key}
+      <tr data-row="" className={ROW}>
+        <th scope="row" className={`${ROW_HEADER} font-mono`}>
+          {key}
         </th>
-        <td className="px-4 py-2">
-          {typeof variable.value === "function"
-            ? variable.value()
-            : truncate(variable.value, 50)}
+        <td className={CELL} title={value}>
+          <span aria-hidden="true" className={MOBILE_LABEL}>
+            {t("admin-pages.variables.value")}:{" "}
+          </span>
+          {truncate(String(value ?? ""), 50)}
         </td>
-        <td className="px-4 py-2">
-          {truncate(variable.description || "-", 50)}
+        <td className={CELL}>
+          <span aria-hidden="true" className={MOBILE_LABEL}>
+            {t("admin-pages.variables.description-label")}:{" "}
+          </span>
+          {variable.description ? (
+            truncate(variable.description, 50)
+          ) : (
+            <span className="text-theme-text-secondary">
+              {t("admin-pages.variables.no-description")}
+            </span>
+          )}
         </td>
-        <td className="px-4 py-2">
+        <td className={CELL}>
+          <span aria-hidden="true" className={MOBILE_LABEL}>
+            {t("admin-pages.variables.type")}:{" "}
+          </span>
           <span
-            className={`rounded-full ${colorTheme.bg} px-2 py-0.5 text-xs leading-5 font-semibold ${colorTheme.text} shadow-sm`}
+            className={`inline-block rounded-full px-2 py-0.5 text-xs leading-5 font-semibold ${
+              TYPE_STYLES[type] ?? TYPE_STYLES.static
+            }`}
           >
-            {titleCase(variable?.type ?? "static")}
+            {t(`admin-pages.variables.type-${type}`, { defaultValue: type })}
           </span>
         </td>
-        <td className="px-4 py-2 flex items-center justify-end gap-x-4">
-          {variable.type === "static" && (
-            <>
-              <button
-                onClick={openModal}
-                className="text-xs font-medium text-white/80 light:text-black/80 rounded-lg hover:text-white hover:light:text-gray-500 px-2 py-1 hover:bg-white hover:bg-opacity-10"
-              >
-                Edit
-              </button>
-              <button
-                onClick={handleDelete}
-                className="text-xs font-medium text-white/80 light:text-black/80 hover:light:text-red-500 hover:text-red-300 rounded-lg px-2 py-1 hover:bg-white hover:light:bg-red-50 hover:bg-opacity-10"
-              >
-                <Trash2 strokeWidth={1.5} className="h-4 w-4" />
-              </button>
-            </>
+        <td className={`${CELL} pt-2`}>
+          {confirming === "delete" ? (
+            <InlineConfirm
+              question={t("admin-pages.variables.delete-question", { key })}
+              consequences={t("admin-pages.variables.delete-consequences", {
+                token: `{${key}}`,
+              })}
+              confirmLabel={t("settings-pages.delete")}
+              busy={busy}
+              onConfirm={handleDelete}
+              onCancel={() => setConfirming(null)}
+            />
+          ) : (
+            type === "static" && (
+              <div className={ROW_ACTIONS}>
+                <button
+                  type="button"
+                  onClick={openModal}
+                  aria-label={t("admin-pages.variables.edit", { key })}
+                  title={t("admin-pages.variables.edit", { key })}
+                  className={ROW_ACTION}
+                >
+                  <Pencil
+                    strokeWidth={1.5}
+                    className="h-4 w-4"
+                    aria-hidden="true"
+                  />
+                </button>
+                <button
+                  ref={deleteRef}
+                  type="button"
+                  onClick={() => setConfirming("delete")}
+                  aria-label={t("admin-pages.variables.delete", { key })}
+                  title={t("admin-pages.variables.delete", { key })}
+                  className={ROW_ACTION_DANGER}
+                >
+                  <Trash2
+                    strokeWidth={1.5}
+                    className="h-4 w-4"
+                    aria-hidden="true"
+                  />
+                </button>
+              </div>
+            )
           )}
         </td>
       </tr>

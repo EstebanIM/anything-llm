@@ -1,13 +1,32 @@
+import { useEffect, useId, useState } from "react";
+import { useTranslation } from "react-i18next";
 import useProviderEndpointAutoDiscovery from "@/hooks/useProviderEndpointAutoDiscovery";
 import System from "@/models/system";
 import { OMLX_COMMON_URLS } from "@/utils/constants";
-import { ChevronDown, ChevronUp, LoaderCircle, Info } from "lucide-react";
-import { useEffect, useState } from "react";
-import { Tooltip } from "react-tooltip";
+import {
+  AdvancedSection,
+  FIELD_COL,
+  FIELD_INPUT,
+  FIELD_ROW,
+  SECRET_MASK,
+  SecretInput,
+} from "@/components/ProviderFields";
+import {
+  AutoDetectRow,
+  ContextWindowTip,
+  FieldLabel,
+  ModelSelectField,
+  blurOnWheel,
+  modelStatus,
+} from "@/components/LLMSelection/FormParts";
 
 export default function OMLXOptions({ settings }) {
+  const { t } = useTranslation();
+  const id = useId();
   const {
     autoDetecting: loading,
+    autoDetectStatus,
+    detectedEndpoint,
     basePath,
     basePathValue,
     authToken,
@@ -26,210 +45,104 @@ export default function OMLXOptions({ settings }) {
   );
   return (
     <div className="w-full flex flex-col gap-y-7">
-      <div className="w-full flex items-start gap-[36px] mt-1.5">
+      <div className={`${FIELD_ROW} mt-1.5`}>
         <OMLXModelSelection
           settings={settings}
           basePath={basePath.value}
           authToken={authToken.value}
         />
       </div>
-      <div className="flex justify-start mt-4">
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            setShowAdvancedControls(!showAdvancedControls);
-          }}
-          className="border-none text-theme-text-primary hover:text-theme-text-secondary flex items-center text-sm"
-        >
-          {showAdvancedControls ? "Hide" : "Show"} advanced settings
-          {showAdvancedControls ? (
-            <ChevronUp strokeWidth={1.5} size={14} className="ml-1" />
-          ) : (
-            <ChevronDown strokeWidth={1.5} size={14} className="ml-1" />
-          )}
-        </button>
-      </div>
+      <AutoDetectRow
+        provider="OMLX"
+        busy={loading}
+        status={autoDetectStatus}
+        endpoint={detectedEndpoint}
+        onDetect={handleAutoDetectClick}
+      />
 
-      <div hidden={!showAdvancedControls}>
-        <div className="flex flex-col">
-          <div className="w-full flex items-start gap-4 mb-4">
-            <div className="flex flex-col w-60">
-              <div className="flex justify-between items-center mb-2">
-                <div className="flex items-center gap-1">
-                  <label className="text-white text-sm font-semibold">
-                    OMLX Base URL
-                  </label>
-                  <Info
-                    strokeWidth={1.5}
-                    size={18}
-                    className="text-theme-text-secondary cursor-pointer"
-                    data-tooltip-id="omlx-base-url"
-                    data-tooltip-content="Enter the URL where OMLX is running."
-                  />
-                  <Tooltip
-                    id="omlx-base-url"
-                    place="top"
-                    delayShow={300}
-                    className="tooltip !text-xs !opacity-100"
-                    style={{
-                      maxWidth: "250px",
-                      whiteSpace: "normal",
-                      wordWrap: "break-word",
-                    }}
-                  />
-                </div>
-                {loading ? (
-                  <LoaderCircle
-                    strokeWidth={1.5}
-                    size={16}
-                    className="text-theme-text-secondary animate-spin"
-                  />
-                ) : (
-                  <>
-                    {!basePathValue.value && (
-                      <button
-                        onClick={handleAutoDetectClick}
-                        className="border-none bg-primary-button text-xs font-medium px-2 py-1 rounded-lg hover:bg-secondary hover:text-white shadow-[0_4px_14px_rgba(0,0,0,0.25)]"
-                      >
-                        Auto-Detect
-                      </button>
-                    )}
-                  </>
-                )}
-              </div>
-              <input
-                type="url"
-                name="OMLXLLMBasePath"
-                className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-                placeholder="http://127.0.0.1:8000"
-                value={basePathValue.value}
-                required={true}
-                autoComplete="off"
-                spellCheck={false}
-                onChange={basePath.onChange}
-                onBlur={basePath.onBlur}
-              />
-            </div>
-          </div>
-          <div className="w-full flex items-start gap-4">
-            <div className="flex flex-col w-60">
-              <div className="flex items-center mb-2 gap-x-1">
-                <label className="text-white text-sm font-semibold block">
-                  Model context window
-                </label>
-                <Info
-                  strokeWidth={1.5}
-                  size={18}
-                  className="text-theme-text-secondary cursor-pointer"
-                  data-tooltip-id="omlx-model-context-window"
-                />
-                <Tooltip
-                  id="omlx-model-context-window"
-                  place="top"
-                  delayShow={300}
-                  delayHide={400}
-                  clickable={true}
-                  className="tooltip !text-xs !opacity-100"
-                  style={{
-                    maxWidth: "250px",
-                    whiteSpace: "normal",
-                    wordWrap: "break-word",
-                  }}
-                >
-                  <p className="text-xs leading-[18px] font-base">
-                    Specify the maximum number of tokens that can be used for
-                    the model context window.
-                    <br /> <br />
-                    If you leave this field blank, the context window limit will
-                    be auto-detected from the model and applied to all chats. If
-                    auto-detection fails, a fallback context window limit of
-                    16000 will be used.
-                    <br /> <br />
-                    <b>Important:</b> Some models have very large context
-                    windows using the full context window limit can dramatically
-                    increase the memory usage of your system. For this reason,
-                    we will automatically cap the context window limit to 16,384
-                    tokens if the model supports more than that and no value is
-                    specified.
-                    <br /> <br />
-                    If an invalid value is entered, AnythingLLM will handle this
-                    for you so that chats do not fail.
-                  </p>
-                </Tooltip>
-              </div>
-              <input
-                type="number"
-                name="OMLXLLMTokenLimit"
-                className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-                placeholder="Automatically managed"
-                min={1}
-                value={contextWindowLimit}
-                onChange={(e) =>
-                  setContextWindowLimit(
-                    e.target.value ? Number(e.target.value) : ""
-                  )
-                }
-                onScroll={(e) => e.target.blur()}
-                required={false}
-                autoComplete="off"
-              />
-            </div>
-
-            <div className="flex flex-col w-60">
-              <div className="flex items-center mb-2 gap-x-1">
-                <label className="text-white text-sm font-semibold">
-                  Authentication Token
-                </label>
-                <Info
-                  strokeWidth={1.5}
-                  size={18}
-                  className="text-theme-text-secondary cursor-pointer"
-                  data-tooltip-id="omlx-authentication-token"
-                />
-                <Tooltip
-                  id="omlx-authentication-token"
-                  place="top"
-                  delayShow={300}
-                  delayHide={400}
-                  clickable={true}
-                  className="tooltip !text-xs !opacity-100"
-                  style={{
-                    maxWidth: "250px",
-                    whiteSpace: "normal",
-                    wordWrap: "break-word",
-                  }}
-                >
-                  <p className="text-xs leading-[18px] font-base">
-                    Enter a <code>Bearer</code> Auth Token for interacting with
-                    your OMLX server.
-                    <br /> <br />
-                  </p>
-                </Tooltip>
-              </div>
-              <input
-                type="password"
-                name="OMLXLLMApiKey"
-                className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg outline-none block w-full p-2.5 focus:outline-primary-button active:outline-primary-button"
-                placeholder="OMLX API Key"
-                defaultValue={settings?.OMLXLLMApiKey ? "*".repeat(20) : ""}
-                value={authTokenValue.value}
-                onChange={authToken.onChange}
-                onBlur={authToken.onBlur}
-                required={false}
-                autoComplete="off"
-                spellCheck={false}
-              />
-            </div>
+      <AdvancedSection
+        open={showAdvancedControls}
+        onOpenChange={setShowAdvancedControls}
+      >
+        <div className={`${FIELD_ROW} mt-4`}>
+          <div className={FIELD_COL}>
+            <FieldLabel
+              htmlFor={`${id}-url`}
+              label={t("provider-fields.base-url")}
+              tip={t("llm-fields.common.base-url-tip", { provider: "OMLX" })}
+            />
+            <input
+              id={`${id}-url`}
+              type="url"
+              name="OMLXLLMBasePath"
+              className={FIELD_INPUT}
+              placeholder="http://127.0.0.1:8000"
+              value={basePathValue.value}
+              required={true}
+              autoComplete="off"
+              spellCheck={false}
+              onChange={basePath.onChange}
+              onBlur={basePath.onBlur}
+            />
           </div>
         </div>
-      </div>
+        <div className={`${FIELD_ROW} mt-4`}>
+          <div className={FIELD_COL}>
+            <FieldLabel
+              htmlFor={`${id}-context`}
+              label={t("provider-fields.context-window")}
+              tip={<ContextWindowTip fallback={16000} />}
+            />
+            <input
+              id={`${id}-context`}
+              type="number"
+              name="OMLXLLMTokenLimit"
+              className={FIELD_INPUT}
+              placeholder={t("provider-fields.context-window-auto")}
+              min={1}
+              value={contextWindowLimit}
+              onChange={(e) =>
+                setContextWindowLimit(
+                  e.target.value ? Number(e.target.value) : ""
+                )
+              }
+              onWheel={blurOnWheel}
+              required={false}
+              autoComplete="off"
+            />
+          </div>
+
+          <div className={FIELD_COL}>
+            <FieldLabel
+              htmlFor={`${id}-token`}
+              label={t("provider-fields.auth-token")}
+              optional={true}
+              tip={t("llm-fields.common.auth-token-tip", { provider: "OMLX" })}
+            />
+            <SecretInput
+              id={`${id}-token`}
+              name="OMLXLLMApiKey"
+              value={
+                authTokenValue.value ??
+                (settings?.OMLXLLMApiKey ? SECRET_MASK : "")
+              }
+              onChange={authToken.onChange}
+              onBlur={authToken.onBlur}
+              required={false}
+            />
+          </div>
+        </div>
+      </AdvancedSection>
     </div>
   );
 }
 
 function OMLXModelSelection({ settings, basePath = null, authToken = null }) {
+  const { t } = useTranslation();
   const [customModels, setCustomModels] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     async function findCustomModels() {
@@ -240,75 +153,45 @@ function OMLXModelSelection({ settings, basePath = null, authToken = null }) {
       }
       setLoading(true);
       try {
-        const { models } = await System.customModels(
+        const { models, error } = await System.customModels(
           "omlx",
           authToken,
           basePath
         );
         setCustomModels(models || []);
+        setError(error || null);
       } catch (error) {
         console.error("Failed to fetch custom models:", error);
         setCustomModels([]);
+        setError(error.message);
       }
       setLoading(false);
     }
     findCustomModels();
-  }, [basePath, authToken]);
-
-  if (loading || customModels.length === 0) {
-    return (
-      <div className="flex flex-col w-60">
-        <label className="text-white text-sm font-semibold block mb-2">
-          OMLX Model
-        </label>
-        <select
-          name="OMLXLLMModelPref"
-          disabled={true}
-          className="border-none bg-theme-settings-input-bg border-gray-500 text-white text-sm rounded-lg block w-full p-2.5"
-        >
-          <option disabled={true} selected={true}>
-            {!!basePath
-              ? "--loading available models--"
-              : "Enter OMLX URL first"}
-          </option>
-        </select>
-        <p className="text-xs leading-[18px] font-base text-white text-opacity-60 mt-2">
-          Select the OMLX model you want to use. Models will load after entering
-          a valid OMLX URL.
-        </p>
-      </div>
-    );
-  }
+  }, [basePath, authToken, attempt]);
 
   return (
-    <div className="flex flex-col w-60">
-      <label className="text-white text-sm font-semibold block mb-2">
-        OMLX Model
-      </label>
-      <select
-        name="OMLXLLMModelPref"
-        required={true}
-        className="border-none bg-theme-settings-input-bg border-gray-500 text-white text-sm rounded-lg block w-full p-2.5"
-      >
-        {customModels.length > 0 && (
-          <optgroup label="Your loaded models">
-            {customModels.map((model) => {
-              return (
-                <option
-                  key={model.id}
-                  value={model.id}
-                  selected={settings.OMLXLLMModelPref === model.id}
-                >
-                  {model.id}
-                </option>
-              );
-            })}
-          </optgroup>
-        )}
-      </select>
-      <p className="text-xs leading-[18px] font-base text-white text-opacity-60 mt-2">
-        Choose the OMLX model you want to use for your conversations.
-      </p>
-    </div>
+    <ModelSelectField
+      name="OMLXLLMModelPref"
+      label={t("provider-fields.chat-model")}
+      status={modelStatus({
+        loading,
+        error,
+        count: customModels.length,
+        needs: basePath ? null : "need-url",
+      })}
+      error={error}
+      onRetry={() => setAttempt((n) => n + 1)}
+      defaultValue={settings?.OMLXLLMModelPref}
+      help={t("llm-fields.common.model-help-select", { provider: "OMLX" })}
+    >
+      <optgroup label={t("llm-fields.common.loaded-models")}>
+        {customModels.map((model) => (
+          <option key={model.id} value={model.id}>
+            {model.id}
+          </option>
+        ))}
+      </optgroup>
+    </ModelSelectField>
   );
 }

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import Admin from "@/models/admin";
+import showToast from "@/utils/toast";
 import { useTranslation } from "react-i18next";
 import {
   ModalHeader,
@@ -10,42 +11,57 @@ import {
   ModalInput,
 } from "@/components/lib/Modal";
 
-export default function NewWorkspaceModal({ closeModal }) {
+export default function NewWorkspaceModal({ closeModal, onSuccess }) {
   const [error, setError] = useState(null);
+  const [busy, setBusy] = useState(false);
   const { t } = useTranslation();
+
   const handleCreate = async (e) => {
-    setError(null);
     e.preventDefault();
+    if (busy) return;
+    setError(null);
     const form = new FormData(e.target);
+    setBusy(true);
     const { workspace, error } = await Admin.newWorkspace(form.get("name"));
-    if (!!workspace) window.location.reload();
-    setError(error);
+    setBusy(false);
+    if (!workspace) {
+      setError(error || t("admin-pages.unknown-error"));
+      return;
+    }
+    showToast(
+      t("admin-pages.workspaces.created-toast", { name: workspace.name }),
+      "success",
+      { clear: true }
+    );
+    onSuccess?.();
+    closeModal();
   };
 
   return (
     <form onSubmit={handleCreate} className="flex flex-col gap-y-5">
-      <ModalHeader title="Create new workspace" onClose={closeModal} />
+      <ModalHeader
+        title={t("admin-pages.workspaces.new-title")}
+        onClose={closeModal}
+      />
       <ModalBody>
         <ModalInput
           label={t("common.workspaces-name")}
           name="name"
           type="text"
-          placeholder="My workspace"
           minLength={4}
           required={true}
           autoComplete="off"
+          error={error ? t("settings-pages.form-error", { error }) : null}
+          hint={t("admin-pages.workspaces.new-hint")}
         />
-        {error && <p className="text-red-400 text-sm">Error: {error}</p>}
-        <p className="text-zinc-400 light:text-slate-600 text-xs md:text-sm">
-          After creating this workspace only admins will be able to see it. You
-          can add users after it has been created.
-        </p>
       </ModalBody>
       <ModalFooter>
         <ModalSecondaryButton onClick={closeModal} type="button">
-          Cancel
+          {t("settings-pages.cancel")}
         </ModalSecondaryButton>
-        <ModalPrimaryButton type="submit">Create workspace</ModalPrimaryButton>
+        <ModalPrimaryButton type="submit" busy={busy}>
+          {t("admin-pages.workspaces.create")}
+        </ModalPrimaryButton>
       </ModalFooter>
     </form>
   );

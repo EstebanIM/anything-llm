@@ -1,5 +1,6 @@
 import { API_BASE } from "@/utils/constants";
 import { baseHeaders, safeJsonParse } from "@/utils/request";
+import i18n from "@/i18n";
 
 /**
  * API calls for the embedded Lemonade engine (`embedded_lemonade`).
@@ -49,7 +50,10 @@ const EmbeddedLemonadeUtils = {
         // eg: 409 when another model is already downloading.
         const { error } = await response.json().catch(() => ({}));
         throw new Error(
-          error || "Error downloading model: " + response.statusText
+          error ||
+            i18n.t("llm-fields.common.download-error-status", {
+              status: response.statusText,
+            })
         );
       }
 
@@ -74,16 +78,21 @@ const EmbeddedLemonadeUtils = {
           if (event === "done")
             return { success: true, error: null, modelId: data?.modelId };
           if (event === "error")
-            return { success: false, error: data?.error ?? "Download failed." };
+            return {
+              success: false,
+              error: data?.error ?? i18n.t("llm-fields.common.download-error"),
+            };
         }
       }
-      return { success: false, error: "The download ended unexpectedly." };
+      return {
+        success: false,
+        error: i18n.t("llm-fields.embedded-lemonade.download-interrupted"),
+      };
     } catch (error) {
       console.error("Error downloading model:", error);
       return {
         success: false,
-        error:
-          error?.message || "An error occurred while downloading the model",
+        error: error?.message || i18n.t("llm-fields.common.download-error"),
       };
     }
   },

@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, createContext, useContext } from "react";
 import { v4 } from "uuid";
+import { useTranslation } from "react-i18next";
+import { CircleAlert, X } from "lucide-react";
 import System from "@/models/system";
 import { useDropzone } from "react-dropzone";
 import DndIcon from "./dnd-icon.png";
@@ -11,7 +13,6 @@ import {
   EmbeddingProgressProvider,
   useEmbeddingProgress,
 } from "@/EmbeddingProgressContext";
-import pluralize from "pluralize";
 
 export const DndUploaderContext = createContext();
 export const REMOVE_ATTACHMENT_EVENT = "ATTACHMENT_REMOVE";
@@ -66,9 +67,11 @@ export function DnDFileUploaderProvider({
 }
 
 function DnDFileUploader({ workspace, threadSlug, children }) {
+  const { t } = useTranslation();
   const mountedRef = useRef(true);
   const [files, setFiles] = useState([]);
-  const [ready, setReady] = useState(false);
+  // null while the first document processor check is in flight.
+  const [ready, setReady] = useState(null);
   const [dragging, setDragging] = useState(false);
   const [showWarningModal, setShowWarningModal] = useState(false);
   const [embeddingFiles, setEmbeddingFiles] = useState([]);
@@ -81,8 +84,16 @@ function DnDFileUploader({ workspace, threadSlug, children }) {
   const lastEmbeddingProgressRef = useRef(null);
 
   useEffect(() => {
-    System.checkDocumentProcessorOnline().then((status) => setReady(status));
+    System.checkDocumentProcessorOnline().then((status) => {
+      if (mountedRef.current) setReady(status);
+    });
   }, []);
+
+  async function recheckReady() {
+    const status = await System.checkDocumentProcessorOnline();
+    if (mountedRef.current) setReady(status);
+    return status;
+  }
 
   useEffect(() => {
     mountedRef.current = true;
@@ -131,7 +142,12 @@ function DnDFileUploader({ workspace, threadSlug, children }) {
     const { uid, document } = event.detail;
     setFiles((prev) => prev.filter((prevFile) => prevFile.uid !== uid));
     if (!document?.location) return;
-    await Workspace.deleteAndUnembedFile(workspace.slug, document.location);
+    const removed = await Workspace.deleteAndUnembedFile(
+      workspace.slug,
+      document.location
+    ).catch(() => false);
+    if (!removed && mountedRef.current)
+      showToast(t("chat-panels.upload.remove-failed"), "error");
   }
 
   /**
@@ -149,7 +165,9 @@ function DnDFileUploader({ workspace, threadSlug, children }) {
   function parseAttachments() {
     return (
       files
-        ?.filter((file) => file.type === "attachment")
+        ?.filter(
+          (file) => file.type === "attachment" && file.status !== "failed"
+        )
         ?.map(
           (
             /** @type {Attachment} */
@@ -175,29 +193,8 @@ function DnDFileUploader({ workspace, threadSlug, children }) {
   async function handlePastedAttachment(event) {
     const { files = [], storageFilename = null } = event.detail;
     if (!files.length) return;
-    const newAccepted = [];
-    for (const file of files) {
-      if (file.type.startsWith("image/")) {
-        newAccepted.push({
-          uid: v4(),
-          file,
-          contentString: await toBase64(file),
-          status: "success",
-          error: null,
-          type: "attachment",
-          ...(storageFilename && { storageFilename }),
-        });
-      } else {
-        newAccepted.push({
-          uid: v4(),
-          file,
-          contentString: null,
-          status: "in_progress",
-          error: null,
-          type: "upload",
-        });
-      }
-    }
+    const newAccepted = await toAttachments(files, storageFilename);
+    if (!mountedRef.current) return;
     setFiles((prev) => [...prev, ...newAccepted]);
     embedEligibleAttachments(newAccepted);
   }
@@ -209,21 +206,24 @@ function DnDFileUploader({ workspace, threadSlug, children }) {
    */
   async function onDrop(acceptedFiles, _rejections) {
     setDragging(false);
+    const newAccepted = await toAttachments(acceptedFiles);
+    if (!mountedRef.current) return;
+    setFiles((prev) => [...prev, ...newAccepted]);
+    embedEligibleAttachments(newAccepted);
+  }
 
+  /**
+   * Images become chat attachments (base64), everything else is uploaded.
+   * @param {File[]} fileList
+   * @param {string|null} storageFilename
+   * @returns {Promise<Attachment[]>}
+   */
+  async function toAttachments(fileList, storageFilename = null) {
     /** @type {Attachment[]} */
-    const newAccepted = [];
-    for (const file of acceptedFiles) {
-      if (file.type.startsWith("image/")) {
-        newAccepted.push({
-          uid: v4(),
-          file,
-          contentString: await toBase64(file),
-          status: "success",
-          error: null,
-          type: "attachment",
-        });
-      } else {
-        newAccepted.push({
+    const attachments = [];
+    for (const file of fileList) {
+      if (!file.type.startsWith("image/")) {
+        attachments.push({
           uid: v4(),
           file,
           contentString: null,
@@ -231,11 +231,53 @@ function DnDFileUploader({ workspace, threadSlug, children }) {
           error: null,
           type: "upload",
         });
+        continue;
       }
+      let contentString = null;
+      try {
+        contentString = await toBase64(file);
+      } catch (e) {
+        console.error(e);
+      }
+      attachments.push({
+        uid: v4(),
+        file,
+        contentString,
+        status: contentString ? "success" : "failed",
+        error: contentString ? null : t("chat-panels.upload.read-failed"),
+        type: "attachment",
+        ...(storageFilename && { storageFilename }),
+      });
     }
+    return attachments;
+  }
 
-    setFiles((prev) => [...prev, ...newAccepted]);
-    embedEligibleAttachments(newAccepted);
+  /**
+   * @param {string} uid
+   * @param {Partial<Attachment>} updates
+   */
+  function updateAttachment(uid, updates) {
+    setFiles((prev) =>
+      prev.map((prevFile) =>
+        prevFile.uid !== uid ? prevFile : { ...prevFile, ...updates }
+      )
+    );
+  }
+
+  /**
+   * Spanish reason for a failed parse; server and network details only go
+   * to the console.
+   * @param {unknown} error - thrown error or the server's error message
+   * @returns {string}
+   */
+  function uploadFailureReason(error) {
+    console.error(error);
+    // fetch rejects with a TypeError when the request never got a response
+    if (error instanceof TypeError)
+      return t("chat-panels.upload.network-error");
+    if (typeof error === "string" && /not online/i.test(error))
+      return t("connectors.upload.processor-offline-desc");
+    return t("chat-panels.upload.parse-failed");
   }
 
   /**
@@ -245,107 +287,107 @@ function DnDFileUploader({ workspace, threadSlug, children }) {
   async function embedEligibleAttachments(newAttachments = []) {
     if (!mountedRef.current) return;
     window.dispatchEvent(new CustomEvent(ATTACHMENTS_PROCESSING_EVENT));
-    const promises = [];
 
-    const { currentContextTokenCount, contextWindow } =
-      await Workspace.getParsedFiles(workspace.slug, threadSlug);
-    if (!mountedRef.current) return;
-    const workspaceContextWindow = contextWindow
-      ? Math.floor(contextWindow * Workspace.maxContextWindowLimit)
-      : Number.POSITIVE_INFINITY;
-    setMaxTokens(workspaceContextWindow);
+    // Whatever fails below, the processed event must go out or the send
+    // button stays locked until a reload.
+    try {
+      let currentContextTokenCount = 0;
+      let contextWindow = null;
+      try {
+        const parsed = await Workspace.getParsedFiles(
+          workspace.slug,
+          threadSlug
+        );
+        currentContextTokenCount = parsed?.currentContextTokenCount ?? 0;
+        contextWindow = parsed?.contextWindow ?? null;
+      } catch (e) {
+        // Uploads can still go ahead; the context check starts from zero.
+        console.error(e);
+      }
+      if (!mountedRef.current) return;
+      const workspaceContextWindow = contextWindow
+        ? Math.floor(contextWindow * Workspace.maxContextWindowLimit)
+        : Number.POSITIVE_INFINITY;
+      setMaxTokens(workspaceContextWindow);
 
-    let totalTokenCount = currentContextTokenCount;
-    let batchPendingFiles = [];
+      let totalTokenCount = currentContextTokenCount;
+      let batchPendingFiles = [];
 
-    for (const attachment of newAttachments) {
       // Images/attachments are chat specific.
-      if (attachment.type === "attachment") continue;
+      const uploads = newAttachments.filter((a) => a.type !== "attachment");
+      await Promise.all(
+        uploads.map(async (attachment) => {
+          const formData = new FormData();
+          formData.append("file", attachment.file, attachment.file.name);
+          formData.append("threadSlug", threadSlug || null);
 
-      const formData = new FormData();
-      formData.append("file", attachment.file, attachment.file.name);
-      formData.append("threadSlug", threadSlug || null);
-      promises.push(
-        Workspace.parseFile(workspace.slug, formData).then(
-          async ({ response, data }) => {
-            if (!response.ok) {
-              const updates = {
-                status: "failed",
-                error: data?.error ?? null,
-              };
-              setFiles((prev) =>
-                prev.map(
-                  (
-                    /** @type {Attachment} */
-                    prevFile
-                  ) =>
-                    prevFile.uid !== attachment.uid
-                      ? prevFile
-                      : { ...prevFile, ...updates }
-                )
-              );
-              return;
-            }
-            // Will always be one file in the array
-            /** @type {ParsedFile} */
-            const file = data.files[0];
-
-            // Add token count for this file
-            // and add it to the batch pending files
-            totalTokenCount += file.tokenCountEstimate;
-            batchPendingFiles.push({
-              attachment,
-              parsedFileId: file.id,
-              tokenCount: file.tokenCountEstimate,
+          let response, data;
+          try {
+            ({ response, data } = await Workspace.parseFile(
+              workspace.slug,
+              formData
+            ));
+          } catch (e) {
+            if (!mountedRef.current) return;
+            updateAttachment(attachment.uid, {
+              status: "failed",
+              error: uploadFailureReason(e),
             });
-
-            if (totalTokenCount > workspaceContextWindow) {
-              setTokenCount(totalTokenCount);
-              setPendingFiles(batchPendingFiles);
-              setShowWarningModal(true);
-              return;
-            }
-
-            // File is within limits, keep in parsed files
-            const result = { success: true, document: file };
-            const updates = {
-              status: result.success ? "added_context" : "failed",
-              error: result.error ?? null,
-              document: result.document,
-            };
-
-            setFiles((prev) =>
-              prev.map(
-                (
-                  /** @type {Attachment} */
-                  prevFile
-                ) =>
-                  prevFile.uid !== attachment.uid
-                    ? prevFile
-                    : { ...prevFile, ...updates }
-              )
-            );
+            return;
           }
-        )
-      );
-    }
+          if (!mountedRef.current) return;
 
-    // Wait for all promises to resolve in some way before dispatching the event to unlock the send button
-    Promise.all(promises).finally(() => {
+          // Will always be one file in the array
+          /** @type {ParsedFile} */
+          const file = data?.files?.[0];
+          if (!response.ok || !file) {
+            updateAttachment(attachment.uid, {
+              status: "failed",
+              error: uploadFailureReason(data?.error ?? response.status),
+            });
+            return;
+          }
+
+          // Add token count for this file
+          // and add it to the batch pending files
+          totalTokenCount += file.tokenCountEstimate;
+          batchPendingFiles.push({
+            attachment,
+            parsedFileId: file.id,
+            tokenCount: file.tokenCountEstimate,
+          });
+
+          if (totalTokenCount > workspaceContextWindow) {
+            setTokenCount(totalTokenCount);
+            setPendingFiles(batchPendingFiles);
+            setShowWarningModal(true);
+            return;
+          }
+
+          // File is within limits, keep in parsed files
+          updateAttachment(attachment.uid, {
+            status: "added_context",
+            error: null,
+            document: file,
+          });
+        })
+      );
+    } finally {
       if (mountedRef.current)
         window.dispatchEvent(new CustomEvent(ATTACHMENTS_PROCESSED_EVENT));
-    });
+    }
   }
 
   // Handle modal actions
   const handleCloseModal = async () => {
     if (!pendingFiles.length) return;
 
-    // Delete all files from this batch
+    // Delete all files from this batch. They never reached the chat, so the
+    // batch leaves the UI even if the server cleanup fails.
     await Workspace.deleteParsedFiles(
       workspace.slug,
       pendingFiles.map((file) => file.parsedFileId)
-    );
+    ).catch((e) => console.error(e));
     if (!mountedRef.current) return;
 
     // Remove all files from this batch from the UI
@@ -390,16 +432,17 @@ function DnDFileUploader({ workspace, threadSlug, children }) {
 
   const handleEmbed = async () => {
     if (!pendingFiles.length) return;
-    const { locations } = await Workspace.moveParsedFiles(
+    const moved = await Workspace.moveParsedFiles(
       workspace.slug,
       pendingFiles.map((file) => file.parsedFileId)
     );
     if (!mountedRef.current) return;
     window.dispatchEvent(new CustomEvent(PARSED_FILES_UPDATED_EVENT));
 
+    const locations = Array.isArray(moved?.locations) ? moved.locations : [];
     const queued = pendingFiles.map((file, i) => ({
       ...file,
-      location: locations[i],
+      location: locations[i] ?? null,
     }));
     const adds = queued.map((file) => file.location).filter(Boolean);
     setShowWarningModal(false);
@@ -465,7 +508,7 @@ function DnDFileUploader({ workspace, threadSlug, children }) {
             {
               ...prevFile,
               status: "failed",
-              error: result.error ?? "Failed to embed file",
+              error: t("chat-panels.upload.embed-failed"),
             },
           ];
         if (done || !result.status) return [];
@@ -492,15 +535,23 @@ function DnDFileUploader({ workspace, threadSlug, children }) {
     const allEmbedded = finished.every((r) => r.status === "complete");
     showToast(
       allEmbedded
-        ? `${finished.length} ${pluralize("file", finished.length)} embedded successfully`
-        : "Failed to embed files",
+        ? t("chat-panels.upload.embedded", { count: finished.length })
+        : t("chat-panels.upload.embed-failed-toast"),
       allEmbedded ? "success" : "error"
     );
   }
 
   return (
     <DndUploaderContext.Provider
-      value={{ files, ready, dragging, setDragging, onDrop, parseAttachments }}
+      value={{
+        files,
+        ready,
+        recheckReady,
+        dragging,
+        setDragging,
+        onDrop,
+        parseAttachments,
+      }}
     >
       <FileUploadWarningModal
         show={showWarningModal}
@@ -522,11 +573,28 @@ function DnDFileUploader({ workspace, threadSlug, children }) {
 }
 
 export default function DnDFileUploaderWrapper({ children }) {
-  const { onDrop, ready, dragging, setDragging } =
+  const { t } = useTranslation();
+  const { onDrop, ready, recheckReady, dragging, setDragging } =
     useContext(DndUploaderContext);
+  const [offlineNotice, setOfflineNotice] = useState(false);
+  const offline = ready === false;
+
+  function warnOffline() {
+    setOfflineNotice(true);
+    // So the next attempt goes through if the processor came back.
+    recheckReady?.();
+  }
+
   const { getRootProps, getInputProps } = useDropzone({
-    onDrop,
-    disabled: !ready,
+    onDrop: (acceptedFiles, rejections) => {
+      if (offline) {
+        setDragging(false);
+        warnOffline();
+        return;
+      }
+      setOfflineNotice(false);
+      onDrop(acceptedFiles, rejections);
+    },
     noClick: true,
     noKeyboard: true,
     onDragEnter: () => setDragging(true),
@@ -543,22 +611,62 @@ export default function DnDFileUploaderWrapper({ children }) {
         className="absolute top-0 w-full h-full bg-dark-text/90 light:bg-[#C2E7FE]/90 rounded-2xl border-[4px] border-white z-[9999]"
       >
         <div className="w-full h-full flex justify-center items-center rounded-xl">
-          <div className="flex flex-col gap-y-[14px] justify-center items-center">
-            <img
-              src={DndIcon}
-              width={69}
-              height={69}
-              alt="Drag and drop icon"
-            />
-            <p className="text-white text-[24px] font-semibold">Add anything</p>
+          <div className="flex flex-col gap-y-[14px] justify-center items-center px-6 max-w-[460px]">
+            <img src={DndIcon} width={69} height={69} alt="" />
+            <p className="text-white text-[24px] font-semibold text-center">
+              {offline
+                ? t("connectors.upload.processor-offline")
+                : t("chat-panels.drop.title")}
+            </p>
             <p className="text-white text-[16px] text-center">
-              Drop a file or image here to attach it to your <br />
-              workspace auto-magically.
+              {offline
+                ? t("connectors.upload.processor-offline-desc")
+                : t("chat-panels.drop.description")}
             </p>
           </div>
         </div>
       </div>
-      <input id="dnd-chat-file-uploader" {...getInputProps()} />
+      {offlineNotice && (
+        <div
+          role="alert"
+          className="absolute top-16 md:top-20 inset-x-4 z-30 mx-auto max-w-[560px] flex items-start gap-3 rounded-lg border border-amber-500/40 light:border-amber-300 bg-zinc-800 light:bg-amber-50 p-3 shadow-lg"
+        >
+          <CircleAlert
+            strokeWidth={1.5}
+            size={18}
+            className="mt-0.5 shrink-0 text-amber-400 light:text-amber-700"
+            aria-hidden="true"
+          />
+          <div className="flex-1 min-w-0 text-sm">
+            <p className="font-medium text-zinc-50 light:text-slate-900">
+              {t("connectors.upload.processor-offline")}
+            </p>
+            <p className="text-zinc-300 light:text-slate-700">
+              {t("connectors.upload.processor-offline-desc")}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setOfflineNotice(false)}
+            aria-label={t("chat-panels.upload.dismiss")}
+            className="-m-2 md:-m-1 w-11 h-11 md:w-7 md:h-7 shrink-0 flex items-center justify-center rounded-md text-zinc-300 light:text-slate-600 hover:text-white light:hover:text-slate-900 transition-colors duration-quick"
+          >
+            <X strokeWidth={1.5} size={16} aria-hidden="true" />
+          </button>
+        </div>
+      )}
+      <input
+        id="dnd-chat-file-uploader"
+        {...getInputProps({
+          // Keep the file picker closed when nothing could process the
+          // selection, instead of silently dropping it afterwards.
+          onClick: (e) => {
+            if (!offline) return;
+            e.preventDefault();
+            warnOffline();
+          },
+        })}
+      />
       {children}
     </div>
   );

@@ -1,21 +1,42 @@
-import { Info } from "lucide-react";
+import { useId } from "react";
 import { useTranslation } from "react-i18next";
-import { Tooltip } from "react-tooltip";
+import {
+  FIELD_COL,
+  FIELD_INPUT,
+  FIELD_ROW,
+  FIELD_SELECT,
+  SECRET_MASK,
+  SecretInput,
+} from "@/components/ProviderFields";
+import { FieldLabel } from "@/components/LLMSelection/FormParts";
+
+const TOKEN_LIMITS = [
+  [4096, "gpt-3.5-turbo"],
+  [16384, "gpt-3.5-16k"],
+  [8192, "gpt-4"],
+  [32768, "gpt-4-32k"],
+  [128000, "gpt-4-turbo, gpt-4o, gpt-4o-mini, o1-mini"],
+  [200000, "o1, o1-pro, o3-mini"],
+  [1047576, "gpt-4.1"],
+];
 
 export default function AzureAiOptions({ settings }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const id = useId();
 
   return (
     <div className="w-full flex flex-col gap-y-7 mt-1.5">
-      <div className="w-full flex items-center gap-[36px]">
-        <div className="flex flex-col w-60">
-          <label className="text-white text-sm font-semibold block mb-3">
-            {t("llm.providers.azure_openai.azure_service_endpoint")}
-          </label>
+      <div className={FIELD_ROW}>
+        <div className={FIELD_COL}>
+          <FieldLabel
+            htmlFor={`${id}-endpoint`}
+            label={t("llm.providers.azure_openai.azure_service_endpoint")}
+          />
           <input
+            id={`${id}-endpoint`}
             type="url"
             name="AzureOpenAiEndpoint"
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
+            className={FIELD_INPUT}
             placeholder="https://my-azure.openai.azure.com"
             defaultValue={settings?.AzureOpenAiEndpoint}
             required={true}
@@ -24,31 +45,30 @@ export default function AzureAiOptions({ settings }) {
           />
         </div>
 
-        <div className="flex flex-col w-60">
-          <label className="text-white text-sm font-semibold block mb-3">
-            {t("llm.providers.azure_openai.api_key")}
-          </label>
-          <input
-            type="password"
+        <div className={FIELD_COL}>
+          <FieldLabel
+            htmlFor={`${id}-key`}
+            label={t("llm.providers.azure_openai.api_key")}
+          />
+          <SecretInput
+            id={`${id}-key`}
             name="AzureOpenAiKey"
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-            placeholder="Azure OpenAI API Key"
-            defaultValue={settings?.AzureOpenAiKey ? "*".repeat(20) : ""}
+            defaultValue={settings?.AzureOpenAiKey ? SECRET_MASK : ""}
             required={true}
-            autoComplete="off"
-            spellCheck={false}
           />
         </div>
 
-        <div className="flex flex-col w-60">
-          <label className="text-white text-sm font-semibold block mb-3">
-            {t("llm.providers.azure_openai.chat_deployment_name")}
-          </label>
+        <div className={FIELD_COL}>
+          <FieldLabel
+            htmlFor={`${id}-deployment`}
+            label={t("llm.providers.azure_openai.chat_deployment_name")}
+          />
           <input
+            id={`${id}-deployment`}
             type="text"
             name="AzureOpenAiModelPref"
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-            placeholder="Azure OpenAI chat model deployment name"
+            className={FIELD_INPUT}
+            placeholder={t("llm-fields.azure.deployment-placeholder")}
             defaultValue={settings?.AzureOpenAiModelPref}
             required={true}
             autoComplete="off"
@@ -57,65 +77,38 @@ export default function AzureAiOptions({ settings }) {
         </div>
       </div>
 
-      <div className="w-full flex items-center gap-[36px]">
-        <div className="flex flex-col w-60">
-          <label className="text-white text-sm font-semibold block mb-3">
-            {t("llm.providers.azure_openai.chat_model_token_limit")}
-          </label>
+      <div className={FIELD_ROW}>
+        <div className={FIELD_COL}>
+          <FieldLabel
+            htmlFor={`${id}-token-limit`}
+            label={t("llm.providers.azure_openai.chat_model_token_limit")}
+          />
           <select
+            id={`${id}-token-limit`}
             name="AzureOpenAiTokenLimit"
             defaultValue={settings?.AzureOpenAiTokenLimit || 4096}
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
+            className={FIELD_SELECT}
             required={true}
           >
-            <option value={4096}>4,096 (gpt-3.5-turbo)</option>
-            <option value={16384}>16,384 (gpt-3.5-16k)</option>
-            <option value={8192}>8,192 (gpt-4)</option>
-            <option value={32768}>32,768 (gpt-4-32k)</option>
-            <option value={128000}>
-              128,000 (gpt-4-turbo,gpt-4o,gpt-4o-mini,o1-mini)
-            </option>
-            <option value={200000}>200,000 (o1,o1-pro,o3-mini)</option>
-            <option value={1047576}>1,047,576 (gpt-4.1)</option>
+            {TOKEN_LIMITS.map(([limit, models]) => (
+              <option key={limit} value={limit}>
+                {limit.toLocaleString(i18n.language)} ({models})
+              </option>
+            ))}
           </select>
         </div>
 
-        <div className="flex flex-col w-60">
-          <div className="flex items-center gap-1 mb-3">
-            <label className="text-white text-sm font-semibold block">
-              {t("llm.providers.azure_openai.model_type")}
-            </label>
-            <Tooltip
-              id="azure-openai-model-type"
-              place="top"
-              delayShow={300}
-              className="tooltip !text-xs !opacity-100"
-              style={{
-                maxWidth: "250px",
-                whiteSpace: "normal",
-                wordWrap: "break-word",
-              }}
-            />
-            <div
-              type="button"
-              className="text-theme-text-secondary cursor-pointer hover:bg-theme-bg-primary flex items-center justify-center rounded-full"
-              data-tooltip-id="azure-openai-model-type"
-              data-tooltip-place="top"
-              data-tooltip-content={t(
-                "llm.providers.azure_openai.model_type_tooltip"
-              )}
-            >
-              <Info
-                strokeWidth={1.5}
-                size={18}
-                className="text-theme-text-secondary"
-              />
-            </div>
-          </div>
+        <div className={FIELD_COL}>
+          <FieldLabel
+            htmlFor={`${id}-model-type`}
+            label={t("llm.providers.azure_openai.model_type")}
+            tip={t("llm.providers.azure_openai.model_type_tooltip")}
+          />
           <select
+            id={`${id}-model-type`}
             name="AzureOpenAiModelType"
             defaultValue={settings?.AzureOpenAiModelType || "default"}
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
+            className={FIELD_SELECT}
             required={true}
           >
             <option value="default">
@@ -127,42 +120,17 @@ export default function AzureAiOptions({ settings }) {
           </select>
         </div>
 
-        <div className="flex flex-col w-60">
-          <div className="flex items-center gap-1 mb-3">
-            <label className="text-white text-sm font-semibold block">
-              {t("llm.providers.azure_openai.agent_api")}
-            </label>
-            <Tooltip
-              id="azure-openai-agent-api"
-              place="top"
-              delayShow={300}
-              className="tooltip !text-xs !opacity-100"
-              style={{
-                maxWidth: "250px",
-                whiteSpace: "normal",
-                wordWrap: "break-word",
-              }}
-            />
-            <div
-              type="button"
-              className="text-theme-text-secondary cursor-pointer hover:bg-theme-bg-primary flex items-center justify-center rounded-full"
-              data-tooltip-id="azure-openai-agent-api"
-              data-tooltip-place="top"
-              data-tooltip-content={t(
-                "llm.providers.azure_openai.agent_api_tooltip"
-              )}
-            >
-              <Info
-                strokeWidth={1.5}
-                size={18}
-                className="text-theme-text-secondary"
-              />
-            </div>
-          </div>
+        <div className={FIELD_COL}>
+          <FieldLabel
+            htmlFor={`${id}-agent-api`}
+            label={t("llm.providers.azure_openai.agent_api")}
+            tip={t("llm.providers.azure_openai.agent_api_tooltip")}
+          />
           <select
+            id={`${id}-agent-api`}
             name="AzureOpenAiAgentApi"
             defaultValue={settings?.AzureOpenAiAgentApi || "chat"}
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
+            className={FIELD_SELECT}
             required={true}
           >
             <option value="chat">

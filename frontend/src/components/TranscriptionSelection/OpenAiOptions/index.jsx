@@ -1,39 +1,42 @@
-import { useState } from "react";
+import { useId } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  FIELD_COL,
+  FIELD_LABEL,
+  FIELD_ROW,
+  FIELD_SELECT,
+  SECRET_MASK,
+  SecretInput,
+} from "@/components/ProviderFields";
 
 export default function OpenAiWhisperOptions({ settings }) {
-  const [inputValue, setInputValue] = useState(settings?.OpenAiKey);
-  const [_openAIKey, setOpenAIKey] = useState(settings?.OpenAiKey);
+  const { t } = useTranslation();
+  const id = useId();
 
   return (
-    <div className="flex gap-x-7 gap-[36px] mt-1.5">
-      <div className="flex flex-col w-60">
-        <label className="text-white text-sm font-semibold block mb-3">
-          API Key
+    <div className={`${FIELD_ROW} mt-1.5`}>
+      <div className={FIELD_COL}>
+        <label htmlFor={`${id}-api-key`} className={FIELD_LABEL}>
+          {t("provider-fields.api-key")}
         </label>
-        <input
-          type="password"
+        <SecretInput
+          id={`${id}-api-key`}
           name="OpenAiKey"
-          className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-          placeholder="OpenAI API Key"
-          defaultValue={settings?.OpenAiKey ? "*".repeat(20) : ""}
+          defaultValue={settings?.OpenAiKey ? SECRET_MASK : ""}
           required={true}
-          autoComplete="off"
-          spellCheck={false}
-          onChange={(e) => setInputValue(e.target.value)}
-          onBlur={() => setOpenAIKey(inputValue)}
         />
       </div>
-      <div className="flex flex-col w-60">
-        <label className="text-white text-sm font-semibold block mb-3">
-          Whisper Model
+      <div className={FIELD_COL}>
+        <label htmlFor={`${id}-model`} className={FIELD_LABEL}>
+          {t("provider-forms.transcription.openai.whisper-model")}
         </label>
         <select
+          id={`${id}-model`}
           disabled={true}
-          className="border-none flex-shrink-0 bg-theme-settings-input-bg border-gray-500 text-white text-sm rounded-lg block w-full p-2.5"
+          defaultValue="whisper-large"
+          className={`${FIELD_SELECT} flex-shrink-0`}
         >
-          <option disabled={true} selected={true}>
-            Whisper Large
-          </option>
+          <option value="whisper-large">Whisper Large</option>
         </select>
       </div>
     </div>

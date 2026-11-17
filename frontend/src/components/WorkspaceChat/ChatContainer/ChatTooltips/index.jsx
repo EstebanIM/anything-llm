@@ -1,6 +1,9 @@
 import { Tooltip } from "react-tooltip";
 import { createPortal } from "react-dom";
 
+// Short intent delay to open, none to close (react-tooltip's default delayHide).
+const TOOLTIP_DELAY = 120;
+
 /**
  * Set the tooltips for the chat container in bulk.
  * Why do this?
@@ -21,85 +24,85 @@ export function ChatTooltips() {
       <Tooltip
         id="message-to-speech"
         place="bottom"
-        delayShow={300}
+        delayShow={TOOLTIP_DELAY}
         className="tooltip !text-xs"
       />
       <Tooltip
         id="regenerate-assistant-text"
         place="bottom"
-        delayShow={300}
+        delayShow={TOOLTIP_DELAY}
         className="tooltip !text-xs"
       />
       <Tooltip
         id="copy-assistant-text"
         place="bottom"
-        delayShow={300}
+        delayShow={TOOLTIP_DELAY}
         className="tooltip !text-xs"
       />
       <Tooltip
         id="feedback-button"
         place="bottom"
-        delayShow={300}
+        delayShow={TOOLTIP_DELAY}
         className="tooltip !text-xs"
       />
       <Tooltip
         id="action-menu"
         place="top"
-        delayShow={300}
+        delayShow={TOOLTIP_DELAY}
         className="tooltip !text-xs"
       />
       <Tooltip
         id="edit-input-text"
         place="bottom"
-        delayShow={300}
+        delayShow={TOOLTIP_DELAY}
         className="tooltip !text-xs"
       />
       <Tooltip
         id="metrics-visibility"
         place="bottom"
-        delayShow={300}
+        delayShow={TOOLTIP_DELAY}
         className="tooltip !text-xs"
       />
       <Tooltip
         id="routing-details"
         place="bottom"
-        delayShow={300}
+        delayShow={TOOLTIP_DELAY}
         className="tooltip !text-xs"
       />
       <Tooltip
         id="expand-cot"
         place="bottom"
-        delayShow={300}
+        delayShow={TOOLTIP_DELAY}
         className="tooltip !text-xs"
       />
       <Tooltip
         id="cot-thinking"
         place="bottom"
-        delayShow={500}
+        delayShow={TOOLTIP_DELAY}
         className="tooltip !text-xs"
       />
       <Tooltip
         id="query-refusal-info"
         place="top"
-        delayShow={500}
+        delayShow={TOOLTIP_DELAY}
         className="tooltip !text-xs max-w-[350px]"
       />
       <Tooltip
         id="context-window-limit-exceeded"
         place="top"
-        delayShow={500}
+        delayShow={TOOLTIP_DELAY}
         className="tooltip !text-xs max-w-[350px]"
       />
       <Tooltip
         id="attachment-status-tooltip"
         place="top"
-        delayShow={300}
+        delayShow={TOOLTIP_DELAY}
         className="tooltip !text-xs"
       />
       <Tooltip
         id="attach-item-btn"
         place="top"
-        delayShow={300}
+        delayShow={TOOLTIP_DELAY}
         className="tooltip !text-xs"
       />
       <DocumentLevelTooltip />
@@ -119,7 +122,7 @@ function DocumentLevelTooltip() {
       <Tooltip
         id="similarity-score"
         place="top"
-        delayShow={100}
+        delayShow={TOOLTIP_DELAY}
         // z-[100] to ensure it renders above the chat history
         // as the citation modal is z-indexed above the chat history
         className="tooltip !text-xs z-[100]"

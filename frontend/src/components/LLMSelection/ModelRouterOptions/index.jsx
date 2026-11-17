@@ -1,11 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import paths from "@/utils/paths";
 import ModelRouter from "@/models/modelRouter";
+import {
+  FIELD_COL,
+  FIELD_ROW,
+  FIELD_SELECT,
+} from "@/components/ProviderFields";
+import { FieldLabel } from "@/components/LLMSelection/FormParts";
 
 export default function ModelRouterOptions({ settings }) {
   const { t } = useTranslation();
+  const id = useId();
   const [routers, setRouters] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -21,7 +28,7 @@ export default function ModelRouterOptions({ settings }) {
   if (loading) {
     return (
       <div className="w-full flex flex-col gap-y-4">
-        <p className="text-sm text-white text-opacity-60">
+        <p role="status" className="text-sm text-theme-text-secondary">
           {t("model-router.router-selection.loading-routers")}
         </p>
       </div>
@@ -31,7 +38,7 @@ export default function ModelRouterOptions({ settings }) {
   if (routers.length === 0) {
     return (
       <div className="w-full flex flex-col gap-y-4">
-        <p className="text-sm text-white text-opacity-60">
+        <p className="text-sm text-theme-text-secondary">
           {t("model-router.router-selection.no-routers-prefix-settings")}{" "}
           <Link
             to={paths.settings.modelRouters()}
@@ -47,15 +54,17 @@ export default function ModelRouterOptions({ settings }) {
 
   return (
     <div className="w-full flex flex-col gap-y-4">
-      <div className="w-full flex items-center gap-[36px]">
-        <div className="flex flex-col w-60">
-          <label className="text-white text-sm font-semibold block mb-3">
-            {t("model-router.router-selection.model-router-label")}
-          </label>
+      <div className={FIELD_ROW}>
+        <div className={FIELD_COL}>
+          <FieldLabel
+            htmlFor={`${id}-router`}
+            label={t("model-router.router-selection.model-router-label")}
+          />
           <select
+            id={`${id}-router`}
             name="ModelRouterId"
             defaultValue={settings?.ModelRouterId || ""}
-            className="border-none bg-theme-settings-input-bg text-white text-sm rounded-lg block w-full p-2.5"
+            className={FIELD_SELECT}
             required
           >
             <option value="">

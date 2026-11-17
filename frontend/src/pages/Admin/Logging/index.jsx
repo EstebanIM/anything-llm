@@ -2,165 +2,241 @@ import Sidebar from "@/components/SettingsSidebar";
 import useQuery from "@/hooks/useQuery";
 import useMultiUserMode from "@/hooks/useMultiUserMode";
 import System from "@/models/system";
-import { useEffect, useState } from "react";
-import { isMobile } from "react-device-detect";
-import * as Skeleton from "react-loading-skeleton";
+import { useEffect, useId, useState } from "react";
+import { Trash2 } from "lucide-react";
 import LogRow from "./LogRow";
 import showToast from "@/utils/toast";
-import CTAButton from "@/components/lib/CTAButton";
+import { ModalDangerButton } from "@/components/lib/Modal";
+import ConfirmModal from "@/components/lib/ConfirmModal";
+import TableState from "@/components/lib/TableState";
+import { formatNumber } from "@/utils/dates";
 import { useTranslation } from "react-i18next";
+import { TABLE, TBODY, TH, THEAD } from "@/pages/Admin/Users/AdminTable";
+
+// Page size used by the server for /system/event-logs.
+const PAGE_SIZE = 10;
+
+const PAGE_BUTTON =
+  "min-h-[44px] md:min-h-[36px] px-4 rounded-lg border border-zinc-500 light:border-slate-500 text-sm text-white light:text-slate-900 hover:bg-white/10 light:hover:bg-slate-100 aria-disabled:opacity-40 aria-disabled:cursor-not-allowed transition-colors duration-quick ease-smooth";
 
 export default function AdminLogs() {
+  const { t } = useTranslation();
   const query = useQuery();
   const [loading, setLoading] = useState(true);
+  const [fetching, setFetching] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [logs, setLogs] = useState([]);
+  const [total, setTotal] = useState(0);
   const [offset, setOffset] = useState(Number(query.get("offset") || 0));
   const [canNext, setCanNext] = useState(false);
-  const { t } = useTranslation();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [clearing, setClearing] = useState(false);
+  const headingId = useId();
+
+  const fetchLogs = async (page) => {
+    setFetching(true);
+    const result = await System.eventLogs(page);
+    setFetching(false);
+    setLoading(false);
+    // The model resolves to [] when the request fails.
+    if (!Array.isArray(result?.logs)) {
+      setLoadError(true);
+      return;
+    }
+    setLoadError(false);
+    setLogs(result.logs);
+    setCanNext(!!result.hasPages);
+    setTotal(Number(result.totalLogs) || 0);
+  };
 
   useEffect(() => {
-    async function fetchLogs() {
-      const { logs: _logs, hasPages = false } = await System.eventLogs(offset);
-      setLogs(_logs);
-      setCanNext(hasPages);
-      setLoading(false);
-    }
-    fetchLogs();
+    fetchLogs(offset);
   }, [offset]);
 
   const handleResetLogs = async () => {
-    if (
-      !window.confirm(
-        "Are you sure you want to clear all event logs? This action is irreversible."
-      )
-    )
-      return;
+    setClearing(true);
     const { success, error } = await System.clearEventLogs();
-    if (success) {
-      showToast("Event logs cleared successfully.", "success");
-      setLogs([]);
-      setCanNext(false);
-      setOffset(0);
-    } else {
-      showToast(`Failed to clear logs: ${error}`, "error");
+    setClearing(false);
+    setConfirmOpen(false);
+    if (!success) {
+      showToast(
+        t("admin-pages.logs.clear-failed", {
+          error: error || t("admin-pages.unknown-error"),
+        }),
+        "error"
+      );
+      return;
     }
-  };
-
-  const handlePrevious = () => {
-    setOffset(Math.max(offset - 1, 0));
-  };
-
-  const handleNext = () => {
-    setOffset(offset + 1);
+    showToast(t("admin-pages.logs.cleared"), "success");
+    if (offset === 0) fetchLogs(0);
+    else setOffset(0);
   };
 
   return (
     <div className="w-screen h-screen overflow-hidden bg-zinc-950 light:bg-slate-50 flex">
       <Sidebar />
-      <div
-        style={{ height: isMobile ? "100%" : "calc(100% - 32px)" }}
-        className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full overflow-y-scroll p-4 md:p-0"
-      >
+      <main className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full md:h-[calc(100%-32px)] overflow-y-auto p-4 md:p-0">
         <div className="flex flex-col w-full px-1 md:pl-6 md:pr-[50px] md:py-6 py-16">
           <div className="w-full flex flex-col gap-y-1 pb-6 border-white/10 border-b-2">
-            <div className="flex gap-x-4 items-center">
-              <p className="text-lg leading-6 font-bold text-theme-text-primary">
-                {t("event.title")}
-              </p>
-            </div>
-            <p className="text-xs leading-[18px] font-base text-theme-text-secondary mt-2">
+            <h1
+              id={headingId}
+              tabIndex={-1}
+              className="text-lg leading-6 font-bold text-theme-text-primary"
+            >
+              {t("event.title")}
+            </h1>
+            <p className="text-xs leading-[18px] text-theme-text-secondary mt-2">
               {t("event.description")}
             </p>
           </div>
-          <div className="w-full justify-end flex">
-            <CTAButton
-              onClick={handleResetLogs}
-              className="mt-3 mr-0 mb-4 md:-mb-14 z-10"
+          <div className="w-full justify-end flex mt-3 mb-4">
+            <ModalDangerButton
+              type="button"
+              onClick={() => setConfirmOpen(true)}
+              disabled={loading || total === 0}
+              className="gap-x-2"
             >
+              <Trash2
+                strokeWidth={1.5}
+                className="h-4 w-4"
+                aria-hidden="true"
+              />
               {t("event.clear")}
-            </CTAButton>
+            </ModalDangerButton>
           </div>
-          <div className="overflow-x-auto mt-6">
-            <LogsContainer
-              loading={loading}
-              logs={logs}
-              offset={offset}
-              canNext={canNext}
-              handleNext={handleNext}
-              handlePrevious={handlePrevious}
-            />
-          </div>
+          <LogsContainer
+            headingId={headingId}
+            loading={loading}
+            fetching={fetching}
+            loadError={loadError}
+            logs={logs}
+            offset={offset}
+            total={total}
+            canNext={canNext}
+            onRetry={() => fetchLogs(offset)}
+            handleNext={() => canNext && setOffset(offset + 1)}
+            handlePrevious={() => offset > 0 && setOffset(offset - 1)}
+          />
         </div>
-      </div>
+      </main>
+      <ConfirmModal
+        isOpen={confirmOpen}
+        title={t("admin-pages.logs.clear-title")}
+        confirmLabel={t("event.clear")}
+        busy={clearing}
+        onConfirm={handleResetLogs}
+        onCancel={() => setConfirmOpen(false)}
+      >
+        <p>
+          {t("admin-pages.logs.clear-body", {
+            count: total,
+            total: formatNumber(total),
+          })}
+        </p>
+      </ConfirmModal>
     </div>
   );
 }
 
 function LogsContainer({
+  headingId,
   loading,
+  fetching,
+  loadError,
   logs,
   offset,
+  total,
   canNext,
+  onRetry,
   handleNext,
   handlePrevious,
 }) {
   const { t } = useTranslation();
   const multiUserMode = useMultiUserMode();
-  if (loading) {
-    return (
-      <Skeleton.default
-        height="80vh"
-        width="100%"
-        highlightColor="var(--theme-bg-primary)"
-        baseColor="var(--theme-bg-secondary)"
-        count={1}
-        className="w-full p-4 rounded-b-2xl rounded-tr-2xl rounded-tl-sm"
-        containerClassName="flex w-full"
-      />
-    );
-  }
+  const columns = multiUserMode ? 4 : 3;
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const showPagination = !loading && !loadError && (pages > 1 || offset > 0);
 
   return (
     <>
-      <table className="w-full text-xs text-left rounded-lg min-w-[640px] border-spacing-0">
-        <thead className="text-theme-text-secondary text-xs leading-[18px] font-bold uppercase border-white/10 border-b">
+      <table
+        aria-labelledby={headingId}
+        aria-busy={loading || fetching || undefined}
+        className={TABLE}
+      >
+        <thead className={THEAD}>
           <tr>
-            <th scope="col" className="px-6 py-3 rounded-tl-lg">
+            <th scope="col" className={TH}>
               {t("event.table.type")}
             </th>
             {multiUserMode && (
-              <th scope="col" className="px-6 py-3">
+              <th scope="col" className={TH}>
                 {t("event.table.user")}
               </th>
             )}
-            <th scope="col" className="px-6 py-3">
+            <th scope="col" className={TH}>
               {t("event.table.occurred")}
             </th>
-            <th scope="col" className="px-6 py-3 rounded-tr-lg">
-              {" "}
+            <th scope="col" className={TH}>
+              <span className="sr-only">{t("admin-pages.logs.details")}</span>
             </th>
           </tr>
         </thead>
-        <tbody>
-          {!!logs && logs.map((log) => <LogRow key={log.id} log={log} />)}
+        <tbody className={TBODY}>
+          {loading ? (
+            <TableState state="loading" colSpan={columns} />
+          ) : loadError ? (
+            <TableState
+              state="error"
+              colSpan={columns}
+              message={t("admin-pages.logs.load-failed")}
+              onRetry={onRetry}
+            />
+          ) : logs.length === 0 ? (
+            <TableState
+              state="empty"
+              colSpan={columns}
+              message={t("admin-pages.logs.empty")}
+            />
+          ) : (
+            logs.map((log) => (
+              <LogRow key={log.id} log={log} columns={columns} />
+            ))
+          )}
         </tbody>
       </table>
-      <div className="flex w-full justify-between items-center mt-6">
-        <button
-          onClick={handlePrevious}
-          className="px-4 py-2 rounded-lg border border-slate-200 text-slate-200 light:text-theme-text-secondary light:border-theme-sidebar-border text-sm items-center flex gap-x-2 hover:bg-slate-200 hover:text-slate-800 disabled:invisible"
-          disabled={offset === 0}
+      {showPagination && (
+        <nav
+          aria-label={t("admin-pages.logs.pagination")}
+          className="flex w-full justify-between items-center gap-x-4 mt-6"
         >
-          {t("common.previous")}
-        </button>
-        <button
-          onClick={handleNext}
-          className="px-4 py-2 rounded-lg border border-slate-200 text-slate-200 light:text-theme-text-secondary light:border-theme-sidebar-border text-sm items-center flex gap-x-2 hover:bg-slate-200 hover:text-slate-800 disabled:invisible"
-          disabled={!canNext}
-        >
-          {t("common.next")}
-        </button>
-      </div>
+          <button
+            type="button"
+            onClick={handlePrevious}
+            aria-disabled={offset === 0 || undefined}
+            className={PAGE_BUTTON}
+          >
+            {t("common.previous")}
+          </button>
+          <p
+            aria-live="polite"
+            className="text-xs text-theme-text-secondary text-center"
+          >
+            {t("admin-pages.logs.page", {
+              page: formatNumber(offset + 1),
+              pages: formatNumber(Math.max(pages, offset + 1)),
+            })}
+          </p>
+          <button
+            type="button"
+            onClick={handleNext}
+            aria-disabled={!canNext || undefined}
+            className={PAGE_BUTTON}
+          >
+            {t("common.next")}
+          </button>
+        </nav>
+      )}
     </>
   );
 }

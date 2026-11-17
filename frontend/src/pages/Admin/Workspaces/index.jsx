@@ -1,9 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import Sidebar from "@/components/SettingsSidebar";
-import { isMobile } from "react-device-detect";
-import * as Skeleton from "react-loading-skeleton";
-import "react-loading-skeleton/dist/skeleton.css";
-import { BookOpen } from "lucide-react";
+import { BookOpen, ShieldCheck } from "lucide-react";
 import Admin from "@/models/admin";
 import System from "@/models/system";
 import WorkspaceRow from "./WorkspaceRow";
@@ -11,115 +9,150 @@ import NewWorkspaceModal from "./NewWorkspaceModal";
 import { useModal } from "@/hooks/useModal";
 import Modal from "@/components/lib/Modal";
 import CTAButton from "@/components/lib/CTAButton";
+import TableState from "@/components/lib/TableState";
+import {
+  TABLE,
+  TBODY,
+  TH,
+  THEAD,
+  focusAfterRemoval,
+} from "@/pages/Admin/Users/AdminTable";
+
+const COLUMNS = 5;
 
 export default function AdminWorkspaces() {
+  const { t } = useTranslation();
   const { isOpen, openModal, closeModal } = useModal();
+  const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [workspaces, setWorkspaces] = useState([]);
+  const [deletionProtected, setDeletionProtected] = useState(false);
+  const headingId = useId();
+  const headingRef = useRef(null);
+  const tbodyRef = useRef(null);
+
+  const fetchData = async () => {
+    const [_workspaces, _settings] = await Promise.all([
+      Admin.workspaces(),
+      System.keys(),
+    ]);
+    setWorkspaces(_workspaces);
+    setLoadFailed(!!_workspaces?.failed);
+    setDeletionProtected(_settings?.WorkspaceDeletionProtection === true);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const removeWorkspace = (id) => {
+    const index = workspaces.findIndex((workspace) => workspace.id === id);
+    setWorkspaces((prev) => prev.filter((workspace) => workspace.id !== id));
+    focusAfterRemoval(tbodyRef, index, headingRef);
+  };
 
   return (
     <div className="w-screen h-screen overflow-hidden bg-zinc-950 light:bg-slate-50 flex">
       <Sidebar />
-      <div
-        style={{ height: isMobile ? "100%" : "calc(100% - 32px)" }}
-        className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full overflow-y-scroll p-4 md:p-0"
-      >
+      <main className="relative md:ml-[2px] md:mr-[16px] md:my-[16px] md:rounded-[16px] bg-zinc-900 light:bg-white w-full h-full md:h-[calc(100%-32px)] overflow-y-auto p-4 md:p-0">
         <div className="flex flex-col w-full px-1 md:pl-6 md:pr-[50px] md:py-6 py-16">
           <div className="w-full flex flex-col gap-y-1 pb-6 border-white/10 border-b-2">
-            <div className="items-center flex gap-x-4">
-              <p className="text-lg leading-6 font-bold text-theme-text-primary">
-                Instance Workspaces
-              </p>
-            </div>
-            <p className="text-xs leading-[18px] font-base text-theme-text-secondary">
-              These are all the workspaces that exist on this instance. Removing
-              a workspace will delete all of its associated chats and settings.
+            <h1
+              id={headingId}
+              ref={headingRef}
+              tabIndex={-1}
+              className="text-lg leading-6 font-bold text-theme-text-primary"
+            >
+              {t("admin-pages.workspaces.title")}
+            </h1>
+            <p className="text-xs leading-[18px] text-theme-text-secondary">
+              {t("admin-pages.workspaces.description")}
             </p>
+            {deletionProtected && (
+              <p className="mt-2 flex items-start gap-x-2 text-xs leading-[18px] text-theme-text-secondary">
+                <ShieldCheck
+                  strokeWidth={1.5}
+                  className="h-4 w-4 shrink-0"
+                  aria-hidden="true"
+                />
+                {t("admin-pages.workspaces.deletion-protected")}
+              </p>
+            )}
           </div>
           <div className="w-full justify-end flex">
             <CTAButton
+              type="button"
               onClick={openModal}
-              className="mt-3 mr-0 mb-4 md:-mb-14 z-10"
+              className="mt-3 mr-0 mb-4 md:-mb-6 z-10"
             >
-              <BookOpen strokeWidth={1.5} className="h-4 w-4" /> New Workspace
+              <BookOpen
+                strokeWidth={1.5}
+                className="h-4 w-4"
+                aria-hidden="true"
+              />
+              {t("admin-pages.workspaces.new")}
             </CTAButton>
           </div>
-          <div className="overflow-x-auto">
-            <WorkspacesContainer />
-          </div>
+          <table
+            aria-labelledby={headingId}
+            aria-busy={loading || undefined}
+            className={TABLE}
+          >
+            <thead className={THEAD}>
+              <tr>
+                <th scope="col" className={TH}>
+                  {t("admin-pages.workspaces.name")}
+                </th>
+                <th scope="col" className={TH}>
+                  {t("admin-pages.workspaces.link")}
+                </th>
+                <th scope="col" className={TH}>
+                  {t("admin-pages.workspaces.members")}
+                </th>
+                <th scope="col" className={TH}>
+                  {t("admin-pages.workspaces.created")}
+                </th>
+                <th scope="col" className={TH}>
+                  <span className="sr-only">{t("api.actions")}</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody ref={tbodyRef} className={TBODY}>
+              {loading ? (
+                <TableState state="loading" colSpan={COLUMNS} />
+              ) : loadFailed ? (
+                <TableState
+                  state="error"
+                  colSpan={COLUMNS}
+                  onRetry={() => {
+                    setLoading(true);
+                    fetchData();
+                  }}
+                />
+              ) : workspaces.length === 0 ? (
+                <TableState
+                  state="empty"
+                  colSpan={COLUMNS}
+                  message={t("admin-pages.workspaces.empty")}
+                />
+              ) : (
+                workspaces.map((workspace) => (
+                  <WorkspaceRow
+                    key={workspace.id}
+                    workspace={workspace}
+                    deletionProtected={deletionProtected}
+                    onDeleted={() => removeWorkspace(workspace.id)}
+                  />
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
         <Modal isOpen={isOpen} onClose={closeModal}>
-          <NewWorkspaceModal closeModal={closeModal} />
+          <NewWorkspaceModal closeModal={closeModal} onSuccess={fetchData} />
         </Modal>
-      </div>
+      </main>
     </div>
-  );
-}
-
-function WorkspacesContainer() {
-  const [loading, setLoading] = useState(true);
-  const [users, setUsers] = useState([]);
-  const [workspaces, setWorkspaces] = useState([]);
-  const [deletionProtected, setDeletionProtected] = useState(false);
-
-  useEffect(() => {
-    async function fetchData() {
-      const [_users, _workspaces, _settings] = await Promise.all([
-        Admin.users(),
-        Admin.workspaces(),
-        System.keys(),
-      ]);
-      setUsers(_users);
-      setWorkspaces(_workspaces);
-      setDeletionProtected(_settings?.WorkspaceDeletionProtection === true);
-      setLoading(false);
-    }
-    fetchData();
-  }, []);
-
-  if (loading) {
-    return (
-      <Skeleton.default
-        height="80vh"
-        width="100%"
-        highlightColor="var(--theme-bg-primary)"
-        baseColor="var(--theme-bg-secondary)"
-        count={1}
-        className="w-full p-4 rounded-b-2xl rounded-tr-2xl rounded-tl-sm mt-6"
-        containerClassName="flex w-full"
-      />
-    );
-  }
-
-  return (
-    <table className="w-full text-xs text-left rounded-lg mt-6 min-w-[640px] border-spacing-0">
-      <thead className="text-theme-text-secondary text-xs leading-[18px] font-bold uppercase border-white/10 border-b">
-        <tr>
-          <th scope="col" className="px-6 py-3 rounded-tl-lg">
-            Name
-          </th>
-          <th scope="col" className="px-6 py-3">
-            Link
-          </th>
-          <th scope="col" className="px-6 py-3">
-            Users
-          </th>
-          <th scope="col" className="px-6 py-3">
-            Created On
-          </th>
-          <th scope="col" className="px-6 py-3 rounded-tr-lg">
-            {" "}
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {workspaces.map((workspace) => (
-          <WorkspaceRow
-            key={workspace.id}
-            workspace={workspace}
-            users={users}
-            deletionProtected={deletionProtected}
-          />
-        ))}
-      </tbody>
-    </table>
   );
 }

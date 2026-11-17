@@ -16,10 +16,15 @@ export default function useProviderEndpointAutoDiscovery({
   const [authTokenValue, setAuthTokenValue] = useState(initialAuthToken);
   const [autoDetectAttempted, setAutoDetectAttempted] = useState(false);
   const [showAdvancedControls, setShowAdvancedControls] = useState(true);
+  // "idle" | "detecting" | "found" | "not-found": lets the form announce the
+  // result (aria-live) instead of failing silently in the console.
+  const [autoDetectStatus, setAutoDetectStatus] = useState("idle");
+  const [detectedEndpoint, setDetectedEndpoint] = useState(null);
 
   async function autoDetect() {
     setLoading(true);
     setAutoDetectAttempted(true);
+    setAutoDetectStatus("detecting");
     const possibleEndpoints = [];
     ENDPOINTS.forEach((endpoint) => {
       possibleEndpoints.push(
@@ -47,11 +52,15 @@ export default function useProviderEndpointAutoDiscovery({
     if (models !== null) {
       setBasePath(endpoint);
       setBasePathValue(endpoint);
+      setDetectedEndpoint(endpoint);
+      setAutoDetectStatus("found");
       setLoading(false);
       setShowAdvancedControls(false);
       return;
     }
 
+    setDetectedEndpoint(null);
+    setAutoDetectStatus("not-found");
     setLoading(false);
     setShowAdvancedControls(true);
   }
@@ -90,6 +99,8 @@ export default function useProviderEndpointAutoDiscovery({
   return {
     autoDetecting: loading,
     autoDetectAttempted,
+    autoDetectStatus,
+    detectedEndpoint,
     showAdvancedControls,
     setShowAdvancedControls,
     basePath: {

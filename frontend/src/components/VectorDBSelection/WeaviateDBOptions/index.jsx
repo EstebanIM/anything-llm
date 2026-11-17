@@ -1,38 +1,54 @@
-import { useState } from "react";
-import { ChevronDown, ChevronUp, Info } from "lucide-react";
-import { Tooltip } from "react-tooltip";
+import { useId, useState } from "react";
+import { useTranslation } from "react-i18next";
+import {
+  AdvancedSection,
+  FIELD_COL,
+  FIELD_INPUT,
+  FIELD_LABEL,
+  FIELD_ROW,
+  FIELD_SELECT,
+  InfoTip,
+  SECRET_MASK,
+  SecretInput,
+} from "@/components/ProviderFields";
 
 export default function WeaviateDBOptions({ settings }) {
+  const { t } = useTranslation();
+  const id = useId();
   const [deployment, setDeployment] = useState(
     settings?.WeaviateDeployment ||
       defaultDeployment(settings?.WeaviateEndpoint)
   );
   return (
     <div className="w-full flex flex-col gap-y-7">
-      <div className="w-full flex items-center gap-[36px] mt-1.5">
-        <div className="flex flex-col w-60">
-          <label className="text-white text-sm font-semibold block mb-3">
-            Deployment
+      <div className={`${FIELD_ROW} mt-1.5`}>
+        <div className={FIELD_COL}>
+          <label htmlFor={`${id}-deployment`} className={FIELD_LABEL}>
+            {t("provider-forms.vector-db.weaviate.deployment")}
           </label>
           <select
+            id={`${id}-deployment`}
             name="WeaviateDeployment"
             value={deployment}
             onChange={(e) => setDeployment(e.target.value)}
-            className="border-none bg-theme-settings-input-bg border-gray-500 text-white text-sm rounded-lg block w-full p-2.5"
+            className={FIELD_SELECT}
           >
-            <option value="self-hosted">Self-hosted / Other</option>
+            <option value="self-hosted">
+              {t("provider-forms.vector-db.weaviate.self-hosted")}
+            </option>
             <option value="cloud">Weaviate Cloud</option>
           </select>
         </div>
 
-        <div className="flex flex-col w-60">
-          <label className="text-white text-sm font-semibold block mb-3">
-            Weaviate URL (REST)
+        <div className={FIELD_COL}>
+          <label htmlFor={`${id}-endpoint`} className={FIELD_LABEL}>
+            {t("provider-forms.vector-db.weaviate.endpoint")}
           </label>
           <input
+            id={`${id}-endpoint`}
             type="url"
             name="WeaviateEndpoint"
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
+            className={FIELD_INPUT}
             placeholder={
               deployment === "cloud"
                 ? "https://xxxx.weaviate.cloud"
@@ -45,18 +61,15 @@ export default function WeaviateDBOptions({ settings }) {
           />
         </div>
 
-        <div className="flex flex-col w-60">
-          <label className="text-white text-sm font-semibold block mb-3">
-            API Key
+        <div className={FIELD_COL}>
+          <label htmlFor={`${id}-api-key`} className={FIELD_LABEL}>
+            {t("provider-fields.api-key")}
           </label>
-          <input
-            type="password"
+          <SecretInput
+            id={`${id}-api-key`}
             name="WeaviateApiKey"
-            className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-            placeholder="sk-123Abcweaviate"
-            defaultValue={settings?.WeaviateApiKey ? "*".repeat(20) : ""}
-            autoComplete="off"
-            spellCheck={false}
+            placeholder="sk-..."
+            defaultValue={settings?.WeaviateApiKey ? SECRET_MASK : ""}
           />
         </div>
       </div>
@@ -68,96 +81,76 @@ export default function WeaviateDBOptions({ settings }) {
 }
 
 function SelfHostedAdvancedSettings({ settings }) {
-  const [showAdvancedControls, setShowAdvancedControls] = useState(false);
-  return (
-    <>
-      <div className="flex justify-start">
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            setShowAdvancedControls(!showAdvancedControls);
-          }}
-          className="border-none text-theme-text-primary hover:text-theme-text-secondary flex items-center text-sm"
-        >
-          {showAdvancedControls ? "Hide" : "Show"} advanced settings
-          {showAdvancedControls ? (
-            <ChevronUp strokeWidth={1.5} size={14} className="ml-1" />
-          ) : (
-            <ChevronDown strokeWidth={1.5} size={14} className="ml-1" />
-          )}
-        </button>
-      </div>
-      <div hidden={!showAdvancedControls}>
-        <div className="w-full flex items-center gap-[36px]">
-          <div className="flex flex-col w-60">
-            <LabelWithTooltip id="weaviate-grpc-host-tooltip" label="gRPC Host">
-              The host Weaviate serves gRPC on, without <code>https://</code> or
-              a port.
-              <br />
-              <br />
-              Leave blank to use the endpoint's host. Only set this if your
-              provider gives you a separate gRPC host, such as DigitalOcean.
-            </LabelWithTooltip>
-            <input
-              type="text"
-              name="WeaviateGrpcHost"
-              className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-              placeholder="Same as endpoint"
-              defaultValue={settings?.WeaviateGrpcHost}
-              required={false}
-              autoComplete="off"
-              spellCheck={false}
-            />
-          </div>
+  const { t } = useTranslation();
+  const id = useId();
 
-          <div className="flex flex-col w-60">
-            <LabelWithTooltip id="weaviate-grpc-port-tooltip" label="gRPC Port">
-              The port Weaviate serves gRPC on.
-              <br />
-              <br />
-              Leave blank to use the default port <code>50051</code>. Only
-              change this if your Weaviate instance exposes gRPC on a different
-              port, such as behind a proxy.
-            </LabelWithTooltip>
-            <input
-              type="number"
-              name="WeaviateGrpcPort"
-              className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-              placeholder="50051"
-              min={1}
-              max={65535}
-              step={1}
-              onScroll={(e) => e.target.blur()}
-              defaultValue={settings?.WeaviateGrpcPort}
-              required={false}
-              autoComplete="off"
-            />
-          </div>
+  return (
+    <AdvancedSection>
+      <div className={`${FIELD_ROW} mt-4`}>
+        <div className={FIELD_COL}>
+          <LabelWithTip
+            htmlFor={`${id}-grpc-host`}
+            label={t("provider-forms.vector-db.weaviate.grpc-host")}
+          >
+            <p>{t("provider-forms.vector-db.weaviate.grpc-host-help")}</p>
+            <p className="mt-2">
+              {t("provider-forms.vector-db.weaviate.grpc-host-blank")}
+            </p>
+          </LabelWithTip>
+          <input
+            id={`${id}-grpc-host`}
+            type="text"
+            name="WeaviateGrpcHost"
+            className={FIELD_INPUT}
+            placeholder={t(
+              "provider-forms.vector-db.weaviate.grpc-host-placeholder"
+            )}
+            defaultValue={settings?.WeaviateGrpcHost}
+            required={false}
+            autoComplete="off"
+            spellCheck={false}
+          />
+        </div>
+
+        <div className={FIELD_COL}>
+          <LabelWithTip
+            htmlFor={`${id}-grpc-port`}
+            label={t("provider-forms.vector-db.weaviate.grpc-port")}
+          >
+            <p>{t("provider-forms.vector-db.weaviate.grpc-port-help")}</p>
+            <p className="mt-2">
+              {t("provider-forms.vector-db.weaviate.grpc-port-blank")}
+            </p>
+          </LabelWithTip>
+          <input
+            id={`${id}-grpc-port`}
+            type="number"
+            name="WeaviateGrpcPort"
+            className={FIELD_INPUT}
+            placeholder="50051"
+            min={1}
+            max={65535}
+            step={1}
+            onWheel={(e) => e.currentTarget.blur()}
+            defaultValue={settings?.WeaviateGrpcPort}
+            required={false}
+            autoComplete="off"
+          />
         </div>
       </div>
-    </>
+    </AdvancedSection>
   );
 }
 
-function LabelWithTooltip({ id, label, children }) {
+function LabelWithTip({ htmlFor, label, children }) {
   return (
     <div className="flex items-center gap-x-1 mb-3">
-      <label className="text-white text-sm font-semibold block">{label}</label>
-      <Info
-        strokeWidth={1.5}
-        size={16}
-        className="text-theme-text-secondary cursor-pointer"
-        data-tooltip-id={id}
-        data-tooltip-place="right"
-      />
-      <Tooltip
-        delayHide={300}
-        id={id}
-        className="max-w-md z-99"
-        clickable={true}
-      >
-        <p className="text-md whitespace-pre-line break-words">{children}</p>
-      </Tooltip>
+      <label htmlFor={htmlFor} className="text-white text-sm font-semibold">
+        {label}
+      </label>
+      <InfoTip label={label} place="right">
+        {children}
+      </InfoTip>
     </div>
   );
 }

@@ -1,8 +1,104 @@
-import { Children } from "react";
+import {
+  Children,
+  createContext,
+  forwardRef,
+  useContext,
+  useEffect,
+  useId,
+  useRef,
+} from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useModalEscape } from "@/hooks/useModalEscape";
 import PasswordInput from "@/components/lib/PasswordInput";
+
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/** Lets `ModalHeader` give its title the id the dialog is labelled by. */
+const ModalTitleContext = createContext(null);
+
+/**
+ * Recently focused elements, newest last. A child with autoFocus takes focus
+ * while the dialog mounts, before any effect could read
+ * document.activeElement, so the opener is looked up here instead.
+ */
+const focusHistory = [];
+if (typeof document !== "undefined") {
+  document.addEventListener(
+    "focusin",
+    (e) => {
+      focusHistory.push(e.target);
+      if (focusHistory.length > 10) focusHistory.shift();
+    },
+    true
+  );
+}
+
+/** Newest focused element that is still on the page and outside `node`. */
+function findOpener(node) {
+  for (let i = focusHistory.length - 1; i >= 0; i--) {
+    const el = focusHistory[i];
+    if (el && document.contains(el) && !node?.contains(el)) return el;
+  }
+  return null;
+}
+
+/**
+ * Dialog focus handling: focus moves inside on open (unless a child already
+ * took it, e.g. with autoFocus), Tab stays inside the top-most dialog, and
+ * focus returns to the element that opened it on close.
+ * Exported for custom surfaces (bottom sheets, side panels): give the node
+ * role="dialog", aria-modal, a name, tabIndex={-1} and data-app-dialog="" so
+ * the Tab trap knows it is the top-most layer.
+ */
+export function useDialogFocus(isOpen, dialogRef) {
+  useEffect(() => {
+    if (!isOpen) return;
+    const opener = findOpener(dialogRef.current);
+    const timer = setTimeout(() => {
+      const node = dialogRef.current;
+      if (!node || node.contains(document.activeElement)) return;
+      (node.querySelector(FOCUSABLE) || node).focus();
+    }, 0);
+
+    const onKeyDown = (e) => {
+      const node = dialogRef.current;
+      if (e.key !== "Tab" || !node) return;
+      const dialogs = document.querySelectorAll("[data-app-dialog]");
+      if (dialogs[dialogs.length - 1] !== node) return;
+      const focusable = [...node.querySelectorAll(FOCUSABLE)].filter(
+        (el) => el.offsetParent !== null
+      );
+      if (focusable.length === 0) {
+        e.preventDefault();
+        return node.focus();
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (!node.contains(document.activeElement)) {
+        e.preventDefault();
+        return first.focus();
+      }
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("keydown", onKeyDown);
+      const node = dialogRef.current;
+      if (opener && document.contains(opener) && !node?.contains(opener))
+        opener.focus?.();
+    };
+  }, [isOpen]);
+}
 
 /** @type {Record<string, string>} max-width per size, matched to the Figma modal frames */
 const SIZE_CLASSES = {
@@ -32,6 +128,7 @@ const SIZE_CLASSES = {
  * @param {boolean} [props.closeOnEsc=true] - Whether pressing Escape calls `onClose`. Some modals require a forced choice and should opt out.
  * @param {boolean} [props.noPortal=false] - Render inline instead of portaling to #root. Used for sub-DOM modals that must render as a child element.
  *   Note: this can impact the backdrop presentation due to conflicting DOM positions, so double check it renders as desired.
+ * @param {string} [props.ariaLabel] - Accessible name when the modal has no `ModalHeader` title (e.g. `variant="bare"`)
  */
 export default function Modal({
   children,
@@ -42,16 +139,35 @@ export default function Modal({
   className = "",
   closeOnEsc = true,
   noPortal = false,
+  ariaLabel,
 }) {
+  const titleId = useId();
+  const dialogRef = useRef(null);
   useModalEscape(isOpen && closeOnEsc, onClose);
+  useDialogFocus(isOpen, dialogRef);
 
   if (!isOpen) return null;
 
   const backdrop =
     `bg-black/60 backdrop-blur-sm fixed top-0 left-0 outline-none w-screen h-screen flex items-center justify-center z-99 ${className}`.trim();
 
+  const dialogProps = {
+    ref: dialogRef,
+    role: "dialog",
+    "aria-modal": "true",
+    tabIndex: -1,
+    "data-app-dialog": "",
+    ...(ariaLabel
+      ? { "aria-label": ariaLabel }
+      : { "aria-labelledby": titleId }),
+  };
+
   if (variant === "bare") {
-    const bare = <div className={backdrop}>{children}</div>;
+    const bare = (
+      <div {...dialogProps} className={`${backdrop} focus:outline-none`}>
+        {children}
+      </div>
+    );
     if (noPortal) return bare;
     return createPortal(bare, document.getElementById("root"));
   }
@@ -59,9 +175,12 @@ export default function Modal({
   const content = (
     <div className={backdrop}>
       <div
-        className={`relative w-full ${SIZE_CLASSES[size] || SIZE_CLASSES.md} mx-4 flex flex-col gap-y-5 p-6 rounded-lg shadow-xs max-h-[90vh] overflow-y-auto bg-zinc-900 light:bg-white border border-zinc-800 light:border-slate-300`}
+        {...dialogProps}
+        className={`relative w-full ${SIZE_CLASSES[size] || SIZE_CLASSES.md} mx-4 flex flex-col gap-y-5 p-6 rounded-lg shadow-xs max-h-[90vh] overflow-y-auto bg-zinc-900 light:bg-white border border-zinc-800 light:border-slate-300 focus:outline-none`}
       >
-        {children}
+        <ModalTitleContext.Provider value={titleId}>
+          {children}
+        </ModalTitleContext.Provider>
       </div>
     </div>
   );
@@ -80,20 +199,25 @@ export default function Modal({
  * @param {import("react").ReactNode} [props.children] - Extra header content rendered below the subtitle
  */
 export function ModalHeader({ title, subtitle, onClose, children }) {
+  const { t } = useTranslation();
+  const titleId = useContext(ModalTitleContext);
   return (
     <div className="flex flex-col gap-y-1 w-full">
       <div className="flex items-start justify-between gap-x-2 w-full">
-        <h3 className="min-w-0 text-base font-semibold text-slate-50 light:text-slate-900 break-words">
+        <h3
+          id={titleId || undefined}
+          className="min-w-0 text-base font-semibold text-slate-50 light:text-slate-900 break-words"
+        >
           {title}
         </h3>
         {onClose && (
           <button
             onClick={onClose}
             type="button"
-            aria-label="Close"
-            className="border-none bg-transparent p-1 -m-1 rounded-lg shrink-0 text-slate-50 light:text-slate-900 hover:bg-zinc-800 light:hover:bg-slate-100 transition-colors duration-200"
+            aria-label={t("api.modal.close")}
+            className="border-none bg-transparent p-1 -m-1 rounded-lg shrink-0 text-slate-50 light:text-slate-900 hover:bg-zinc-800 light:hover:bg-slate-100 transition-colors duration-quick"
           >
-            <X strokeWidth={1.5} size={16} />
+            <X strokeWidth={1.5} size={16} aria-hidden="true" />
           </button>
         )}
       </div>
@@ -141,7 +265,7 @@ export function ModalFooter({ children, className = "" }) {
 }
 
 const FIELD_BASE =
-  "w-full text-sm rounded-lg outline-none bg-zinc-800 border border-zinc-800 text-zinc-100 placeholder:text-zinc-400 light:bg-white light:border-slate-300 light:text-slate-900 light:placeholder:text-slate-400 focus:border-sky-500 light:focus:border-sky-500 disabled:opacity-50 disabled:cursor-not-allowed";
+  "w-full text-base md:text-sm rounded-lg bg-zinc-800 border border-zinc-500 text-zinc-100 placeholder:text-zinc-400 light:bg-white light:border-slate-500 light:text-slate-900 light:placeholder:text-slate-500 focus:border-sky-500 light:focus:border-sky-500 disabled:opacity-50 disabled:cursor-not-allowed";
 
 /**
  * Field label matching the Figma input label (Medium 14).
@@ -151,6 +275,7 @@ const FIELD_BASE =
  * @param {string} [props.className] - Extra classes appended to the label
  */
 export function ModalLabel({ children, optional, className = "", ...props }) {
+  const { t } = useTranslation();
   return (
     <label
       {...props}
@@ -160,7 +285,7 @@ export function ModalLabel({ children, optional, className = "", ...props }) {
       {optional && (
         <span className="font-normal text-zinc-400 light:text-slate-500">
           {" "}
-          (Optional)
+          ({t("common.optional")})
         </span>
       )}
     </label>
@@ -173,9 +298,12 @@ export function ModalLabel({ children, optional, className = "", ...props }) {
  * @param {Object} props - Component props
  * @param {string} [props.className] - Extra classes appended to the hint
  */
-export function ModalHint({ children, className = "" }) {
+export function ModalHint({ children, className = "", id }) {
   return (
-    <p className={`text-xs text-zinc-400 light:text-slate-600 ${className}`}>
+    <p
+      id={id}
+      className={`text-xs text-zinc-400 light:text-slate-600 ${className}`}
+    >
       {children}
     </p>
   );
@@ -191,11 +319,13 @@ export function ModalHint({ children, className = "" }) {
  * @param {import("react").ReactNode} [props.hint] - Helper line under the input
  * @param {boolean} [props.optional] - Marks the label "(Optional)"
  * @param {import("react").ReactNode} [props.leading] - Inline content rendered before the input (e.g. a "/" prefix)
+ * @param {import("react").ReactNode} [props.error] - Error shown under the field (role="alert", aria-invalid)
  * @param {string} [props.className] - Extra classes appended to the input
  */
 export function ModalInput({
   label,
   hint,
+  error,
   optional,
   leading,
   className = "",
@@ -203,7 +333,18 @@ export function ModalInput({
   name,
   ...props
 }) {
-  const inputId = id || name;
+  // A generated id by default: `name` repeats across forms on the same page.
+  const autoId = useId();
+  const inputId = id || autoId;
+  const hintId = hint ? `${inputId}-hint` : null;
+  const errorId = error ? `${inputId}-error` : null;
+  const describedBy =
+    [props["aria-describedby"], hintId, errorId].filter(Boolean).join(" ") ||
+    undefined;
+  const a11y = {
+    "aria-describedby": describedBy,
+    "aria-invalid": error ? true : props["aria-invalid"],
+  };
   return (
     <div className="flex flex-col gap-y-1.5 w-full">
       {label && (
@@ -221,19 +362,22 @@ export function ModalInput({
           <PasswordInput
             id={inputId}
             name={name}
-            className={`${FIELD_BASE} h-[34px] px-3.5 ${leading ? "pl-7" : ""} ${className}`}
+            className={`${FIELD_BASE} h-11 md:h-[34px] px-3.5 ${leading ? "pl-7" : ""} ${className}`}
             {...props}
+            {...a11y}
           />
         ) : (
           <input
             id={inputId}
             name={name}
-            className={`${FIELD_BASE} h-[34px] px-3.5 ${leading ? "pl-7" : ""} ${className}`}
+            className={`${FIELD_BASE} h-11 md:h-[34px] px-3.5 ${leading ? "pl-7" : ""} ${className}`}
             {...props}
+            {...a11y}
           />
         )}
       </div>
-      {hint && <ModalHint>{hint}</ModalHint>}
+      {hint && <ModalHint id={hintId}>{hint}</ModalHint>}
+      {error && <FieldErrorText id={errorId}>{error}</FieldErrorText>}
     </div>
   );
 }
@@ -251,6 +395,7 @@ export function ModalInput({
 export function ModalTextarea({
   label,
   hint,
+  error,
   optional,
   rows = 4,
   className = "",
@@ -258,7 +403,10 @@ export function ModalTextarea({
   name,
   ...props
 }) {
-  const inputId = id || name;
+  const autoId = useId();
+  const inputId = id || autoId;
+  const hintId = hint ? `${inputId}-hint` : null;
+  const errorId = error ? `${inputId}-error` : null;
   return (
     <div className="flex flex-col gap-y-1.5 w-full">
       {label && (
@@ -272,32 +420,117 @@ export function ModalTextarea({
         rows={rows}
         className={`${FIELD_BASE} px-3.5 py-2.5 resize-none ${className}`}
         {...props}
+        aria-describedby={
+          [props["aria-describedby"], hintId, errorId]
+            .filter(Boolean)
+            .join(" ") || undefined
+        }
+        aria-invalid={error ? true : props["aria-invalid"]}
       />
-      {hint && <ModalHint>{hint}</ModalHint>}
+      {hint && <ModalHint id={hintId}>{hint}</ModalHint>}
+      {error && <FieldErrorText id={errorId}>{error}</FieldErrorText>}
+    </div>
+  );
+}
+
+function FieldErrorText({ id, children }) {
+  return (
+    <p id={id} role="alert" className="text-xs text-red-400 light:text-red-700">
+      {children}
+    </p>
+  );
+}
+
+/**
+ * Labeled <select> matching `ModalInput`: generated id, hint and error linked
+ * to the control. Pass the <option>s as children; extra props go to <select>.
+ *
+ * @param {Object} props
+ * @param {import("react").ReactNode} [props.label]
+ * @param {import("react").ReactNode} [props.hint]
+ * @param {import("react").ReactNode} [props.error]
+ * @param {boolean} [props.optional]
+ */
+export function ModalSelect({
+  label,
+  hint,
+  error,
+  optional,
+  className = "",
+  id,
+  children,
+  ...props
+}) {
+  const autoId = useId();
+  const selectId = id || autoId;
+  const hintId = hint ? `${selectId}-hint` : null;
+  const errorId = error ? `${selectId}-error` : null;
+  return (
+    <div className="flex flex-col gap-y-1.5 w-full">
+      {label && (
+        <ModalLabel htmlFor={selectId} optional={optional}>
+          {label}
+        </ModalLabel>
+      )}
+      <select
+        id={selectId}
+        className={`${FIELD_BASE} h-11 md:h-[34px] px-3 ${className}`}
+        {...props}
+        aria-describedby={
+          [props["aria-describedby"], hintId, errorId]
+            .filter(Boolean)
+            .join(" ") || undefined
+        }
+        aria-invalid={error ? true : props["aria-invalid"]}
+      >
+        {children}
+      </select>
+      {hint && <ModalHint id={hintId}>{hint}</ModalHint>}
+      {error && <FieldErrorText id={errorId}>{error}</FieldErrorText>}
     </div>
   );
 }
 
 const BUTTON_BASE =
-  "flex items-center justify-center h-[34px] px-4 rounded-lg text-sm font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed";
+  "flex items-center justify-center h-11 md:h-[34px] px-4 rounded-lg text-sm font-medium transition-colors duration-quick ease-smooth disabled:opacity-50 disabled:cursor-not-allowed";
+
+/**
+ * While `busy` a modal button stays focusable (a disabled button drops focus to
+ * <body>) but blocks clicks and implicit form submits, and says so to
+ * assistive technology.
+ */
+function busyHandlers(busy, onClick) {
+  if (!busy) return { onClick };
+  return {
+    "aria-disabled": true,
+    "aria-busy": true,
+    onClick: (e) => e.preventDefault(),
+  };
+}
 
 /**
  * Filled primary action button (Save/Create). Dark: light fill on dark text;
  * Light: dark fill on white text.
  *
  * @param {Object} props - Component props (forwarded to the button element)
+ * @param {boolean} [props.busy] - Action running: blocks repeat submits
  * @param {string} [props.className] - Extra classes appended to the button
  */
-export function ModalPrimaryButton({ children, className = "", ...props }) {
+export const ModalPrimaryButton = forwardRef(function ModalPrimaryButton(
+  { children, className = "", busy = false, onClick, ...props },
+  ref
+) {
   return (
     <button
+      ref={ref}
       {...props}
-      className={`${BUTTON_BASE} border-none bg-zinc-50 light:bg-slate-900 text-zinc-950 light:text-white hover:opacity-80 ${className}`}
+      {...busyHandlers(busy, onClick)}
+      className={`${BUTTON_BASE} border-none bg-zinc-50 light:bg-slate-900 text-zinc-950 light:text-white hover:opacity-80 aria-disabled:opacity-60 aria-disabled:cursor-wait ${className}`}
     >
       {children}
     </button>
   );
-}
+});
 
 /**
  * Outlined secondary action button (Cancel).
@@ -305,30 +538,41 @@ export function ModalPrimaryButton({ children, className = "", ...props }) {
  * @param {Object} props - Component props (forwarded to the button element)
  * @param {string} [props.className] - Extra classes appended to the button
  */
-export function ModalSecondaryButton({ children, className = "", ...props }) {
+export const ModalSecondaryButton = forwardRef(function ModalSecondaryButton(
+  { children, className = "", ...props },
+  ref
+) {
   return (
     <button
+      ref={ref}
       {...props}
       className={`${BUTTON_BASE} bg-transparent border border-zinc-700 light:border-slate-600 text-slate-50 light:text-slate-700 hover:bg-zinc-800 light:hover:bg-slate-100 ${className}`}
     >
       {children}
     </button>
   );
-}
+});
 
 /**
- * Destructive action button (Delete). Filled red.
+ * Destructive action button (Delete). Filled red-600 with white text (4.8:1 in
+ * both themes; `text-white` would be remapped to dark text in light mode).
  *
  * @param {Object} props - Component props (forwarded to the button element)
+ * @param {boolean} [props.busy] - Action running: blocks repeat clicks
  * @param {string} [props.className] - Extra classes appended to the button
  */
-export function ModalDangerButton({ children, className = "", ...props }) {
+export const ModalDangerButton = forwardRef(function ModalDangerButton(
+  { children, className = "", busy = false, onClick, ...props },
+  ref
+) {
   return (
     <button
+      ref={ref}
       {...props}
-      className={`${BUTTON_BASE} border-none bg-red-500 light:bg-red-600 text-white hover:opacity-80 ${className}`}
+      {...busyHandlers(busy, onClick)}
+      className={`${BUTTON_BASE} border-none bg-red-600 hover:bg-red-700 text-[#ffffff] aria-disabled:opacity-60 aria-disabled:cursor-wait ${className}`}
     >
       {children}
     </button>
   );
-}
+});

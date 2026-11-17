@@ -1,13 +1,30 @@
-import { ChevronDown, ChevronUp, LoaderCircle, Info } from "lucide-react";
-import { Tooltip } from "react-tooltip";
+import { useId, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { LoaderCircle } from "lucide-react";
 import useProviderEndpointAutoDiscovery from "@/hooks/useProviderEndpointAutoDiscovery";
 import { OLLAMA_COMMON_URLS } from "@/utils/constants";
 import ImageModelSelection from "../ImageModelSelection";
 import ImageDimensionSelection from "../ImageDimensionSelection";
+import {
+  AdvancedSection,
+  FIELD_COL,
+  FIELD_HELP,
+  FIELD_INPUT,
+  FIELD_ROW,
+  InfoTip,
+  SECRET_MASK,
+  SecretInput,
+} from "@/components/ProviderFields";
+
+const PROVIDER_NAME = "Ollama";
 
 export default function OllamaImageOptions({ settings }) {
+  const { t } = useTranslation();
+  const id = useId();
   const {
     autoDetecting: loading,
+    autoDetectStatus,
+    detectedEndpoint,
     basePath,
     basePathValue,
     authToken,
@@ -19,14 +36,26 @@ export default function OllamaImageOptions({ settings }) {
     provider: "ollama-imggen",
     initialBasePath: settings?.ImageGenerationOllamaBasePath,
     initialAuthToken: settings?.ImageGenerationOllamaAuthToken
-      ? "*".repeat(20)
+      ? SECRET_MASK
       : "",
     ENDPOINTS: OLLAMA_COMMON_URLS,
   });
+  // A detection started by hand must not fold the section with the focused button inside.
+  const [keepOpen, setKeepOpen] = useState(false);
+
+  const detectMessage =
+    autoDetectStatus === "found"
+      ? t("provider-fields.detect-success", {
+          provider: PROVIDER_NAME,
+          url: detectedEndpoint,
+        })
+      : autoDetectStatus === "not-found"
+        ? t("provider-fields.detect-failed", { provider: PROVIDER_NAME })
+        : "";
 
   return (
     <div className="w-full flex flex-col gap-y-4">
-      <div className="w-full flex items-start gap-[36px] mt-1.5">
+      <div className={`${FIELD_ROW} mt-1.5`}>
         <ImageModelSelection
           provider="ollama-imggen"
           apiKey={authToken.value}
@@ -36,134 +65,104 @@ export default function OllamaImageOptions({ settings }) {
         />
         <ImageDimensionSelection provider="ollama-imggen" settings={settings} />
       </div>
-      <p className="text-xs leading-[18px] font-base text-white text-opacity-60">
-        Ollama image generation is experimental and only available on macOS.
-        Only models that report image generation support will be listed.
+      <p className="text-xs leading-[18px] text-theme-text-secondary">
+        {t("provider-forms.image-generation.ollama.experimental")}{" "}
+        {t("provider-forms.image-generation.capable-only")}
       </p>
-      <div className="flex justify-start">
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            setShowAdvancedControls(!showAdvancedControls);
+
+      <div>
+        <AdvancedSection
+          open={showAdvancedControls || keepOpen}
+          onOpenChange={(next) => {
+            setKeepOpen(false);
+            setShowAdvancedControls(next);
           }}
-          className="border-none text-theme-text-primary hover:text-theme-text-secondary flex items-center text-sm"
         >
-          {showAdvancedControls ? "Hide" : "Show"} advanced settings
-          {showAdvancedControls ? (
-            <ChevronUp strokeWidth={1.5} size={14} className="ml-1" />
-          ) : (
-            <ChevronDown strokeWidth={1.5} size={14} className="ml-1" />
-          )}
-        </button>
-      </div>
-
-      <div hidden={!showAdvancedControls}>
-        <div className="w-full flex items-start gap-4">
-          <div className="flex flex-col w-60">
-            <div className="flex justify-between items-center mb-2">
-              <div className="flex items-center gap-1">
-                <label className="text-white text-sm font-semibold">
-                  Ollama Base URL
+          <div className={`${FIELD_ROW} mt-4`}>
+            <div className={FIELD_COL}>
+              <div className="flex items-center justify-between gap-x-2 mb-3">
+                <label
+                  htmlFor={`${id}-base-url`}
+                  className="text-white text-sm font-semibold"
+                >
+                  {t("provider-fields.base-url")}
                 </label>
-                <Info
-                  strokeWidth={1.5}
-                  size={18}
-                  className="text-theme-text-secondary cursor-pointer"
-                  data-tooltip-id="image-gen-ollama-base-url"
-                  data-tooltip-content="Enter the URL where Ollama is running."
-                />
-                <Tooltip
-                  id="image-gen-ollama-base-url"
-                  place="top"
-                  delayShow={300}
-                  className="tooltip !text-xs !opacity-100"
-                  style={{
-                    maxWidth: "250px",
-                    whiteSpace: "normal",
-                    wordWrap: "break-word",
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    if (loading) return;
+                    setKeepOpen(true);
+                    handleAutoDetectClick(e);
                   }}
-                />
-              </div>
-              {loading ? (
-                <LoaderCircle
-                  strokeWidth={1.5}
-                  size={16}
-                  className="text-theme-text-secondary animate-spin"
-                />
-              ) : (
-                <>
-                  {!basePathValue.value && (
-                    <button
-                      onClick={handleAutoDetectClick}
-                      className="bg-primary-button text-xs font-medium px-2 py-1 rounded-lg hover:bg-secondary hover:text-white shadow-[0_4px_14px_rgba(0,0,0,0.25)]"
-                    >
-                      Auto-Detect
-                    </button>
+                  aria-disabled={loading}
+                  aria-busy={loading}
+                  className="inline-flex items-center justify-center gap-x-1 shrink-0 rounded-lg border-none bg-primary-button text-theme-button-primary-text hover:bg-primary-button-hover text-xs font-medium px-3 md:px-2 min-h-[44px] md:min-h-[28px] transition-colors duration-quick ease-smooth aria-disabled:cursor-wait aria-disabled:opacity-70"
+                >
+                  {loading && (
+                    <LoaderCircle
+                      strokeWidth={1.5}
+                      size={14}
+                      aria-hidden="true"
+                      className="animate-spin"
+                    />
                   )}
-                </>
-              )}
-            </div>
-            <input
-              type="url"
-              name="ImageGenerationOllamaBasePath"
-              className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg focus:outline-primary-button active:outline-primary-button outline-none block w-full p-2.5"
-              placeholder="http://127.0.0.1:11434"
-              value={basePathValue.value || ""}
-              required={true}
-              autoComplete="off"
-              spellCheck={false}
-              onChange={basePath.onChange}
-              onBlur={basePath.onBlur}
-            />
-          </div>
-
-          <div className="flex flex-col w-60">
-            <div className="flex items-center mb-2 gap-x-1">
-              <label className="text-white text-sm font-semibold">
-                Authentication Token
-              </label>
-              <Info
-                strokeWidth={1.5}
-                size={18}
-                className="text-theme-text-secondary cursor-pointer"
-                data-tooltip-id="image-gen-ollama-auth-token"
+                  {loading
+                    ? t("provider-fields.detecting")
+                    : t("provider-fields.auto-detect")}
+                </button>
+              </div>
+              <input
+                id={`${id}-base-url`}
+                type="url"
+                name="ImageGenerationOllamaBasePath"
+                className={FIELD_INPUT}
+                placeholder="http://127.0.0.1:11434"
+                value={basePathValue.value || ""}
+                required={true}
+                autoComplete="off"
+                spellCheck={false}
+                onChange={basePath.onChange}
+                onBlur={basePath.onBlur}
+                aria-describedby={`${id}-base-url-help`}
               />
-              <Tooltip
-                id="image-gen-ollama-auth-token"
-                place="top"
-                delayShow={300}
-                delayHide={400}
-                clickable={true}
-                className="tooltip !text-xs !opacity-100"
-                style={{
-                  maxWidth: "250px",
-                  whiteSpace: "normal",
-                  wordWrap: "break-word",
-                }}
-              >
-                <p className="text-xs leading-[18px] font-base">
-                  Enter a <code>Bearer</code> Auth Token for interacting with
-                  your Ollama server.
-                  <br /> <br />
-                  Used <b>only</b> if running Ollama behind an authentication
-                  server.
-                </p>
-              </Tooltip>
+              <p id={`${id}-base-url-help`} className={FIELD_HELP}>
+                {t("provider-forms.shared.url-help", {
+                  provider: PROVIDER_NAME,
+                })}
+              </p>
             </div>
-            <input
-              type="password"
-              name="ImageGenerationOllamaAuthToken"
-              className="border-none bg-theme-settings-input-bg text-white placeholder:text-theme-settings-input-placeholder text-sm rounded-lg outline-none block w-full p-2.5 focus:outline-primary-button active:outline-primary-button"
-              placeholder="Ollama Auth Token"
-              value={authTokenValue.value || ""}
-              onChange={authToken.onChange}
-              onBlur={authToken.onBlur}
-              required={false}
-              autoComplete="off"
-              spellCheck={false}
-            />
+
+            <div className={FIELD_COL}>
+              <div className="flex items-center gap-x-1 mb-3">
+                <label
+                  htmlFor={`${id}-auth-token`}
+                  className="text-white text-sm font-semibold"
+                >
+                  {t("provider-fields.auth-token")}
+                </label>
+                <InfoTip label={t("provider-fields.auth-token")}>
+                  {t("provider-forms.shared.bearer-help", {
+                    provider: PROVIDER_NAME,
+                  })}
+                </InfoTip>
+              </div>
+              <SecretInput
+                id={`${id}-auth-token`}
+                name="ImageGenerationOllamaAuthToken"
+                value={authTokenValue.value || ""}
+                onChange={authToken.onChange}
+                onBlur={authToken.onBlur}
+                required={false}
+              />
+            </div>
           </div>
-        </div>
+        </AdvancedSection>
+        <p
+          aria-live="polite"
+          className={detectMessage ? FIELD_HELP : "sr-only"}
+        >
+          {detectMessage}
+        </p>
       </div>
     </div>
   );

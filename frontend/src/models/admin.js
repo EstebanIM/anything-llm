@@ -1,6 +1,16 @@
 import { API_BASE } from "@/utils/constants";
 import { baseHeaders } from "@/utils/request";
 
+/**
+ * Empty list flagged as failed: callers that only need an array keep working,
+ * and tables can tell "could not load" (`list.failed`) from "nothing yet".
+ */
+function failedList() {
+  const list = [];
+  list.failed = true;
+  return list;
+}
+
 const Admin = {
   // User Management
   users: async () => {
@@ -12,7 +22,7 @@ const Admin = {
       .then((res) => res?.users || [])
       .catch((e) => {
         console.error(e);
-        return [];
+        return failedList();
       });
   },
   newUser: async (data) => {
@@ -61,7 +71,7 @@ const Admin = {
       .then((res) => res?.invites || [])
       .catch((e) => {
         console.error(e);
-        return [];
+        return failedList();
       });
   },
   newInvite: async ({ role = null, workspaceIds = null }) => {
@@ -101,7 +111,7 @@ const Admin = {
       .then((res) => res?.workspaces || [])
       .catch((e) => {
         console.error(e);
-        return [];
+        return failedList();
       });
   },
   workspaceUsers: async (workspaceId) => {
