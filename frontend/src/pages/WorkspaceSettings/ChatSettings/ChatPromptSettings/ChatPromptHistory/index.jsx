@@ -22,7 +22,6 @@ export default function ChatPromptHistory({
   workspaceSlug,
   onRestore,
   onClose,
-  onPublishClick,
 }) {
   const { t } = useTranslation();
   const titleId = useId();
@@ -156,7 +155,6 @@ export default function ChatPromptHistory({
                   <PromptHistoryItem
                     {...item}
                     onRestore={() => onRestore(item.prompt)}
-                    onPublishClick={onPublishClick}
                     onDelete={() => deleteItem(item.id, index)}
                   />
                 </li>

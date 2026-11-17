@@ -16,7 +16,6 @@ import AgentFlows from "@/models/agentFlows";
 import { useTheme } from "@/hooks/useTheme";
 import HeaderMenu from "./HeaderMenu";
 import paths from "@/utils/paths";
-import PublishEntityModal from "@/components/CommunityHub/PublishEntityModal";
 import ConfirmModal from "@/components/lib/ConfirmModal";
 import StatusNote from "@/components/lib/StatusNote";
 import UnsavedChangesGuard from "@/components/UnsavedChangesGuard";
@@ -131,7 +130,6 @@ export default function AgentBuilder() {
   const [saving, setSaving] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
   const [availableFlows, setAvailableFlows] = useState([]);
-  const [showPublishModal, setShowPublishModal] = useState(false);
   const [confirmNewFlow, setConfirmNewFlow] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState(null);
   const [announcement, setAnnouncement] = useState("");
@@ -394,11 +392,6 @@ export default function AgentBuilder() {
   const flowInfoBlock = blocks.find(
     (block) => block.type === BLOCK_TYPES.FLOW_INFO
   );
-  const flowEntity = {
-    name: flowInfoBlock?.config?.name || "",
-    description: flowInfoBlock?.config?.description || "",
-    steps: stepsOf(blocks),
-  };
 
   return (
     <AvailableVariablesProvider blocks={blocks}>
@@ -414,12 +407,6 @@ export default function AgentBuilder() {
         }}
         className="w-full h-dvh flex flex-col bg-theme-bg-primary overflow-clip"
       >
-        <PublishEntityModal
-          show={showPublishModal}
-          onClose={() => setShowPublishModal(false)}
-          entityType="agent-flow"
-          entity={flowEntity}
-        />
         <ConfirmModal
           isOpen={confirmNewFlow}
           title={t("agent-builder.new-flow.title")}
@@ -438,7 +425,6 @@ export default function AgentBuilder() {
           canSave={loadState === "ready"}
           onNewFlow={() => (isDirty ? setConfirmNewFlow(true) : startNewFlow())}
           onSaveFlow={saveFlow}
-          onPublishFlow={() => setShowPublishModal(true)}
         />
         <main
           id={mainId}

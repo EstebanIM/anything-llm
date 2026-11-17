@@ -277,7 +277,6 @@ const TRANSLATIONS = {
     },
     imported: {
       empty: "No custom skills have been imported yet.",
-      "empty-action": "Find skills in the Community Hub",
       author: "Author:",
       options: "Options",
       "no-options": "This skill has no options to configure.",
@@ -295,6 +294,8 @@ const TRANSLATIONS = {
         "Its files are removed from the server and the agent will no longer be able to use it. This cannot be undone.",
       deleted: "Skill “{{name}}” deleted.",
       "delete-failed": "The skill could not be deleted. Try again.",
+      "empty-hint":
+        "To add one, copy its folder into <code>plugins/agent-skills</code> inside the server storage folder and reload this page.",
     },
     mcp: {
       "state-running": "Running",
@@ -511,7 +512,6 @@ const TRANSLATIONS = {
       "flows-menu": "Saved flows",
       unsaved: "Unsaved changes",
       "new-flow": "New flow",
-      publish: "Publish",
       save: "Save",
     },
     "new-flow": {
@@ -2773,7 +2773,6 @@ const TRANSLATIONS = {
         noHistory: "저장된 시스템 프롬프트 기록이 없습니다",
         restore: "복원",
         delete: "삭제",
-        publish: "커뮤니티 허브에 게시",
         deleteConfirm: "이 기록 항목을 삭제하시겠습니까?",
         expand: "확장",
       },
@@ -3907,7 +3906,6 @@ const TRANSLATIONS = {
     source_count_other: "{{count}} 관련 참고 자료",
     add_new: "새로운 항목 추가",
     edit: "수정",
-    publish: "출판",
     stop_generating: "응답 생성 중단",
     slash_commands: "슬래시 명령어",
     agent_skills: "에이전트의 역량",

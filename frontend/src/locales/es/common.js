@@ -283,7 +283,6 @@ const TRANSLATIONS = {
     },
     imported: {
       empty: "Todavía no has importado habilidades personalizadas.",
-      "empty-action": "Buscar habilidades en el Centro comunitario",
       author: "Autor:",
       options: "Opciones",
       "no-options": "Esta habilidad no tiene opciones que configurar.",
@@ -303,6 +302,8 @@ const TRANSLATIONS = {
         "Se borrarán sus archivos del servidor y el agente dejará de poder usarla. Esta acción no se puede deshacer.",
       deleted: "Habilidad «{{name}}» eliminada.",
       "delete-failed": "No se pudo eliminar la habilidad. Inténtalo de nuevo.",
+      "empty-hint":
+        "Para añadir una, copia su carpeta en <code>plugins/agent-skills</code>, dentro de la carpeta de almacenamiento del servidor, y recarga esta página.",
     },
     mcp: {
       "state-running": "En marcha",
@@ -525,7 +526,6 @@ const TRANSLATIONS = {
       "flows-menu": "Flujos guardados",
       unsaved: "Cambios sin guardar",
       "new-flow": "Nuevo flujo",
-      publish: "Publicar",
       save: "Guardar",
     },
     "new-flow": {
@@ -2857,7 +2857,6 @@ const TRANSLATIONS = {
         noHistory: "No hay historial de prompts del sistema disponible",
         restore: "Restaurar",
         delete: "Eliminar",
-        publish: "Publicar en el Centro de la Comunidad",
         deleteConfirm: "¿Eliminar esta versión del historial?",
         expand: "Expandir",
       },
@@ -4047,7 +4046,6 @@ const TRANSLATIONS = {
     source_count_other: "{{count}} referencias",
     add_new: "Añadir nuevo",
     edit: "Editar",
-    publish: "Publicar",
     stop_generating: "Detener la respuesta",
     slash_commands: "Comandos abreviados",
     agent_skills: "Habilidades del agente",

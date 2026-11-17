@@ -4,8 +4,6 @@ import SystemPromptVariable from "@/models/systemPromptVariable";
 import { Link, useSearchParams } from "react-router-dom";
 import paths from "@/utils/paths";
 import ChatPromptHistory from "./ChatPromptHistory";
-import PublishEntityModal from "@/components/CommunityHub/PublishEntityModal";
-import { useModal } from "@/hooks/useModal";
 import System from "@/models/system";
 import { userFromStorage } from "@/utils/request";
 import { useAutosaveForm } from "@/components/AutosaveForm";
@@ -27,36 +25,19 @@ export default function ChatPromptSettings({ workspace }) {
 
 function ChatPromptSettingsForm({ workspace }) {
   const { t } = useTranslation();
-  const { markDirty, save, hasChanges } = useAutosaveForm();
+  const { markDirty, save } = useAutosaveForm();
   const [searchParams] = useSearchParams();
   const variablesId = useId();
 
   // Prompt state
   const [prompt, setPrompt] = useState(workspace?.openAiPrompt ?? "");
-  const [savedPrompt, setSavedPrompt] = useState(workspace?.openAiPrompt ?? "");
   const [defaultSystemPrompt, setDefaultSystemPrompt] = useState("");
 
   // UI state
   const [showPromptHistory, setShowPromptHistory] = useState(false);
   const [availableVariables, setAvailableVariables] = useState([]);
-  // Prompt sent to the publish dialog: null publishes the one being edited.
-  const [publishPrompt, setPublishPrompt] = useState(null);
 
   const promptRef = useRef(null);
-
-  // Modals
-  const {
-    isOpen: showPublishModal,
-    closeModal: closePublishModal,
-    openModal: openPublishModal,
-  } = useModal();
-
-  // Derived state
-  const isDirty = prompt !== savedPrompt;
-  const hasBeenModified =
-    defaultSystemPrompt && savedPrompt?.trim() !== defaultSystemPrompt?.trim();
-  const showPublishButton =
-    prompt?.trim().length >= 10 && (isDirty || hasBeenModified);
 
   useEffect(() => {
     SystemPromptVariable.getAll().then(({ variables }) =>
@@ -74,17 +55,11 @@ function ChatPromptSettingsForm({ workspace }) {
     field.scrollIntoView({ block: "center" });
   }, [searchParams]);
 
-  // Update saved prompt when parent clears hasChanges
-  useEffect(() => {
-    if (!hasChanges) setSavedPrompt(prompt);
-  }, [hasChanges, prompt]);
-
   useEffect(() => {
     System.fetchDefaultSystemPrompt().then(({ defaultSystemPrompt }) => {
       setDefaultSystemPrompt(defaultSystemPrompt);
       if (!workspace?.openAiPrompt && defaultSystemPrompt) {
         setPrompt(defaultSystemPrompt ?? "");
-        setSavedPrompt(defaultSystemPrompt);
       }
     });
   }, []);
@@ -94,17 +69,6 @@ function ChatPromptSettingsForm({ workspace }) {
     setShowPromptHistory(false);
     markDirty("openAiPrompt");
     save();
-  };
-
-  const handlePublishFromHistory = (historicalPrompt) => {
-    setShowPromptHistory(false);
-    setPublishPrompt(historicalPrompt);
-    openPublishModal();
-  };
-
-  const handlePublishCurrent = () => {
-    setPublishPrompt(null);
-    openPublishModal();
   };
 
   // Restore to default system prompt, if no default system prompt is set
@@ -124,7 +88,6 @@ function ChatPromptSettingsForm({ workspace }) {
         workspaceSlug={workspace.slug}
         show={showPromptHistory}
         onRestore={handleRestoreFromHistory}
-        onPublishClick={handlePublishFromHistory}
         onClose={() => setShowPromptHistory(false)}
       />
       <SettingsField
@@ -170,25 +133,10 @@ function ChatPromptSettingsForm({ workspace }) {
                   {t("workspace-settings.prompt.restore-default")}
                 </button>
               )}
-              {showPublishButton && (
-                <button
-                  type="button"
-                  onClick={handlePublishCurrent}
-                  className={`${TEXT_BUTTON} ml-auto text-sky-400 light:text-sky-700 hover:text-sky-300 light:hover:text-sky-800`}
-                >
-                  {t("chat.prompt.history.publish")}
-                </button>
-              )}
             </div>
           </>
         )}
       </SettingsField>
-      <PublishEntityModal
-        show={showPublishModal}
-        onClose={closePublishModal}
-        entityType="system-prompt"
-        entity={publishPrompt ?? prompt}
-      />
     </>
   );
 }

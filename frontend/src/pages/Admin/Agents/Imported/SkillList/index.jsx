@@ -1,6 +1,4 @@
-import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
-import paths from "@/utils/paths";
+import { Trans, useTranslation } from "react-i18next";
 import { formatSkillName } from "../formatSkillName";
 import { RowList, RowButton, SectionEmpty } from "../../components/SkillRows";
 
@@ -16,12 +14,10 @@ export default function ImportedSkillList({
       <SectionEmpty>
         <p>{t("agent-pages.imported.empty")}</p>
         <p>
-          <Link
-            to={paths.communityHub.trending()}
-            className="inline-flex items-center min-h-[44px] md:min-h-0 underline text-theme-text-primary"
-          >
-            {t("agent-pages.imported.empty-action")}
-          </Link>
+          <Trans
+            i18nKey="agent-pages.imported.empty-hint"
+            components={{ code: <code className="font-mono text-xs" /> }}
+          />
         </p>
       </SectionEmpty>
     );

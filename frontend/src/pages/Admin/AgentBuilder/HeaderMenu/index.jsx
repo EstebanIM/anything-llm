@@ -21,7 +21,6 @@ export default function HeaderMenu({
   canSave,
   onNewFlow,
   onSaveFlow,
-  onPublishFlow,
 }) {
   const { t } = useTranslation();
   const title = flowName?.trim() || t("agent-builder.untitled");
@@ -85,14 +84,6 @@ export default function HeaderMenu({
           >
             <Plus strokeWidth={1.5} aria-hidden="true" className="w-4 h-4" />
             {t("agent-builder.header.new-flow")}
-          </button>
-          <button
-            type="button"
-            onClick={onPublishFlow}
-            disabled={!canSave}
-            className={SECONDARY_BUTTON}
-          >
-            {t("agent-builder.header.publish")}
           </button>
           <button
             type="button"

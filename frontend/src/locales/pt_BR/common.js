@@ -279,7 +279,6 @@ const TRANSLATIONS = {
     },
     imported: {
       empty: "No custom skills have been imported yet.",
-      "empty-action": "Find skills in the Community Hub",
       author: "Author:",
       options: "Options",
       "no-options": "This skill has no options to configure.",
@@ -297,6 +296,8 @@ const TRANSLATIONS = {
         "Its files are removed from the server and the agent will no longer be able to use it. This cannot be undone.",
       deleted: "Skill “{{name}}” deleted.",
       "delete-failed": "The skill could not be deleted. Try again.",
+      "empty-hint":
+        "To add one, copy its folder into <code>plugins/agent-skills</code> inside the server storage folder and reload this page.",
     },
     mcp: {
       "state-running": "Running",
@@ -513,7 +514,6 @@ const TRANSLATIONS = {
       "flows-menu": "Saved flows",
       unsaved: "Unsaved changes",
       "new-flow": "New flow",
-      publish: "Publish",
       save: "Save",
     },
     "new-flow": {
@@ -2779,7 +2779,6 @@ const TRANSLATIONS = {
         delete: "Excluir",
         deleteConfirm: "Tem certeza que deseja excluir este item?",
         expand: "Expandir",
-        publish: "Publicar no Hub",
       },
     },
     refusal: {
@@ -3938,7 +3937,6 @@ const TRANSLATIONS = {
     source_count_other: "Referências a {{count}}",
     add_new: "Adicionar novo",
     edit: "Editar",
-    publish: "Publicar",
     stop_generating: "Pare de gerar respostas",
     slash_commands: "Comandos Rápidos",
     agent_skills: "Habilidades do Agente",

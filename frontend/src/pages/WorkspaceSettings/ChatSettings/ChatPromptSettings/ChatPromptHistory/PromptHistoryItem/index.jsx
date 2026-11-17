@@ -1,4 +1,4 @@
-import { EllipsisVertical, Send, Trash2 } from "lucide-react";
+import { EllipsisVertical, Trash2 } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import truncate from "truncate";
@@ -16,7 +16,6 @@ export default function PromptHistoryItem({
   user,
   onRestore,
   onDelete,
-  onPublishClick,
 }) {
   const { t } = useTranslation();
   const metaId = useId();
@@ -75,10 +74,6 @@ export default function PromptHistoryItem({
               <HistoryItemMenu
                 triggerRef={menuButtonRef}
                 onClose={() => setShowMenu(false)}
-                onPublish={() => {
-                  setShowMenu(false);
-                  onPublishClick(prompt);
-                }}
                 onDelete={onDelete}
               />
             )}
@@ -109,7 +104,7 @@ export default function PromptHistoryItem({
 }
 
 /** Options of one history entry; deleting asks for confirmation in place. */
-function HistoryItemMenu({ triggerRef, onClose, onPublish, onDelete }) {
+function HistoryItemMenu({ triggerRef, onClose, onDelete }) {
   const { t } = useTranslation();
   const menuRef = useRef(null);
   const confirmId = useId();
@@ -172,15 +167,6 @@ function HistoryItemMenu({ triggerRef, onClose, onPublish, onDelete }) {
         </div>
       ) : (
         <>
-          <button
-            type="button"
-            role="menuitem"
-            onClick={onPublish}
-            className={`${MENU_ITEM} text-zinc-50 light:text-slate-800 hover:bg-zinc-700 light:hover:bg-slate-200`}
-          >
-            <Send strokeWidth={1.5} size={16} aria-hidden="true" />
-            {t("chat.prompt.history.publish")}
-          </button>
           <button
             type="button"
             role="menuitem"

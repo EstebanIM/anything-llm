@@ -288,7 +288,6 @@ const TRANSLATIONS = {
     },
     imported: {
       empty: "No custom skills have been imported yet.",
-      "empty-action": "Find skills in the Community Hub",
       author: "Author:",
       options: "Options",
       "no-options": "This skill has no options to configure.",
@@ -306,6 +305,8 @@ const TRANSLATIONS = {
         "Its files are removed from the server and the agent will no longer be able to use it. This cannot be undone.",
       deleted: "Skill “{{name}}” deleted.",
       "delete-failed": "The skill could not be deleted. Try again.",
+      "empty-hint":
+        "To add one, copy its folder into <code>plugins/agent-skills</code> inside the server storage folder and reload this page.",
     },
     mcp: {
       "state-running": "Running",
@@ -522,7 +523,6 @@ const TRANSLATIONS = {
       "flows-menu": "Saved flows",
       unsaved: "Unsaved changes",
       "new-flow": "New flow",
-      publish: "Publish",
       save: "Save",
     },
     "new-flow": {
@@ -2786,7 +2786,6 @@ const TRANSLATIONS = {
         noHistory: "Nincsenek rendszerprompt-előzmények",
         restore: "Visszaállítás",
         delete: "Törlés",
-        publish: "Közzététel a közösségi központban",
         deleteConfirm: "Biztosan törli ezt az előzményelemet?",
         expand: "Kibontás",
       },
@@ -4213,7 +4212,6 @@ const TRANSLATIONS = {
     add_new_preset: " Új sablon hozzáadása",
     add_new: "Új hozzáadása",
     edit: "Szerkesztés",
-    publish: "Közzététel",
     stop_generating: "Válaszgenerálás leállítása",
     command: "Parancs",
     your_command: "sajat-parancs",
