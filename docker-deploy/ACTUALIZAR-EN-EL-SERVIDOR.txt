@@ -157,7 +157,8 @@ cp -p docker-compose.yml docker-compose.yml.anterior
       anythingllm (en la primera actualizacion con HTTPS: entrypoint,
       ENABLE_HTTPS, HTTPS_CERT_PATH, HTTPS_KEY_PATH, ./certs y healthcheck).
       Si aparecen cambios en llama-llm, llama-embed o chroma, alguien los
-      ajusto en el servidor: no seguir sin revisarlos.
+      ajusto en el servidor: no seguir sin revisarlos. Si no imprime nada,
+      el compose no cambio desde la actualizacion anterior: seguir.
 
 diff docker-compose.yml.anterior ~/iasmar-paquete/docker-compose.yml
 
@@ -257,6 +258,9 @@ https://IP_SERVIDOR:2603
       https://IP_SERVIDOR:2603. La primera vez con HTTPS, copiar ese codigo
       y pegarlo en la otra plataforma en lugar del snippet anterior;
       despues ya no cambia.
+      Si el chat de la otra plataforma se sigue viendo como antes de esta
+      actualizacion, recargarla con Ctrl+F5: el navegador guardo el widget
+      anterior.
       Cada persona que use el chat en la otra plataforma tiene que abrir una
       vez https://IP_SERVIDOR:2603 en su navegador y aceptar la advertencia,
       o el chat no aparece. Chrome y Edge la olvidan a los pocos dias:
