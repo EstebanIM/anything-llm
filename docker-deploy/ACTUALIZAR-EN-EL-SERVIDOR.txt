@@ -1,0 +1,368 @@
+===============================================================================
+ ACTUALIZAR IASMAR EN EL SERVIDOR
+ Paquete: la carpeta iasmar-paquete (lo que deja docker-deploy/transfer)
+ Solo comandos. Se ejecutan en orden, uno por linea. USUARIO@IP_SERVIDOR
+ (y la IP_SERVIDOR sola) es lo unico que hay que sustituir. USUARIO es el
+ usuario en cuya carpeta personal vive ~/anythingllm-deploy.
+
+ Del paquete se usa solo la imagen de la aplicacion
+ (anythingllm-iasmar:deploy), el compose y los scripts. llama.cpp, Chroma,
+ los modelos y el .env del servidor ya estan alla y no se tocan: solo se
+ recrea el contenedor anythingllm-server. Los datos viven en carpetas de
+ ~/anythingllm-deploy/data, no en volumenes de Docker.
+
+ La imagen aplica las migraciones de la base al arrancar (prisma migrate
+ deploy): no hay paso de migracion. Por eso el respaldo de
+ data/server-storage se hace con la aplicacion detenida, justo antes de
+ recrearla (paso 4), y la vuelta atras (paso R) lo restaura.
+
+ IASMAR responde en https://IP_SERVIDOR:2603 con un certificado autofirmado
+ que se genera en el servidor la primera vez (paso 4.1); la direccion
+ http:// deja de responder. Cada navegador acepta la advertencia del
+ certificado una vez, y el snippet del widget de la otra plataforma se
+ cambia la primera vez a https (paso 5.7).
+===============================================================================
+
+
+-------------------------------------------------------------------------------
+ 0.  PC PERSONAL  (Git Bash, en C:\anything-llm)  -  construir el paquete
+-------------------------------------------------------------------------------
+
+ 0.1  La imagen se construye desde la copia de trabajo, no desde el ultimo
+      commit: tiene que estar limpia. Esto no tiene que imprimir nada:
+
+git status --short
+
+git log --oneline -1
+
+ 0.2  Construir la imagen. Termina con "Build completo:
+      anythingllm-iasmar:deploy":
+
+bash docker-deploy/build/build-image.sh
+
+ 0.3  Empaquetar. Termina con "Paquete listo en .../docker-deploy/transfer":
+
+bash docker-deploy/build/package.sh
+
+ 0.4  Todas las lineas tienen que terminar en OK. VERSION.txt tiene que
+      decir el commit del 0.1, sin "(con cambios sin commitear)":
+
+cd docker-deploy/transfer
+
+sha256sum -c CHECKSUMS.txt
+
+cat VERSION.txt
+
+ 0.5  Copiar el paquete al disco externo, en una carpeta iasmar-paquete
+      (aqui, con el disco en E:):
+
+cp -r . /e/iasmar-paquete
+
+
+-------------------------------------------------------------------------------
+ 1.  PC CON INTRANET  (PowerShell, en la carpeta del disco que contiene
+     iasmar-paquete)
+-------------------------------------------------------------------------------
+
+cd .\iasmar-paquete
+
+ 1.1  Cada linea tiene que empezar con OK. Si alguna dice MAL, ese archivo se
+      corrompio al copiarlo: volver a copiarlo desde el PC personal.
+
+Get-Content .\CHECKSUMS.txt | ForEach-Object { $h, $f = $_ -split '\s+', 2; $f = $f -replace '^\*?\./', ''; if ((Get-FileHash -Algorithm SHA256 -LiteralPath $f).Hash -eq $h.ToUpper()) { "OK   $f" } else { "MAL  $f" } }
+
+cd ..
+
+scp -r .\iasmar-paquete USUARIO@IP_SERVIDOR:~/
+
+ssh USUARIO@IP_SERVIDOR
+
+
+-------------------------------------------------------------------------------
+ 2.  SERVIDOR  -  comprobar el paquete, el espacio y lo que corre
+-------------------------------------------------------------------------------
+
+cd ~/iasmar-paquete
+
+ 2.1  Todas las lineas tienen que terminar en OK:
+
+sha256sum -c CHECKSUMS.txt
+
+cat VERSION.txt
+
+ 2.2  Espacio: la columna "Avail" tiene que pasar de 8G en las dos lineas
+      (la imagen se une aqui y Docker la guarda aparte).
+
+df -h ~ /var/lib/docker
+
+ 2.3  Lo que corre hoy. Tienen que estar los cuatro contenedores en "Up":
+      anythingllm-server, llama-llm-server, llama-embed-server y
+      chroma-server. Anotar el tiempo "Up" de los tres ultimos: en el 5.5
+      tiene que seguir creciendo igual (no se reinician).
+
+cd ~/anythingllm-deploy
+
+sudo docker compose ps
+
+ 2.4  Antes de seguir (vale para todo paquete): el compose de respaldo de la
+      vez anterior no tiene que existir. Tiene que imprimir "libre":
+
+test ! -e docker-compose.yml.anterior && echo libre
+
+      (solo si NO imprimio "libre")
+      Quedo de una actualizacion cuyo paso 6 no se corrio, o esta
+      actualizacion ya se habia empezado. Si IASMAR funciona bien con lo que
+      corre hoy, borrarlo y repetir el test; si no, volver atras con el
+      paso R.
+
+      rm docker-compose.yml.anterior
+
+
+-------------------------------------------------------------------------------
+ 3.  SERVIDOR  -  la imagen nueva y el compose
+-------------------------------------------------------------------------------
+
+ 3.1  La imagen que corre queda como respaldo:
+
+sudo docker tag anythingllm-iasmar:deploy anythingllm-iasmar:anterior
+
+ 3.2  Unir las partes y cargar la imagen. El sha256sum tiene que decir OK y
+      el load, "Loaded image: anythingllm-iasmar:deploy":
+
+cd ~/iasmar-paquete
+
+cat 01-anythingllm-image.tar.gz.part-* > 01-anythingllm-image.tar.gz
+
+sha256sum -c 01-anythingllm-image.tar.gz.sha256
+
+sudo docker load -i 01-anythingllm-image.tar.gz
+
+rm 01-anythingllm-image.tar.gz
+
+ 3.3  La imagen cargada es la del paquete: la fecha que imprime la primera
+      linea tiene que ser la misma que la de la linea "Imagen:" de la
+      segunda.
+
+sudo docker image inspect --format '{{.Created}}' anythingllm-iasmar:deploy
+
+grep Imagen VERSION.txt
+
+ 3.4  El compose nuevo. Primero se guarda el que esta en uso:
+
+cd ~/anythingllm-deploy
+
+cp -p docker-compose.yml docker-compose.yml.anterior
+
+ 3.5  Las diferencias tienen que estar solo en el bloque del servicio
+      anythingllm (en la primera actualizacion con HTTPS: entrypoint,
+      ENABLE_HTTPS, HTTPS_CERT_PATH, HTTPS_KEY_PATH, ./certs y healthcheck).
+      Si aparecen cambios en llama-llm, llama-embed o chroma, alguien los
+      ajusto en el servidor: no seguir sin revisarlos.
+
+diff docker-compose.yml.anterior ~/iasmar-paquete/docker-compose.yml
+
+cp ~/iasmar-paquete/docker-compose.yml .
+
+cp ~/iasmar-paquete/generar-certificado.sh .
+
+cp ~/iasmar-paquete/cambiar-modelo.sh .
+
+cp ~/iasmar-paquete/ACTUALIZAR-EN-EL-SERVIDOR.txt .
+
+ 3.6  No tiene que imprimir nada. Si imprime un error, no seguir: volver
+      atras con el paso R.
+
+sudo docker compose config -q
+
+
+-------------------------------------------------------------------------------
+ 4.  SERVIDOR  -  certificado, respaldo y recrear
+-------------------------------------------------------------------------------
+
+ 4.1  El certificado. Si lista cert.pem y key.pem, ya existe: seguir con el
+      4.2. Si dice "No such file or directory", es la primera vez: generarlo
+      SIN sudo, con la IP (y el nombre, si tambien se usa) con que se abre
+      IASMAR, sin puerto ni https://.
+
+ls certs
+
+      (solo la primera vez)
+      bash generar-certificado.sh IP_SERVIDOR
+
+      Tiene que imprimir "Certificado generado en .../certs". Si ademas
+      imprime un AVISO del UID 1000, correr la linea "sudo chown 1000:1000
+      ..." que muestra el aviso.
+
+ 4.2  Cuanto pesa lo que se respalda (comprimido ocupa menos):
+
+sudo du -sh data/server-storage
+
+ 4.3  Detener solo la aplicacion y respaldar sus datos. Desde aqui IASMAR no
+      responde hasta el 4.5: correr estos pasos seguidos. El tar puede
+      tardar unos minutos.
+
+sudo docker compose stop anythingllm
+
+mkdir -p respaldos
+
+sudo tar -czf respaldos/server-storage-$(date +%F).tar.gz -C data server-storage
+
+ 4.4  El respaldo de hoy tiene que pesar mas de 0:
+
+ls -la respaldos
+
+ 4.5  Recrear solo la aplicacion (--no-deps: llama.cpp y Chroma no se
+      tocan):
+
+sudo docker compose up -d --no-deps --force-recreate anythingllm
+
+
+-------------------------------------------------------------------------------
+ 5.  SERVIDOR  -  comprobar
+-------------------------------------------------------------------------------
+
+ 5.1  Tiene que aparecer "Primary server in HTTPS mode listening on port
+      3031". Tarda menos de un minuto: si todavia no aparece, repetir. Si
+      aparece "ERROR: falta el certificado HTTPS", ver "Si algo falla".
+
+sudo docker compose logs --tail 30 anythingllm
+
+ 5.2  Tiene que imprimir {"online":true}:
+
+curl -k https://localhost:2603/api/ping
+
+ 5.3  Por http ya no responde: tiene que imprimir 000.
+
+curl -s -o /dev/null -w '%{http_code}\n' --max-time 5 http://localhost:2603/api/ping
+
+ 5.4  Pasado un minuto, tiene que imprimir "healthy 0" (sano y sin
+      reinicios):
+
+sudo docker inspect --format '{{.State.Health.Status}} {{.RestartCount}}' anythingllm-server
+
+ 5.5  llama-llm-server, llama-embed-server y chroma-server siguen "Up" desde
+      antes (su tiempo no volvio a cero):
+
+sudo docker compose ps
+
+ 5.6  En el navegador del PC con intranet. Aparece "La conexion no es
+      privada": pulsar "Configuracion avanzada" (o "Avanzado") y el enlace
+      para continuar al sitio. Entrar con la cuenta de siempre: tienen que
+      estar los espacios de trabajo y los chats de antes.
+
+https://IP_SERVIDOR:2603
+
+ 5.7  El widget. En Ajustes > Incrustaciones de chat > Widgets, abrir el
+      codigo del widget: data-base-api-url y src tienen que empezar con
+      https://IP_SERVIDOR:2603. La primera vez con HTTPS, copiar ese codigo
+      y pegarlo en la otra plataforma en lugar del snippet anterior;
+      despues ya no cambia.
+      Cada persona que use el chat en la otra plataforma tiene que abrir una
+      vez https://IP_SERVIDOR:2603 en su navegador y aceptar la advertencia,
+      o el chat no aparece. Chrome y Edge la olvidan a los pocos dias:
+      cuando deje de aparecer, se repite.
+
+
+-------------------------------------------------------------------------------
+ 6.  SERVIDOR  -  limpiar (solo cuando el 5 salio bien)
+-------------------------------------------------------------------------------
+
+ Desde aqui ya no se puede volver con el paso R: se borran el compose y la
+ imagen anteriores. El respaldo de los datos queda en respaldos/; los de
+ actualizaciones pasadas se pueden borrar a mano, solo dentro de esa carpeta.
+
+rm ~/anythingllm-deploy/docker-compose.yml.anterior
+
+sudo docker rmi anythingllm-iasmar:anterior
+
+rm -rf ~/iasmar-paquete
+
+ 6.1  Tiene que listar, entre otros: .env  ACTUALIZAR-EN-EL-SERVIDOR.txt
+      cambiar-modelo.sh  certs  data  docker-compose.yml
+      generar-certificado.sh  respaldos
+
+ls -A ~/anythingllm-deploy
+
+
+-------------------------------------------------------------------------------
+ R.  SERVIDOR  -  volver atras (solo si hizo falta, y antes del paso 6)
+-------------------------------------------------------------------------------
+
+ R.1  Detener la aplicacion:
+
+cd ~/anythingllm-deploy
+
+sudo docker compose stop anythingllm
+
+ R.2  Los datos, solo si ya se corrio el 4.5 (la version nueva llego a
+      arrancar). Se pierde lo que se haya hecho en IASMAR desde el 4.3. Con
+      la fecha del respaldo en vez de AAAA-MM-DD:
+
+sudo mv data/server-storage data/server-storage.fallida
+
+sudo tar -xzf respaldos/server-storage-AAAA-MM-DD.tar.gz -C data
+
+ R.3  El compose y la imagen anteriores:
+
+cp -p docker-compose.yml.anterior docker-compose.yml
+
+sudo docker tag anythingllm-iasmar:anterior anythingllm-iasmar:deploy
+
+sudo docker compose up -d --no-deps --force-recreate anythingllm
+
+ R.4  Una de las dos lineas tiene que imprimir {"online":true}: la primera
+      si lo anterior era la version sin HTTPS, la segunda si ya tenia HTTPS.
+
+curl -s --max-time 5 http://localhost:2603/api/ping
+
+curl -sk --max-time 5 https://localhost:2603/api/ping
+
+ R.5  Solo si se corrio el R.2, y cuando IASMAR ya funcione: borrar la copia
+      de los datos que fallaron.
+
+sudo rm -rf data/server-storage.fallida
+
+ R.6  Para intentarlo de nuevo mas tarde, borrar el compose de respaldo y
+      empezar desde el paso 2:
+
+rm docker-compose.yml.anterior
+
+
+-------------------------------------------------------------------------------
+ SI ALGO FALLA
+-------------------------------------------------------------------------------
+
+ - El log dice "ERROR: falta el certificado HTTPS" y el contenedor se
+   reinicia: no existe certs/ o el contenedor no puede leer la clave. Correr
+   el 4.1 (y el chown que indique el AVISO) y despues:
+
+   sudo docker compose up -d --no-deps --force-recreate anythingllm
+
+ - generar-certificado.sh dice "no se puede escribir en .../certs": Docker
+   creo esa carpeta como root al arrancar sin ella. Correr el "sudo chown"
+   que muestra y repetir el 4.1.
+
+ - generar-certificado.sh dice "Ya existe un certificado": no hace falta otro.
+   Regenerarlo obliga a cada navegador a aceptar de nuevo la advertencia.
+
+ - Un sha256sum dice FAILED: el archivo se corrompio al copiarlo. Volver a
+   copiarlo desde el disco y repetir.
+
+ - El chat no aparece en la otra plataforma: en ese navegador, abrir
+   https://IP_SERVIDOR:2603, aceptar la advertencia y recargar la otra
+   plataforma. Si sigue sin aparecer, revisar que su snippet diga https.
+
+ Para ver que pasa:
+
+sudo docker compose logs --tail 50 anythingllm
+
+sudo docker compose ps
+
+sudo docker images | grep anythingllm-iasmar
+
+df -h ~ /var/lib/docker
+
+ Nunca: docker system prune, image prune, volume prune ni network prune
+ (borran cosas de los otros proyectos); docker compose down (baja tambien
+ llama.cpp y Chroma); reiniciar Docker o el servidor (baja todos los
+ proyectos).

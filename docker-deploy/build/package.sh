@@ -37,6 +37,22 @@ cp "$DEPLOY_DIR/docker-compose.yml" .
 cp "$DEPLOY_DIR/.env.example" .
 cp "$DEPLOY_DIR/cambiar-modelo.sh" .
 cp "$DEPLOY_DIR/generar-certificado.sh" .
+cp "$DEPLOY_DIR/ACTUALIZAR-EN-EL-SERVIDOR.txt" .
+
+# El servidor compara la fecha de creacion de la imagen cargada con la linea
+# "Imagen:" (el ID puede cambiar entre el almacen de Docker Desktop y el del
+# servidor; la fecha viaja dentro de la imagen).
+REPO_ROOT="$(cd "$DEPLOY_DIR/.." && pwd)"
+SIN_COMMITEAR=""
+if [ -n "$(git -C "$REPO_ROOT" status --porcelain)" ]; then
+  SIN_COMMITEAR=" (con cambios sin commitear)"
+fi
+{
+  echo "IASMAR - paquete para el servidor"
+  echo "Commit: $(git -C "$REPO_ROOT" rev-parse --short HEAD)$SIN_COMMITEAR"
+  echo "Fecha:  $(date '+%Y-%m-%d %H:%M')"
+  echo "Imagen: $IMAGE creada $(docker image inspect --format '{{.Created}}' "$IMAGE")"
+} > VERSION.txt
 
 echo "Generando CHECKSUMS.txt..."
 find . -maxdepth 1 -type f ! -name "CHECKSUMS.txt" -exec sha256sum {} \; > CHECKSUMS.txt
