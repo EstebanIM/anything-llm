@@ -36,6 +36,7 @@ echo "  -> $(ls "$ARCHIVE".part-* | wc -l) partes"
 cp "$DEPLOY_DIR/docker-compose.yml" .
 cp "$DEPLOY_DIR/.env.example" .
 cp "$DEPLOY_DIR/cambiar-modelo.sh" .
+cp "$DEPLOY_DIR/generar-certificado.sh" .
 
 echo "Generando CHECKSUMS.txt..."
 find . -maxdepth 1 -type f ! -name "CHECKSUMS.txt" -exec sha256sum {} \; > CHECKSUMS.txt

@@ -11,6 +11,18 @@ services:
         YARN_REGISTRY: ${YARN_REGISTRY:-}
     image: anythingllm-iasmar:deploy
     container_name: anythingllm-server
+    # Sin certificado legible no arranca y lo explica en el log, en vez de
+    # depender del arranque oficial (que se cae con un error poco claro).
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        if ! test -r /app/certs/cert.pem || ! test -r /app/certs/key.pem; then
+          echo "ERROR: falta el certificado HTTPS en ./certs o el contenedor (UID 1000) no puede leerlo." >&2
+          echo "Créalo en el servidor con: bash generar-certificado.sh <ip-o-nombre>" >&2
+          exit 1
+        fi
+        exec /bin/bash /usr/local/bin/docker-entrypoint.sh
     cap_add:
       - SYS_ADMIN
     ports:
@@ -23,10 +35,21 @@ services:
       - NODE_ENV=production
       # IASMAR is an internal instance: no anonymous usage events to AnythingLLM.
       - DISABLE_TELEMETRY=true
+      # HTTPS con el certificado de ./certs (crearlo con generar-certificado.sh).
+      - ENABLE_HTTPS=true
+      - HTTPS_CERT_PATH=/app/certs/cert.pem
+      - HTTPS_KEY_PATH=/app/certs/key.pem
     volumes:
       - ./data/server-storage:/app/server/storage
       - ./data/collector-hotdir:/app/collector/hotdir
       - ./data/collector-outputs:/app/collector/outputs
+      - ./certs:/app/certs:ro
+    # Mismos tiempos que el HEALTHCHECK de la imagen, pero por HTTPS.
+    healthcheck:
+      test: ["CMD-SHELL", "curl -kfsS https://localhost:3031/api/ping > /dev/null || exit 1"]
+      interval: 1m
+      timeout: 10s
+      start_period: 1m
     depends_on:
       - llama-llm
       - llama-embed

@@ -14,6 +14,7 @@ yarn.lock
 # Despliegue: paquetes, datos y descargas generadas (no versionar)
 docker-deploy/transfer/
 docker-deploy/data/
+docker-deploy/certs/
 docker-deploy/build/*/dist*/
 docker-deploy/**/*.gguf
 docker-deploy/**/*.tar.gz
